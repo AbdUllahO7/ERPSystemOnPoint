@@ -23,22 +23,26 @@ import { cn } from "@/lib/utils";
 export function PageTitle({
   title,
   infoText,
+  infoTooltip,
   showInfo = true,
   breadcrumb,
+  breadcrumbs,
   subtitle,
   actions,
   className = "",
 }) {
+  const tooltipText = infoTooltip || infoText || "";
+
   return (
     <div
       className={cn(
-        "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4",
+        "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2",
         className
       )}
     >
       <div className="space-y-1">
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight text-foreground">
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1e293b]">
             {title}
           </h1>
           {showInfo && (
@@ -46,30 +50,45 @@ export function PageTitle({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span
-                    className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground hover:bg-muted/80 cursor-pointer transition-colors"
+                    className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-300 text-slate-600 text-[10px] font-bold cursor-pointer hover:bg-slate-400 hover:text-white transition-colors"
                     aria-label="Info"
                   >
-                    <Info className="h-3.5 w-3.5" />
+                    i
                   </span>
                 </TooltipTrigger>
-                <TooltipContent side="top">
-                  <p className="text-xs">
-                    {infoText || `Overview and management for ${title}`}
-                  </p>
-                </TooltipContent>
+                {tooltipText && (
+                  <TooltipContent side="top" className="bg-slate-900 text-white text-xs px-2.5 py-1 rounded-md">
+                    <p>{tooltipText}</p>
+                  </TooltipContent>
+                )}
               </Tooltip>
             </TooltipProvider>
           )}
         </div>
 
-        {breadcrumb && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {breadcrumbs && Array.isArray(breadcrumbs) ? (
+          <div className="flex items-center gap-1.5 text-xs text-slate-500 font-normal">
+            {breadcrumbs.map((b, i) => (
+              <React.Fragment key={i}>
+                {i > 0 && <span className="text-slate-400">/</span>}
+                {b.href ? (
+                  <a href={b.href} className="hover:text-[#0066d1] transition-colors">
+                    {b.label}
+                  </a>
+                ) : (
+                  <span className="text-slate-700 font-medium">{b.label}</span>
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        ) : breadcrumb ? (
+          <div className="flex items-center gap-2 text-xs text-slate-500">
             {breadcrumb}
           </div>
-        )}
+        ) : null}
 
         {subtitle && (
-          <p className="text-xs text-muted-foreground">{subtitle}</p>
+          <p className="text-xs text-slate-500">{subtitle}</p>
         )}
       </div>
 

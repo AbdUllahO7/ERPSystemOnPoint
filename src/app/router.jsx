@@ -132,6 +132,13 @@ import SupplierDetails from "../pages/dashboard/crm/suppliers/supplier-details"
 import AppointmentsPage from "../pages/dashboard/Appointments/appointments-page"
 import AppointmentDetails from "../pages/dashboard/Appointments/appointment-details"
 import AddEditAppointment from "../pages/dashboard/Appointments/add-edit-appointment"
+import ServicesPage from "../pages/dashboard/Appointments/Services/services-page"
+import AddEditService from "../pages/dashboard/Appointments/Services/add-edit-service"
+import ServiceProvidersPage from "../pages/dashboard/Appointments/ServiceProviders/service-providers-page"
+import AddEditServiceProvider from "../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider"
+import ServiceProviderDetails from "../pages/dashboard/Appointments/ServiceProviders/service-provider-details"
+import ProviderCommissionsPage from "../pages/dashboard/Appointments/Commissions/provider-commissions-page"
+import CommissionLedgerPage from "../pages/dashboard/Appointments/Commissions/commission-ledger-page"
 
 export const router = createBrowserRouter([
   {
@@ -301,6 +308,28 @@ export const router = createBrowserRouter([
       { path: "/dashboard/appointments/add", element: <AddEditAppointment /> },
       { path: "/dashboard/appointments/edit/:id", element: <AddEditAppointment /> },
       { path: "/dashboard/appointments/:id", element: <AppointmentDetails /> },
+
+      { path: "/dashboard/appointments/services", element: <ServicesPage /> },
+      { path: "/dashboard/appointments/services/add", element: <AddEditService /> },
+      { path: "/dashboard/appointments/services/edit/:id", element: <AddEditService /> },
+      { path: "/dashboard/services", element: <ServicesPage /> },
+      { path: "/dashboard/services/add", element: <AddEditService /> },
+      { path: "/dashboard/services/edit/:id", element: <AddEditService /> },
+
+      { path: "/dashboard/appointments/service-providers", element: <ServiceProvidersPage /> },
+      { path: "/dashboard/appointments/service-providers/add", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/appointments/service-providers/edit/:id", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/appointments/service-providers/:id", element: <ServiceProviderDetails /> },
+      { path: "/dashboard/service-providers", element: <ServiceProvidersPage /> },
+      { path: "/dashboard/service-providers/add", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/service-providers/edit/:id", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/service-providers/:id", element: <ServiceProviderDetails /> },
+
+      { path: "/dashboard/appointments/provider-commissions", element: <ProviderCommissionsPage /> },
+      { path: "/dashboard/provider-commissions", element: <ProviderCommissionsPage /> },
+
+      { path: "/dashboard/appointments/commission-ledger", element: <CommissionLedgerPage /> },
+      { path: "/dashboard/commission-ledger", element: <CommissionLedgerPage /> },
 
       { path: "*", element: <NotFound /> },
     ],

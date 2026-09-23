@@ -34,7 +34,9 @@ import { Loader2 } from "lucide-react";
  */
 export function DynamicModal({
   isOpen,
+  open,
   onClose,
+  onOpenChange,
   title,
   description,
   icon: Icon,
@@ -50,6 +52,8 @@ export function DynamicModal({
   className = "",
   showDefaultFooter = true,
 }) {
+  const isModalOpen = open !== undefined ? open : Boolean(isOpen);
+
   const sizeClasses = {
     sm: "sm:max-w-sm",
     md: "sm:max-w-md",
@@ -59,17 +63,20 @@ export function DynamicModal({
     full: "sm:max-w-4xl",
   };
 
-  const handleOpenChange = (open) => {
-    if (!open && !isLoading) {
+  const handleOpenChange = (newOpen) => {
+    if (!newOpen && !isLoading) {
       onClose?.();
+      onOpenChange?.(false);
+    } else if (newOpen) {
+      onOpenChange?.(true);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+    <Dialog open={isModalOpen} onOpenChange={handleOpenChange}>
       <DialogContent
         className={cn(
-          "w-full max-h-[90vh] overflow-y-auto",
+          "w-full max-h-[90vh] overflow-y-auto rounded-3xl p-6",
           sizeClasses[size] || sizeClasses.md,
           className
         )}

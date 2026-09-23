@@ -25,6 +25,9 @@ import {
   ArrowRightLeft,
   FileSearch,
   Landmark,
+  UserCheck,
+  Percent,
+  ReceiptText,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
@@ -224,6 +227,26 @@ const sidebarLinks = [
         title: "Appointments",
         href: "/dashboard/appointments",
         icon: CalendarDays,
+      },
+      {
+        title: "Services",
+        href: "/dashboard/appointments/services",
+        icon: Layers,
+      },
+      {
+        title: "Service Providers",
+        href: "/dashboard/appointments/service-providers",
+        icon: UserCheck,
+      },
+      {
+        title: "Provider Commissions",
+        href: "/dashboard/appointments/provider-commissions",
+        icon: Percent,
+      },
+      {
+        title: "Commission Ledger",
+        href: "/dashboard/appointments/commission-ledger",
+        icon: ReceiptText,
       },
     ],
   },
