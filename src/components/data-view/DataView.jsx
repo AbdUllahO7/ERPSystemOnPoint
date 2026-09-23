@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Search,
   Filter,
@@ -12,8 +12,8 @@ import {
   ChevronsUpDown,
   MoreVertical,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { StatsCards } from "./StatsCards";
 import { RowActionsMenu } from "./RowActionsMenu";
@@ -57,7 +57,7 @@ function ViewToggle({ view, onChange, allowedViews }) {
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
               isActive
-                ? "bg-primary shadow-sm"
+                ? "bg-primary shadow-sm text-white"
                 : "bg-transparent hover:bg-muted",
             )}
           >
@@ -74,9 +74,9 @@ function ToolbarIconButton({ active, children, className, ...props }) {
     <button
       type="button"
       className={cn(
-        "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-600 transition-colors hover:bg-slate-50 cursor-pointer",
         active &&
-          "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground",
+          "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
         className,
       )}
       {...props}
@@ -86,10 +86,17 @@ function ToolbarIconButton({ active, children, className, ...props }) {
   );
 }
 
-function getCellValue(row, column) {
-  if (column.render) return column.render(row);
-  if (column.accessor) return column.accessor(row);
-  if (column.key) return row[column.key];
+function getCellValue(row, column, index) {
+  if (typeof column.cell === "function") {
+    return column.cell({
+      row: { original: row, index },
+      getValue: () => row[column.accessorKey || column.key],
+    });
+  }
+  if (typeof column.render === "function") return column.render(row, index);
+  if (typeof column.accessor === "function") return column.accessor(row);
+  if (column.accessorKey && row[column.accessorKey] !== undefined) return row[column.accessorKey];
+  if (column.key && row[column.key] !== undefined) return row[column.key];
   return null;
 }
 
@@ -110,8 +117,8 @@ function buildPageItems(current, total) {
 }
 
 /**
- * Reusable data layout: toolbar + table/cards + pagination.
- * Pass only the props you need — omitted sections stay hidden.
+ * Reusable data layout matching Figma:
+ * Unified white card container with toolbar + table/cards + pagination.
  */
 export function DataView({
   isLoading = false,
@@ -121,21 +128,33 @@ export function DataView({
   defaultView = "table",
   view: controlledView,
   onViewChange,
-  allowedViews = ["table", "cards"],
+  allowedViews = ["table"],
 
   search,
+  searchPlaceholder,
+  searchValue,
+  onSearchChange,
+
   filter,
+  onFilter,
+  filterContent,
+  isFilterOpen,
+  onCloseFilter,
+
   onRefresh,
   onPrint,
   export: exportAction,
-  addButton,
+  onExport,
 
-  selectable = false,
+  addButton,
+  onAdd,
+
+  selectable = true,
   selectedIds: controlledSelectedIds,
   onSelectionChange,
 
   columns = [],
-  onColumnSettings,
+  onColumnSettings = () => {},
   onSort,
   sortKey,
   sortDirection,
@@ -149,7 +168,13 @@ export function DataView({
   renderCardMenu,
 
   pagination,
-  emptyMessage = "No data",
+  page,
+  totalPages,
+  onPageChange,
+
+  tabs,
+
+  emptyMessage = "No data available",
   className,
   toolbarExtra,
 }) {
@@ -158,6 +183,49 @@ export function DataView({
 
   const view = controlledView ?? internalView;
   const setView = onViewChange ?? setInternalView;
+
+  // Normalized toolbar & pagination props
+  const activeSearch =
+    search ||
+    (searchValue !== undefined || onSearchChange
+      ? {
+          value: searchValue ?? "",
+          onChange: (val) => onSearchChange?.(val),
+          placeholder: searchPlaceholder ?? "Search by id or employee name...",
+        }
+      : {
+          value: "",
+          onChange: () => {},
+          placeholder: "Search by id or employee name...",
+        });
+
+  const activeFilter =
+    filter ||
+    (onFilter
+      ? {
+          onClick: onFilter,
+          label: "Filter",
+        }
+      : null);
+
+  const activeAddButton =
+    addButton ||
+    (onAdd
+      ? {
+          onClick: onAdd,
+          label: "Add",
+        }
+      : null);
+
+  const activePagination =
+    pagination ||
+    (page !== undefined || totalPages !== undefined
+      ? {
+          page: page || 1,
+          totalPages: totalPages || 1,
+          onPageChange: onPageChange || (() => {}),
+        }
+      : null);
 
   const selectedIds = controlledSelectedIds ?? internalSelected;
   const setSelectedIds = (next) => {
@@ -186,17 +254,9 @@ export function DataView({
     );
   }
 
-  const toolbarVisible =
-    search ||
-    filter ||
-    true || // Refresh button is always visible
-    onPrint ||
-    exportAction ||
-    addButton ||
-    showViewToggle;
-
-  const hasRowMenu = rowActionsMenu?.length > 0;
-  const showActionsColumn = renderRowActions || hasRowMenu || onColumnSettings;
+  const hasRowMenu =
+    Boolean(rowActionsMenu?.length) || typeof rowActionsMenu === "function";
+  const showActionsColumn = renderRowActions || hasRowMenu;
   const showCardsView = Boolean(card) && allowedViews.includes("cards");
   const showTableView = allowedViews.includes("table");
   const useViewTransition = showCardsView && showTableView;
@@ -226,7 +286,11 @@ export function DataView({
               <RowActionsMenu
                 row={row}
                 rowIndex={index}
-                groups={rowActionsMenu}
+                groups={
+                  typeof rowActionsMenu === "function"
+                    ? rowActionsMenu(row, index)
+                    : rowActionsMenu
+                }
               />
             ) : (
               renderCardMenu && (
@@ -272,76 +336,68 @@ export function DataView({
     <div className="overflow-x-auto">
       <table className="min-w-full text-sm">
         <thead>
-          <tr className="border-b border-border bg-muted/80">
+          <tr className="border-b border-slate-100 bg-white">
             {selectable && (
-              <th className="w-12 px-4 py-3">
+              <th className="w-10 px-4 py-3.5 text-start">
                 <input
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="size-4 rounded border-input accent-primary"
+                  className="size-4 rounded border-slate-300 accent-[#0066d1] cursor-pointer"
                   aria-label="Select all"
                 />
               </th>
             )}
-            {columns.map((col) => (
-              <th
-                key={col.key ?? col.label}
-                className={cn(
-                  "px-4 py-3 text-start font-medium text-muted-foreground",
-                  col.className,
-                )}
-              >
+            {columns.map((col, idx) => {
+              const colKey =
+                col.key ??
+                col.accessorKey ??
+                (typeof col.header === "string" ? col.header : col.label) ??
+                idx;
+              const colLabel =
+                typeof col.header === "function"
+                  ? col.header()
+                  : col.header ?? col.label ?? "";
+              const sortAccessor = col.key ?? col.accessorKey;
+
+              return (
+                <th
+                  key={colKey}
+                  className={cn(
+                    "px-4 py-3.5 text-start text-xs font-semibold text-slate-800",
+                    col.className,
+                  )}
+                >
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-1 cursor-pointer hover:text-slate-900 select-none"
+                    onClick={() =>
+                      onSort?.(
+                        sortAccessor,
+                        sortKey === sortAccessor && sortDirection === "asc"
+                          ? "desc"
+                          : "asc",
+                      )
+                    }
+                  >
+                    <span>{colLabel}</span>
+                    <ChevronsUpDown className="size-3 text-slate-300 stroke-[2]" />
+                  </button>
+                </th>
+              );
+            })}
+            <th className="w-14 px-4 py-3.5 text-end">
+              <div className="flex items-center justify-end">
                 <button
                   type="button"
-                  className={cn(
-                    "inline-flex items-center gap-1",
-                    col.sortable && "cursor-pointer hover:text-foreground",
-                  )}
-                  disabled={!col.sortable}
-                  onClick={() =>
-                    col.sortable &&
-                    onSort?.(
-                      col.key,
-                      sortKey === col.key && sortDirection === "asc"
-                        ? "desc"
-                        : "asc",
-                    )
-                  }
+                  onClick={onColumnSettings}
+                  className="rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
+                  aria-label="Column settings"
                 >
-                  {col.label}
-                  {col.sortable && (
-                    <span className="text-muted-foreground">
-                      {sortKey === col.key ? (
-                        sortDirection === "asc" ? (
-                          <ChevronUp className="size-3.5" />
-                        ) : (
-                          <ChevronDown className="size-3.5" />
-                        )
-                      ) : (
-                        <ChevronsUpDown className="size-3.5" />
-                      )}
-                    </span>
-                  )}
+                  <SlidersHorizontal className="size-4 text-slate-600" />
                 </button>
-              </th>
-            ))}
-            {showActionsColumn && (
-              <th className="w-14 px-4 py-3 text-end">
-                <div className="flex items-center justify-end gap-2">
-                  {onColumnSettings && (
-                    <button
-                      type="button"
-                      onClick={onColumnSettings}
-                      className="rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
-                      aria-label="Column settings"
-                    >
-                      <SlidersHorizontal className="size-4" />
-                    </button>
-                  )}
-                </div>
-              </th>
-            )}
+              </div>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -353,62 +409,56 @@ export function DataView({
               <tr
                 key={id}
                 className={cn(
-                  "border-b border-border transition-colors hover:bg-muted/50",
-                  index % 2 === 1 && "bg-primary/5",
-                  isSelected && "bg-primary/10",
+                  "border-b border-slate-100 transition-colors hover:bg-slate-50/60",
+                  isSelected && "bg-blue-50/30",
                 )}
               >
                 {selectable && (
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3.5">
                     <input
                       type="checkbox"
                       checked={isSelected}
                       onChange={() => toggleRow(id)}
-                      className="size-4 rounded border-input accent-primary"
+                      className="size-4 rounded border-slate-300 accent-[#0066d1] cursor-pointer"
                       aria-label="Select row"
                     />
                   </td>
                 )}
-                {columns.map((col) => {
-                  const content = getCellValue(row, col);
+                {columns.map((col, cIdx) => {
+                  const content = getCellValue(row, col, index);
+                  const cellKey =
+                    col.key ??
+                    col.accessorKey ??
+                    (typeof col.header === "string" ? col.header : col.label) ??
+                    cIdx;
+
                   return (
                     <td
-                      key={col.key ?? col.label}
-                      className={cn("px-4 py-3", col.cellClassName)}
-                    >
-                      {col.link ? (
-                        <button
-                          type="button"
-                          onClick={() => col.onLinkClick?.(row, index)}
-                          className="font-medium text-primary hover:text-primary/90 hover:underline"
-                        >
-                          {content}
-                        </button>
-                      ) : (
-                        <span
-                          className={cn(
-                            col.emphasize && "font-medium text-primary",
-                          )}
-                        >
-                          {content}
-                        </span>
+                      key={cellKey}
+                      className={cn(
+                        "px-4 py-3.5 text-xs text-slate-700 font-normal",
+                        col.cellClassName,
                       )}
+                    >
+                      {content}
                     </td>
                   );
                 })}
-                {showActionsColumn && (
-                  <td className="px-4 py-3 text-end">
-                    {hasRowMenu ? (
-                      <RowActionsMenu
-                        row={row}
-                        rowIndex={index}
-                        groups={rowActionsMenu}
-                      />
-                    ) : (
-                      renderRowActions?.(row, index)
-                    )}
-                  </td>
-                )}
+                <td className="px-4 py-3.5 text-end">
+                  {hasRowMenu ? (
+                    <RowActionsMenu
+                      row={row}
+                      rowIndex={index}
+                      groups={
+                        typeof rowActionsMenu === "function"
+                          ? rowActionsMenu(row, index)
+                          : rowActionsMenu
+                      }
+                    />
+                  ) : renderRowActions ? (
+                    renderRowActions(row, index)
+                  ) : null}
+                </td>
               </tr>
             );
           })}
@@ -421,36 +471,72 @@ export function DataView({
     <div className={cn("space-y-4", className)}>
       {stats?.length > 0 && <StatsCards cards={stats} />}
 
-      {toolbarVisible && (
+      {/* Main Unified White Card Container matching Figma */}
+      <div className="bg-white rounded-2xl border border-slate-100/90 shadow-sm p-5 space-y-4">
+        {/* Status Tabs inside Card Header matching Figma */}
+        {tabs && (Array.isArray(tabs) ? tabs : tabs.items)?.length > 0 && (
+          <div className="flex items-center gap-6 px-1 border-b border-slate-100 overflow-x-auto -mt-1 mb-2">
+            {(Array.isArray(tabs) ? tabs : tabs.items).map((tab) => {
+              const tabId = typeof tab === "string" ? tab : tab.id;
+              const tabLabel = typeof tab === "string" ? tab : tab.label;
+              const activeId = tabs.activeTab ?? tabs.value ?? tabs.selectedTab;
+              const isActive = activeId === tabId || (activeId?.toLowerCase() === tabId?.toLowerCase());
+              return (
+                <button
+                  key={tabId}
+                  type="button"
+                  onClick={() => (tabs.onChange ?? tabs.onTabChange)?.(tabId)}
+                  className={cn(
+                    "text-xs font-semibold transition-all relative cursor-pointer pb-3 pt-1 whitespace-nowrap",
+                    isActive
+                      ? "text-[#0066d1] font-bold"
+                      : "text-slate-500 hover:text-slate-800 font-medium"
+                  )}
+                >
+                  {tabLabel}
+                  {isActive && (
+                    <span className="absolute -bottom-[1px] left-0 right-0 h-[2.5px] bg-[#0066d1] rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Top Toolbar matching Figma */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-            {search && (
-              <div className="relative min-w-[200px] flex-1 max-w-xl">
-                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          {/* Left: Search & Filter */}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+            {activeSearch && (
+              <div className="relative min-w-[260px] max-w-sm">
+                <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
-                  value={search.value ?? ""}
+                  value={activeSearch.value ?? ""}
                   onChange={(e) => {
                     const value = e.target.value;
-                    search.onChange?.(value, data);
+                    activeSearch.onChange?.(value, data);
                   }}
-                  placeholder={search.placeholder ?? "Search..."}
-                  className="h-10 w-full rounded-lg border-border bg-card ps-9 pe-3"
+                  placeholder={
+                    activeSearch.placeholder ?? "Search by id or employee name..."
+                  }
+                  className="h-10 w-full rounded-xl border-slate-200/90 bg-white ps-9 pe-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
                 />
               </div>
             )}
-            {filter && (
+            {activeFilter && (
               <Button
                 type="button"
-                variant="outline"
-                onClick={filter.onClick}
-                className="h-10 gap-2 rounded-lg border-primary/25 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary/90"
+                variant="ghost"
+                onClick={activeFilter.onClick}
+                className="h-10 gap-1.5 rounded-xl bg-[#eaf4ff] text-[#0066d1] hover:bg-[#d8ecff] hover:text-[#0052a8] text-xs font-semibold px-4 cursor-pointer"
               >
-                <Filter className="size-4" />
-                {filter.label ?? "Filter"}
+                <Filter className="size-3.5" />
+                {activeFilter.label ?? "Filter"}
               </Button>
             )}
           </div>
 
+          {/* Right: Actions */}
           <div className="flex flex-wrap items-center gap-2">
             {showViewToggle && (
               <ViewToggle
@@ -459,96 +545,57 @@ export function DataView({
                 allowedViews={allowedViews}
               />
             )}
-            <ToolbarIconButton onClick={() => window.location.reload()} aria-label="Refresh">
-              <RefreshCw className="size-4" />
+            <ToolbarIconButton
+              onClick={onRefresh || (() => window.location.reload())}
+              aria-label="Refresh"
+            >
+              <RefreshCw className="size-4 text-slate-600" />
             </ToolbarIconButton>
             {onPrint && (
               <ToolbarIconButton onClick={onPrint} aria-label="Print">
-                <Printer className="size-4" />
+                <Printer className="size-4 text-slate-600" />
               </ToolbarIconButton>
             )}
-            {/* exportAction && (
+            {(exportAction || onExport) && (
               <Button
                 type="button"
                 variant="outline"
-                onClick={exportAction.onClick}
-                className="h-10 gap-2 rounded-lg border-border"
+                onClick={exportAction?.onClick || onExport}
+                className="h-10 gap-1.5 rounded-xl border-slate-200/90 text-slate-700 bg-white hover:bg-slate-50 text-xs font-medium px-4 cursor-pointer"
               >
-                <Download className="size-4" />
-                {exportAction.label ?? "Export"}
+                <Download className="size-3.5 text-slate-600" />
+                {exportAction?.label ?? "Export"}
               </Button>
-            ) */}
-            {addButton && (
+            )}
+            {activeAddButton && (
               <Button
                 type="button"
-                onClick={addButton.onClick}
-                className="h-10 gap-2 rounded-lg bg-primary px-4 text-primary-foreground hover:bg-primary/90"
+                onClick={activeAddButton.onClick}
+                className="h-10 gap-1.5 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 text-xs font-semibold shadow-xs cursor-pointer"
               >
-                <Plus className="size-4" />
-                {addButton.label ?? "Add"}
+                <Plus className="size-3.5 stroke-[2.5]" />
+                {activeAddButton.label ?? "Add"}
               </Button>
             )}
           </div>
         </div>
-      )}
 
-      {toolbarExtra}
+        {toolbarExtra}
 
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+        {/* Content Table / Cards */}
         {isLoading ? (
-          view === "cards" && showCardsView ? (
-            <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <article
+          <div className="overflow-x-auto py-8">
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
                   key={i}
-                  className="rounded-xl border border-border bg-card animate-pulse"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <div className="h-9 w-9 rounded-lg bg-muted"></div>
-                      <div className="h-4 w-24 rounded bg-muted"></div>
-                    </div>
-                  </div>
-                  <div className="space-y-4 px-4 py-4">
-                    <div className="h-3 w-full rounded bg-muted"></div>
-                    <div className="h-3 w-4/5 rounded bg-muted"></div>
-                    <div className="h-3 w-3/4 rounded bg-muted"></div>
-                  </div>
-                </article>
+                  className="h-10 bg-slate-100 rounded-lg animate-pulse"
+                />
               ))}
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-muted/80">
-                    {selectable && <th className="w-12 px-4 py-3"></th>}
-                    {columns.map((col) => (
-                      <th key={col.key ?? col.label} className="px-4 py-3">
-                        <div className="h-4 w-24 rounded bg-muted/50 animate-pulse"></div>
-                      </th>
-                    ))}
-                    {showActionsColumn && <th className="w-14 px-4 py-3"></th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="border-b border-border">
-                      {selectable && <td className="px-4 py-3"></td>}
-                      {columns.map((col) => (
-                        <td key={col.key ?? col.label} className="px-4 py-3">
-                          <div className="h-4 w-full rounded bg-muted animate-pulse max-w-[80%]"></div>
-                        </td>
-                      ))}
-                      {showActionsColumn && <td className="px-4 py-3"></td>}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
+          </div>
         ) : data.length === 0 ? (
-          <p className="px-6 py-12 text-center text-sm text-muted-foreground">
+          <p className="px-6 py-12 text-center text-sm text-slate-500">
             {emptyMessage}
           </p>
         ) : useViewTransition ? (
@@ -578,52 +625,80 @@ export function DataView({
           tableContent
         )}
 
-        {pagination && (
-          <div className="flex items-center justify-end gap-1 border-t border-border px-4 py-3">
+        {/* Bottom Pagination matching Figma */}
+        {activePagination && (
+          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
             <button
               type="button"
-              disabled={pagination.page <= 1}
-              onClick={() => pagination.onPageChange?.(pagination.page - 1)}
-              className="px-2 py-1 text-sm text-muted-foreground disabled:opacity-40 hover:text-foreground"
+              disabled={activePagination.page <= 1}
+              onClick={() =>
+                activePagination.onPageChange?.(activePagination.page - 1)
+              }
+              className="px-2 py-1 text-xs font-medium text-slate-500 disabled:opacity-40 hover:text-slate-800 cursor-pointer"
             >
-              {pagination.prevLabel ?? "Pre"}
+              {activePagination.prevLabel ?? "Pre"}
             </button>
-            {buildPageItems(pagination.page, pagination.totalPages).map(
-              (item, i) =>
+            <div className="flex items-center gap-1">
+              {buildPageItems(
+                activePagination.page,
+                activePagination.totalPages,
+              ).map((item, i) =>
                 item === "..." ? (
                   <span
                     key={`ellipsis-${i}`}
-                    className="px-2 text-sm text-muted-foreground"
+                    className="px-1.5 text-xs text-slate-400"
                   >
-                    ...
+                    ....
                   </span>
                 ) : (
                   <button
                     key={item}
                     type="button"
-                    onClick={() => pagination.onPageChange?.(item)}
+                    onClick={() => activePagination.onPageChange?.(item)}
                     className={cn(
-                      "flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-sm",
-                      item === pagination.page
-                        ? "bg-primary font-medium text-primary-foreground"
-                        : "text-muted-foreground hover:bg-muted",
+                      "flex h-7 min-w-7 items-center justify-center rounded text-xs font-medium transition-colors cursor-pointer",
+                      item === activePagination.page
+                        ? "bg-[#0066d1] text-white"
+                        : "text-slate-600 hover:bg-slate-100",
                     )}
                   >
                     {item}
                   </button>
                 ),
-            )}
+              )}
+            </div>
             <button
               type="button"
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => pagination.onPageChange?.(pagination.page + 1)}
-              className="px-2 py-1 text-sm text-muted-foreground disabled:opacity-40 hover:text-foreground"
+              disabled={activePagination.page >= activePagination.totalPages}
+              onClick={() =>
+                activePagination.onPageChange?.(activePagination.page + 1)
+              }
+              className="px-2 py-1 text-xs font-semibold text-[#0066d1] disabled:opacity-40 hover:text-[#0052a8] cursor-pointer"
             >
-              {pagination.nextLabel ?? "Next"}
+              {activePagination.nextLabel ?? "Next"}
             </button>
           </div>
         )}
       </div>
+
+      {/* Filter Drawer / Dialog */}
+      {isFilterOpen && filterContent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-base font-bold text-slate-800">Filters</h3>
+              <button
+                type="button"
+                onClick={onCloseFilter}
+                className="text-slate-400 hover:text-slate-700 p-1 rounded-md"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="py-2">{filterContent}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -90,21 +90,36 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
               group.items.map((item) => {
                 const Icon = item.icon;
                 const isPrimaryGroup = group.label === "View";
+                const label =
+                  typeof item.label === "function"
+                    ? item.label(row, rowIndex)
+                    : item.label;
+                const isDisabled =
+                  typeof item.disabled === "function"
+                    ? item.disabled(row, rowIndex)
+                    : Boolean(item.disabled);
+                const isDestructive =
+                  typeof item.destructive === "function"
+                    ? item.destructive(row, rowIndex)
+                    : Boolean(item.destructive);
+
                 return (
                   <DropdownMenuItem
-                    key={item.key ?? item.label}
-                    onClick={() => item.onClick?.(row, rowIndex)}
+                    key={item.key ?? (typeof item.label === "string" ? item.label : Math.random())}
+                    disabled={isDisabled}
+                    onClick={() => !isDisabled && item.onClick?.(row, rowIndex)}
                     className={cn(
                       "cursor-pointer gap-2 rounded-lg px-2 py-2",
-                      item.destructive 
-                        ? "text-destructive focus:bg-destructive/10 focus:text-destructive" 
+                      isDestructive
+                        ? "text-destructive focus:bg-destructive/10 focus:text-destructive"
                         : isPrimaryGroup
                           ? "text-primary focus:text-primary focus:bg-primary/10"
-                          : "text-foreground focus:text-foreground focus:bg-muted"
+                          : "text-foreground focus:text-foreground focus:bg-muted",
+                      isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
                     )}
                   >
                     {Icon && <Icon className="size-4 shrink-0" />}
-                    <span>{item.label}</span>
+                    <span>{label}</span>
                   </DropdownMenuItem>
                 );
               })}

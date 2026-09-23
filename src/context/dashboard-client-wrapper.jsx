@@ -25,6 +25,13 @@ import {
   ArrowRightLeft,
   FileSearch,
   Landmark,
+  UserCheck,
+  Percent,
+  ReceiptText,
+  Ticket,
+  CalendarCheck,
+  KeyRound,
+  Car,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
@@ -214,6 +221,71 @@ const sidebarLinks = [
         title: "Projects",
         href: "/dashboard/crm/projects",
         icon: Users,
+      },
+    ],
+  },
+  {
+    label: "Appointments",
+    items: [
+      {
+        title: "Appointments",
+        href: "/dashboard/appointments",
+        icon: CalendarDays,
+      },
+      {
+        title: "Services",
+        href: "/dashboard/appointments/services",
+        icon: Layers,
+      },
+      {
+        title: "Service Providers",
+        href: "/dashboard/appointments/service-providers",
+        icon: UserCheck,
+      },
+      {
+        title: "Provider Commissions",
+        href: "/dashboard/appointments/provider-commissions",
+        icon: Percent,
+      },
+      {
+        title: "Commission Ledger",
+        href: "/dashboard/appointments/commission-ledger",
+        icon: ReceiptText,
+      },
+    ],
+  },
+  {
+    label: "Reservations",
+    items: [
+      {
+        title: "Reservations",
+        href: "/dashboard/reservations",
+        icon: Ticket,
+      },
+      {
+        title: "Events",
+        href: "/dashboard/events",
+        icon: CalendarCheck,
+      },
+      {
+        title: "Resources",
+        href: "/dashboard/resources",
+        icon: Building2,
+      },
+    ],
+  },
+  {
+    label: "Rentals",
+    items: [
+      {
+        title: "Rental Contracts",
+        href: "/dashboard/rentals",
+        icon: KeyRound,
+      },
+      {
+        title: "Rental Invoices",
+        href: "/dashboard/rentals/invoices",
+        icon: ReceiptText,
       },
     ],
   },

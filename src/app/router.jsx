@@ -128,6 +128,33 @@ import AddEditProject from "../pages/dashboard/crm/projects/add-edit-project"
 import ProjectDetails from "../pages/dashboard/crm/projects/project-details"
 import AddEditSupplier from "../pages/dashboard/crm/suppliers/add-edit-supplier"
 import SupplierDetails from "../pages/dashboard/crm/suppliers/supplier-details"
+
+import AppointmentsPage from "../pages/dashboard/Appointments/appointments-page"
+import AppointmentDetails from "../pages/dashboard/Appointments/appointment-details"
+import AddEditAppointment from "../pages/dashboard/Appointments/add-edit-appointment"
+import ServicesPage from "../pages/dashboard/Appointments/Services/services-page"
+import AddEditService from "../pages/dashboard/Appointments/Services/add-edit-service"
+import ServiceProvidersPage from "../pages/dashboard/Appointments/ServiceProviders/service-providers-page"
+import AddEditServiceProvider from "../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider"
+import ServiceProviderDetails from "../pages/dashboard/Appointments/ServiceProviders/service-provider-details"
+import ProviderCommissionsPage from "../pages/dashboard/Appointments/Commissions/provider-commissions-page"
+import CommissionLedgerPage from "../pages/dashboard/Appointments/Commissions/commission-ledger-page"
+import ReservationsPage from "../pages/dashboard/Reservations/reservations-page"
+import AddEditReservation from "../pages/dashboard/Reservations/add-edit-reservation"
+import ReservationDetails from "../pages/dashboard/Reservations/reservation-details"
+import EventsPage from "../pages/dashboard/Events/events-page"
+import AddEditEvent from "../pages/dashboard/Events/add-edit-event"
+import EventDetails from "../pages/dashboard/Events/event-details"
+import ResourcesPage from "../pages/dashboard/Resources/resources-page"
+import AddEditResource from "../pages/dashboard/Resources/add-edit-resource"
+import ResourceDetails from "../pages/dashboard/Resources/resource-details"
+import RentalsPage from "../pages/dashboard/Rentals/rentals-page"
+import AddEditRental from "../pages/dashboard/Rentals/add-edit-rental"
+import RentalDetails from "../pages/dashboard/Rentals/rental-details"
+import RentalInvoicesPage from "../pages/dashboard/Rentals/Invoices/rental-invoices-page"
+import AddEditRentalInvoice from "../pages/dashboard/Rentals/Invoices/add-edit-rental-invoice"
+import RentalInvoiceDetails from "../pages/dashboard/Rentals/Invoices/rental-invoice-details"
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -291,6 +318,58 @@ export const router = createBrowserRouter([
       { path: "/dashboard/crm/projects/add", element: <AddEditProject /> },
       { path: "/dashboard/crm/projects/edit/:id", element: <AddEditProject /> },
       { path: "/dashboard/crm/projects/:id", element: <SupplierDetails /> },
+
+      { path: "/dashboard/appointments", element: <AppointmentsPage /> },
+      { path: "/dashboard/appointments/add", element: <AddEditAppointment /> },
+      { path: "/dashboard/appointments/edit/:id", element: <AddEditAppointment /> },
+      { path: "/dashboard/appointments/:id", element: <AppointmentDetails /> },
+
+      { path: "/dashboard/appointments/services", element: <ServicesPage /> },
+      { path: "/dashboard/appointments/services/add", element: <AddEditService /> },
+      { path: "/dashboard/appointments/services/edit/:id", element: <AddEditService /> },
+      { path: "/dashboard/services", element: <ServicesPage /> },
+      { path: "/dashboard/services/add", element: <AddEditService /> },
+      { path: "/dashboard/services/edit/:id", element: <AddEditService /> },
+
+      { path: "/dashboard/appointments/service-providers", element: <ServiceProvidersPage /> },
+      { path: "/dashboard/appointments/service-providers/add", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/appointments/service-providers/edit/:id", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/appointments/service-providers/:id", element: <ServiceProviderDetails /> },
+      { path: "/dashboard/service-providers", element: <ServiceProvidersPage /> },
+      { path: "/dashboard/service-providers/add", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/service-providers/edit/:id", element: <AddEditServiceProvider /> },
+      { path: "/dashboard/service-providers/:id", element: <ServiceProviderDetails /> },
+
+      { path: "/dashboard/appointments/provider-commissions", element: <ProviderCommissionsPage /> },
+      { path: "/dashboard/provider-commissions", element: <ProviderCommissionsPage /> },
+
+      { path: "/dashboard/appointments/commission-ledger", element: <CommissionLedgerPage /> },
+      { path: "/dashboard/commission-ledger", element: <CommissionLedgerPage /> },
+
+      { path: "/dashboard/reservations", element: <ReservationsPage /> },
+      { path: "/dashboard/reservations/add", element: <AddEditReservation /> },
+      { path: "/dashboard/reservations/edit/:id", element: <AddEditReservation /> },
+      { path: "/dashboard/reservations/:id", element: <ReservationDetails /> },
+
+      { path: "/dashboard/events", element: <EventsPage /> },
+      { path: "/dashboard/events/add", element: <AddEditEvent /> },
+      { path: "/dashboard/events/edit/:id", element: <AddEditEvent /> },
+      { path: "/dashboard/events/:id", element: <EventDetails /> },
+
+      { path: "/dashboard/resources", element: <ResourcesPage /> },
+      { path: "/dashboard/resources/add", element: <AddEditResource /> },
+      { path: "/dashboard/resources/edit/:id", element: <AddEditResource /> },
+      { path: "/dashboard/resources/:id", element: <ResourceDetails /> },
+
+      { path: "/dashboard/rentals", element: <RentalsPage /> },
+      { path: "/dashboard/rentals/add", element: <AddEditRental /> },
+      { path: "/dashboard/rentals/edit/:id", element: <AddEditRental /> },
+      { path: "/dashboard/rentals/:id", element: <RentalDetails /> },
+
+      { path: "/dashboard/rentals/invoices", element: <RentalInvoicesPage /> },
+      { path: "/dashboard/rentals/invoices/add", element: <AddEditRentalInvoice /> },
+      { path: "/dashboard/rentals/invoices/edit/:id", element: <AddEditRentalInvoice /> },
+      { path: "/dashboard/rentals/invoices/:id", element: <RentalInvoiceDetails /> },
 
       { path: "*", element: <NotFound /> },
     ],
