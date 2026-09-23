@@ -28,6 +28,8 @@ import {
   UserCheck,
   Percent,
   ReceiptText,
+  Ticket,
+  CalendarCheck,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
@@ -247,6 +249,26 @@ const sidebarLinks = [
         title: "Commission Ledger",
         href: "/dashboard/appointments/commission-ledger",
         icon: ReceiptText,
+      },
+    ],
+  },
+  {
+    label: "Reservations",
+    items: [
+      {
+        title: "Reservations",
+        href: "/dashboard/reservations",
+        icon: Ticket,
+      },
+      {
+        title: "Events",
+        href: "/dashboard/events",
+        icon: CalendarCheck,
+      },
+      {
+        title: "Resources",
+        href: "/dashboard/resources",
+        icon: Building2,
       },
     ],
   },

@@ -313,152 +313,125 @@ export default function AppointmentsPage() {
         })}
       </div>
 
-      {/* Main Table Card */}
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-4">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-6 border-b border-border overflow-x-auto pb-px">
-          {lookups.statuses.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => {
-                setActiveTab(tab);
-                setPage(1);
-              }}
-              className={`relative pb-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                activeTab === tab
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {tab}
-              {activeTab === tab && (
-                <span className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-primary" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Collapsible Filter Panel */}
-        <div
-          className={`grid transition-all duration-300 ease-in-out ${
-            isFilterOpen
-              ? "grid-rows-[1fr] opacity-100 mb-4"
-              : "grid-rows-[0fr] opacity-0 mb-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-muted/40 p-4">
-              <div className="w-full flex-1 min-w-[180px]">
-                <Label className="mb-1.5 block text-xs font-medium text-foreground">
-                  Filter by Provider
-                </Label>
-                <Select
-                  value={filters.provider}
-                  onValueChange={(val) => {
-                    setFilters((prev) => ({ ...prev, provider: val }));
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-full bg-card">
-                    <SelectValue placeholder="All Providers" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Providers</SelectItem>
-                    {lookups.providers.map((p) => (
-                      <SelectItem key={p.value} value={p.value}>
-                        {p.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="w-full flex-1 min-w-[180px]">
-                <Label className="mb-1.5 block text-xs font-medium text-foreground">
-                  Filter by Service
-                </Label>
-                <Select
-                  value={filters.service}
-                  onValueChange={(val) => {
-                    setFilters((prev) => ({ ...prev, service: val }));
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-full bg-card">
-                    <SelectValue placeholder="All Services" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Services</SelectItem>
-                    {lookups.services.map((s) => (
-                      <SelectItem key={s.value} value={s.value}>
-                        {s.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {(filters.provider !== "all" || filters.service !== "all") && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setFilters({ provider: "all", service: "all", status: "all" });
-                    setPage(1);
-                  }}
-                  className="h-10"
-                >
-                  Clear Filters
-                </Button>
-              )}
+      {/* DataView Table with Integrated Tabs & Toolbar */}
+      <DataView
+        tabs={{
+          items: lookups.statuses,
+          activeTab: activeTab,
+          onChange: (tab) => {
+            setActiveTab(tab);
+            setPage(1);
+          },
+        }}
+        data={displayRows}
+        isLoading={isLoading}
+        getRowId={(row) => row.id}
+        selectable
+        search={{
+          placeholder: "Search by id or employee name...",
+          value: search,
+          onChange: (val) => {
+            setSearch(val);
+            setPage(1);
+          },
+        }}
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen((prev) => !prev),
+        }}
+        isFilterOpen={isFilterOpen}
+        onCloseFilter={() => setIsFilterOpen(false)}
+        filterContent={
+          <div className="flex flex-wrap items-end gap-4 p-2">
+            <div className="w-full flex-1 min-w-[180px]">
+              <Label className="mb-1.5 block text-xs font-medium text-foreground">
+                Filter by Provider
+              </Label>
+              <Select
+                value={filters.provider}
+                onValueChange={(val) => {
+                  setFilters((prev) => ({ ...prev, provider: val }));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full bg-card">
+                  <SelectValue placeholder="All Providers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Providers</SelectItem>
+                  {lookups.providers.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-        </div>
 
-        {/* DataView Table with Toolbar */}
-        <DataView
-          data={displayRows}
-          isLoading={isLoading}
-          getRowId={(row) => row.id}
-          selectable
-          search={{
-            placeholder: "Search by id or employee name...",
-            value: search,
-            onChange: (val) => {
-              setSearch(val);
-              setPage(1);
-            },
-          }}
-          filter={{
-            label: "Filter",
-            onClick: () => setIsFilterOpen((prev) => !prev),
-          }}
-          onRefresh={() => {
-            refetch();
-            toast.success("Appointments refreshed!");
-          }}
-          onPrint={() => window.print()}
-          export={{
-            label: "Export",
-            onClick: () => toast.success("Exporting appointments..."),
-          }}
-          addButton={{
-            label: "Add",
-            onClick: () => navigate("/dashboard/appointments/add"),
-          }}
-          columns={columns}
-          rowActionsMenu={rowActionsMenu}
-          pagination={{
-            page: page,
-            totalPages: totalPages,
-            onPageChange: setPage,
-            prevLabel: "Pre",
-            nextLabel: "Next",
-          }}
-          emptyMessage="No appointments found"
-        />
-      </div>
+            <div className="w-full flex-1 min-w-[180px]">
+              <Label className="mb-1.5 block text-xs font-medium text-foreground">
+                Filter by Service
+              </Label>
+              <Select
+                value={filters.service}
+                onValueChange={(val) => {
+                  setFilters((prev) => ({ ...prev, service: val }));
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full bg-card">
+                  <SelectValue placeholder="All Services" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Services</SelectItem>
+                  {lookups.services.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {(filters.provider !== "all" || filters.service !== "all") && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setFilters({ provider: "all", service: "all", status: "all" });
+                  setPage(1);
+                }}
+                className="h-10"
+              >
+                Clear Filters
+              </Button>
+            )}
+          </div>
+        }
+        onRefresh={() => {
+          refetch();
+          toast.success("Appointments refreshed!");
+        }}
+        onPrint={() => window.print()}
+        export={{
+          label: "Export",
+          onClick: () => toast.success("Exporting appointments..."),
+        }}
+        addButton={{
+          label: "Add",
+          onClick: () => navigate("/dashboard/appointments/add"),
+        }}
+        columns={columns}
+        rowActionsMenu={rowActionsMenu}
+        pagination={{
+          page: page,
+          totalPages: totalPages,
+          onPageChange: setPage,
+          prevLabel: "Pre",
+          nextLabel: "Next",
+        }}
+        emptyMessage="No appointments found"
+      />
 
       {/* Change Status Modal */}
       <DynamicModal

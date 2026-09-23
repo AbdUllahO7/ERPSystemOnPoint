@@ -172,6 +172,8 @@ export function DataView({
   totalPages,
   onPageChange,
 
+  tabs,
+
   emptyMessage = "No data available",
   className,
   toolbarExtra,
@@ -471,6 +473,36 @@ export function DataView({
 
       {/* Main Unified White Card Container matching Figma */}
       <div className="bg-white rounded-2xl border border-slate-100/90 shadow-sm p-5 space-y-4">
+        {/* Status Tabs inside Card Header matching Figma */}
+        {tabs && (Array.isArray(tabs) ? tabs : tabs.items)?.length > 0 && (
+          <div className="flex items-center gap-6 px-1 border-b border-slate-100 overflow-x-auto -mt-1 mb-2">
+            {(Array.isArray(tabs) ? tabs : tabs.items).map((tab) => {
+              const tabId = typeof tab === "string" ? tab : tab.id;
+              const tabLabel = typeof tab === "string" ? tab : tab.label;
+              const activeId = tabs.activeTab ?? tabs.value ?? tabs.selectedTab;
+              const isActive = activeId === tabId || (activeId?.toLowerCase() === tabId?.toLowerCase());
+              return (
+                <button
+                  key={tabId}
+                  type="button"
+                  onClick={() => (tabs.onChange ?? tabs.onTabChange)?.(tabId)}
+                  className={cn(
+                    "text-xs font-semibold transition-all relative cursor-pointer pb-3 pt-1 whitespace-nowrap",
+                    isActive
+                      ? "text-[#0066d1] font-bold"
+                      : "text-slate-500 hover:text-slate-800 font-medium"
+                  )}
+                >
+                  {tabLabel}
+                  {isActive && (
+                    <span className="absolute -bottom-[1px] left-0 right-0 h-[2.5px] bg-[#0066d1] rounded-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
         {/* Top Toolbar matching Figma */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           {/* Left: Search & Filter */}

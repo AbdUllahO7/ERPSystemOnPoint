@@ -139,6 +139,15 @@ import AddEditServiceProvider from "../pages/dashboard/Appointments/ServiceProvi
 import ServiceProviderDetails from "../pages/dashboard/Appointments/ServiceProviders/service-provider-details"
 import ProviderCommissionsPage from "../pages/dashboard/Appointments/Commissions/provider-commissions-page"
 import CommissionLedgerPage from "../pages/dashboard/Appointments/Commissions/commission-ledger-page"
+import ReservationsPage from "../pages/dashboard/Reservations/reservations-page"
+import AddEditReservation from "../pages/dashboard/Reservations/add-edit-reservation"
+import ReservationDetails from "../pages/dashboard/Reservations/reservation-details"
+import EventsPage from "../pages/dashboard/Events/events-page"
+import AddEditEvent from "../pages/dashboard/Events/add-edit-event"
+import EventDetails from "../pages/dashboard/Events/event-details"
+import ResourcesPage from "../pages/dashboard/Resources/resources-page"
+import AddEditResource from "../pages/dashboard/Resources/add-edit-resource"
+import ResourceDetails from "../pages/dashboard/Resources/resource-details"
 
 export const router = createBrowserRouter([
   {
@@ -330,6 +339,21 @@ export const router = createBrowserRouter([
 
       { path: "/dashboard/appointments/commission-ledger", element: <CommissionLedgerPage /> },
       { path: "/dashboard/commission-ledger", element: <CommissionLedgerPage /> },
+
+      { path: "/dashboard/reservations", element: <ReservationsPage /> },
+      { path: "/dashboard/reservations/add", element: <AddEditReservation /> },
+      { path: "/dashboard/reservations/edit/:id", element: <AddEditReservation /> },
+      { path: "/dashboard/reservations/:id", element: <ReservationDetails /> },
+
+      { path: "/dashboard/events", element: <EventsPage /> },
+      { path: "/dashboard/events/add", element: <AddEditEvent /> },
+      { path: "/dashboard/events/edit/:id", element: <AddEditEvent /> },
+      { path: "/dashboard/events/:id", element: <EventDetails /> },
+
+      { path: "/dashboard/resources", element: <ResourcesPage /> },
+      { path: "/dashboard/resources/add", element: <AddEditResource /> },
+      { path: "/dashboard/resources/edit/:id", element: <AddEditResource /> },
+      { path: "/dashboard/resources/:id", element: <ResourceDetails /> },
 
       { path: "*", element: <NotFound /> },
     ],
