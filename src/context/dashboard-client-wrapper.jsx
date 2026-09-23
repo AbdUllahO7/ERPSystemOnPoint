@@ -30,6 +30,8 @@ import {
   ReceiptText,
   Ticket,
   CalendarCheck,
+  KeyRound,
+  Car,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
@@ -269,6 +271,21 @@ const sidebarLinks = [
         title: "Resources",
         href: "/dashboard/resources",
         icon: Building2,
+      },
+    ],
+  },
+  {
+    label: "Rentals",
+    items: [
+      {
+        title: "Rental Contracts",
+        href: "/dashboard/rentals",
+        icon: KeyRound,
+      },
+      {
+        title: "Rental Invoices",
+        href: "/dashboard/rentals/invoices",
+        icon: ReceiptText,
       },
     ],
   },

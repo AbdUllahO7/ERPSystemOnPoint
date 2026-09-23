@@ -148,6 +148,12 @@ import EventDetails from "../pages/dashboard/Events/event-details"
 import ResourcesPage from "../pages/dashboard/Resources/resources-page"
 import AddEditResource from "../pages/dashboard/Resources/add-edit-resource"
 import ResourceDetails from "../pages/dashboard/Resources/resource-details"
+import RentalsPage from "../pages/dashboard/Rentals/rentals-page"
+import AddEditRental from "../pages/dashboard/Rentals/add-edit-rental"
+import RentalDetails from "../pages/dashboard/Rentals/rental-details"
+import RentalInvoicesPage from "../pages/dashboard/Rentals/Invoices/rental-invoices-page"
+import AddEditRentalInvoice from "../pages/dashboard/Rentals/Invoices/add-edit-rental-invoice"
+import RentalInvoiceDetails from "../pages/dashboard/Rentals/Invoices/rental-invoice-details"
 
 export const router = createBrowserRouter([
   {
@@ -354,6 +360,16 @@ export const router = createBrowserRouter([
       { path: "/dashboard/resources/add", element: <AddEditResource /> },
       { path: "/dashboard/resources/edit/:id", element: <AddEditResource /> },
       { path: "/dashboard/resources/:id", element: <ResourceDetails /> },
+
+      { path: "/dashboard/rentals", element: <RentalsPage /> },
+      { path: "/dashboard/rentals/add", element: <AddEditRental /> },
+      { path: "/dashboard/rentals/edit/:id", element: <AddEditRental /> },
+      { path: "/dashboard/rentals/:id", element: <RentalDetails /> },
+
+      { path: "/dashboard/rentals/invoices", element: <RentalInvoicesPage /> },
+      { path: "/dashboard/rentals/invoices/add", element: <AddEditRentalInvoice /> },
+      { path: "/dashboard/rentals/invoices/edit/:id", element: <AddEditRentalInvoice /> },
+      { path: "/dashboard/rentals/invoices/:id", element: <RentalInvoiceDetails /> },
 
       { path: "*", element: <NotFound /> },
     ],

@@ -120,20 +120,10 @@ export default function AddEditService() {
       <PageTitle
         title={isEdit ? "Edit Service" : "Add Service"}
         infoText="Configure service details, duration, pricing, and accounting rules"
-        breadcrumb={
-          <>
-            <Link
-              to="/dashboard/appointments/services"
-              className="hover:text-foreground transition-colors"
-            >
-              Services
-            </Link>
-            <span>/</span>
-            <span className="text-foreground">
-              {isEdit ? "Edit Service" : "Add Service"}
-            </span>
-          </>
-        }
+        breadcrumbs={[
+          { label: "Services", href: "/dashboard/appointments/services" },
+          { label: isEdit ? "Edit Service" : "Add Service" },
+        ]}
         actions={
           <div className="flex items-center gap-2.5">
             <Button

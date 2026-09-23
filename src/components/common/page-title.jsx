@@ -1,5 +1,5 @@
 import React from "react";
-import { Info } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   Tooltip,
   TooltipContent,
@@ -14,8 +14,11 @@ import { cn } from "@/lib/utils";
  * @param {Object} props
  * @param {string|React.ReactNode} props.title - Title text
  * @param {string} [props.infoText] - Tooltip description for the info icon
+ * @param {string} [props.infoTooltip] - Alternative prop for tooltip description
  * @param {boolean} [props.showInfo=true] - Whether to show the (i) icon
- * @param {React.ReactNode} [props.breadcrumb] - Breadcrumb component or links
+ * @param {Array<{label: string, href?: string}>} [props.breadcrumbLinks] - Array of breadcrumbs
+ * @param {Array<{label: string, href?: string}>} [props.breadcrumbs] - Alternative prop for breadcrumbs
+ * @param {React.ReactNode} [props.breadcrumb] - Single ReactNode breadcrumb
  * @param {string|React.ReactNode} [props.subtitle] - Optional subtitle
  * @param {React.ReactNode} [props.actions] - Right-side action buttons
  * @param {string} [props.className] - Additional classes
@@ -27,11 +30,13 @@ export function PageTitle({
   showInfo = true,
   breadcrumb,
   breadcrumbs,
+  breadcrumbLinks,
   subtitle,
   actions,
   className = "",
 }) {
   const tooltipText = infoTooltip || infoText || "";
+  const crumbs = breadcrumbLinks || breadcrumbs || (Array.isArray(breadcrumb) ? breadcrumb : null);
 
   return (
     <div
@@ -66,22 +71,22 @@ export function PageTitle({
           )}
         </div>
 
-        {breadcrumbs && Array.isArray(breadcrumbs) ? (
+        {crumbs && Array.isArray(crumbs) && crumbs.length > 0 ? (
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-normal">
-            {breadcrumbs.map((b, i) => (
+            {crumbs.map((b, i) => (
               <React.Fragment key={i}>
                 {i > 0 && <span className="text-slate-400">/</span>}
                 {b.href ? (
-                  <a href={b.href} className="hover:text-[#0066d1] transition-colors">
+                  <Link to={b.href} className="text-slate-500 hover:text-[#0066d1] transition-colors">
                     {b.label}
-                  </a>
+                  </Link>
                 ) : (
                   <span className="text-slate-700 font-medium">{b.label}</span>
                 )}
               </React.Fragment>
             ))}
           </div>
-        ) : breadcrumb ? (
+        ) : breadcrumb && typeof breadcrumb !== "string" ? (
           <div className="flex items-center gap-2 text-xs text-slate-500">
             {breadcrumb}
           </div>

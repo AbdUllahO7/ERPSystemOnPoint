@@ -137,18 +137,10 @@ export default function AppointmentDetails() {
       <PageTitle
         title="Appointment Details"
         infoText="Detailed view and payment schedule for appointment"
-        breadcrumb={
-          <>
-            <Link
-              to="/dashboard/appointments"
-              className="hover:text-foreground transition-colors"
-            >
-              Appointments
-            </Link>
-            <span>/</span>
-            <span className="text-foreground">Appointment Details</span>
-          </>
-        }
+        breadcrumbs={[
+          { label: "Appointments", href: "/dashboard/appointments" },
+          { label: "Appointment Details" },
+        ]}
         actions={
           <Button
             variant="outline"

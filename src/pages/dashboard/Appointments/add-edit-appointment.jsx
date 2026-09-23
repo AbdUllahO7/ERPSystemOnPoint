@@ -182,20 +182,10 @@ export default function AddEditAppointment() {
       <PageTitle
         title={isEdit ? "Edit Appointment" : "Add Appointment"}
         infoText="Fill in appointment and billing details"
-        breadcrumb={
-          <>
-            <Link
-              to="/dashboard/appointments"
-              className="hover:text-foreground transition-colors"
-            >
-              Appointments
-            </Link>
-            <span>/</span>
-            <span className="text-foreground">
-              {isEdit ? "Edit Appointment" : "Add Appointment"}
-            </span>
-          </>
-        }
+        breadcrumbs={[
+          { label: "Appointments", href: "/dashboard/appointments" },
+          { label: isEdit ? "Edit Appointment" : "Add Appointment" },
+        ]}
         actions={
           <div className="flex items-center gap-2.5">
             <Button
