@@ -195,7 +195,8 @@ export function DataView({
     addButton ||
     showViewToggle;
 
-  const hasRowMenu = rowActionsMenu?.length > 0;
+  const hasRowMenu =
+    Boolean(rowActionsMenu?.length) || typeof rowActionsMenu === "function";
   const showActionsColumn = renderRowActions || hasRowMenu || onColumnSettings;
   const showCardsView = Boolean(card) && allowedViews.includes("cards");
   const showTableView = allowedViews.includes("table");
@@ -226,7 +227,11 @@ export function DataView({
               <RowActionsMenu
                 row={row}
                 rowIndex={index}
-                groups={rowActionsMenu}
+                groups={
+                  typeof rowActionsMenu === "function"
+                    ? rowActionsMenu(row, index)
+                    : rowActionsMenu
+                }
               />
             ) : (
               renderCardMenu && (
@@ -402,7 +407,11 @@ export function DataView({
                       <RowActionsMenu
                         row={row}
                         rowIndex={index}
-                        groups={rowActionsMenu}
+                        groups={
+                          typeof rowActionsMenu === "function"
+                            ? rowActionsMenu(row, index)
+                            : rowActionsMenu
+                        }
                       />
                     ) : (
                       renderRowActions?.(row, index)

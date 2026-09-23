@@ -128,6 +128,11 @@ import AddEditProject from "../pages/dashboard/crm/projects/add-edit-project"
 import ProjectDetails from "../pages/dashboard/crm/projects/project-details"
 import AddEditSupplier from "../pages/dashboard/crm/suppliers/add-edit-supplier"
 import SupplierDetails from "../pages/dashboard/crm/suppliers/supplier-details"
+
+import AppointmentsPage from "../pages/dashboard/Appointments/appointments-page"
+import AppointmentDetails from "../pages/dashboard/Appointments/appointment-details"
+import AddEditAppointment from "../pages/dashboard/Appointments/add-edit-appointment"
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -291,6 +296,11 @@ export const router = createBrowserRouter([
       { path: "/dashboard/crm/projects/add", element: <AddEditProject /> },
       { path: "/dashboard/crm/projects/edit/:id", element: <AddEditProject /> },
       { path: "/dashboard/crm/projects/:id", element: <SupplierDetails /> },
+
+      { path: "/dashboard/appointments", element: <AppointmentsPage /> },
+      { path: "/dashboard/appointments/add", element: <AddEditAppointment /> },
+      { path: "/dashboard/appointments/edit/:id", element: <AddEditAppointment /> },
+      { path: "/dashboard/appointments/:id", element: <AppointmentDetails /> },
 
       { path: "*", element: <NotFound /> },
     ],

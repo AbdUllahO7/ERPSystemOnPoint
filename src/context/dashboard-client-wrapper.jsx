@@ -217,6 +217,16 @@ const sidebarLinks = [
       },
     ],
   },
+  {
+    label: "Appointments",
+    items: [
+      {
+        title: "Appointments",
+        href: "/dashboard/appointments",
+        icon: CalendarDays,
+      },
+    ],
+  },
 ];
 
 function NavIconBox({ icon: Icon, active, danger }) {
