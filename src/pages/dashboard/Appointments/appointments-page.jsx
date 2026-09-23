@@ -23,14 +23,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import toast from "react-hot-toast";
 import {
-  getAppointments,
-  getAppointmentStats,
-  deleteAppointment,
-  changeAppointmentStatus,
-  getAppointmentLookups,
-} from "@/services/appointments";
+  useAppointments,
+  useAppointmentLookups,
+  useAppointmentStats,
+  useAppointmentMutations,
+} from "@/features/appointments";
 
 const statusStyles = {
   Completed:
@@ -62,24 +60,17 @@ export default function AppointmentsPage() {
   });
 
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  // Lookups Query
-  const { data: lookupsData } = useQuery({
-    queryKey: ["appointmentLookups"],
-    queryFn: getAppointmentLookups,
-  });
+  // Lookups Query via Feature Hook
+  const { data: lookupsData } = useAppointmentLookups();
   const lookups = lookupsData?.data || {
     statuses: ["All", "Scheduled", "Confirmed", "In Progress", "Completed", "No Show"],
     providers: [],
     services: [],
   };
 
-  // Stats Query
-  const { data: statsData } = useQuery({
-    queryKey: ["appointmentStats"],
-    queryFn: getAppointmentStats,
-  });
+  // Stats Query via Feature Hook
+  const { data: statsData } = useAppointmentStats();
   const stats = statsData?.data || [];
 
   // Params for Appointments Query
@@ -95,48 +86,25 @@ export default function AppointmentsPage() {
     [page, search, activeTab, filters]
   );
 
-  // Appointments Query
-  const { data: appointmentsData, isLoading, refetch } = useQuery({
-    queryKey: ["appointments", params],
-    queryFn: () => getAppointments(params),
-  });
+  // Appointments Query via Feature Hook
+  const { data: appointmentsData, isLoading, refetch } = useAppointments(params);
 
   const displayRows = appointmentsData?.data?.items || [];
   const totalPages = appointmentsData?.data?.totalPages || 1;
 
-  // Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id) => deleteAppointment(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["appointments"]);
-      toast.success("Appointment deleted successfully!");
-      setDeleteRowId(null);
-    },
-    onError: () => {
-      toast.error("Failed to delete appointment!");
-      setDeleteRowId(null);
-    },
-  });
-
-  // Change Status Mutation
-  const statusMutation = useMutation({
-    mutationFn: ({ id, status }) => changeAppointmentStatus({ id, status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["appointments"]);
-      toast.success("Appointment status updated!");
-      setIsStatusDialogOpen(false);
-      setSelectedAppointment(null);
-    },
-    onError: () => {
-      toast.error("Failed to update status!");
-    },
-  });
+  // Delete & Status Mutations via Feature Hook
+  const { deleteAppointment: deleteMutation, changeStatus: statusMutation } = useAppointmentMutations();
 
   const handleStatusChange = () => {
     if (selectedAppointment && newStatus) {
       statusMutation.mutate({
         id: selectedAppointment.id,
         status: newStatus,
+      }, {
+        onSuccess: () => {
+          setIsStatusDialogOpen(false);
+          setSelectedAppointment(null);
+        }
       });
     }
   };

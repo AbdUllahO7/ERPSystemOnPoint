@@ -1,377 +1,383 @@
+import { lazy, Suspense } from "react"
 import { createBrowserRouter } from "react-router-dom"
-import WebsiteLayout from "@/layouts/WebsiteLayout"
 import DashboardLayout from "@/layouts/DashboardLayout"
+import PageSkeleton from "@/components/feedback/PageSkeleton"
 
-import Home from "@/pages/website/Home"
-import About from "@/pages/website/About"
+// ✨ دالة مساعدة لتغليف المكونات بالتحميل الكسول وشاشة التحميل الأنيقة
+const lazyLoad = (importFn) => {
+  const Component = lazy(importFn)
+  return (
+    <Suspense fallback={<PageSkeleton />}>
+      <Component />
+    </Suspense>
+  )
+}
 
-import Users from "../pages/dashboard/Users/Users"
-import DashboardHome from "../pages/dashboard/DashboardHome/dashboard-home"
-import HrDashboardPage from "../pages/dashboard/HrDashboard/hr-dashboard-page"
-import Depatments from "../pages/dashboard/Depatments/depatments-page"
-import DepartmentDetail from "../pages/dashboard/Depatments/_components/deapartment-detail"
-import AddEditDepartment from "../pages/dashboard/Depatments/add-edit-department"
-import Sections from "../pages/dashboard/Sections/sections-page"
-import SectionDetail from "../pages/dashboard/Sections/_components/section-detail"
-import AddEditSection from "../pages/dashboard/Sections/add-edit-section"
-import Offices from "../pages/dashboard/Offices/offices-page"
-import OfficeDetail from "../pages/dashboard/Offices/_components/office-detail"
-import AddEditOffice from "../pages/dashboard/Offices/add-edit-office"
-import Positions from "../pages/dashboard/Positions/positions-page"
-import PositionDetail from "../pages/dashboard/Positions/_components/position-detail"
-import AddEditPosition from "../pages/dashboard/Positions/add-edit-position"
-import NotFound from "../pages/not-found"
-import Employees from "../pages/dashboard/Employees/employees-page"
-import EmployeeDetail from "../pages/dashboard/Employees/_components/employee-detail"
-import ContractDetailPage from "../pages/dashboard/Employees/contract-detail-page"
-import PerformanceDetailPage from "../pages/dashboard/Employees/performance-detail-page"
-import AddEditPerformance from "../pages/dashboard/Employees/add-edit-performance"
-import AddLeavePage from "../pages/dashboard/Employees/add-leave-page"
-import AddEditEmployee from "../pages/dashboard/Employees/add-edit-employee"
-import LeavesPage from "../pages/dashboard/Leaves/leaves-page"
-import AddGlobalLeavePage from "../pages/dashboard/Leaves/add-leave-page"
-import BonusesPage from "../pages/dashboard/Bonuses/bonuses-page"
-import AddBonusPage from "../pages/dashboard/Bonuses/add-bonus-page"
-import DeductionsPage from "../pages/dashboard/Deductions/deductions-page"
-import AddDeductionPage from "../pages/dashboard/Deductions/add-deduction-page"
-import SalariesPage from "../pages/dashboard/Salaries/salaries-page"
-import ContractsPage from "../pages/dashboard/Contracts/contracts-page"
-import AddEditContractPage from "../pages/dashboard/Contracts/add-edit-contract"
-import AttendanceMonthly from "../pages/dashboard/Attendance/AttendanceMonthly"
-import AttendanceDaily from "../pages/dashboard/Attendance/AttendanceDaily"
-import AttendanceErrors from "../pages/dashboard/Attendance/AttendanceErrors"
-import EmployeeDayDetails from "../pages/dashboard/Attendance/EmployeeDayDetails"
-import AttendanceCount from "../pages/dashboard/Attendance/AttendanceCount"
-// import Users from "@/pages/dashboard/Users"
+// 🌐 صفحات عامة
+const About = lazy(() => import("@/pages/website/About"))
+const NotFound = lazy(() => import("../pages/not-found"))
 
-import ItemCategoriesPage from "../pages/dashboard/Inventory/ItemCategories/item-categories-page"
-import AddCategoryPage from "../pages/dashboard/Inventory/ItemCategories/add-category-page"
-import SubcategoriesPage from "../pages/dashboard/Inventory/ItemCategories/subcategories-page"
-import ItemsPage from "../pages/dashboard/Inventory/Items/items-page"
-import AddItemPage from "../pages/dashboard/Inventory/Items/add-item/add-item-page"
-import WarehousesPage from "../pages/dashboard/Inventory/Warehouses/warehouses-page"
-import AddEditWarehouse from "../pages/dashboard/Inventory/Warehouses/add-edit-warehouse"
-import WarehouseDetails from "../pages/dashboard/Inventory/Warehouses/warehouse-details"
+// 👥 المستخدمين واللوحة الرئيسية
+const Users = lazy(() => import("../pages/dashboard/Users/Users"))
+const HrDashboardPage = lazy(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page"))
 
-import TransfersPage from "../pages/dashboard/Inventory/Transfers/transfers-page"
-import TransferDetails from "../pages/dashboard/Inventory/Transfers/transfer-details"
-import AddEditTransfer from "../pages/dashboard/Inventory/Transfers/add-edit-transfer"
-import InventoryDashboard from "../pages/dashboard/Inventory/dashboard/inventory-dashboard"
-import MaterialReportsPage from "../pages/dashboard/Inventory/MaterialReports/material-reports-page"
-import AddMaterialReport from "../pages/dashboard/Inventory/MaterialReports/add-material-report"
-import MaterialReportDetails from "../pages/dashboard/Inventory/MaterialReports/material-report-details"
+// 👔 الموارد البشرية (HR)
+const Depatments = lazy(() => import("../pages/dashboard/Depatments/depatments-page"))
+const DepartmentDetail = lazy(() => import("../pages/dashboard/Depatments/_components/deapartment-detail"))
+const AddEditDepartment = lazy(() => import("../pages/dashboard/Depatments/add-edit-department"))
+const Sections = lazy(() => import("../pages/dashboard/Sections/sections-page"))
+const SectionDetail = lazy(() => import("../pages/dashboard/Sections/_components/section-detail"))
+const AddEditSection = lazy(() => import("../pages/dashboard/Sections/add-edit-section"))
+const Offices = lazy(() => import("../pages/dashboard/Offices/offices-page"))
+const OfficeDetail = lazy(() => import("../pages/dashboard/Offices/_components/office-detail"))
+const AddEditOffice = lazy(() => import("../pages/dashboard/Offices/add-edit-office"))
+const Positions = lazy(() => import("../pages/dashboard/Positions/positions-page"))
+const PositionDetail = lazy(() => import("../pages/dashboard/Positions/_components/position-detail"))
+const AddEditPosition = lazy(() => import("../pages/dashboard/Positions/add-edit-position"))
+const Employees = lazy(() => import("../pages/dashboard/Employees/employees-page"))
+const EmployeeDetail = lazy(() => import("../pages/dashboard/Employees/_components/employee-detail"))
+const ContractDetailPage = lazy(() => import("../pages/dashboard/Employees/contract-detail-page"))
+const PerformanceDetailPage = lazy(() => import("../pages/dashboard/Employees/performance-detail-page"))
+const AddEditPerformance = lazy(() => import("../pages/dashboard/Employees/add-edit-performance"))
+const AddLeavePage = lazy(() => import("../pages/dashboard/Employees/add-leave-page"))
+const AddEditEmployee = lazy(() => import("../pages/dashboard/Employees/add-edit-employee"))
+const LeavesPage = lazy(() => import("../pages/dashboard/Leaves/leaves-page"))
+const AddGlobalLeavePage = lazy(() => import("../pages/dashboard/Leaves/add-leave-page"))
+const BonusesPage = lazy(() => import("../pages/dashboard/Bonuses/bonuses-page"))
+const AddBonusPage = lazy(() => import("../pages/dashboard/Bonuses/add-bonus-page"))
+const DeductionsPage = lazy(() => import("../pages/dashboard/Deductions/deductions-page"))
+const AddDeductionPage = lazy(() => import("../pages/dashboard/Deductions/add-deduction-page"))
+const SalariesPage = lazy(() => import("../pages/dashboard/Salaries/salaries-page"))
+const ContractsPage = lazy(() => import("../pages/dashboard/Contracts/contracts-page"))
+const AddEditContractPage = lazy(() => import("../pages/dashboard/Contracts/add-edit-contract"))
+const AttendanceMonthly = lazy(() => import("../pages/dashboard/Attendance/AttendanceMonthly"))
+const AttendanceDaily = lazy(() => import("../pages/dashboard/Attendance/AttendanceDaily"))
+const AttendanceErrors = lazy(() => import("../pages/dashboard/Attendance/AttendanceErrors"))
+const EmployeeDayDetails = lazy(() => import("../pages/dashboard/Attendance/EmployeeDayDetails"))
+const AttendanceCount = lazy(() => import("../pages/dashboard/Attendance/AttendanceCount"))
 
-import CostCentersPage from "../pages/dashboard/accounting/CostCenters/cost-centers-page"
-import AddEditCostCenter from "../pages/dashboard/accounting/CostCenters/add-edit-cost-center"
-import CostCenterDetails from "../pages/dashboard/accounting/CostCenters/cost-center-details"
+// 📦 المخزون (Inventory)
+const InventoryDashboard = lazy(() => import("../pages/dashboard/Inventory/dashboard/inventory-dashboard"))
+const ItemCategoriesPage = lazy(() => import("../pages/dashboard/Inventory/ItemCategories/item-categories-page"))
+const AddCategoryPage = lazy(() => import("../pages/dashboard/Inventory/ItemCategories/add-category-page"))
+const SubcategoriesPage = lazy(() => import("../pages/dashboard/Inventory/ItemCategories/subcategories-page"))
+const ItemsPage = lazy(() => import("../pages/dashboard/Inventory/Items/items-page"))
+const AddItemPage = lazy(() => import("../pages/dashboard/Inventory/Items/add-item/add-item-page"))
+const WarehousesPage = lazy(() => import("../pages/dashboard/Inventory/Warehouses/warehouses-page"))
+const AddEditWarehouse = lazy(() => import("../pages/dashboard/Inventory/Warehouses/add-edit-warehouse"))
+const WarehouseDetails = lazy(() => import("../pages/dashboard/Inventory/Warehouses/warehouse-details"))
+const TransfersPage = lazy(() => import("../pages/dashboard/Inventory/Transfers/transfers-page"))
+const TransferDetails = lazy(() => import("../pages/dashboard/Inventory/Transfers/transfer-details"))
+const AddEditTransfer = lazy(() => import("../pages/dashboard/Inventory/Transfers/add-edit-transfer"))
+const MaterialReportsPage = lazy(() => import("../pages/dashboard/Inventory/MaterialReports/material-reports-page"))
+const AddMaterialReport = lazy(() => import("../pages/dashboard/Inventory/MaterialReports/add-material-report"))
+const MaterialReportDetails = lazy(() => import("../pages/dashboard/Inventory/MaterialReports/material-report-details"))
 
-import AccountsPage from "../pages/dashboard/accounting/Accounts/accounts-page"
-import AddEditAccount from "../pages/dashboard/accounting/Accounts/add-edit-account"
-import AccountDetails from "../pages/dashboard/accounting/Accounts/account-details"
+// 💰 المحاسبة (Accounting)
+const CostCentersPage = lazy(() => import("../pages/dashboard/accounting/CostCenters/cost-centers-page"))
+const AddEditCostCenter = lazy(() => import("../pages/dashboard/accounting/CostCenters/add-edit-cost-center"))
+const CostCenterDetails = lazy(() => import("../pages/dashboard/accounting/CostCenters/cost-center-details"))
+const AccountsPage = lazy(() => import("../pages/dashboard/accounting/Accounts/accounts-page"))
+const AddEditAccount = lazy(() => import("../pages/dashboard/accounting/Accounts/add-edit-account"))
+const AccountDetails = lazy(() => import("../pages/dashboard/accounting/Accounts/account-details"))
+const ChartOfAccountsPage = lazy(() => import("../pages/dashboard/accounting/ChartOfAccounts/chart-of-accounts-page"))
+const InvoicePatternsPage = lazy(() => import("../pages/dashboard/accounting/InvoicePatterns/invoice-patterns-page"))
+const AddEditInvoicePattern = lazy(() => import("../pages/dashboard/accounting/InvoicePatterns/add-edit-invoice-pattern"))
+const InvoicePatternDetails = lazy(() => import("../pages/dashboard/accounting/InvoicePatterns/invoice-pattern-details"))
+const InvoicesPage = lazy(() => import("../pages/dashboard/accounting/Invoices/invoices-page"))
+const AddEditInvoice = lazy(() => import("../pages/dashboard/accounting/Invoices/add-edit-invoice"))
+const InvoiceDetails = lazy(() => import("../pages/dashboard/accounting/Invoices/invoice-details"))
+const OperatingExpensesPage = lazy(() => import("../pages/dashboard/accounting/OperatingExpenses/operating-expenses-page"))
+const AddEditOperatingExpense = lazy(() => import("../pages/dashboard/accounting/OperatingExpenses/add-edit-operating-expense"))
+const OperatingExpenseDetails = lazy(() => import("../pages/dashboard/accounting/OperatingExpenses/operating-expense-details"))
+const FixedExpensesPage = lazy(() => import("../pages/dashboard/accounting/FixedExpenses/fixed-expenses-page"))
+const AddEditFixedExpense = lazy(() => import("../pages/dashboard/accounting/FixedExpenses/add-edit-fixed-expense"))
+const FixedExpenseDetails = lazy(() => import("../pages/dashboard/accounting/FixedExpenses/fixed-expense-details"))
+const CashBoxesPage = lazy(() => import("../pages/dashboard/accounting/CashBoxes/cash-boxes-page"))
+const AddCashBox = lazy(() => import("../pages/dashboard/accounting/CashBoxes/add-cash-box"))
+const CashBoxDetails = lazy(() => import("../pages/dashboard/accounting/CashBoxes/cash-box-details"))
+const AddMovement = lazy(() => import("../pages/dashboard/accounting/CashBoxes/add-movement"))
+const AllTransactionsPage = lazy(() => import("../pages/dashboard/accounting/CashBoxes/all-transactions-page"))
+const BanksPage = lazy(() => import("../pages/dashboard/accounting/Banks/banks-page"))
+const AddBank = lazy(() => import("../pages/dashboard/accounting/Banks/add-bank"))
+const BankDetails = lazy(() => import("../pages/dashboard/accounting/Banks/bank-details"))
+const AddBankMovement = lazy(() => import("../pages/dashboard/accounting/Banks/add-movement"))
+const AllBankTransactionsPage = lazy(() => import("../pages/dashboard/accounting/Banks/all-transactions-page"))
+const RevenuesPage = lazy(() => import("../pages/dashboard/accounting/Revenues/revenues-page"))
+const RevenueDetails = lazy(() => import("../pages/dashboard/accounting/Revenues/revenue-details"))
+const AddRevenue = lazy(() => import("../pages/dashboard/accounting/Revenues/add-revenue"))
+const AddExpense = lazy(() => import("../pages/dashboard/accounting/Expenses/add-expense"))
+const ExpensesPage = lazy(() => import("../pages/dashboard/accounting/Expenses/expenses-page"))
+const ExpenseDetails = lazy(() => import("../pages/dashboard/accounting/Expenses/expense-details"))
+const JournalEntryPage = lazy(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/journal-entry-page"))
+const AddEditJournalEntry = lazy(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/add-edit-journal-entry"))
+const JournalEntryDetails = lazy(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/journal-entry-details"))
 
-import ChartOfAccountsPage from "../pages/dashboard/accounting/ChartOfAccounts/chart-of-accounts-page"
+// ⚙️ الإعدادات (Settings)
+const SettingsPage = lazy(() => import("../pages/dashboard/settings/settings-page"))
 
-import InvoicePatternsPage from "../pages/dashboard/accounting/InvoicePatterns/invoice-patterns-page"
-import AddEditInvoicePattern from "../pages/dashboard/accounting/InvoicePatterns/add-edit-invoice-pattern"
-import InvoicePatternDetails from "../pages/dashboard/accounting/InvoicePatterns/invoice-pattern-details"
+// 🤝 إدارة علاقات العملاء (CRM)
+const LeadsPage = lazy(() => import("../pages/dashboard/crm/leads/leads-page"))
+const AddEditLead = lazy(() => import("../pages/dashboard/crm/leads/add-edit-lead"))
+const LeadDetails = lazy(() => import("../pages/dashboard/crm/leads/lead-details"))
+const CustomersPage = lazy(() => import("../pages/dashboard/crm/customers/customers-page"))
+const AddEditCustomers = lazy(() => import("../pages/dashboard/crm/customers/add-edit-customers"))
+const CustomerDetails = lazy(() => import("../pages/dashboard/crm/customers/customer-details"))
+const FollowUpsPage = lazy(() => import("../pages/dashboard/crm/follow-up-list/follow-ups-page"))
+const SupplierPage = lazy(() => import("../pages/dashboard/crm/suppliers/supplier-page"))
+const ProjectsPage = lazy(() => import("../pages/dashboard/crm/projects/projects-page"))
+const AddEditProject = lazy(() => import("../pages/dashboard/crm/projects/add-edit-project"))
+const AddEditSupplier = lazy(() => import("../pages/dashboard/crm/suppliers/add-edit-supplier"))
+const SupplierDetails = lazy(() => import("../pages/dashboard/crm/suppliers/supplier-details"))
 
-import InvoicesPage from "../pages/dashboard/accounting/Invoices/invoices-page"
-import AddEditInvoice from "../pages/dashboard/accounting/Invoices/add-edit-invoice"
-import InvoiceDetails from "../pages/dashboard/accounting/Invoices/invoice-details"
+// 📅 المواعيد والخدمات (Appointments)
+const AppointmentsPage = lazy(() => import("../pages/dashboard/Appointments/appointments-page"))
+const AppointmentDetails = lazy(() => import("../pages/dashboard/Appointments/appointment-details"))
+const AddEditAppointment = lazy(() => import("../pages/dashboard/Appointments/add-edit-appointment"))
+const ServicesPage = lazy(() => import("../pages/dashboard/Appointments/Services/services-page"))
+const AddEditService = lazy(() => import("../pages/dashboard/Appointments/Services/add-edit-service"))
+const ServiceProvidersPage = lazy(() => import("../pages/dashboard/Appointments/ServiceProviders/service-providers-page"))
+const AddEditServiceProvider = lazy(() => import("../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider"))
+const ServiceProviderDetails = lazy(() => import("../pages/dashboard/Appointments/ServiceProviders/service-provider-details"))
+const ProviderCommissionsPage = lazy(() => import("../pages/dashboard/Appointments/Commissions/provider-commissions-page"))
+const CommissionLedgerPage = lazy(() => import("../pages/dashboard/Appointments/Commissions/commission-ledger-page"))
 
-import OperatingExpensesPage from "../pages/dashboard/accounting/OperatingExpenses/operating-expenses-page"
-import AddEditOperatingExpense from "../pages/dashboard/accounting/OperatingExpenses/add-edit-operating-expense"
-import OperatingExpenseDetails from "../pages/dashboard/accounting/OperatingExpenses/operating-expense-details"
+// 🛎️ الحجوزات والفعاليات والموارد (Reservations & Events)
+const ReservationsPage = lazy(() => import("../pages/dashboard/Reservations/reservations-page"))
+const AddEditReservation = lazy(() => import("../pages/dashboard/Reservations/add-edit-reservation"))
+const ReservationDetails = lazy(() => import("../pages/dashboard/Reservations/reservation-details"))
+const EventsPage = lazy(() => import("../pages/dashboard/Events/events-page"))
+const AddEditEvent = lazy(() => import("../pages/dashboard/Events/add-edit-event"))
+const EventDetails = lazy(() => import("../pages/dashboard/Events/event-details"))
+const ResourcesPage = lazy(() => import("../pages/dashboard/Resources/resources-page"))
+const AddEditResource = lazy(() => import("../pages/dashboard/Resources/add-edit-resource"))
+const ResourceDetails = lazy(() => import("../pages/dashboard/Resources/resource-details"))
 
-import FixedExpensesPage from "../pages/dashboard/accounting/FixedExpenses/fixed-expenses-page"
-import AddEditFixedExpense from "../pages/dashboard/accounting/FixedExpenses/add-edit-fixed-expense"
-import FixedExpenseDetails from "../pages/dashboard/accounting/FixedExpenses/fixed-expense-details"
-
-import CashBoxesPage from "../pages/dashboard/accounting/CashBoxes/cash-boxes-page"
-import AddCashBox from "../pages/dashboard/accounting/CashBoxes/add-cash-box"
-import CashBoxDetails from "../pages/dashboard/accounting/CashBoxes/cash-box-details"
-import AddMovement from "../pages/dashboard/accounting/CashBoxes/add-movement"
-import AllTransactionsPage from "../pages/dashboard/accounting/CashBoxes/all-transactions-page"
-
-import BanksPage from "../pages/dashboard/accounting/Banks/banks-page"
-import AddBank from "../pages/dashboard/accounting/Banks/add-bank"
-import BankDetails from "../pages/dashboard/accounting/Banks/bank-details"
-import AddBankMovement from "../pages/dashboard/accounting/Banks/add-movement"
-import AllBankTransactionsPage from "../pages/dashboard/accounting/Banks/all-transactions-page"
-
-import RevenuesPage from "../pages/dashboard/accounting/Revenues/revenues-page"
-import RevenueDetails from "../pages/dashboard/accounting/Revenues/revenue-details"
-import AddRevenue from "../pages/dashboard/accounting/Revenues/add-revenue"
-
-import AddExpense from "../pages/dashboard/accounting/Expenses/add-expense"
-import ExpensesPage from "../pages/dashboard/accounting/Expenses/expenses-page"
-import ExpenseDetails from "../pages/dashboard/accounting/Expenses/expense-details"
-
-import JournalEntryPage from "../pages/dashboard/accounting/Bonds/JournalEntry/journal-entry-page"
-import AddEditJournalEntry from "../pages/dashboard/accounting/Bonds/JournalEntry/add-edit-journal-entry"
-import JournalEntryDetails from "../pages/dashboard/accounting/Bonds/JournalEntry/journal-entry-details"
-
-import SettingsPage from "../pages/dashboard/settings/settings-page"
-
-import LeadsPage from "../pages/dashboard/crm/leads/leads-page"
-import AddEditLead from "../pages/dashboard/crm/leads/add-edit-lead"
-import LeadDetails from "../pages/dashboard/crm/leads/lead-details"
-
-import CustomersPage from "../pages/dashboard/crm/customers/customers-page"
-import AddEditCustomers from "../pages/dashboard/crm/customers/add-edit-customers"
-import CustomerDetails from "../pages/dashboard/crm/customers/customer-details"
-
-import FollowUpsPage from "../pages/dashboard/crm/follow-up-list/follow-ups-page"
-import SupplierPage from "../pages/dashboard/crm/suppliers/supplier-page"
-import ProjectsPage from "../pages/dashboard/crm/projects/projects-page"
-import AddEditProject from "../pages/dashboard/crm/projects/add-edit-project"
-import ProjectDetails from "../pages/dashboard/crm/projects/project-details"
-import AddEditSupplier from "../pages/dashboard/crm/suppliers/add-edit-supplier"
-import SupplierDetails from "../pages/dashboard/crm/suppliers/supplier-details"
-
-import AppointmentsPage from "../pages/dashboard/Appointments/appointments-page"
-import AppointmentDetails from "../pages/dashboard/Appointments/appointment-details"
-import AddEditAppointment from "../pages/dashboard/Appointments/add-edit-appointment"
-import ServicesPage from "../pages/dashboard/Appointments/Services/services-page"
-import AddEditService from "../pages/dashboard/Appointments/Services/add-edit-service"
-import ServiceProvidersPage from "../pages/dashboard/Appointments/ServiceProviders/service-providers-page"
-import AddEditServiceProvider from "../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider"
-import ServiceProviderDetails from "../pages/dashboard/Appointments/ServiceProviders/service-provider-details"
-import ProviderCommissionsPage from "../pages/dashboard/Appointments/Commissions/provider-commissions-page"
-import CommissionLedgerPage from "../pages/dashboard/Appointments/Commissions/commission-ledger-page"
-import ReservationsPage from "../pages/dashboard/Reservations/reservations-page"
-import AddEditReservation from "../pages/dashboard/Reservations/add-edit-reservation"
-import ReservationDetails from "../pages/dashboard/Reservations/reservation-details"
-import EventsPage from "../pages/dashboard/Events/events-page"
-import AddEditEvent from "../pages/dashboard/Events/add-edit-event"
-import EventDetails from "../pages/dashboard/Events/event-details"
-import ResourcesPage from "../pages/dashboard/Resources/resources-page"
-import AddEditResource from "../pages/dashboard/Resources/add-edit-resource"
-import ResourceDetails from "../pages/dashboard/Resources/resource-details"
-import RentalsPage from "../pages/dashboard/Rentals/rentals-page"
-import AddEditRental from "../pages/dashboard/Rentals/add-edit-rental"
-import RentalDetails from "../pages/dashboard/Rentals/rental-details"
-import RentalInvoicesPage from "../pages/dashboard/Rentals/Invoices/rental-invoices-page"
-import AddEditRentalInvoice from "../pages/dashboard/Rentals/Invoices/add-edit-rental-invoice"
-import RentalInvoiceDetails from "../pages/dashboard/Rentals/Invoices/rental-invoice-details"
+// 🏢 الإيجارات وفواتيرها (Rentals)
+const RentalsPage = lazy(() => import("../pages/dashboard/Rentals/rentals-page"))
+const AddEditRental = lazy(() => import("../pages/dashboard/Rentals/add-edit-rental"))
+const RentalDetails = lazy(() => import("../pages/dashboard/Rentals/rental-details"))
+const RentalInvoicesPage = lazy(() => import("../pages/dashboard/Rentals/Invoices/rental-invoices-page"))
+const AddEditRentalInvoice = lazy(() => import("../pages/dashboard/Rentals/Invoices/add-edit-rental-invoice"))
+const RentalInvoiceDetails = lazy(() => import("../pages/dashboard/Rentals/Invoices/rental-invoice-details"))
 
 export const router = createBrowserRouter([
   {
     path: "/",
     element: <DashboardLayout />,
     children: [
-      { index: true, element: <HrDashboardPage /> },
-      { path: "about", element: <About /> },
-      { path: "*", element: <NotFound /> },
+      { index: true, element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
+      { path: "about", element: lazyLoad(() => import("@/pages/website/About")) },
+      { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
     ],
   },
   {
     path: "/dashboard",
     element: <DashboardLayout />,
     children: [
-      { index: true, element: <HrDashboardPage /> },
-      { path: "users", element: <Users /> },
-      { path: "/dashboard/hr", element: <HrDashboardPage /> },
-      { path: "/dashboard/hr/departments", element: <Depatments /> },
-      { path: "/dashboard/hr/departments/add", element: <AddEditDepartment /> },
-      { path: "/dashboard/hr/departments/edit/:id", element: <AddEditDepartment /> },
-      { path: "/dashboard/hr/departments/:id", element: <DepartmentDetail /> },
-      { path: "/dashboard/hr/sections", element: <Sections /> },
-      { path: "/dashboard/hr/sections/add", element: <AddEditSection /> },
-      { path: "/dashboard/hr/sections/edit/:id", element: <AddEditSection /> },
-      { path: "/dashboard/hr/sections/:id", element: <SectionDetail /> },
-      { path: "/dashboard/hr/offices", element: <Offices /> },
-      { path: "/dashboard/hr/offices/add", element: <AddEditOffice /> },
-      { path: "/dashboard/hr/offices/edit/:id", element: <AddEditOffice /> },
-      { path: "/dashboard/hr/offices/:id", element: <OfficeDetail /> },
-      { path: "/dashboard/hr/positions", element: <Positions /> },
-      { path: "/dashboard/hr/positions/add", element: <AddEditPosition /> },
-      { path: "/dashboard/hr/positions/edit/:id", element: <AddEditPosition /> },
-      { path: "/dashboard/hr/positions/:id", element: <PositionDetail /> },
-      { path: "/dashboard/hr/employees", element: <Employees /> },
-      { path: "/dashboard/hr/employees/add", element: <AddEditEmployee /> },
-      { path: "/dashboard/hr/employees/edit/:id", element: <AddEditEmployee /> },
-      { path: "/dashboard/hr/employees/:id", element: <EmployeeDetail /> },
-      { path: "/dashboard/hr/employees/:id/add-leave", element: <AddLeavePage /> },
-      { path: "/dashboard/hr/employees/:id/contracts/:contractId", element: <ContractDetailPage /> },
-      { path: "/dashboard/hr/employees/:id/performance/add", element: <AddEditPerformance /> },
-      { path: "/dashboard/hr/employees/:id/performance/:performanceId", element: <PerformanceDetailPage /> },
-      { path: "/dashboard/hr/leaves", element: <LeavesPage /> },
-      { path: "/dashboard/hr/leaves/add", element: <AddGlobalLeavePage /> },
-      { path: "/dashboard/hr/bounces", element: <BonusesPage /> },
-      { path: "/dashboard/hr/bounces/add", element: <AddBonusPage /> },
-      { path: "/dashboard/hr/deductions", element: <DeductionsPage /> },
-      { path: "/dashboard/hr/deductions/add", element: <AddDeductionPage /> },
-      { path: "/dashboard/hr/salaries", element: <SalariesPage /> },
-      { path: "/dashboard/hr/contractes", element: <ContractsPage /> },
-      { path: "/dashboard/hr/contracts/add", element: <AddEditContractPage /> },
-      { path: "/dashboard/hr/contracts/edit/:id", element: <AddEditContractPage /> },
-      { path: "/dashboard/hr/attendance", element: <AttendanceMonthly /> },
-      { path: "/dashboard/hr/attendance/:year/:month", element: <AttendanceDaily /> },
-      { path: "/dashboard/hr/attendance/:year/:month/count", element: <AttendanceCount /> },
-      { path: "/dashboard/hr/attendance/:year/:month/errors", element: <AttendanceErrors /> },
-      { path: "/dashboard/hr/attendance/:year/:month/:date", element: <EmployeeDayDetails /> },
+      { index: true, element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
+      { path: "users", element: lazyLoad(() => import("../pages/dashboard/Users/Users")) },
+      { path: "/dashboard/hr", element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
+      { path: "/dashboard/hr/departments", element: lazyLoad(() => import("../pages/dashboard/Depatments/depatments-page")) },
+      { path: "/dashboard/hr/departments/add", element: lazyLoad(() => import("../pages/dashboard/Depatments/add-edit-department")) },
+      { path: "/dashboard/hr/departments/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Depatments/add-edit-department")) },
+      { path: "/dashboard/hr/departments/:id", element: lazyLoad(() => import("../pages/dashboard/Depatments/_components/deapartment-detail")) },
+      { path: "/dashboard/hr/sections", element: lazyLoad(() => import("../pages/dashboard/Sections/sections-page")) },
+      { path: "/dashboard/hr/sections/add", element: lazyLoad(() => import("../pages/dashboard/Sections/add-edit-section")) },
+      { path: "/dashboard/hr/sections/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Sections/add-edit-section")) },
+      { path: "/dashboard/hr/sections/:id", element: lazyLoad(() => import("../pages/dashboard/Sections/_components/section-detail")) },
+      { path: "/dashboard/hr/offices", element: lazyLoad(() => import("../pages/dashboard/Offices/offices-page")) },
+      { path: "/dashboard/hr/offices/add", element: lazyLoad(() => import("../pages/dashboard/Offices/add-edit-office")) },
+      { path: "/dashboard/hr/offices/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Offices/add-edit-office")) },
+      { path: "/dashboard/hr/offices/:id", element: lazyLoad(() => import("../pages/dashboard/Offices/_components/office-detail")) },
+      { path: "/dashboard/hr/positions", element: lazyLoad(() => import("../pages/dashboard/Positions/positions-page")) },
+      { path: "/dashboard/hr/positions/add", element: lazyLoad(() => import("../pages/dashboard/Positions/add-edit-position")) },
+      { path: "/dashboard/hr/positions/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Positions/add-edit-position")) },
+      { path: "/dashboard/hr/positions/:id", element: lazyLoad(() => import("../pages/dashboard/Positions/_components/position-detail")) },
+      { path: "/dashboard/hr/employees", element: lazyLoad(() => import("../pages/dashboard/Employees/employees-page")) },
+      { path: "/dashboard/hr/employees/add", element: lazyLoad(() => import("../pages/dashboard/Employees/add-edit-employee")) },
+      { path: "/dashboard/hr/employees/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Employees/add-edit-employee")) },
+      { path: "/dashboard/hr/employees/:id", element: lazyLoad(() => import("../pages/dashboard/Employees/_components/employee-detail")) },
+      { path: "/dashboard/hr/employees/:id/add-leave", element: lazyLoad(() => import("../pages/dashboard/Employees/add-leave-page")) },
+      { path: "/dashboard/hr/employees/:id/contracts/:contractId", element: lazyLoad(() => import("../pages/dashboard/Employees/contract-detail-page")) },
+      { path: "/dashboard/hr/employees/:id/performance/add", element: lazyLoad(() => import("../pages/dashboard/Employees/add-edit-performance")) },
+      { path: "/dashboard/hr/employees/:id/performance/:performanceId", element: lazyLoad(() => import("../pages/dashboard/Employees/performance-detail-page")) },
+      { path: "/dashboard/hr/leaves", element: lazyLoad(() => import("../pages/dashboard/Leaves/leaves-page")) },
+      { path: "/dashboard/hr/leaves/add", element: lazyLoad(() => import("../pages/dashboard/Leaves/add-leave-page")) },
+      { path: "/dashboard/hr/bounces", element: lazyLoad(() => import("../pages/dashboard/Bonuses/bonuses-page")) },
+      { path: "/dashboard/hr/bounces/add", element: lazyLoad(() => import("../pages/dashboard/Bonuses/add-bonus-page")) },
+      { path: "/dashboard/hr/deductions", element: lazyLoad(() => import("../pages/dashboard/Deductions/deductions-page")) },
+      { path: "/dashboard/hr/deductions/add", element: lazyLoad(() => import("../pages/dashboard/Deductions/add-deduction-page")) },
+      { path: "/dashboard/hr/salaries", element: lazyLoad(() => import("../pages/dashboard/Salaries/salaries-page")) },
+      { path: "/dashboard/hr/contractes", element: lazyLoad(() => import("../pages/dashboard/Contracts/contracts-page")) },
+      { path: "/dashboard/hr/contracts/add", element: lazyLoad(() => import("../pages/dashboard/Contracts/add-edit-contract")) },
+      { path: "/dashboard/hr/contracts/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Contracts/add-edit-contract")) },
+      { path: "/dashboard/hr/attendance", element: lazyLoad(() => import("../pages/dashboard/Attendance/AttendanceMonthly")) },
+      { path: "/dashboard/hr/attendance/:year/:month", element: lazyLoad(() => import("../pages/dashboard/Attendance/AttendanceDaily")) },
+      { path: "/dashboard/hr/attendance/:year/:month/count", element: lazyLoad(() => import("../pages/dashboard/Attendance/AttendanceCount")) },
+      { path: "/dashboard/hr/attendance/:year/:month/errors", element: lazyLoad(() => import("../pages/dashboard/Attendance/AttendanceErrors")) },
+      { path: "/dashboard/hr/attendance/:year/:month/:date", element: lazyLoad(() => import("../pages/dashboard/Attendance/EmployeeDayDetails")) },
 
-      { path: "/dashboard/inventory", element: <InventoryDashboard /> },
-      { path: "/dashboard/inventory/items-management/categories", element: <ItemCategoriesPage /> },
-      { path: "/dashboard/inventory/items-management/categories/add", element: <AddCategoryPage /> },
-      { path: "/dashboard/inventory/items-management/categories/edit/:id", element: <AddCategoryPage /> },
-      { path: "/dashboard/inventory/items-management/categories/:id/subcategories", element: <SubcategoriesPage /> },
-      { path: "/dashboard/inventory/items-management/categories/:id/related-items", element: <ItemsPage /> },
+      { path: "/dashboard/inventory", element: lazyLoad(() => import("../pages/dashboard/Inventory/dashboard/inventory-dashboard")) },
+      { path: "/dashboard/inventory/items-management/categories", element: lazyLoad(() => import("../pages/dashboard/Inventory/ItemCategories/item-categories-page")) },
+      { path: "/dashboard/inventory/items-management/categories/add", element: lazyLoad(() => import("../pages/dashboard/Inventory/ItemCategories/add-category-page")) },
+      { path: "/dashboard/inventory/items-management/categories/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/ItemCategories/add-category-page")) },
+      { path: "/dashboard/inventory/items-management/categories/:id/subcategories", element: lazyLoad(() => import("../pages/dashboard/Inventory/ItemCategories/subcategories-page")) },
+      { path: "/dashboard/inventory/items-management/categories/:id/related-items", element: lazyLoad(() => import("../pages/dashboard/Inventory/Items/items-page")) },
 
-      { path: "/dashboard/inventory/items-management/items", element: <ItemsPage /> },
-      { path: "/dashboard/inventory/items-management/items/add", element: <AddItemPage /> },
-      { path: "/dashboard/inventory/items-management/items/edit/:id", element: <AddItemPage /> },
+      { path: "/dashboard/inventory/items-management/items", element: lazyLoad(() => import("../pages/dashboard/Inventory/Items/items-page")) },
+      { path: "/dashboard/inventory/items-management/items/add", element: lazyLoad(() => import("../pages/dashboard/Inventory/Items/add-item/add-item-page")) },
+      { path: "/dashboard/inventory/items-management/items/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/Items/add-item/add-item-page")) },
 
-      { path: "/dashboard/inventory/warehouses", element: <WarehousesPage /> },
-      { path: "/dashboard/inventory/warehouses/add", element: <AddEditWarehouse /> },
-      { path: "/dashboard/inventory/warehouses/edit/:id", element: <AddEditWarehouse /> },
-      { path: "/dashboard/inventory/warehouses/:id", element: <WarehouseDetails /> },
+      { path: "/dashboard/inventory/warehouses", element: lazyLoad(() => import("../pages/dashboard/Inventory/Warehouses/warehouses-page")) },
+      { path: "/dashboard/inventory/warehouses/add", element: lazyLoad(() => import("../pages/dashboard/Inventory/Warehouses/add-edit-warehouse")) },
+      { path: "/dashboard/inventory/warehouses/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/Warehouses/add-edit-warehouse")) },
+      { path: "/dashboard/inventory/warehouses/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/Warehouses/warehouse-details")) },
 
-      { path: "/dashboard/inventory/transfers", element: <TransfersPage /> },
-      { path: "/dashboard/inventory/transfers/add", element: <AddEditTransfer /> },
-      { path: "/dashboard/inventory/transfers/edit/:id", element: <AddEditTransfer /> },
-      { path: "/dashboard/inventory/transfers/:id", element: <TransferDetails /> },
+      { path: "/dashboard/inventory/transfers", element: lazyLoad(() => import("../pages/dashboard/Inventory/Transfers/transfers-page")) },
+      { path: "/dashboard/inventory/transfers/add", element: lazyLoad(() => import("../pages/dashboard/Inventory/Transfers/add-edit-transfer")) },
+      { path: "/dashboard/inventory/transfers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/Transfers/add-edit-transfer")) },
+      { path: "/dashboard/inventory/transfers/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/Transfers/transfer-details")) },
 
-      { path: "/dashboard/inventory/material-reports", element: <MaterialReportsPage /> },
-      { path: "/dashboard/inventory/material-reports/add", element: <AddMaterialReport /> },
-      { path: "/dashboard/inventory/material-reports/:id", element: <MaterialReportDetails /> },
+      { path: "/dashboard/inventory/material-reports", element: lazyLoad(() => import("../pages/dashboard/Inventory/MaterialReports/material-reports-page")) },
+      { path: "/dashboard/inventory/material-reports/add", element: lazyLoad(() => import("../pages/dashboard/Inventory/MaterialReports/add-material-report")) },
+      { path: "/dashboard/inventory/material-reports/:id", element: lazyLoad(() => import("../pages/dashboard/Inventory/MaterialReports/material-report-details")) },
 
-      { path: "/dashboard/accounting/cost-centers", element: <CostCentersPage /> },
-      { path: "/dashboard/accounting/cost-centers/add", element: <AddEditCostCenter /> },
-      { path: "/dashboard/accounting/cost-centers/edit/:id", element: <AddEditCostCenter /> },
-      { path: "/dashboard/accounting/cost-centers/:id", element: <CostCenterDetails /> },
+      { path: "/dashboard/accounting/cost-centers", element: lazyLoad(() => import("../pages/dashboard/accounting/CostCenters/cost-centers-page")) },
+      { path: "/dashboard/accounting/cost-centers/add", element: lazyLoad(() => import("../pages/dashboard/accounting/CostCenters/add-edit-cost-center")) },
+      { path: "/dashboard/accounting/cost-centers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/CostCenters/add-edit-cost-center")) },
+      { path: "/dashboard/accounting/cost-centers/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/CostCenters/cost-center-details")) },
 
-      { path: "/dashboard/accounting/accounts", element: <AccountsPage /> },
-      { path: "/dashboard/accounting/accounts/add", element: <AddEditAccount /> },
-      { path: "/dashboard/accounting/accounts/edit/:id", element: <AddEditAccount /> },
-      { path: "/dashboard/accounting/accounts/:id", element: <AccountDetails /> },
+      { path: "/dashboard/accounting/accounts", element: lazyLoad(() => import("../pages/dashboard/accounting/Accounts/accounts-page")) },
+      { path: "/dashboard/accounting/accounts/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Accounts/add-edit-account")) },
+      { path: "/dashboard/accounting/accounts/edit/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Accounts/add-edit-account")) },
+      { path: "/dashboard/accounting/accounts/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Accounts/account-details")) },
       
-      { path: "/dashboard/accounting/chart-of-accounts", element: <ChartOfAccountsPage /> },
+      { path: "/dashboard/accounting/chart-of-accounts", element: lazyLoad(() => import("../pages/dashboard/accounting/ChartOfAccounts/chart-of-accounts-page")) },
 
-      { path: "/dashboard/accounting/basics/invoicing-patterns", element: <InvoicePatternsPage /> },
-      { path: "/dashboard/accounting/invoice-patterns/add", element: <AddEditInvoicePattern /> },
-      { path: "/dashboard/accounting/invoice-patterns/edit/:id", element: <AddEditInvoicePattern /> },
-      { path: "/dashboard/accounting/invoice-patterns/:id", element: <InvoicePatternDetails /> },
+      { path: "/dashboard/accounting/basics/invoicing-patterns", element: lazyLoad(() => import("../pages/dashboard/accounting/InvoicePatterns/invoice-patterns-page")) },
+      { path: "/dashboard/accounting/invoice-patterns/add", element: lazyLoad(() => import("../pages/dashboard/accounting/InvoicePatterns/add-edit-invoice-pattern")) },
+      { path: "/dashboard/accounting/invoice-patterns/edit/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/InvoicePatterns/add-edit-invoice-pattern")) },
+      { path: "/dashboard/accounting/invoice-patterns/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/InvoicePatterns/invoice-pattern-details")) },
 
-      { path: "/dashboard/accounting/invoices", element: <InvoicesPage /> },
-      { path: "/dashboard/accounting/invoices/add", element: <AddEditInvoice /> },
-      { path: "/dashboard/accounting/invoices/:id", element: <InvoiceDetails /> },
+      { path: "/dashboard/accounting/invoices", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/invoices-page")) },
+      { path: "/dashboard/accounting/invoices/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/add-edit-invoice")) },
+      { path: "/dashboard/accounting/invoices/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/invoice-details")) },
 
-      { path: "/dashboard/accounting/operating-expenses", element: <OperatingExpensesPage /> },
-      { path: "/dashboard/accounting/operating-expenses/add", element: <AddEditOperatingExpense /> },
-      { path: "/dashboard/accounting/operating-expenses/edit/:id", element: <AddEditOperatingExpense /> },
-      { path: "/dashboard/accounting/operating-expenses/:id", element: <OperatingExpenseDetails /> },
+      { path: "/dashboard/accounting/operating-expenses", element: lazyLoad(() => import("../pages/dashboard/accounting/OperatingExpenses/operating-expenses-page")) },
+      { path: "/dashboard/accounting/operating-expenses/add", element: lazyLoad(() => import("../pages/dashboard/accounting/OperatingExpenses/add-edit-operating-expense")) },
+      { path: "/dashboard/accounting/operating-expenses/edit/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/OperatingExpenses/add-edit-operating-expense")) },
+      { path: "/dashboard/accounting/operating-expenses/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/OperatingExpenses/operating-expense-details")) },
 
-      { path: "/dashboard/accounting/fixed-expenses", element: <FixedExpensesPage /> },
-      { path: "/dashboard/accounting/fixed-expenses/add", element: <AddEditFixedExpense /> },
-      { path: "/dashboard/accounting/fixed-expenses/edit/:id", element: <AddEditFixedExpense /> },
-      { path: "/dashboard/accounting/fixed-expenses/:id", element: <FixedExpenseDetails /> },
+      { path: "/dashboard/accounting/fixed-expenses", element: lazyLoad(() => import("../pages/dashboard/accounting/FixedExpenses/fixed-expenses-page")) },
+      { path: "/dashboard/accounting/fixed-expenses/add", element: lazyLoad(() => import("../pages/dashboard/accounting/FixedExpenses/add-edit-fixed-expense")) },
+      { path: "/dashboard/accounting/fixed-expenses/edit/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/FixedExpenses/add-edit-fixed-expense")) },
+      { path: "/dashboard/accounting/fixed-expenses/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/FixedExpenses/fixed-expense-details")) },
 
-      { path: "/dashboard/accounting/cash-boxes", element: <CashBoxesPage /> },
-      { path: "/dashboard/accounting/cash-boxes/add", element: <AddCashBox /> },
-      { path: "/dashboard/accounting/cash-boxes/add-movement", element: <AddMovement /> },
-      { path: "/dashboard/accounting/cash-boxes/transactions", element: <AllTransactionsPage /> },
-      { path: "/dashboard/accounting/cash-boxes/:id", element: <CashBoxDetails /> },
-      { path: "/dashboard/accounting/cash-boxes/:id/add-movement", element: <AddMovement /> },
+      { path: "/dashboard/accounting/cash-boxes", element: lazyLoad(() => import("../pages/dashboard/accounting/CashBoxes/cash-boxes-page")) },
+      { path: "/dashboard/accounting/cash-boxes/add", element: lazyLoad(() => import("../pages/dashboard/accounting/CashBoxes/add-cash-box")) },
+      { path: "/dashboard/accounting/cash-boxes/add-movement", element: lazyLoad(() => import("../pages/dashboard/accounting/CashBoxes/add-movement")) },
+      { path: "/dashboard/accounting/cash-boxes/transactions", element: lazyLoad(() => import("../pages/dashboard/accounting/CashBoxes/all-transactions-page")) },
+      { path: "/dashboard/accounting/cash-boxes/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/CashBoxes/cash-box-details")) },
+      { path: "/dashboard/accounting/cash-boxes/:id/add-movement", element: lazyLoad(() => import("../pages/dashboard/accounting/CashBoxes/add-movement")) },
 
-      { path: "/dashboard/accounting/banks", element: <BanksPage /> },
-      { path: "/dashboard/accounting/banks/add", element: <AddBank /> },
-      { path: "/dashboard/accounting/banks/add-movement", element: <AddBankMovement /> },
-      { path: "/dashboard/accounting/banks/transactions", element: <AllBankTransactionsPage /> },
-      { path: "/dashboard/accounting/banks/:id", element: <BankDetails /> },
-      { path: "/dashboard/accounting/banks/:id/add-movement", element: <AddBankMovement /> },
+      { path: "/dashboard/accounting/banks", element: lazyLoad(() => import("../pages/dashboard/accounting/Banks/banks-page")) },
+      { path: "/dashboard/accounting/banks/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Banks/add-bank")) },
+      { path: "/dashboard/accounting/banks/add-movement", element: lazyLoad(() => import("../pages/dashboard/accounting/Banks/add-movement")) },
+      { path: "/dashboard/accounting/banks/transactions", element: lazyLoad(() => import("../pages/dashboard/accounting/Banks/all-transactions-page")) },
+      { path: "/dashboard/accounting/banks/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Banks/bank-details")) },
+      { path: "/dashboard/accounting/banks/:id/add-movement", element: lazyLoad(() => import("../pages/dashboard/accounting/Banks/add-movement")) },
 
-      { path: "/dashboard/accounting/revenues", element: <RevenuesPage /> },
-      { path: "/dashboard/accounting/revenues/add", element: <AddRevenue /> },
-      { path: "/dashboard/accounting/revenues/:id", element: <RevenueDetails /> },
+      { path: "/dashboard/accounting/revenues", element: lazyLoad(() => import("../pages/dashboard/accounting/Revenues/revenues-page")) },
+      { path: "/dashboard/accounting/revenues/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Revenues/add-revenue")) },
+      { path: "/dashboard/accounting/revenues/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Revenues/revenue-details")) },
 
-      { path: "/dashboard/accounting/expenses", element: <ExpensesPage /> },
-      { path: "/dashboard/accounting/expenses/add", element: <AddExpense /> },
-      { path: "/dashboard/accounting/expenses/:id", element: <ExpenseDetails /> },
+      { path: "/dashboard/accounting/expenses", element: lazyLoad(() => import("../pages/dashboard/accounting/Expenses/expenses-page")) },
+      { path: "/dashboard/accounting/expenses/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Expenses/add-expense")) },
+      { path: "/dashboard/accounting/expenses/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Expenses/expense-details")) },
 
-      { path: "/dashboard/accounting/bonds/journal-entry", element: <JournalEntryPage /> },
-      { path: "/dashboard/accounting/bonds/journal-entry/add", element: <AddEditJournalEntry /> },
-      { path: "/dashboard/accounting/bonds/journal-entry/edit/:id", element: <AddEditJournalEntry /> },
-      { path: "/dashboard/accounting/bonds/journal-entry/:id", element: <JournalEntryDetails /> },
+      { path: "/dashboard/accounting/bonds/journal-entry", element: lazyLoad(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/journal-entry-page")) },
+      { path: "/dashboard/accounting/bonds/journal-entry/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/add-edit-journal-entry")) },
+      { path: "/dashboard/accounting/bonds/journal-entry/edit/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/add-edit-journal-entry")) },
+      { path: "/dashboard/accounting/bonds/journal-entry/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Bonds/JournalEntry/journal-entry-details")) },
 
-      { path: "/dashboard/settings", element: <SettingsPage /> },
+      { path: "/dashboard/settings", element: lazyLoad(() => import("../pages/dashboard/settings/settings-page")) },
 
-      { path: "/dashboard/crm/leads", element: <LeadsPage /> },
-      { path: "/dashboard/crm/leads/add", element: <AddEditLead /> },
-      { path: "/dashboard/crm/leads/edit/:id", element: <AddEditLead /> },
-      { path: "/dashboard/crm/leads/:id", element: <LeadDetails /> },
+      { path: "/dashboard/crm/leads", element: lazyLoad(() => import("../pages/dashboard/crm/leads/leads-page")) },
+      { path: "/dashboard/crm/leads/add", element: lazyLoad(() => import("../pages/dashboard/crm/leads/add-edit-lead")) },
+      { path: "/dashboard/crm/leads/edit/:id", element: lazyLoad(() => import("../pages/dashboard/crm/leads/add-edit-lead")) },
+      { path: "/dashboard/crm/leads/:id", element: lazyLoad(() => import("../pages/dashboard/crm/leads/lead-details")) },
 
-      { path: "/dashboard/crm/customers", element: <CustomersPage /> },
-      { path: "/dashboard/crm/customers/add", element: <AddEditCustomers /> },
-      { path: "/dashboard/crm/customers/edit/:id", element: <AddEditCustomers /> },
-      { path: "/dashboard/crm/customers/:id", element: <CustomerDetails /> },
+      { path: "/dashboard/crm/customers", element: lazyLoad(() => import("../pages/dashboard/crm/customers/customers-page")) },
+      { path: "/dashboard/crm/customers/add", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customers")) },
+      { path: "/dashboard/crm/customers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customers")) },
+      { path: "/dashboard/crm/customers/:id", element: lazyLoad(() => import("../pages/dashboard/crm/customers/customer-details")) },
 
-      { path: "/dashboard/crm/follow-up-list", element: <FollowUpsPage /> },
+      { path: "/dashboard/crm/follow-up-list", element: lazyLoad(() => import("../pages/dashboard/crm/follow-up-list/follow-ups-page")) },
 
-      { path: "/dashboard/crm/suppliers", element: <SupplierPage /> },
-      { path: "/dashboard/crm/suppliers/add", element: <AddEditSupplier /> },
-      { path: "/dashboard/crm/suppliers/edit/:id", element: <AddEditSupplier /> },
-      { path: "/dashboard/crm/suppliers/:id", element: <SupplierDetails /> },
+      { path: "/dashboard/crm/suppliers", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/supplier-page")) },
+      { path: "/dashboard/crm/suppliers/add", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/add-edit-supplier")) },
+      { path: "/dashboard/crm/suppliers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/add-edit-supplier")) },
+      { path: "/dashboard/crm/suppliers/:id", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/supplier-details")) },
 
-      { path: "/dashboard/crm/projects", element: <ProjectsPage /> },
-      { path: "/dashboard/crm/projects/add", element: <AddEditProject /> },
-      { path: "/dashboard/crm/projects/edit/:id", element: <AddEditProject /> },
-      { path: "/dashboard/crm/projects/:id", element: <SupplierDetails /> },
+      { path: "/dashboard/crm/projects", element: lazyLoad(() => import("../pages/dashboard/crm/projects/projects-page")) },
+      { path: "/dashboard/crm/projects/add", element: lazyLoad(() => import("../pages/dashboard/crm/projects/add-edit-project")) },
+      { path: "/dashboard/crm/projects/edit/:id", element: lazyLoad(() => import("../pages/dashboard/crm/projects/add-edit-project")) },
+      { path: "/dashboard/crm/projects/:id", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/supplier-details")) },
 
-      { path: "/dashboard/appointments", element: <AppointmentsPage /> },
-      { path: "/dashboard/appointments/add", element: <AddEditAppointment /> },
-      { path: "/dashboard/appointments/edit/:id", element: <AddEditAppointment /> },
-      { path: "/dashboard/appointments/:id", element: <AppointmentDetails /> },
+      { path: "/dashboard/appointments", element: lazyLoad(() => import("../pages/dashboard/Appointments/appointments-page")) },
+      { path: "/dashboard/appointments/add", element: lazyLoad(() => import("../pages/dashboard/Appointments/add-edit-appointment")) },
+      { path: "/dashboard/appointments/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/add-edit-appointment")) },
+      { path: "/dashboard/appointments/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/appointment-details")) },
 
-      { path: "/dashboard/appointments/services", element: <ServicesPage /> },
-      { path: "/dashboard/appointments/services/add", element: <AddEditService /> },
-      { path: "/dashboard/appointments/services/edit/:id", element: <AddEditService /> },
-      { path: "/dashboard/services", element: <ServicesPage /> },
-      { path: "/dashboard/services/add", element: <AddEditService /> },
-      { path: "/dashboard/services/edit/:id", element: <AddEditService /> },
+      { path: "/dashboard/appointments/services", element: lazyLoad(() => import("../pages/dashboard/Appointments/Services/services-page")) },
+      { path: "/dashboard/appointments/services/add", element: lazyLoad(() => import("../pages/dashboard/Appointments/Services/add-edit-service")) },
+      { path: "/dashboard/appointments/services/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/Services/add-edit-service")) },
+      { path: "/dashboard/services", element: lazyLoad(() => import("../pages/dashboard/Appointments/Services/services-page")) },
+      { path: "/dashboard/services/add", element: lazyLoad(() => import("../pages/dashboard/Appointments/Services/add-edit-service")) },
+      { path: "/dashboard/services/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/Services/add-edit-service")) },
 
-      { path: "/dashboard/appointments/service-providers", element: <ServiceProvidersPage /> },
-      { path: "/dashboard/appointments/service-providers/add", element: <AddEditServiceProvider /> },
-      { path: "/dashboard/appointments/service-providers/edit/:id", element: <AddEditServiceProvider /> },
-      { path: "/dashboard/appointments/service-providers/:id", element: <ServiceProviderDetails /> },
-      { path: "/dashboard/service-providers", element: <ServiceProvidersPage /> },
-      { path: "/dashboard/service-providers/add", element: <AddEditServiceProvider /> },
-      { path: "/dashboard/service-providers/edit/:id", element: <AddEditServiceProvider /> },
-      { path: "/dashboard/service-providers/:id", element: <ServiceProviderDetails /> },
+      { path: "/dashboard/appointments/service-providers", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/service-providers-page")) },
+      { path: "/dashboard/appointments/service-providers/add", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider")) },
+      { path: "/dashboard/appointments/service-providers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider")) },
+      { path: "/dashboard/appointments/service-providers/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/service-provider-details")) },
+      { path: "/dashboard/service-providers", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/service-providers-page")) },
+      { path: "/dashboard/service-providers/add", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider")) },
+      { path: "/dashboard/service-providers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/add-edit-service-provider")) },
+      { path: "/dashboard/service-providers/:id", element: lazyLoad(() => import("../pages/dashboard/Appointments/ServiceProviders/service-provider-details")) },
 
-      { path: "/dashboard/appointments/provider-commissions", element: <ProviderCommissionsPage /> },
-      { path: "/dashboard/provider-commissions", element: <ProviderCommissionsPage /> },
+      { path: "/dashboard/appointments/provider-commissions", element: lazyLoad(() => import("../pages/dashboard/Appointments/Commissions/provider-commissions-page")) },
+      { path: "/dashboard/provider-commissions", element: lazyLoad(() => import("../pages/dashboard/Appointments/Commissions/provider-commissions-page")) },
 
-      { path: "/dashboard/appointments/commission-ledger", element: <CommissionLedgerPage /> },
-      { path: "/dashboard/commission-ledger", element: <CommissionLedgerPage /> },
+      { path: "/dashboard/appointments/commission-ledger", element: lazyLoad(() => import("../pages/dashboard/Appointments/Commissions/commission-ledger-page")) },
+      { path: "/dashboard/commission-ledger", element: lazyLoad(() => import("../pages/dashboard/Appointments/Commissions/commission-ledger-page")) },
 
-      { path: "/dashboard/reservations", element: <ReservationsPage /> },
-      { path: "/dashboard/reservations/add", element: <AddEditReservation /> },
-      { path: "/dashboard/reservations/edit/:id", element: <AddEditReservation /> },
-      { path: "/dashboard/reservations/:id", element: <ReservationDetails /> },
+      { path: "/dashboard/reservations", element: lazyLoad(() => import("../pages/dashboard/Reservations/reservations-page")) },
+      { path: "/dashboard/reservations/add", element: lazyLoad(() => import("../pages/dashboard/Reservations/add-edit-reservation")) },
+      { path: "/dashboard/reservations/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Reservations/add-edit-reservation")) },
+      { path: "/dashboard/reservations/:id", element: lazyLoad(() => import("../pages/dashboard/Reservations/reservation-details")) },
 
-      { path: "/dashboard/events", element: <EventsPage /> },
-      { path: "/dashboard/events/add", element: <AddEditEvent /> },
-      { path: "/dashboard/events/edit/:id", element: <AddEditEvent /> },
-      { path: "/dashboard/events/:id", element: <EventDetails /> },
+      { path: "/dashboard/events", element: lazyLoad(() => import("../pages/dashboard/Events/events-page")) },
+      { path: "/dashboard/events/add", element: lazyLoad(() => import("../pages/dashboard/Events/add-edit-event")) },
+      { path: "/dashboard/events/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Events/add-edit-event")) },
+      { path: "/dashboard/events/:id", element: lazyLoad(() => import("../pages/dashboard/Events/event-details")) },
 
-      { path: "/dashboard/resources", element: <ResourcesPage /> },
-      { path: "/dashboard/resources/add", element: <AddEditResource /> },
-      { path: "/dashboard/resources/edit/:id", element: <AddEditResource /> },
-      { path: "/dashboard/resources/:id", element: <ResourceDetails /> },
+      { path: "/dashboard/resources", element: lazyLoad(() => import("../pages/dashboard/Resources/resources-page")) },
+      { path: "/dashboard/resources/add", element: lazyLoad(() => import("../pages/dashboard/Resources/add-edit-resource")) },
+      { path: "/dashboard/resources/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Resources/add-edit-resource")) },
+      { path: "/dashboard/resources/:id", element: lazyLoad(() => import("../pages/dashboard/Resources/resource-details")) },
 
-      { path: "/dashboard/rentals", element: <RentalsPage /> },
-      { path: "/dashboard/rentals/add", element: <AddEditRental /> },
-      { path: "/dashboard/rentals/edit/:id", element: <AddEditRental /> },
-      { path: "/dashboard/rentals/:id", element: <RentalDetails /> },
+      { path: "/dashboard/rentals", element: lazyLoad(() => import("../pages/dashboard/Rentals/rentals-page")) },
+      { path: "/dashboard/rentals/add", element: lazyLoad(() => import("../pages/dashboard/Rentals/add-edit-rental")) },
+      { path: "/dashboard/rentals/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Rentals/add-edit-rental")) },
+      { path: "/dashboard/rentals/:id", element: lazyLoad(() => import("../pages/dashboard/Rentals/rental-details")) },
 
-      { path: "/dashboard/rentals/invoices", element: <RentalInvoicesPage /> },
-      { path: "/dashboard/rentals/invoices/add", element: <AddEditRentalInvoice /> },
-      { path: "/dashboard/rentals/invoices/edit/:id", element: <AddEditRentalInvoice /> },
-      { path: "/dashboard/rentals/invoices/:id", element: <RentalInvoiceDetails /> },
+      { path: "/dashboard/rentals/invoices", element: lazyLoad(() => import("../pages/dashboard/Rentals/Invoices/rental-invoices-page")) },
+      { path: "/dashboard/rentals/invoices/add", element: lazyLoad(() => import("../pages/dashboard/Rentals/Invoices/add-edit-rental-invoice")) },
+      { path: "/dashboard/rentals/invoices/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Rentals/Invoices/add-edit-rental-invoice")) },
+      { path: "/dashboard/rentals/invoices/:id", element: lazyLoad(() => import("../pages/dashboard/Rentals/Invoices/rental-invoice-details")) },
 
-      { path: "*", element: <NotFound /> },
+      { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
     ],
   },
 ])

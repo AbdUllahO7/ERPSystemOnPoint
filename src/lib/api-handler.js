@@ -1,13 +1,16 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-// ✨ إنشاء Axios instance
+// ✨ إنشاء Axios instance بمواصفات أمان ومهلة زمنية
 const api = axios.create({
-  baseURL: "https://apierp.onpoint-teasting.com/api/",
-
+  baseURL: import.meta.env.VITE_API_URL || "https://apierp.onpoint-teasting.com/api/",
+  timeout: 20000, // 20 ثانية مهلة زمنية للطلب لمنع تعليق المتصفح
+  headers: {
+    "Accept": "application/json",
+  },
 });
 
-// ✨ إضافة Interceptor للطلبات
+// ✨ إضافة Interceptor للطلبات وتمرير التوكن
 api.interceptors.request.use((config) => {
   const token = Cookies.get("token");
 
@@ -15,36 +18,55 @@ api.interceptors.request.use((config) => {
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    
   }
 
   return config;
+}, (error) => {
+  return Promise.reject(error);
 });
 
+// ✨ إضافة Interceptor للاستجابات ومعالجة انتهاء الجلسة
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // في حال انتهاء صلاحية الجلسة (401)
+    if (error?.response?.status === 401) {
+      console.warn("Session expired or unauthorized request.");
+      // يمكن توجيه المستخدم لصفحة تسجيل الدخول إذا لم نكن فيها بالفعل
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/auth")) {
+        // window.location.href = "/auth/sign-in";
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 /**
- * دالة عامة للتعامل مع الـ API
+ * دالة عامة للتعامل مع الـ API مع دعم الإلغاء والمهلة
  * @param {Object} options
  * @param {string} options.endPoint - عنوان الـ API
  * @param {string} [options.method="GET"] - نوع الطلب (GET, POST, PUT, DELETE...)
  * @param {Object|FormData} [options.body] - البيانات المرسلة
- * @param {Object} [options.params] - البراميترز
+ * @param {Object} [options.params] - معاملات البحث والترقيم
+ * @param {AbortSignal} [options.signal] - إشارة إلغاء الطلب عند مغادرة الصفحة
+ * @param {Object} [options.headers] - ترويسات إضافية
  * @returns {Promise<any>} - نتيجة الاستجابة
  */
-export const apiHandler = async ({ endPoint, method = "GET", body, params }) => {
+export const apiHandler = async ({ endPoint, method = "GET", body, params, signal, headers = {} }) => {
   try {
     const config = {
       method,
       url: endPoint,
       params,
+      signal,
+      headers: { ...headers },
     };
 
-    // لو الطلب مش GET وفيه body
     if (method !== "GET" && body) {
       config.data = body;
 
-      // لو body عبارة عن FormData، احذف Content-Type
+      // لو body عبارة عن FormData، دع Axios يضبط الـ Boundary تلقائياً
       if (body instanceof FormData) {
-        config.headers = config.headers || {};
         delete config.headers["Content-Type"];
       }
     }
@@ -52,32 +74,33 @@ export const apiHandler = async ({ endPoint, method = "GET", body, params }) => 
     const response = await api.request(config);
     return response.data;
   } catch (error) {
-  console.error("API Error:", error);
-
-  if (axios.isAxiosError(error)) {
-    const errorData = error?.response?.data;
-
-    // طباعة البيانات اللي جاية من الباك لمراجعتها
-    console.log("Backend Error Response:", errorData);
-
-    // استخراج الرسالة من الباك إند
-    let message = "An unexpected error occurred";
-
-    if (errorData?.errors) {
-      message = Object.values(errorData.errors).flat().join("\n");
-    } else if (errorData?.msg || errorData?.message || errorData?.Message) {
-      message = errorData.msg || errorData.message || errorData.Message;
-    } else if (errorData?.title) {
-      message = errorData.title;
-    } else if (typeof errorData === 'string') {
-      message = errorData;
+    if (axios.isCancel(error)) {
+      console.log("Request canceled:", endPoint);
+      throw error;
     }
 
-    // نرمي الرسالة زي ما جاية من الباك
-    throw new Error(typeof message === 'string' ? message : JSON.stringify(message));
-  }
+    if (axios.isAxiosError(error)) {
+      const errorData = error?.response?.data;
 
-  // لو مش Axios Error
-  throw error;
-}
+      let message = "حدث خطأ غير متوقع في الاتصال بالخادم";
+
+      if (errorData?.errors) {
+        message = Object.values(errorData.errors).flat().join("\n");
+      } else if (errorData?.msg || errorData?.message || errorData?.Message) {
+        message = errorData.msg || errorData.message || errorData.Message;
+      } else if (errorData?.title) {
+        message = errorData.title;
+      } else if (typeof errorData === "string") {
+        message = errorData;
+      } else if (error.code === "ECONNABORTED") {
+        message = "انتهت المهلة الزمنية للاتصال بالخادم، يرجى المحاولة لاحقاً";
+      }
+
+      throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+    }
+
+    throw error;
+  }
 };
+
+export default api;

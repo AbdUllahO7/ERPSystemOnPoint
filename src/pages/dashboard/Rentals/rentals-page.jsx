@@ -16,12 +16,12 @@ import {
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
 import {
-  getRentals,
-  getRentalsStats,
-  deleteRental,
   RENTAL_STATUS_TABS,
-  getRentalLookups,
-} from "@/services/rentals";
+  useRentals,
+  useRentalLookups,
+  useRentalStats,
+  useRentalMutations,
+} from "@/features/rentals";
 
 export default function RentalsPage() {
   const [search, setSearch] = useState("");
@@ -33,13 +33,9 @@ export default function RentalsPage() {
   const [selectedResource, setSelectedResource] = useState("all");
 
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  // Lookups Query
-  const { data: lookupsData } = useQuery({
-    queryKey: ["rentalLookups"],
-    queryFn: getRentalLookups,
-  });
+  // Lookups Query via Feature Hook
+  const { data: lookupsData } = useRentalLookups();
   const lookups = lookupsData?.data || {
     resources: [],
     services: [],
@@ -49,11 +45,8 @@ export default function RentalsPage() {
     statuses: [],
   };
 
-  // Stats Query
-  const { data: statsData } = useQuery({
-    queryKey: ["rentalsStats"],
-    queryFn: getRentalsStats,
-  });
+  // Stats Query via Feature Hook
+  const { data: statsData } = useRentalStats();
   const stats = statsData?.data || [];
 
   // Params for Rentals Query
@@ -69,32 +62,18 @@ export default function RentalsPage() {
     [page, search, activeTab, selectedService, selectedResource]
   );
 
-  // Rentals Query
+  // Rentals Query via Feature Hook
   const {
     data: rentalsData,
     isLoading,
     refetch,
-  } = useQuery({
-    queryKey: ["rentals", params],
-    queryFn: () => getRentals(params),
-  });
+  } = useRentals(params);
 
   const displayRows = rentalsData?.data?.items || [];
   const totalPages = rentalsData?.data?.totalPages || 1;
 
-  // Delete Mutation
-  const deleteMutation = useMutation({
-    mutationFn: (id) => deleteRental(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["rentals"]);
-      toast.success("Rental contract deleted successfully!");
-      setDeleteRowId(null);
-    },
-    onError: () => {
-      toast.error("Failed to delete rental contract!");
-      setDeleteRowId(null);
-    },
-  });
+  // Mutations via Feature Hook
+  const { deleteRental: deleteMutation } = useRentalMutations();
 
   const getStatusBadge = (status) => {
     const s = String(status || "").toLowerCase();
