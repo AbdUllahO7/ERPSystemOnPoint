@@ -1,21 +1,24 @@
-import { Outlet, NavLink } from "react-router-dom"
-import { LanguageSwitcher } from "../components/common/LanguageSwitcher"
+import React from "react";
+import { Outlet } from "react-router-dom";
+import StoreHeader from "@/components/storefront/StoreHeader";
+import StoreFooter from "@/components/storefront/StoreFooter";
 import { useI18n } from "../context/translate-api";
 
 export default function WebsiteLayout() {
-  const { t  } = useI18n();
- 
+  const { locale } = useI18n();
+
   return (
-    <div className="border-2 border-red-500" dir={t?.direction}>
-      <nav style={{ display: "flex", gap: 12, padding: 12 }}>
-        <LanguageSwitcher />
-        <NavLink className="border-b-2 border-blue-500" to="/">{t.Ai}</NavLink>
-        <NavLink className={({ isActive }) => isActive ? "active" : ""} to="/about">About</NavLink>
-        <NavLink className={({ isActive }) => isActive ? "active" : ""} to="/dashboard">Dashboard</NavLink>
-      </nav>
-      <main>
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden flex flex-col bg-[#f8fafc] text-slate-900 font-sans" dir={locale === "ar" ? "rtl" : "ltr"}>
+      {/* 1. Global Storefront Header */}
+      <StoreHeader />
+
+      {/* 2. Page Content */}
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Outlet />
       </main>
+
+      {/* 3. Global Storefront Footer */}
+      <StoreFooter />
     </div>
-  )
+  );
 }

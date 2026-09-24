@@ -68,6 +68,21 @@ export const queryKeys = {
     expenses: (filters = {}) => ['accounting', 'expenses', filters],
     reports: (filters = {}) => ['accounting', 'reports', filters],
   },
+
+  // 🛒 المتجر الإلكتروني (E-Commerce)
+  ecommerce: {
+    all: ['ecommerce'],
+    categories: () => ['ecommerce', 'categories'],
+    heroBanner: () => ['ecommerce', 'banners', 'hero'],
+    promoBanner: () => ['ecommerce', 'banners', 'promo'],
+    recentProducts: (params = {}) => ['ecommerce', 'products', 'recent', params],
+    saleProducts: (params = {}) => ['ecommerce', 'products', 'on-sale', params],
+    bestsellerProducts: (params = {}) => ['ecommerce', 'products', 'bestsellers', params],
+    shopProducts: (params = {}) => ['ecommerce', 'products', 'shop', params],
+    filterOptions: () => ['ecommerce', 'filters'],
+    productDetails: (id) => ['ecommerce', 'products', 'detail', id],
+    relatedProducts: (id, params = {}) => ['ecommerce', 'products', 'related', id, params],
+  },
 };
 
 export default queryKeys;
