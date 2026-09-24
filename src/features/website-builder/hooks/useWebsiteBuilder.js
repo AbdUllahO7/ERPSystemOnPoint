@@ -4,8 +4,8 @@ import {
   DEFAULT_COMPANY_SECTIONS,
   DEFAULT_ECOMMERCE_SECTIONS,
   INITIAL_BUILDER_STATE,
-} from "./website-builder.constants";
-import { websiteBuilderApi } from "./api/website-builder.api";
+} from "../website-builder.constants";
+import { websiteBuilderApi } from "../api/website-builder.api";
 import toast from "react-hot-toast";
 
 export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BUILDER_STATE } = {}) {
