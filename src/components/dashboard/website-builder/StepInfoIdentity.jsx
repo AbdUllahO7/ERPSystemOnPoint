@@ -7,14 +7,19 @@ export function StepInfoIdentity({
   identity,
   onUpdateInfo,
   onUpdateIdentity,
+  onUploadLogo,
 }) {
   const fileInputRef = useRef(null);
 
-  const handleFileChange = (e) => {
+  const handleFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      onUpdateIdentity("logoUrl", url);
+      if (onUploadLogo) {
+        await onUploadLogo(file);
+      } else {
+        const url = URL.createObjectURL(file);
+        onUpdateIdentity("logoUrl", url);
+      }
     }
   };
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   WebsiteBuilderStepper,
   WebsiteBuilderActions,
@@ -12,6 +12,9 @@ import { useWebsiteBuilder, WEBSITE_TYPES } from "@/features/website-builder";
 
 export function WebsiteBuilderPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get("id");
+
   const {
     currentStep,
     websiteType,
@@ -19,22 +22,24 @@ export function WebsiteBuilderPage() {
     identity,
     sections,
     subdomain,
+    isLoading,
     isSubmitting,
     setSubdomain,
     handleSelectWebsiteType,
     handleUpdateInfo,
     handleUpdateIdentity,
+    handleUploadLogo,
     handleMoveSection,
     handleToggleSection,
     goToNextStep,
     goToPreviousStep,
     goToStep,
     handlePublish,
-  } = useWebsiteBuilder();
+  } = useWebsiteBuilder({ websiteId: editId });
 
   const onPublishComplete = (result) => {
     // Navigate to preview or websites dashboard
-    if (result.websiteType === WEBSITE_TYPES.COMPANY) {
+    if (result.type === WEBSITE_TYPES.COMPANY || result.websiteType === WEBSITE_TYPES.COMPANY) {
       navigate("/profile");
     } else {
       navigate("/");
@@ -81,6 +86,7 @@ export function WebsiteBuilderPage() {
               identity={identity}
               onUpdateInfo={handleUpdateInfo}
               onUpdateIdentity={handleUpdateIdentity}
+              onUploadLogo={handleUploadLogo}
             />
           )}
 

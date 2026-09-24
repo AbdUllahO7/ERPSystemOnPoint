@@ -1,20 +1,51 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   WEBSITE_TYPES,
   DEFAULT_COMPANY_SECTIONS,
   DEFAULT_ECOMMERCE_SECTIONS,
   INITIAL_BUILDER_STATE,
 } from "./website-builder.constants";
+import { websiteBuilderApi } from "./api/website-builder.api";
 import toast from "react-hot-toast";
 
-export function useWebsiteBuilder(initialConfig = INITIAL_BUILDER_STATE) {
+export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BUILDER_STATE } = {}) {
   const [currentStep, setCurrentStep] = useState(1);
   const [websiteType, setWebsiteType] = useState(initialConfig.type || WEBSITE_TYPES.COMPANY);
   const [info, setInfo] = useState(initialConfig.info);
   const [identity, setIdentity] = useState(initialConfig.identity);
   const [sections, setSections] = useState(initialConfig.sections);
   const [subdomain, setSubdomain] = useState(initialConfig.subdomain);
+  const [isLoading, setIsLoading] = useState(Boolean(websiteId));
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Load existing website data if websiteId is provided
+  useEffect(() => {
+    if (!websiteId) return;
+
+    let isMounted = true;
+    const loadWebsite = async () => {
+      setIsLoading(true);
+      try {
+        const data = await websiteBuilderApi.getWebsiteById(websiteId);
+        if (isMounted && data) {
+          if (data.type) setWebsiteType(data.type);
+          if (data.info) setInfo(data.info);
+          if (data.identity) setIdentity(data.identity);
+          if (data.sections) setSections(data.sections);
+          if (data.subdomain) setSubdomain(data.subdomain);
+        }
+      } catch (err) {
+        toast.error("Failed to load website configuration");
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    };
+
+    loadWebsite();
+    return () => {
+      isMounted = false;
+    };
+  }, [websiteId]);
 
   // Switch website type and update default sections
   const handleSelectWebsiteType = useCallback((type) => {
@@ -45,6 +76,27 @@ export function useWebsiteBuilder(initialConfig = INITIAL_BUILDER_STATE) {
       ...prev,
       [field]: value,
     }));
+  }, []);
+
+  // Upload Logo File via API
+  const handleUploadLogo = useCallback(async (file) => {
+    try {
+      const url = await websiteBuilderApi.uploadAsset(file);
+      setIdentity((prev) => ({
+        ...prev,
+        logoUrl: url,
+      }));
+      toast.success("Logo uploaded successfully");
+      return url;
+    } catch (err) {
+      toast.error("Failed to upload logo");
+      const fallbackUrl = URL.createObjectURL(file);
+      setIdentity((prev) => ({
+        ...prev,
+        logoUrl: fallbackUrl,
+      }));
+      return fallbackUrl;
+    }
   }, []);
 
   // Move section Up or Down
@@ -80,7 +132,7 @@ export function useWebsiteBuilder(initialConfig = INITIAL_BUILDER_STATE) {
         return;
       }
     } else if (currentStep === 2) {
-      if (!info.websiteName?.trim()) {
+      if (!info?.websiteName?.trim()) {
         toast.error("Please enter a website name");
         return;
       }
@@ -98,20 +150,34 @@ export function useWebsiteBuilder(initialConfig = INITIAL_BUILDER_STATE) {
     }
   }, []);
 
-  // Publish
+  // Publish / Save via API
   const handlePublish = useCallback(async (onSuccess) => {
     setIsSubmitting(true);
+    const payload = {
+      type: websiteType,
+      info,
+      identity,
+      sections,
+      subdomain,
+      status: "Published",
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      let result;
+      if (websiteId) {
+        result = await websiteBuilderApi.updateWebsite(websiteId, payload);
+      } else {
+        result = await websiteBuilderApi.createWebsite(payload);
+      }
       toast.success("Website successfully created and published!");
-      if (onSuccess) onSuccess({ websiteType, info, identity, sections, subdomain });
+      if (onSuccess) onSuccess(result);
     } catch (error) {
       toast.error("Failed to publish website. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
-  }, [websiteType, info, identity, sections, subdomain]);
+  }, [websiteId, websiteType, info, identity, sections, subdomain]);
 
   return {
     currentStep,
@@ -120,11 +186,13 @@ export function useWebsiteBuilder(initialConfig = INITIAL_BUILDER_STATE) {
     identity,
     sections,
     subdomain,
+    isLoading,
     isSubmitting,
     setSubdomain,
     handleSelectWebsiteType,
     handleUpdateInfo,
     handleUpdateIdentity,
+    handleUploadLogo,
     handleMoveSection,
     handleToggleSection,
     goToNextStep,
