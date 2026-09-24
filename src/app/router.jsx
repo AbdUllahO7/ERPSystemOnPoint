@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react"
 import { createBrowserRouter } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
+import WebsiteLayout from "@/layouts/WebsiteLayout"
 import PageSkeleton from "@/components/feedback/PageSkeleton"
 
 // ✨ دالة مساعدة لتغليف المكونات بالتحميل الكسول وشاشة التحميل الأنيقة
@@ -13,7 +14,8 @@ const lazyLoad = (importFn) => {
   )
 }
 
-// 🌐 صفحات عامة
+// 🌐 صفحات الموقع والمتجر الإلكتروني
+const Home = lazy(() => import("@/pages/website/Home"))
 const About = lazy(() => import("@/pages/website/About"))
 const NotFound = lazy(() => import("../pages/not-found"))
 
@@ -164,9 +166,26 @@ const RentalInvoiceDetails = lazy(() => import("../pages/dashboard/Rentals/Invoi
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <DashboardLayout />,
+    element: <WebsiteLayout />,
     children: [
-      { index: true, element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
+      { index: true, element: lazyLoad(() => import("@/pages/website/Home")) },
+      { path: "shop", element: lazyLoad(() => import("@/pages/website/Shop")) },
+      { path: "search", element: lazyLoad(() => import("@/pages/website/Shop")) },
+      { path: "product/:id", element: lazyLoad(() => import("@/pages/website/ProductDetails")) },
+      { path: "cart", element: lazyLoad(() => import("@/pages/website/Cart")) },
+      { path: "wishlist", element: lazyLoad(() => import("@/pages/website/Wishlist")) },
+      { path: "saved-items", element: lazyLoad(() => import("@/pages/website/Wishlist")) },
+      { path: "account", element: lazyLoad(() => import("@/pages/website/Account")) },
+      { path: "account/profile", element: lazyLoad(() => import("@/pages/website/Account")) },
+      { path: "account/orders", element: lazyLoad(() => import("@/pages/website/Account")) },
+      { path: "login", element: lazyLoad(() => import("@/pages/website/Login")) },
+      { path: "auth/sign-in", element: lazyLoad(() => import("@/pages/website/Login")) },
+      { path: "sign-up", element: lazyLoad(() => import("@/pages/website/SignUp")) },
+      { path: "register", element: lazyLoad(() => import("@/pages/website/SignUp")) },
+      { path: "auth/sign-up", element: lazyLoad(() => import("@/pages/website/SignUp")) },
+      { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/PrivacyPolicy")) },
+      { path: "return-policy", element: lazyLoad(() => import("@/pages/website/ReturnPolicy")) },
+      { path: "terms", element: lazyLoad(() => import("@/pages/website/Terms")) },
       { path: "about", element: lazyLoad(() => import("@/pages/website/About")) },
       { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
     ],
