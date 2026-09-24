@@ -1,31 +1,54 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ecommerceOrdersApi } from "../api/ecommerce-orders.api";
+import { useDebounce } from "@/hooks/useDebounce";
 import toast from "react-hot-toast";
 
+export const ORDER_DETAILS_QUERY_KEY = (id) => ["ecommerce-order-details", id];
+
 export function useOrderDetails(orderId) {
-  const [order, setOrder] = useState(null);
-  const [items, setItems] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedItems, setSelectedItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const fetchDetails = useCallback(async () => {
-    if (!orderId) return;
-    setIsLoading(true);
-    try {
-      const data = await ecommerceOrdersApi.getOrderById(orderId);
-      setOrder(data);
-      setItems(data.items || []);
-    } catch {
-      toast.error("Failed to load order details");
-    } finally {
-      setIsLoading(false);
-    }
-  }, [orderId]);
+  // Fetch Order Details with React Query caching
+  const {
+    data: order = null,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ORDER_DETAILS_QUERY_KEY(orderId),
+    queryFn: () => ecommerceOrdersApi.getOrderById(orderId),
+    enabled: !!orderId,
+    staleTime: 30 * 1000,
+  });
 
-  useEffect(() => {
-    fetchDetails();
-  }, [fetchDetails]);
+  // Mutate Order Status with optimistic cache update
+  const statusMutation = useMutation({
+    mutationFn: (newStatus) => ecommerceOrdersApi.updateOrderStatus(orderId, newStatus),
+    onMutate: async (newStatus) => {
+      await queryClient.cancelQueries({ queryKey: ORDER_DETAILS_QUERY_KEY(orderId) });
+      const previousOrder = queryClient.getQueryData(ORDER_DETAILS_QUERY_KEY(orderId));
+      queryClient.setQueryData(ORDER_DETAILS_QUERY_KEY(orderId), (old) =>
+        old ? { ...old, status: newStatus } : old
+      );
+      return { previousOrder };
+    },
+    onError: (err, newStatus, context) => {
+      if (context?.previousOrder) {
+        queryClient.setQueryData(ORDER_DETAILS_QUERY_KEY(orderId), context.previousOrder);
+      }
+      toast.error("Failed to update status");
+    },
+    onSuccess: (data, newStatus) => {
+      toast.success(`Order status updated to ${newStatus}`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ORDER_DETAILS_QUERY_KEY(orderId) });
+      queryClient.invalidateQueries({ queryKey: ["ecommerce-orders"] });
+    },
+  });
 
   const handleToggleItem = useCallback((itemId) => {
     setSelectedItems((prev) =>
@@ -33,29 +56,32 @@ export function useOrderDetails(orderId) {
     );
   }, []);
 
+  const rawItems = useMemo(() => order?.items || [], [order?.items]);
+
   const handleToggleAllItems = useCallback(() => {
-    if (selectedItems.length === items.length) {
+    if (selectedItems.length === rawItems.length) {
       setSelectedItems([]);
     } else {
-      setSelectedItems(items.map((i) => i.id));
+      setSelectedItems(rawItems.map((i) => i.id));
     }
-  }, [items, selectedItems.length]);
+  }, [rawItems, selectedItems.length]);
 
-  const handleChangeStatus = useCallback(async (newStatus = "Processing") => {
-    try {
-      await ecommerceOrdersApi.updateOrderStatus(orderId, newStatus);
-      setOrder((prev) => (prev ? { ...prev, status: newStatus } : prev));
-      toast.success(`Order status updated to ${newStatus}`);
-    } catch {
-      toast.error("Failed to update status");
-    }
-  }, [orderId]);
-
-  const filteredItems = items.filter(
-    (item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase())
+  const handleChangeStatus = useCallback(
+    (newStatus = "Processing") => {
+      statusMutation.mutate(newStatus);
+    },
+    [statusMutation]
   );
+
+  const filteredItems = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return rawItems;
+    const query = debouncedSearchQuery.toLowerCase();
+    return rawItems.filter(
+      (item) =>
+        item.name.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query)
+    );
+  }, [rawItems, debouncedSearchQuery]);
 
   return {
     order,
@@ -64,6 +90,7 @@ export function useOrderDetails(orderId) {
     searchQuery,
     setSearchQuery,
     isLoading,
+    refetch,
     handleToggleItem,
     handleToggleAllItems,
     handleChangeStatus,

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   CONTENT_SECTION_TABS,
   INITIAL_HERO_CONTENT,
@@ -13,10 +14,11 @@ import {
 import { websiteContentApi } from "../api/website-content.api";
 import toast from "react-hot-toast";
 
+export const WEBSITE_CONTENT_QUERY_KEY = (siteId) => ["website-content", siteId];
+
 export function useWebsiteContent({ websiteId = "site-1" } = {}) {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("hero");
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
   // Section states
   const [hero, setHero] = useState(INITIAL_HERO_CONTENT);
@@ -28,35 +30,26 @@ export function useWebsiteContent({ websiteId = "site-1" } = {}) {
   const [contact, setContact] = useState(INITIAL_CONTACT_CONTENT);
   const [footer, setFooter] = useState(INITIAL_FOOTER_CONTENT);
 
-  // Fetch initial content
-  useEffect(() => {
-    let isMounted = true;
-    const fetchContent = async () => {
-      setIsLoading(true);
-      try {
-        const data = await websiteContentApi.getAllContent(websiteId);
-        if (isMounted && data) {
-          if (data.hero) setHero(data.hero);
-          if (data.statistics) setStatistics(data.statistics);
-          if (data.about) setAbout(data.about);
-          if (data.services) setServices(data.services);
-          if (data.cta) setCta(data.cta);
-          if (data.faq) setFaq(data.faq);
-          if (data.contact) setContact(data.contact);
-          if (data.footer) setFooter(data.footer);
-        }
-      } catch {
-        toast.error("Failed to load section content");
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
+  // Fetch initial content with React Query
+  const { data: serverContent, isLoading } = useQuery({
+    queryKey: WEBSITE_CONTENT_QUERY_KEY(websiteId),
+    queryFn: () => websiteContentApi.getAllContent(websiteId),
+    staleTime: 60 * 1000,
+  });
 
-    fetchContent();
-    return () => {
-      isMounted = false;
-    };
-  }, [websiteId]);
+  // Sync server data into editable local section states
+  useEffect(() => {
+    if (serverContent) {
+      if (serverContent.hero) setHero(serverContent.hero);
+      if (serverContent.statistics) setStatistics(serverContent.statistics);
+      if (serverContent.about) setAbout(serverContent.about);
+      if (serverContent.services) setServices(serverContent.services);
+      if (serverContent.cta) setCta(serverContent.cta);
+      if (serverContent.faq) setFaq(serverContent.faq);
+      if (serverContent.contact) setContact(serverContent.contact);
+      if (serverContent.footer) setFooter(serverContent.footer);
+    }
+  }, [serverContent]);
 
   // Tab navigation
   const currentTabIndex = CONTENT_SECTION_TABS.findIndex((t) => t.id === activeTab);
@@ -91,10 +84,26 @@ export function useWebsiteContent({ websiteId = "site-1" } = {}) {
     }
   }, []);
 
-  // Save current section content to API
+  // Save Section Mutation
+  const saveMutation = useMutation({
+    mutationFn: ({ sectionKey, payload }) =>
+      websiteContentApi.updateSectionContent(websiteId, sectionKey, payload),
+    onSuccess: (data, { sectionKey, payload }) => {
+      // Update cache
+      queryClient.setQueryData(WEBSITE_CONTENT_QUERY_KEY(websiteId), (old = {}) => ({
+        ...old,
+        [sectionKey]: payload,
+      }));
+      toast.success("Changes saved successfully!");
+    },
+    onError: () => {
+      toast.error("Failed to save changes");
+    },
+  });
+
+  // Save current section content
   const saveSection = useCallback(
     async (sectionKey = activeTab, customPayload = null) => {
-      setIsSaving(true);
       let payload = customPayload;
       if (!payload) {
         switch (sectionKey) {
@@ -127,23 +136,16 @@ export function useWebsiteContent({ websiteId = "site-1" } = {}) {
         }
       }
 
-      try {
-        await websiteContentApi.updateSectionContent(websiteId, sectionKey, payload);
-        toast.success("Changes saved successfully!");
-      } catch {
-        toast.error("Failed to save changes");
-      } finally {
-        setIsSaving(false);
-      }
+      saveMutation.mutate({ sectionKey, payload });
     },
-    [activeTab, hero, statistics, about, services, cta, faq, contact, footer, websiteId]
+    [activeTab, hero, statistics, about, services, cta, faq, contact, footer, saveMutation]
   );
 
   return {
     activeTab,
     setActiveTab,
     isLoading,
-    isSaving,
+    isSaving: saveMutation.isPending,
     hasPrevious,
     hasNext,
     goToPreviousTab,

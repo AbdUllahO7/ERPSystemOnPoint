@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   DEFAULT_ECOMMERCE_HOME_SECTIONS,
   MOCK_STORE_BANNERS,
@@ -9,7 +10,10 @@ import {
 import { ecommerceContentApi } from "../api/ecommerce-content.api";
 import toast from "react-hot-toast";
 
+export const ECOMMERCE_HOME_CONFIG_QUERY_KEY = (siteId) => ["ecommerce-home-config", siteId];
+
 export function useEcommerceContent({ websiteId = "site-2" } = {}) {
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("home"); // 'home', 'products', 'settings'
   const [activeSubView, setActiveSubView] = useState(null); // 'banner', 'categories', 'product_lists', 'category_products'
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -19,33 +23,21 @@ export function useEcommerceContent({ websiteId = "site-2" } = {}) {
   const [products, setProducts] = useState(MOCK_CATEGORY_PRODUCTS_ITEMS);
   const [paymentMethods] = useState(DEFAULT_ECOMMERCE_PAYMENT_METHODS);
   const [selectedPaymentMethods, setSelectedPaymentMethods] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
 
-  // Fetch initial store configuration
+  // Fetch initial store configuration with React Query caching
+  const { data: serverConfig, isLoading } = useQuery({
+    queryKey: ECOMMERCE_HOME_CONFIG_QUERY_KEY(websiteId),
+    queryFn: () => ecommerceContentApi.getStoreHomeConfig(websiteId),
+    staleTime: 60 * 1000,
+  });
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchConfig = async () => {
-      setIsLoading(true);
-      try {
-        const data = await ecommerceContentApi.getStoreHomeConfig(websiteId);
-        if (isMounted && data) {
-          if (data.sections) setSections(data.sections);
-          if (data.banners) setBanners(data.banners);
-          if (data.categories) setCategories(data.categories);
-        }
-      } catch {
-        toast.error("Failed to load e-commerce settings");
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    };
-
-    fetchConfig();
-    return () => {
-      isMounted = false;
-    };
-  }, [websiteId]);
+    if (serverConfig) {
+      if (serverConfig.sections) setSections(serverConfig.sections);
+      if (serverConfig.banners) setBanners(serverConfig.banners);
+      if (serverConfig.categories) setCategories(serverConfig.categories);
+    }
+  }, [serverConfig]);
 
   // Section Reordering
   const handleMoveSection = useCallback((index, direction) => {
@@ -145,25 +137,40 @@ export function useEcommerceContent({ websiteId = "site-2" } = {}) {
     );
   }, []);
 
-  // Save changes to API
-  const handleSaveChanges = useCallback(async (onSuccess) => {
-    setIsSaving(true);
-    try {
+  // Mutation for saving changes
+  const saveMutation = useMutation({
+    mutationFn: async () => {
       await ecommerceContentApi.updateBanners(websiteId, banners);
       await ecommerceContentApi.updateHomeCategories(websiteId, categories);
+    },
+    onSuccess: (_, variables, context) => {
+      queryClient.setQueryData(ECOMMERCE_HOME_CONFIG_QUERY_KEY(websiteId), {
+        sections,
+        banners,
+        categories,
+      });
       toast.success("Changes saved successfully!");
-      if (onSuccess) onSuccess();
+      if (typeof context?.onSuccess === "function") context.onSuccess();
       if (selectedCategory) {
         setSelectedCategory(null);
       } else {
         setActiveSubView(null);
       }
-    } catch {
+    },
+    onError: () => {
       toast.error("Failed to save changes");
-    } finally {
-      setIsSaving(false);
-    }
-  }, [websiteId, banners, categories, selectedCategory]);
+    },
+  });
+
+  // Save changes to API
+  const handleSaveChanges = useCallback(
+    (onSuccess) => {
+      saveMutation.mutate(undefined, {
+        context: { onSuccess },
+      });
+    },
+    [saveMutation]
+  );
 
   return {
     activeTab,
@@ -179,7 +186,7 @@ export function useEcommerceContent({ websiteId = "site-2" } = {}) {
     paymentMethods,
     selectedPaymentMethods,
     isLoading,
-    isSaving,
+    isSaving: saveMutation.isPending,
     handleMoveSection,
     handleToggleSection,
     handleAddProductList,

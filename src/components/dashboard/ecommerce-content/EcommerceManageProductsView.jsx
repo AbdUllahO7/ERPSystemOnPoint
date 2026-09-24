@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Search, Filter, Eye } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function EcommerceManageProductsView({
   categories = [],
@@ -7,10 +8,15 @@ export function EcommerceManageProductsView({
   onViewCategoryProducts,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const filteredCategories = categories.filter((cat) =>
-    (cat.name || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredCategories = useMemo(() => {
+    if (!debouncedSearch.trim()) return categories;
+    const q = debouncedSearch.toLowerCase();
+    return categories.filter((cat) =>
+      (cat.name || "").toLowerCase().includes(q)
+    );
+  }, [categories, debouncedSearch]);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
@@ -110,4 +116,4 @@ export function EcommerceManageProductsView({
   );
 }
 
-export default EcommerceManageProductsView;
+export default React.memo(EcommerceManageProductsView);

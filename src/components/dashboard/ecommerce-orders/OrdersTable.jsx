@@ -2,6 +2,56 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { SlidersHorizontal } from "lucide-react";
 
+const OrderTableRow = React.memo(function OrderTableRow({
+  order,
+  isSelected,
+  onToggleOrder,
+}) {
+  return (
+    <tr className="hover:bg-slate-50/50 transition-colors">
+      <td className="py-3.5 px-4">
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={() => onToggleOrder && onToggleOrder(order.id)}
+          className="w-4 h-4 rounded border-slate-300 text-[#0066d1] focus:ring-[#0066d1]"
+        />
+      </td>
+      <td className="py-3.5 px-4">
+        <Link
+          to={`/dashboard/web-service/orders/${order.id}`}
+          className="font-bold text-[#0066d1] hover:underline cursor-pointer"
+        >
+          {order.orderNumber}
+        </Link>
+      </td>
+      <td className="py-3.5 px-4 font-semibold text-slate-800">
+        {order.customerName}
+      </td>
+      <td className="py-3.5 px-4 text-slate-600">
+        {order.numberOfProducts}
+      </td>
+      <td className="py-3.5 px-4 font-bold text-[#0066d1]">
+        {order.total}
+      </td>
+      <td className="py-3.5 px-4 text-slate-600">
+        {order.paymentMethod}
+      </td>
+      <td className="py-3.5 px-4">
+        <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
+          {order.status || "New"}
+        </span>
+      </td>
+      <td className="py-3.5 px-4 text-slate-600">
+        {order.orderDate}
+      </td>
+      <td className="py-3.5 px-4 text-right">
+        {/* Optional row action */}
+      </td>
+    </tr>
+  );
+});
+
 export function OrdersTable({
   orders = [],
   selectedOrders = [],
@@ -71,56 +121,14 @@ export function OrdersTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-700">
-              {orders.map((order, idx) => {
-                const isSelected = selectedOrders.includes(order.id);
-
-                return (
-                  <tr
-                    key={order.id || idx}
-                    className="hover:bg-slate-50/50 transition-colors"
-                  >
-                    <td className="py-3.5 px-4">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => onToggleOrder && onToggleOrder(order.id)}
-                        className="w-4 h-4 rounded border-slate-300 text-[#0066d1] focus:ring-[#0066d1]"
-                      />
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <Link
-                        to={`/dashboard/web-service/orders/${order.id}`}
-                        className="font-bold text-[#0066d1] hover:underline cursor-pointer"
-                      >
-                        {order.orderNumber}
-                      </Link>
-                    </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-800">
-                      {order.customerName}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">
-                      {order.numberOfProducts}
-                    </td>
-                    <td className="py-3.5 px-4 font-bold text-[#0066d1]">
-                      {order.total}
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">
-                      {order.paymentMethod}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                        {order.status || "New"}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600">
-                      {order.orderDate}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      {/* Optional row action icon */}
-                    </td>
-                  </tr>
-                );
-              })}
+              {orders.map((order) => (
+                <OrderTableRow
+                  key={order.id}
+                  order={order}
+                  isSelected={selectedOrders.includes(order.id)}
+                  onToggleOrder={onToggleOrder}
+                />
+              ))}
             </tbody>
           </table>
         </div>
@@ -161,4 +169,4 @@ export function OrdersTable({
   );
 }
 
-export default OrdersTable;
+export default React.memo(OrdersTable);

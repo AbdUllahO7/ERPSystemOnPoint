@@ -1,33 +1,35 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ecommerceOrdersApi } from "../api/ecommerce-orders.api";
-import toast from "react-hot-toast";
+import { useDebounce } from "@/hooks/useDebounce";
+
+export const ORDERS_QUERY_KEY = ["ecommerce-orders"];
+export const ORDERS_METRICS_QUERY_KEY = ["ecommerce-orders-metrics"];
 
 export function useEcommerceOrders() {
-  const [metrics, setMetrics] = useState([]);
-  const [orders, setOrders] = useState([]);
   const [selectedOrders, setSelectedOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  const fetchOrders = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [metricsData, ordersData] = await Promise.all([
-        ecommerceOrdersApi.getOrdersMetrics(),
-        ecommerceOrdersApi.getOrdersList(),
-      ]);
-      setMetrics(metricsData);
-      setOrders(ordersData);
-    } catch {
-      toast.error("Failed to load orders");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  // Fetch metrics and orders in parallel with React Query caching
+  const {
+    data: metrics = [],
+    isLoading: isMetricsLoading,
+  } = useQuery({
+    queryKey: ORDERS_METRICS_QUERY_KEY,
+    queryFn: () => ecommerceOrdersApi.getOrdersMetrics(),
+    staleTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  const {
+    data: rawOrders = [],
+    isLoading: isOrdersLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ORDERS_QUERY_KEY,
+    queryFn: () => ecommerceOrdersApi.getOrdersList(),
+    staleTime: 30 * 1000,
+  });
 
   const handleToggleOrder = useCallback((orderId) => {
     setSelectedOrders((prev) =>
@@ -36,18 +38,23 @@ export function useEcommerceOrders() {
   }, []);
 
   const handleToggleAllOrders = useCallback(() => {
-    if (selectedOrders.length === orders.length) {
+    if (selectedOrders.length === rawOrders.length) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(orders.map((o) => o.id));
+      setSelectedOrders(rawOrders.map((o) => o.id));
     }
-  }, [orders, selectedOrders.length]);
+  }, [rawOrders, selectedOrders.length]);
 
-  const filteredOrders = orders.filter(
-    (ord) =>
-      ord.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      ord.customerName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Memoized search filtering using debounced query for maximum UI responsiveness
+  const filteredOrders = useMemo(() => {
+    if (!debouncedSearchQuery.trim()) return rawOrders;
+    const query = debouncedSearchQuery.toLowerCase();
+    return rawOrders.filter(
+      (ord) =>
+        ord.orderNumber.toLowerCase().includes(query) ||
+        ord.customerName.toLowerCase().includes(query)
+    );
+  }, [rawOrders, debouncedSearchQuery]);
 
   return {
     metrics,
@@ -55,8 +62,8 @@ export function useEcommerceOrders() {
     selectedOrders,
     searchQuery,
     setSearchQuery,
-    isLoading,
-    refetch: fetchOrders,
+    isLoading: isMetricsLoading || isOrdersLoading,
+    refetch,
     handleToggleOrder,
     handleToggleAllOrders,
   };

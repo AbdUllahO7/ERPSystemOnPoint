@@ -101,4 +101,4 @@ export function OrdersFilterToolbar({
   );
 }
 
-export default OrdersFilterToolbar;
+export default React.memo(OrdersFilterToolbar);

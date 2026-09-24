@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   WebsiteBuilderStepper,
@@ -9,10 +9,16 @@ import {
   StepEcommerceProducts,
   EcommerceCategoryProductsView,
   StepPublishing,
-  PublishSuccessModal,
-  AddProductListModal,
 } from "@/components/dashboard/website-builder";
 import { useWebsiteBuilder, WEBSITE_TYPES } from "@/features/website-builder";
+
+// Lazy load modals for optimal code-splitting and faster initial bundle evaluation
+const PublishSuccessModal = lazy(() =>
+  import("@/components/dashboard/website-builder/PublishSuccessModal")
+);
+const AddProductListModal = lazy(() =>
+  import("@/components/dashboard/website-builder/AddProductListModal")
+);
 
 export function WebsiteBuilderPage() {
   const navigate = useNavigate();
@@ -180,22 +186,28 @@ export function WebsiteBuilderPage() {
         </div>
       </div>
 
-      {/* Modals (1:1 with Figma Images) */}
-      {/* 1. Congratulations Modal */}
-      <PublishSuccessModal
-        isOpen={isSuccessModalOpen}
-        onClose={() => setIsSuccessModalOpen(false)}
-        onProceed={handleProceedToContent}
-        websiteUrl={`www.${subdomain || (isEcommerce ? "store" : "onpoint")}.onpoint.com`}
-        isEcommerce={isEcommerce}
-      />
+      {/* Modals with Lazy Suspense */}
+      {isSuccessModalOpen && (
+        <Suspense fallback={null}>
+          <PublishSuccessModal
+            isOpen={isSuccessModalOpen}
+            onClose={() => setIsSuccessModalOpen(false)}
+            onProceed={handleProceedToContent}
+            websiteUrl={`www.${subdomain || (isEcommerce ? "store" : "onpoint")}.onpoint.com`}
+            isEcommerce={isEcommerce}
+          />
+        </Suspense>
+      )}
 
-      {/* 2. Add List Modal */}
-      <AddProductListModal
-        isOpen={isAddListModalOpen}
-        onClose={() => setIsAddListModalOpen(false)}
-        onAdd={handleAddListFromModal}
-      />
+      {isAddListModalOpen && (
+        <Suspense fallback={null}>
+          <AddProductListModal
+            isOpen={isAddListModalOpen}
+            onClose={() => setIsAddListModalOpen(false)}
+            onAdd={handleAddListFromModal}
+          />
+        </Suspense>
+      )}
 
       {/* Footer */}
       <footer className="pt-8 pb-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 mt-8">
@@ -208,4 +220,4 @@ export function WebsiteBuilderPage() {
   );
 }
 
-export default WebsiteBuilderPage;
+export default React.memo(WebsiteBuilderPage);

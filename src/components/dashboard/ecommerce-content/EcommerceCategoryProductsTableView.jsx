@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import { useDebounce } from "@/hooks/useDebounce";
 
 export function EcommerceCategoryProductsTableView({
   categoryName = "Category Name",
@@ -9,12 +10,17 @@ export function EcommerceCategoryProductsTableView({
   allSelected = false,
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const debouncedSearch = useDebounce(searchQuery, 300);
 
-  const filteredItems = items.filter((item) =>
-    (item.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.code || "").toString().toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (item.category || "").toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    if (!debouncedSearch.trim()) return items;
+    const q = debouncedSearch.toLowerCase();
+    return items.filter((item) =>
+      (item.name || "").toLowerCase().includes(q) ||
+      (item.code || "").toString().toLowerCase().includes(q) ||
+      (item.category || "").toLowerCase().includes(q)
+    );
+  }, [items, debouncedSearch]);
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
@@ -40,7 +46,7 @@ export function EcommerceCategoryProductsTableView({
         </button>
       </div>
 
-      {/* Products Table (1:1 with Figma Design) */}
+      {/* Products Table */}
       <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
@@ -144,7 +150,7 @@ export function EcommerceCategoryProductsTableView({
         </div>
       </div>
 
-      {/* Pagination (1:1 with Figma) */}
+      {/* Pagination */}
       <div className="flex items-center justify-end gap-2 pt-2 text-xs font-semibold text-slate-600">
         <button type="button" className="px-2 py-1 hover:text-slate-900 cursor-pointer">
           Pre
@@ -179,4 +185,4 @@ export function EcommerceCategoryProductsTableView({
   );
 }
 
-export default EcommerceCategoryProductsTableView;
+export default React.memo(EcommerceCategoryProductsTableView);

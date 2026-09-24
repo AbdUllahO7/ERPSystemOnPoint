@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, lazy, Suspense } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   EcommerceContentTabs,
@@ -10,8 +10,12 @@ import {
   EcommerceManageProductsView,
   EcommerceSettingsView,
 } from "@/components/dashboard/ecommerce-content";
-import { AddProductListModal } from "@/components/dashboard/website-builder";
 import { useEcommerceContent } from "@/features/ecommerce-content";
+
+// Lazy-load modal for better code splitting
+const AddProductListModal = lazy(() =>
+  import("@/components/dashboard/website-builder/AddProductListModal")
+);
 
 export function EcommerceContentEditorPage() {
   const { websiteId } = useParams();
@@ -161,7 +165,6 @@ export function EcommerceContentEditorPage() {
           {/* Right Card: Action Buttons */}
           <div className="lg:col-span-4 flex flex-col justify-center">
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-center gap-3">
-              {/* Previous Button (Always present across all views) */}
               <button
                 type="button"
                 onClick={handlePreviousAction}
@@ -171,7 +174,6 @@ export function EcommerceContentEditorPage() {
                 Previous
               </button>
 
-              {/* Primary Action Button based on View */}
               {isDeepView ? (
                 <button
                   type="button"
@@ -208,9 +210,7 @@ export function EcommerceContentEditorPage() {
 
         {/* Dynamic Main Body Content */}
         <div className="w-full">
-          {/* ================= Deep Sub-Views ================= */}
           {selectedCategory ? (
-            /* 1:1 Matching Category Products Table (Figma Images 1 & 3) */
             <EcommerceCategoryProductsTableView
               categoryName={selectedCategory.name}
               items={products}
@@ -219,26 +219,22 @@ export function EcommerceContentEditorPage() {
               allSelected={products.length > 0 && products.every((p) => p.selected)}
             />
           ) : activeSubView === "banner" ? (
-            /* Banner Management View */
             <EcommerceManageBannerView
               banners={banners}
               onAddBanner={handleAddBanner}
               onDeleteBanner={handleDeleteBanner}
             />
           ) : activeSubView === "categories" ? (
-            /* Categories Serial Number Table */
             <EcommerceCategoriesTableView
               categories={categories}
               onToggleCategory={handleToggleCategory}
             />
           ) : activeSubView === "product_lists" ? (
-            /* Product Lists Drilldown View */
             <EcommerceProductListDetailView
               categories={categories}
               onViewCategoryProducts={(cat) => setSelectedCategory(cat)}
             />
           ) : activeTab === "home" ? (
-            /* ================= Tab 1: Home Page ================= */
             <EcommerceHomeSectionsList
               sections={sections}
               onMoveSection={handleMoveSection}
@@ -247,14 +243,12 @@ export function EcommerceContentEditorPage() {
               onAddProductList={() => setIsAddListModalOpen(true)}
             />
           ) : activeTab === "products" ? (
-            /* ================= Tab 2: Manage Products (1:1 with Figma Image 2) ================= */
             <EcommerceManageProductsView
               categories={categories}
               onToggleAddAllForCategory={handleToggleCategoryAddAll}
               onViewCategoryProducts={(cat) => setSelectedCategory(cat)}
             />
           ) : activeTab === "settings" ? (
-            /* ================= Tab 3: Settings (1:1 with Figma Image 4) ================= */
             <EcommerceSettingsView
               paymentMethods={paymentMethods}
               selectedPaymentMethods={selectedPaymentMethods}
@@ -264,14 +258,18 @@ export function EcommerceContentEditorPage() {
         </div>
       </div>
 
-      {/* Add Product List Modal */}
-      <AddProductListModal
-        isOpen={isAddListModalOpen}
-        onClose={() => setIsAddListModalOpen(false)}
-        onAdd={(listName) => {
-          handleAddProductList();
-        }}
-      />
+      {/* Add Product List Modal with Suspense */}
+      {isAddListModalOpen && (
+        <Suspense fallback={null}>
+          <AddProductListModal
+            isOpen={isAddListModalOpen}
+            onClose={() => setIsAddListModalOpen(false)}
+            onAdd={(listName) => {
+              handleAddProductList();
+            }}
+          />
+        </Suspense>
+      )}
 
       {/* Page Footer */}
       <footer className="pt-8 pb-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 mt-8">
@@ -284,4 +282,4 @@ export function EcommerceContentEditorPage() {
   );
 }
 
-export default EcommerceContentEditorPage;
+export default React.memo(EcommerceContentEditorPage);

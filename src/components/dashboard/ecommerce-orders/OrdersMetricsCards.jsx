@@ -5,7 +5,6 @@ export function OrdersMetricsCards({ metrics = [] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {metrics.map((metric, idx) => {
-        const isBlue = metric.color === "blue" || idx % 2 === 0;
         const isEmerald = metric.color === "emerald" || idx === 1;
         const isOrange = metric.color === "orange" || idx === 3;
 
@@ -62,4 +61,4 @@ export function OrdersMetricsCards({ metrics = [] }) {
   );
 }
 
-export default OrdersMetricsCards;
+export default React.memo(OrdersMetricsCards);
