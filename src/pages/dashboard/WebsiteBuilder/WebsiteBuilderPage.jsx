@@ -51,9 +51,13 @@ export function WebsiteBuilderPage() {
   const isEcommerce = websiteType === WEBSITE_TYPES.ECOMMERCE;
 
   const onPublishComplete = (result) => {
-    // Navigate to add content editor flow
-    const targetId = result?.id || editId || "site-1";
-    navigate(`/dashboard/web-service/content/${targetId}`);
+    // Navigate to add content editor flow based on website type
+    const targetId = result?.id || editId || (isEcommerce ? "site-2" : "site-1");
+    if (isEcommerce) {
+      navigate(`/dashboard/web-service/ecommerce-content/${targetId}`);
+    } else {
+      navigate(`/dashboard/web-service/content/${targetId}`);
+    }
   };
 
   return (
