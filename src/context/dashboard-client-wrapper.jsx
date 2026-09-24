@@ -32,6 +32,8 @@ import {
   CalendarCheck,
   KeyRound,
   Car,
+  Globe,
+  PlusCircle,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
@@ -44,6 +46,13 @@ const sidebarLinks = [
   {
     label: "Main",
     items: [{ title: "Dashboard", href: "/dashboard", icon: LayoutGrid }],
+  },
+  {
+    label: "Web Service",
+    items: [
+      { title: "Manage Websites", href: "/dashboard/web-service", icon: Globe },
+      { title: "+ Create New Website", href: "/dashboard/web-service/create", icon: PlusCircle },
+    ],
   },
   {
     label: "HR",

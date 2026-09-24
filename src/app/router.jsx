@@ -210,6 +210,10 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
       { path: "users", element: lazyLoad(() => import("../pages/dashboard/Users/Users")) },
+      { path: "web-service", element: lazyLoad(() => import("../pages/dashboard/WebsiteBuilder/WebsitesListPage")) },
+      { path: "web-service/create", element: lazyLoad(() => import("../pages/dashboard/WebsiteBuilder/WebsiteBuilderPage")) },
+      { path: "web-service/builder", element: lazyLoad(() => import("../pages/dashboard/WebsiteBuilder/WebsiteBuilderPage")) },
+      { path: "website-builder", element: lazyLoad(() => import("../pages/dashboard/WebsiteBuilder/WebsiteBuilderPage")) },
       { path: "/dashboard/hr", element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
       { path: "/dashboard/hr/departments", element: lazyLoad(() => import("../pages/dashboard/Depatments/depatments-page")) },
       { path: "/dashboard/hr/departments/add", element: lazyLoad(() => import("../pages/dashboard/Depatments/add-edit-department")) },
