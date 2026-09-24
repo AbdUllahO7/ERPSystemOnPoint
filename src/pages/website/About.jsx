@@ -1,3 +1,4 @@
-export default function About() {
-  return <h1>About</h1>
-}
+import CompanyProfile from "./CompanyProfile";
+
+export default CompanyProfile;
+

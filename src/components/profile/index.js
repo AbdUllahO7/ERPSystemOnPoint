@@ -1,0 +1,9 @@
+export { ProfileHeader } from "./ProfileHeader";
+export { ProfileHero } from "./ProfileHero";
+export { ProfileStats } from "./ProfileStats";
+export { ProfileAbout } from "./ProfileAbout";
+export { ProfileServices } from "./ProfileServices";
+export { ProfileCtaBanner } from "./ProfileCtaBanner";
+export { ProfileFaq } from "./ProfileFaq";
+export { ProfileContact } from "./ProfileContact";
+export { ProfileFooter } from "./ProfileFooter";

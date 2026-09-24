@@ -164,6 +164,21 @@ const AddEditRentalInvoice = lazy(() => import("../pages/dashboard/Rentals/Invoi
 const RentalInvoiceDetails = lazy(() => import("../pages/dashboard/Rentals/Invoices/rental-invoice-details"))
 
 export const router = createBrowserRouter([
+  // 🏢 موقع وبروفايل الشركة التعريفي المستقل (Standalone Company Profile)
+  {
+    path: "/profile",
+    element: lazyLoad(() => import("@/pages/website/CompanyProfile")),
+  },
+  {
+    path: "/company-profile",
+    element: lazyLoad(() => import("@/pages/website/CompanyProfile")),
+  },
+  {
+    path: "/about",
+    element: lazyLoad(() => import("@/pages/website/CompanyProfile")),
+  },
+
+  // 🛒 المتجر الإلكتروني (Storefront with Store Header & Footer)
   {
     path: "/",
     element: <WebsiteLayout />,
@@ -186,7 +201,6 @@ export const router = createBrowserRouter([
       { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/PrivacyPolicy")) },
       { path: "return-policy", element: lazyLoad(() => import("@/pages/website/ReturnPolicy")) },
       { path: "terms", element: lazyLoad(() => import("@/pages/website/Terms")) },
-      { path: "about", element: lazyLoad(() => import("@/pages/website/About")) },
       { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
     ],
   },
