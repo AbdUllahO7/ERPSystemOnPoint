@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   EcommerceContentTabs,
@@ -10,11 +10,13 @@ import {
   EcommerceManageProductsView,
   EcommerceSettingsView,
 } from "@/components/dashboard/ecommerce-content";
+import { AddProductListModal } from "@/components/dashboard/website-builder";
 import { useEcommerceContent } from "@/features/ecommerce-content";
 
 export function EcommerceContentEditorPage() {
   const { websiteId } = useParams();
   const navigate = useNavigate();
+  const [isAddListModalOpen, setIsAddListModalOpen] = useState(false);
 
   const {
     activeTab,
@@ -242,7 +244,7 @@ export function EcommerceContentEditorPage() {
               onMoveSection={handleMoveSection}
               onToggleSection={handleToggleSection}
               onOpenSectionSettings={handleOpenSectionSettings}
-              onAddProductList={handleAddProductList}
+              onAddProductList={() => setIsAddListModalOpen(true)}
             />
           ) : activeTab === "products" ? (
             /* ================= Tab 2: Manage Products (1:1 with Figma Image 2) ================= */
@@ -261,6 +263,15 @@ export function EcommerceContentEditorPage() {
           ) : null}
         </div>
       </div>
+
+      {/* Add Product List Modal */}
+      <AddProductListModal
+        isOpen={isAddListModalOpen}
+        onClose={() => setIsAddListModalOpen(false)}
+        onAdd={(listName) => {
+          handleAddProductList();
+        }}
+      />
 
       {/* Page Footer */}
       <footer className="pt-8 pb-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 mt-8">
