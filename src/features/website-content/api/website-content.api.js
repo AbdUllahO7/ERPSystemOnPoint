@@ -8,7 +8,7 @@ import {
   INITIAL_FAQ_CONTENT,
   INITIAL_CONTACT_CONTENT,
   INITIAL_FOOTER_CONTENT,
-} from "../website-content.constants";
+} from "../mock/website-content.mock";
 
 export const websiteContentApi = {
   // 1. جلب كامل محتوى أقسام الموقع

@@ -1,9 +1,9 @@
 import { apiHandler } from "@/lib/api-handler";
+import { DEFAULT_ECOMMERCE_HOME_SECTIONS } from "../ecommerce-content.constants";
 import {
-  DEFAULT_ECOMMERCE_HOME_SECTIONS,
   MOCK_STORE_BANNERS,
   MOCK_STORE_CATEGORIES_TABLE,
-} from "../ecommerce-content.constants";
+} from "../mock/ecommerce-content.mock";
 
 export const ecommerceContentApi = {
   // 1. جلب إعدادات وأقسام الصفحة الرئيسية للمتجر
