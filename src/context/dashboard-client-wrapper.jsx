@@ -34,6 +34,7 @@ import {
   Car,
   Globe,
   PlusCircle,
+  Plus,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
@@ -50,6 +51,12 @@ const sidebarLinks = [
   {
     label: "Web Service",
     items: [
+      {
+        title: "Create New Website",
+        href: "/dashboard/web-service/create",
+        icon: Plus,
+        isButton: true,
+      },
       { title: "Website Control Panel", href: "/dashboard/web-service", icon: Globe },
       { title: "E-Commerce Orders", href: "/dashboard/web-service/orders", icon: ReceiptText },
     ],
@@ -409,6 +416,22 @@ function NavItem({ item, collapsed, onMobileClose }) {
           </SubNavPanel>
         )}
       </div>
+    );
+  }
+
+  if (item.isButton) {
+    return (
+      <Link
+        to={item.href}
+        onClick={onMobileClose}
+        title={collapsed ? item.title : undefined}
+        className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 my-1.5 cursor-pointer ${
+          collapsed ? "px-2" : ""
+        }`}
+      >
+        <Plus size={16} strokeWidth={3} className="shrink-0" />
+        {!collapsed && <span className="truncate">{item.title}</span>}
+      </Link>
     );
   }
 
