@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   EcommerceContentTabs,
@@ -6,25 +6,29 @@ import {
   EcommerceManageBannerView,
   EcommerceCategoriesTableView,
   EcommerceProductListDetailView,
+  EcommerceCategoryProductsTableView,
+  EcommerceManageProductsView,
+  EcommerceSettingsView,
 } from "@/components/dashboard/ecommerce-content";
-import { EcommerceCategoryProductsView } from "@/components/dashboard/website-builder";
 import { useEcommerceContent } from "@/features/ecommerce-content";
-import { MOCK_INVENTORY_ITEMS } from "@/features/website-builder";
 
 export function EcommerceContentEditorPage() {
   const { websiteId } = useParams();
   const navigate = useNavigate();
-  const [selectedCategoryForProducts, setSelectedCategoryForProducts] = useState(null);
 
   const {
     activeTab,
     setActiveTab,
     activeSubView,
     setActiveSubView,
+    selectedCategory,
+    setSelectedCategory,
     sections,
     banners,
     categories,
-    isLoading,
+    products,
+    paymentMethods,
+    selectedPaymentMethods,
     isSaving,
     handleMoveSection,
     handleToggleSection,
@@ -32,10 +36,14 @@ export function EcommerceContentEditorPage() {
     handleAddBanner,
     handleDeleteBanner,
     handleToggleCategory,
+    handleToggleCategoryAddAll,
+    handleToggleProductItem,
+    handleToggleAllProducts,
+    handleTogglePaymentMethod,
     handleSaveChanges,
   } = useEcommerceContent({ websiteId });
 
-  // Handle section gear click to drill-down into sub-management view
+  // Handle section gear click from Home Page
   const handleOpenSectionSettings = (sectionId) => {
     if (sectionId === "banner") {
       setActiveSubView("banner");
@@ -46,9 +54,10 @@ export function EcommerceContentEditorPage() {
     }
   };
 
+  // Handle Previous Button Navigation
   const handlePreviousAction = () => {
-    if (selectedCategoryForProducts) {
-      setSelectedCategoryForProducts(null);
+    if (selectedCategory) {
+      setSelectedCategory(null);
     } else if (activeSubView) {
       setActiveSubView(null);
     } else {
@@ -56,30 +65,83 @@ export function EcommerceContentEditorPage() {
     }
   };
 
+  // Determine dynamic breadcrumbs and titles
   const getSubViewTitle = () => {
-    if (selectedCategoryForProducts) return `${selectedCategoryForProducts.name} Products`;
+    if (selectedCategory) {
+      return selectedCategory.name || "Category Name";
+    }
     if (activeSubView === "banner") return "Manage Banner";
     if (activeSubView === "categories") return "Categories";
     if (activeSubView === "product_lists") return "Product List Name";
     return null;
   };
 
+  const getSubViewBreadcrumb = () => {
+    if (selectedCategory) {
+      if (activeTab === "products") {
+        return (
+          <>
+            Manage Products /{" "}
+            <span className="text-slate-600 font-bold">
+              {selectedCategory.name || "Category Name"}
+            </span>
+          </>
+        );
+      }
+      return (
+        <>
+          Home Page / Product List Name /{" "}
+          <span className="text-slate-600 font-bold">
+            {selectedCategory.name || "Category Name"}
+          </span>
+        </>
+      );
+    }
+    if (activeSubView === "banner") {
+      return (
+        <>
+          Home Page /{" "}
+          <span className="text-slate-600 font-bold">Manage Banner</span>
+        </>
+      );
+    }
+    if (activeSubView === "categories") {
+      return (
+        <>
+          Home Page /{" "}
+          <span className="text-slate-600 font-bold">Categories</span>
+        </>
+      );
+    }
+    if (activeSubView === "product_lists") {
+      return (
+        <>
+          Home Page /{" "}
+          <span className="text-slate-600 font-bold">Product List Name</span>
+        </>
+      );
+    }
+    return null;
+  };
+
+  const isDeepView = Boolean(activeSubView || selectedCategory);
   const subViewTitle = getSubViewTitle();
+  const subViewBreadcrumb = getSubViewBreadcrumb();
 
   return (
     <div className="w-full min-h-[calc(100vh-80px)] flex flex-col justify-between p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="space-y-6">
         {/* Top 2 Cards: Navigation/Breadcrumb (Left) & Actions (Right) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
-          {/* Left Card: Tabs or Breadcrumb */}
+          {/* Left Card: Tabs or Header with Breadcrumbs */}
           <div className="lg:col-span-8 flex flex-col justify-center">
-            {activeSubView ? (
+            {isDeepView ? (
               <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-center space-y-0.5">
                 <h2 className="text-base sm:text-lg font-black text-slate-900">
                   {subViewTitle}
                 </h2>
                 <p className="text-xs text-slate-400 font-medium">
-                  Home Page / <span className="text-slate-600 font-bold">{subViewTitle}</span>
+                  {subViewBreadcrumb}
                 </p>
               </div>
             ) : (
@@ -88,37 +150,52 @@ export function EcommerceContentEditorPage() {
                 onTabClick={(tab) => {
                   setActiveTab(tab);
                   setActiveSubView(null);
+                  setSelectedCategory(null);
                 }}
               />
             )}
           </div>
 
-          {/* Right Card: Actions (Previous & Next / Save Changes) */}
+          {/* Right Card: Action Buttons */}
           <div className="lg:col-span-4 flex flex-col justify-center">
             <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-center gap-3">
+              {/* Previous Button (Always present across all views) */}
               <button
                 type="button"
                 onClick={handlePreviousAction}
                 disabled={isSaving}
-                className="w-full sm:w-36 py-3 px-6 rounded-xl bg-slate-500 hover:bg-slate-600 text-white font-bold text-sm shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+                className="w-full sm:w-36 py-3 px-6 rounded-xl bg-slate-500 hover:bg-slate-600 text-white font-bold text-sm shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer text-center"
               >
                 Previous
               </button>
 
-              {activeSubView ? (
+              {/* Primary Action Button based on View */}
+              {isDeepView ? (
                 <button
                   type="button"
                   onClick={() => handleSaveChanges()}
                   disabled={isSaving}
-                  className="w-full sm:w-auto py-3 px-8 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50"
+                  className="w-full sm:w-auto py-3 px-8 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 text-center"
                 >
                   Save Changes
+                </button>
+              ) : activeTab === "settings" ? (
+                <button
+                  type="button"
+                  onClick={() => handleSaveChanges()}
+                  disabled={isSaving}
+                  className="w-full sm:w-auto py-3 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer disabled:opacity-50 text-center"
+                >
+                  Save and preview
                 </button>
               ) : (
                 <button
                   type="button"
-                  onClick={() => navigate("/")}
-                  className="w-full sm:w-36 py-3 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer"
+                  onClick={() => {
+                    if (activeTab === "home") setActiveTab("products");
+                    else if (activeTab === "products") setActiveTab("settings");
+                  }}
+                  className="w-full sm:w-36 py-3 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-sm shadow-md transition-all active:scale-95 cursor-pointer text-center"
                 >
                   Next
                 </button>
@@ -127,45 +204,39 @@ export function EcommerceContentEditorPage() {
           </div>
         </div>
 
-        {/* Dynamic Views */}
+        {/* Dynamic Main Body Content */}
         <div className="w-full">
-          {/* 1. Sub-Views (when inside a section's settings) */}
-          {activeSubView === "banner" && (
+          {/* ================= Deep Sub-Views ================= */}
+          {selectedCategory ? (
+            /* 1:1 Matching Category Products Table (Figma Images 1 & 3) */
+            <EcommerceCategoryProductsTableView
+              categoryName={selectedCategory.name}
+              items={products}
+              onToggleItem={handleToggleProductItem}
+              onToggleAll={handleToggleAllProducts}
+              allSelected={products.length > 0 && products.every((p) => p.selected)}
+            />
+          ) : activeSubView === "banner" ? (
+            /* Banner Management View */
             <EcommerceManageBannerView
               banners={banners}
               onAddBanner={handleAddBanner}
               onDeleteBanner={handleDeleteBanner}
             />
-          )}
-
-          {activeSubView === "categories" && (
+          ) : activeSubView === "categories" ? (
+            /* Categories Serial Number Table */
             <EcommerceCategoriesTableView
               categories={categories}
               onToggleCategory={handleToggleCategory}
             />
-          )}
-
-          {activeSubView === "product_lists" && (
-            <>
-              {selectedCategoryForProducts ? (
-                <EcommerceCategoryProductsView
-                  category={selectedCategoryForProducts}
-                  items={MOCK_INVENTORY_ITEMS}
-                  onToggleItemSelection={() => {}}
-                  onAddAndBack={() => setSelectedCategoryForProducts(null)}
-                  onPrevious={() => setSelectedCategoryForProducts(null)}
-                />
-              ) : (
-                <EcommerceProductListDetailView
-                  categories={categories}
-                  onViewCategoryProducts={(cat) => setSelectedCategoryForProducts(cat)}
-                />
-              )}
-            </>
-          )}
-
-          {/* 2. Main Tab Views */}
-          {!activeSubView && activeTab === "home" && (
+          ) : activeSubView === "product_lists" ? (
+            /* Product Lists Drilldown View */
+            <EcommerceProductListDetailView
+              categories={categories}
+              onViewCategoryProducts={(cat) => setSelectedCategory(cat)}
+            />
+          ) : activeTab === "home" ? (
+            /* ================= Tab 1: Home Page ================= */
             <EcommerceHomeSectionsList
               sections={sections}
               onMoveSection={handleMoveSection}
@@ -173,29 +244,25 @@ export function EcommerceContentEditorPage() {
               onOpenSectionSettings={handleOpenSectionSettings}
               onAddProductList={handleAddProductList}
             />
-          )}
-
-          {!activeSubView && activeTab === "products" && (
-            <EcommerceCategoriesTableView
+          ) : activeTab === "products" ? (
+            /* ================= Tab 2: Manage Products (1:1 with Figma Image 2) ================= */
+            <EcommerceManageProductsView
               categories={categories}
-              onToggleCategory={handleToggleCategory}
+              onToggleAddAllForCategory={handleToggleCategoryAddAll}
+              onViewCategoryProducts={(cat) => setSelectedCategory(cat)}
             />
-          )}
-
-          {!activeSubView && activeTab === "settings" && (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-4">
-              <h3 className="text-base font-bold text-slate-900">
-                E-Commerce Store General Settings
-              </h3>
-              <p className="text-xs text-slate-500">
-                Configure payment gateways, shipping methods, and checkout preferences.
-              </p>
-            </div>
-          )}
+          ) : activeTab === "settings" ? (
+            /* ================= Tab 3: Settings (1:1 with Figma Image 4) ================= */
+            <EcommerceSettingsView
+              paymentMethods={paymentMethods}
+              selectedPaymentMethods={selectedPaymentMethods}
+              onTogglePaymentMethod={handleTogglePaymentMethod}
+            />
+          ) : null}
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Page Footer */}
       <footer className="pt-8 pb-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 mt-8">
         <div>Copyright © ONPOINT</div>
         <div>

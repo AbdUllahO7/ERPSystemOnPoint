@@ -3,16 +3,22 @@ import {
   DEFAULT_ECOMMERCE_HOME_SECTIONS,
   MOCK_STORE_BANNERS,
   MOCK_STORE_CATEGORIES_TABLE,
+  MOCK_CATEGORY_PRODUCTS_ITEMS,
+  DEFAULT_ECOMMERCE_PAYMENT_METHODS,
 } from "../ecommerce-content.constants";
 import { ecommerceContentApi } from "../api/ecommerce-content.api";
 import toast from "react-hot-toast";
 
 export function useEcommerceContent({ websiteId = "site-2" } = {}) {
-  const [activeTab, setActiveTab] = useState("home");
-  const [activeSubView, setActiveSubView] = useState(null); // 'banner', 'categories', 'product_lists'
+  const [activeTab, setActiveTab] = useState("home"); // 'home', 'products', 'settings'
+  const [activeSubView, setActiveSubView] = useState(null); // 'banner', 'categories', 'product_lists', 'category_products'
+  const [selectedCategory, setSelectedCategory] = useState(null);
   const [sections, setSections] = useState(DEFAULT_ECOMMERCE_HOME_SECTIONS);
   const [banners, setBanners] = useState(MOCK_STORE_BANNERS);
   const [categories, setCategories] = useState(MOCK_STORE_CATEGORIES_TABLE);
+  const [products, setProducts] = useState(MOCK_CATEGORY_PRODUCTS_ITEMS);
+  const [paymentMethods] = useState(DEFAULT_ECOMMERCE_PAYMENT_METHODS);
+  const [selectedPaymentMethods, setSelectedPaymentMethods] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -101,10 +107,41 @@ export function useEcommerceContent({ websiteId = "site-2" } = {}) {
     toast.success("Banner removed");
   }, []);
 
-  // Toggle Category Checkbox
+  // Toggle Category Checkbox in Categories Table
   const handleToggleCategory = useCallback((catId) => {
     setCategories((prev) =>
       prev.map((c) => (c.id === catId ? { ...c, selected: !c.selected } : c))
+    );
+  }, []);
+
+  // Toggle "Add All Product To E-Commerce" Checkbox
+  const handleToggleCategoryAddAll = useCallback((catId) => {
+    setCategories((prev) =>
+      prev.map((c) =>
+        c.id === catId ? { ...c, addAllProducts: !c.addAllProducts } : c
+      )
+    );
+  }, []);
+
+  // Toggle Single Product Selection
+  const handleToggleProductItem = useCallback((prodId) => {
+    setProducts((prev) =>
+      prev.map((p) => (p.id === prodId ? { ...p, selected: !p.selected } : p))
+    );
+  }, []);
+
+  // Toggle All Products Selection
+  const handleToggleAllProducts = useCallback(() => {
+    setProducts((prev) => {
+      const allSelected = prev.every((p) => p.selected);
+      return prev.map((p) => ({ ...p, selected: !allSelected }));
+    });
+  }, []);
+
+  // Toggle Payment Method Selection
+  const handleTogglePaymentMethod = useCallback((pmId) => {
+    setSelectedPaymentMethods((prev) =>
+      prev.includes(pmId) ? prev.filter((id) => id !== pmId) : [...prev, pmId]
     );
   }, []);
 
@@ -116,22 +153,31 @@ export function useEcommerceContent({ websiteId = "site-2" } = {}) {
       await ecommerceContentApi.updateHomeCategories(websiteId, categories);
       toast.success("Changes saved successfully!");
       if (onSuccess) onSuccess();
-      setActiveSubView(null);
+      if (selectedCategory) {
+        setSelectedCategory(null);
+      } else {
+        setActiveSubView(null);
+      }
     } catch {
       toast.error("Failed to save changes");
     } finally {
       setIsSaving(false);
     }
-  }, [websiteId, banners, categories]);
+  }, [websiteId, banners, categories, selectedCategory]);
 
   return {
     activeTab,
     setActiveTab,
     activeSubView,
     setActiveSubView,
+    selectedCategory,
+    setSelectedCategory,
     sections,
     banners,
     categories,
+    products,
+    paymentMethods,
+    selectedPaymentMethods,
     isLoading,
     isSaving,
     handleMoveSection,
@@ -140,6 +186,10 @@ export function useEcommerceContent({ websiteId = "site-2" } = {}) {
     handleAddBanner,
     handleDeleteBanner,
     handleToggleCategory,
+    handleToggleCategoryAddAll,
+    handleToggleProductItem,
+    handleToggleAllProducts,
+    handleTogglePaymentMethod,
     handleSaveChanges,
   };
 }

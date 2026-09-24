@@ -1,5 +1,8 @@
-export { EcommerceContentTabs } from "./EcommerceContentTabs";
-export { EcommerceHomeSectionsList } from "./EcommerceHomeSectionsList";
-export { EcommerceManageBannerView } from "./EcommerceManageBannerView";
-export { EcommerceCategoriesTableView } from "./EcommerceCategoriesTableView";
-export { EcommerceProductListDetailView } from "./EcommerceProductListDetailView";
+export * from "./EcommerceContentTabs";
+export * from "./EcommerceHomeSectionsList";
+export * from "./EcommerceManageBannerView";
+export * from "./EcommerceCategoriesTableView";
+export * from "./EcommerceProductListDetailView";
+export * from "./EcommerceCategoryProductsTableView";
+export * from "./EcommerceManageProductsView";
+export * from "./EcommerceSettingsView";
