@@ -129,20 +129,31 @@ export function WebsitesListPage() {
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="flex items-center gap-3 pt-2">
+                  <div className="flex items-center gap-2.5 pt-2">
+                    <Link
+                      to={`/dashboard/web-service/content/${site.id}`}
+                      className="flex-1 py-2.5 px-3 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs transition-all"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                      Edit Content
+                    </Link>
+
                     <Link
                       to={`/dashboard/web-service/create?id=${site.id}`}
-                      className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 hover:border-[#0066d1] hover:text-[#0066d1] bg-white text-xs font-bold text-slate-700 flex items-center justify-center gap-2 shadow-2xs transition-all"
+                      className="py-2.5 px-3 rounded-xl border border-slate-200 hover:border-[#0066d1] hover:text-[#0066d1] bg-white text-xs font-bold text-slate-700 flex items-center justify-center gap-1.5 shadow-2xs transition-all"
                     >
-                      <Edit className="w-4 h-4" />
-                      Edit Sections
+                      Settings
                     </Link>
 
                     <a
                       href={liveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="py-2.5 px-4 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all"
+                      className="p-2.5 rounded-xl border border-slate-200 hover:border-[#0066d1] hover:text-[#0066d1] bg-white text-slate-700 text-xs font-bold flex items-center justify-center shadow-2xs transition-all"
+                      title="Live Preview"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </a>
                     >
                       <Eye className="w-4 h-4" />
                       Live Preview

@@ -38,12 +38,9 @@ export function WebsiteBuilderPage() {
   } = useWebsiteBuilder({ websiteId: editId });
 
   const onPublishComplete = (result) => {
-    // Navigate to preview or websites dashboard
-    if (result.type === WEBSITE_TYPES.COMPANY || result.websiteType === WEBSITE_TYPES.COMPANY) {
-      navigate("/profile");
-    } else {
-      navigate("/");
-    }
+    // Navigate to add content editor flow
+    const targetId = result?.id || editId || "site-1";
+    navigate(`/dashboard/web-service/content/${targetId}`);
   };
 
   return (
