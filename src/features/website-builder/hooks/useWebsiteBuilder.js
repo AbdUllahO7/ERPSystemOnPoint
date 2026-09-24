@@ -4,6 +4,8 @@ import {
   DEFAULT_COMPANY_SECTIONS,
   DEFAULT_ECOMMERCE_SECTIONS,
   INITIAL_BUILDER_STATE,
+  MOCK_INVENTORY_CATEGORIES,
+  MOCK_INVENTORY_ITEMS,
 } from "../website-builder.constants";
 import { websiteBuilderApi } from "../api/website-builder.api";
 import toast from "react-hot-toast";
@@ -14,9 +16,16 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
   const [info, setInfo] = useState(initialConfig.info);
   const [identity, setIdentity] = useState(initialConfig.identity);
   const [sections, setSections] = useState(initialConfig.sections);
+  const [paymentMethods, setPaymentMethods] = useState(initialConfig.paymentMethods || ["knet", "credit_card"]);
+  const [categories, setCategories] = useState(MOCK_INVENTORY_CATEGORIES);
+  const [selectedCategoryForProducts, setSelectedCategoryForProducts] = useState(null);
+  const [inventoryItems, setInventoryItems] = useState(MOCK_INVENTORY_ITEMS);
   const [subdomain, setSubdomain] = useState(initialConfig.subdomain);
   const [isLoading, setIsLoading] = useState(Boolean(websiteId));
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Total steps: 4 for company profile, 5 for ecommerce
+  const totalSteps = websiteType === WEBSITE_TYPES.ECOMMERCE ? 5 : 4;
 
   // Load existing website data if websiteId is provided
   useEffect(() => {
@@ -32,6 +41,7 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
           if (data.info) setInfo(data.info);
           if (data.identity) setIdentity(data.identity);
           if (data.sections) setSections(data.sections);
+          if (data.paymentMethods) setPaymentMethods(data.paymentMethods);
           if (data.subdomain) setSubdomain(data.subdomain);
         }
       } catch (err) {
@@ -124,6 +134,33 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
     );
   }, []);
 
+  // Toggle Payment Method
+  const handleTogglePaymentMethod = useCallback((methodId) => {
+    setPaymentMethods((prev) =>
+      prev.includes(methodId)
+        ? prev.filter((m) => m !== methodId)
+        : [...prev, methodId]
+    );
+  }, []);
+
+  // Toggle Add All Products for Category
+  const handleToggleCategoryAll = useCallback((catId) => {
+    setCategories((prev) =>
+      prev.map((cat) =>
+        cat.id === catId ? { ...cat, isAllSelected: !cat.isAllSelected } : cat
+      )
+    );
+  }, []);
+
+  // Toggle Item selection in category view
+  const handleToggleItemSelection = useCallback((itemId) => {
+    setInventoryItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, selected: !item.selected } : item
+      )
+    );
+  }, []);
+
   // Step Navigation
   const goToNextStep = useCallback(() => {
     if (currentStep === 1) {
@@ -137,18 +174,23 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
         return;
       }
     }
-    setCurrentStep((prev) => Math.min(prev + 1, 4));
-  }, [currentStep, websiteType, info]);
+    setCurrentStep((prev) => Math.min(prev + 1, totalSteps));
+  }, [currentStep, websiteType, info, totalSteps]);
 
   const goToPreviousStep = useCallback(() => {
+    if (selectedCategoryForProducts) {
+      setSelectedCategoryForProducts(null);
+      return;
+    }
     setCurrentStep((prev) => Math.max(prev - 1, 1));
-  }, []);
+  }, [selectedCategoryForProducts]);
 
   const goToStep = useCallback((step) => {
-    if (step >= 1 && step <= 4) {
+    if (step >= 1 && step <= totalSteps) {
+      setSelectedCategoryForProducts(null);
       setCurrentStep(step);
     }
-  }, []);
+  }, [totalSteps]);
 
   // Publish / Save via API
   const handlePublish = useCallback(async (onSuccess) => {
@@ -158,6 +200,8 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
       info,
       identity,
       sections,
+      paymentMethods,
+      categories,
       subdomain,
       status: "Published",
       updatedAt: new Date().toISOString(),
@@ -177,14 +221,20 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
     } finally {
       setIsSubmitting(false);
     }
-  }, [websiteId, websiteType, info, identity, sections, subdomain]);
+  }, [websiteId, websiteType, info, identity, sections, paymentMethods, categories, subdomain]);
 
   return {
     currentStep,
+    totalSteps,
     websiteType,
     info,
     identity,
     sections,
+    paymentMethods,
+    categories,
+    selectedCategoryForProducts,
+    setSelectedCategoryForProducts,
+    inventoryItems,
     subdomain,
     isLoading,
     isSubmitting,
@@ -195,6 +245,9 @@ export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BU
     handleUploadLogo,
     handleMoveSection,
     handleToggleSection,
+    handleTogglePaymentMethod,
+    handleToggleCategoryAll,
+    handleToggleItemSelection,
     goToNextStep,
     goToPreviousStep,
     goToStep,

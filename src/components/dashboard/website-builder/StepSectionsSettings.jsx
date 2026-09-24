@@ -1,28 +1,37 @@
 import React from "react";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, Plus } from "lucide-react";
+import { WEBSITE_TYPES, PAYMENT_METHODS } from "@/features/website-builder";
 
 export function StepSectionsSettings({
+  websiteType,
   sections,
+  paymentMethods = [],
   onMoveSection,
   onToggleSection,
+  onTogglePaymentMethod,
+  onAddProductList,
 }) {
+  const isEcommerce = websiteType === WEBSITE_TYPES.ECOMMERCE;
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
+    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-8">
       {/* Step Header */}
       <div className="space-y-1">
         <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-          Step 3: Sections & Settings
+          {isEcommerce ? "Step 3: Home Page & Settings" : "Step 3: Sections & Settings"}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 font-medium">
-          Sections Management
+          {isEcommerce
+            ? "Homepage sections and website settings"
+            : "Sections Management"}
         </p>
       </div>
 
       {/* Sections Cards List */}
       <div className="space-y-3 pt-2">
         {sections.map((section, index) => {
-          const isFirstMovable = index === 2; // after topbar & hero
-          const isLastMovable = index === sections.length - 2; // before footer
+          const isFirstMovable = index === 2;
+          const isLastMovable = index === sections.length - (isEcommerce ? 1 : 2);
 
           return (
             <div
@@ -36,7 +45,7 @@ export function StepSectionsSettings({
 
               {/* Controls */}
               <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                {/* Reorder Arrows (Visible for movable middle sections) */}
+                {/* Reorder Arrows */}
                 {section.canReorder !== false && (
                   <div className="flex items-center gap-1 text-[#0066d1]">
                     <button
@@ -60,7 +69,7 @@ export function StepSectionsSettings({
                   </div>
                 )}
 
-                {/* Status Pill (Apparent / Hidden) */}
+                {/* Status Pill */}
                 <button
                   type="button"
                   onClick={() => onToggleSection && onToggleSection(section.id)}
@@ -72,11 +81,52 @@ export function StepSectionsSettings({
                 >
                   {section.status || "Apparent"}
                 </button>
+
+                {/* Add List Button (for Product lists in E-Commerce) */}
+                {section.hasAddList && (
+                  <button
+                    type="button"
+                    onClick={onAddProductList}
+                    className="px-5 py-2 bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add List
+                  </button>
+                )}
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Payment Methods Selection for E-Commerce (matching Screenshot 3) */}
+      {isEcommerce && (
+        <div className="pt-6 border-t border-slate-100 space-y-3">
+          <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+            Choose the payment methods you wish to use :
+          </h3>
+
+          <div className="flex flex-wrap items-center gap-6 pt-1">
+            {PAYMENT_METHODS.map((method) => {
+              const isChecked = paymentMethods.includes(method.id);
+              return (
+                <label
+                  key={method.id}
+                  className="inline-flex items-center gap-2 text-xs sm:text-sm font-medium text-slate-600 hover:text-slate-900 cursor-pointer select-none"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => onTogglePaymentMethod && onTogglePaymentMethod(method.id)}
+                    className="w-4 h-4 rounded border-slate-300 text-[#0066d1] focus:ring-[#0066d1]"
+                  />
+                  <span>{method.label}</span>
+                </label>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

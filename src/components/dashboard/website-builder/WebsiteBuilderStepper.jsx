@@ -1,13 +1,14 @@
 import React from "react";
 import { Check } from "lucide-react";
+import {
+  WEBSITE_TYPES,
+  COMPANY_STEPS,
+  ECOMMERCE_STEPS,
+} from "@/features/website-builder";
 
-export function WebsiteBuilderStepper({ currentStep, onStepClick }) {
-  const steps = [
-    { number: "01", id: 1, title: "Website Type" },
-    { number: "02", id: 2, title: "Info & identity" },
-    { number: "03", id: 3, title: "Sections & Settings" },
-    { number: "04", id: 4, title: "Publishing" },
-  ];
+export function WebsiteBuilderStepper({ currentStep, websiteType, onStepClick }) {
+  const steps =
+    websiteType === WEBSITE_TYPES.ECOMMERCE ? ECOMMERCE_STEPS : COMPANY_STEPS;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex items-center justify-between">
@@ -15,7 +16,6 @@ export function WebsiteBuilderStepper({ currentStep, onStepClick }) {
         {steps.map((step, index) => {
           const isCompleted = currentStep > step.id;
           const isCurrent = currentStep === step.id;
-          const isPending = currentStep < step.id;
 
           return (
             <React.Fragment key={step.id}>

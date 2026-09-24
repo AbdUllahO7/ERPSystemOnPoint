@@ -6,6 +6,8 @@ import {
   StepWebsiteType,
   StepInfoIdentity,
   StepSectionsSettings,
+  StepEcommerceProducts,
+  EcommerceCategoryProductsView,
   StepPublishing,
 } from "@/components/dashboard/website-builder";
 import { useWebsiteBuilder, WEBSITE_TYPES } from "@/features/website-builder";
@@ -17,10 +19,16 @@ export function WebsiteBuilderPage() {
 
   const {
     currentStep,
+    totalSteps,
     websiteType,
     info,
     identity,
     sections,
+    paymentMethods,
+    categories,
+    selectedCategoryForProducts,
+    setSelectedCategoryForProducts,
+    inventoryItems,
     subdomain,
     isLoading,
     isSubmitting,
@@ -31,11 +39,16 @@ export function WebsiteBuilderPage() {
     handleUploadLogo,
     handleMoveSection,
     handleToggleSection,
+    handleTogglePaymentMethod,
+    handleToggleCategoryAll,
+    handleToggleItemSelection,
     goToNextStep,
     goToPreviousStep,
     goToStep,
     handlePublish,
   } = useWebsiteBuilder({ websiteId: editId });
+
+  const isEcommerce = websiteType === WEBSITE_TYPES.ECOMMERCE;
 
   const onPublishComplete = (result) => {
     // Navigate to add content editor flow
@@ -52,6 +65,7 @@ export function WebsiteBuilderPage() {
           <div className="lg:col-span-8 flex flex-col justify-center">
             <WebsiteBuilderStepper
               currentStep={currentStep}
+              websiteType={websiteType}
               onStepClick={goToStep}
             />
           </div>
@@ -60,9 +74,12 @@ export function WebsiteBuilderPage() {
           <div className="lg:col-span-4 flex flex-col justify-center">
             <WebsiteBuilderActions
               currentStep={currentStep}
+              totalSteps={totalSteps}
+              isCategoryProductView={Boolean(selectedCategoryForProducts)}
               onPrevious={goToPreviousStep}
               onNext={goToNextStep}
               onPublish={() => handlePublish(onPublishComplete)}
+              onAddAndBack={() => setSelectedCategoryForProducts(null)}
               isSubmitting={isSubmitting}
             />
           </div>
@@ -70,6 +87,7 @@ export function WebsiteBuilderPage() {
 
         {/* Step Dynamic Content */}
         <div className="w-full">
+          {/* Step 1: Website Type */}
           {currentStep === 1 && (
             <StepWebsiteType
               selectedType={websiteType}
@@ -77,25 +95,54 @@ export function WebsiteBuilderPage() {
             />
           )}
 
+          {/* Step 2: Info & Identity */}
           {currentStep === 2 && (
             <StepInfoIdentity
               info={info}
               identity={identity}
+              websiteType={websiteType}
               onUpdateInfo={handleUpdateInfo}
               onUpdateIdentity={handleUpdateIdentity}
               onUploadLogo={handleUploadLogo}
             />
           )}
 
+          {/* Step 3: Sections & Settings (Company) / Home Page & Settings (E-Commerce) */}
           {currentStep === 3 && (
             <StepSectionsSettings
+              websiteType={websiteType}
               sections={sections}
+              paymentMethods={paymentMethods}
               onMoveSection={handleMoveSection}
               onToggleSection={handleToggleSection}
+              onTogglePaymentMethod={handleTogglePaymentMethod}
+              onAddProductList={() => goToNextStep()}
             />
           )}
 
-          {currentStep === 4 && (
+          {/* Step 4 for E-Commerce: Products (Category Selection or Products Table) */}
+          {isEcommerce && currentStep === 4 && (
+            <>
+              {selectedCategoryForProducts ? (
+                <EcommerceCategoryProductsView
+                  category={selectedCategoryForProducts}
+                  items={inventoryItems}
+                  onToggleItemSelection={handleToggleItemSelection}
+                  onAddAndBack={() => setSelectedCategoryForProducts(null)}
+                  onPrevious={() => setSelectedCategoryForProducts(null)}
+                />
+              ) : (
+                <StepEcommerceProducts
+                  categories={categories}
+                  onToggleCategoryAll={handleToggleCategoryAll}
+                  onViewCategoryProducts={(cat) => setSelectedCategoryForProducts(cat)}
+                />
+              )}
+            </>
+          )}
+
+          {/* Publishing Step: Step 4 for Company, Step 5 for E-Commerce */}
+          {((!isEcommerce && currentStep === 4) || (isEcommerce && currentStep === 5)) && (
             <StepPublishing
               websiteType={websiteType}
               info={info}
@@ -109,7 +156,9 @@ export function WebsiteBuilderPage() {
       {/* Footer */}
       <footer className="pt-8 pb-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 mt-8">
         <div>Copyright © ONPOINT</div>
-        <div>Designed By <span className="font-bold text-[#0066d1]">ONPOINT</span></div>
+        <div>
+          Designed By <span className="font-bold text-[#0066d1]">ONPOINT</span>
+        </div>
       </footer>
     </div>
   );

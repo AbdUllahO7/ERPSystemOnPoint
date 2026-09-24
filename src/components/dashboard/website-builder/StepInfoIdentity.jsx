@@ -109,7 +109,7 @@ export function StepInfoIdentity({
           </div>
         </div>
 
-        {/* Row 3: WhatsApp */}
+        {/* Row 3: WhatsApp & Virtual Currency */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-slate-800">WhatsApp link</label>
@@ -120,6 +120,23 @@ export function StepInfoIdentity({
               onChange={(e) => onUpdateInfo("whatsappLink", e.target.value)}
               className="w-full bg-white text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#0066d1] focus:ring-2 focus:ring-[#0066d1]/10 transition-all"
             />
+          </div>
+
+          {/* Virtual Currency for E-Commerce */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-slate-800">Virtual Currency</label>
+            <select
+              value={info.virtualCurrency || "USD"}
+              onChange={(e) => onUpdateInfo("virtualCurrency", e.target.value)}
+              className="w-full bg-white text-xs sm:text-sm px-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:border-[#0066d1] focus:ring-2 focus:ring-[#0066d1]/10 text-slate-700"
+            >
+              <option value="">select virtual currency</option>
+              <option value="USD">USD ($)</option>
+              <option value="KWD">KWD (د.ك)</option>
+              <option value="SAR">SAR (ر.س)</option>
+              <option value="AED">AED (د.إ)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
           </div>
         </div>
 
