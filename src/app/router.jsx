@@ -15,8 +15,8 @@ const lazyLoad = (importFn) => {
 }
 
 // 🌐 صفحات الموقع والمتجر الإلكتروني
-const Home = lazy(() => import("@/pages/website/Home"))
-const About = lazy(() => import("@/pages/website/About"))
+const Home = lazy(() => import("@/pages/website/store/Home"))
+const About = lazy(() => import("@/pages/website/profile/About"))
 const NotFound = lazy(() => import("../pages/not-found"))
 
 // 👥 المستخدمين واللوحة الرئيسية
@@ -167,15 +167,15 @@ export const router = createBrowserRouter([
   // 🏢 موقع وبروفايل الشركة التعريفي المستقل (Standalone Company Profile)
   {
     path: "/profile",
-    element: lazyLoad(() => import("@/pages/website/CompanyProfile")),
+    element: lazyLoad(() => import("@/pages/website/profile/CompanyProfile")),
   },
   {
     path: "/company-profile",
-    element: lazyLoad(() => import("@/pages/website/CompanyProfile")),
+    element: lazyLoad(() => import("@/pages/website/profile/CompanyProfile")),
   },
   {
     path: "/about",
-    element: lazyLoad(() => import("@/pages/website/CompanyProfile")),
+    element: lazyLoad(() => import("@/pages/website/profile/CompanyProfile")),
   },
 
   // 🛒 المتجر الإلكتروني (Storefront with Store Header & Footer)
@@ -183,24 +183,24 @@ export const router = createBrowserRouter([
     path: "/",
     element: <WebsiteLayout />,
     children: [
-      { index: true, element: lazyLoad(() => import("@/pages/website/Home")) },
-      { path: "shop", element: lazyLoad(() => import("@/pages/website/Shop")) },
-      { path: "search", element: lazyLoad(() => import("@/pages/website/Shop")) },
-      { path: "product/:id", element: lazyLoad(() => import("@/pages/website/ProductDetails")) },
-      { path: "cart", element: lazyLoad(() => import("@/pages/website/Cart")) },
-      { path: "wishlist", element: lazyLoad(() => import("@/pages/website/Wishlist")) },
-      { path: "saved-items", element: lazyLoad(() => import("@/pages/website/Wishlist")) },
-      { path: "account", element: lazyLoad(() => import("@/pages/website/Account")) },
-      { path: "account/profile", element: lazyLoad(() => import("@/pages/website/Account")) },
-      { path: "account/orders", element: lazyLoad(() => import("@/pages/website/Account")) },
-      { path: "login", element: lazyLoad(() => import("@/pages/website/Login")) },
-      { path: "auth/sign-in", element: lazyLoad(() => import("@/pages/website/Login")) },
-      { path: "sign-up", element: lazyLoad(() => import("@/pages/website/SignUp")) },
-      { path: "register", element: lazyLoad(() => import("@/pages/website/SignUp")) },
-      { path: "auth/sign-up", element: lazyLoad(() => import("@/pages/website/SignUp")) },
-      { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/PrivacyPolicy")) },
-      { path: "return-policy", element: lazyLoad(() => import("@/pages/website/ReturnPolicy")) },
-      { path: "terms", element: lazyLoad(() => import("@/pages/website/Terms")) },
+      { index: true, element: lazyLoad(() => import("@/pages/website/store/Home")) },
+      { path: "shop", element: lazyLoad(() => import("@/pages/website/store/Shop")) },
+      { path: "search", element: lazyLoad(() => import("@/pages/website/store/Shop")) },
+      { path: "product/:id", element: lazyLoad(() => import("@/pages/website/store/ProductDetails")) },
+      { path: "cart", element: lazyLoad(() => import("@/pages/website/store/Cart")) },
+      { path: "wishlist", element: lazyLoad(() => import("@/pages/website/store/Wishlist")) },
+      { path: "saved-items", element: lazyLoad(() => import("@/pages/website/store/Wishlist")) },
+      { path: "account", element: lazyLoad(() => import("@/pages/website/store/Account")) },
+      { path: "account/profile", element: lazyLoad(() => import("@/pages/website/store/Account")) },
+      { path: "account/orders", element: lazyLoad(() => import("@/pages/website/store/Account")) },
+      { path: "login", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
+      { path: "auth/sign-in", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
+      { path: "sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
+      { path: "register", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
+      { path: "auth/sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
+      { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/legal/PrivacyPolicy")) },
+      { path: "return-policy", element: lazyLoad(() => import("@/pages/website/legal/ReturnPolicy")) },
+      { path: "terms", element: lazyLoad(() => import("@/pages/website/legal/Terms")) },
       { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
     ],
   },

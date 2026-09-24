@@ -9,7 +9,7 @@ import {
   ProfileFaq,
   ProfileContact,
   ProfileFooter,
-} from "../../components/profile";
+} from "@/components/profile";
 
 export function CompanyProfile() {
   const scrollToSection = (id) => {
