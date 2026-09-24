@@ -1,4 +1,6 @@
-export { WebsiteBuilderPage, default } from "./WebsiteBuilderPage";
-export { WebsitesListPage } from "./WebsitesListPage";
-export { WebsiteContentEditorPage } from "./WebsiteContentEditorPage";
-export { EcommerceContentEditorPage } from "./EcommerceContentEditorPage";
+export * from "./WebsiteBuilderPage";
+export * from "./WebsitesListPage";
+export * from "./WebsiteContentEditorPage";
+export * from "./EcommerceContentEditorPage";
+export * from "./EcommerceOrdersPage";
+export * from "./EcommerceOrderDetailsPage";

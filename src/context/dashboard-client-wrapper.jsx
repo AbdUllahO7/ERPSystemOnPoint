@@ -50,8 +50,8 @@ const sidebarLinks = [
   {
     label: "Web Service",
     items: [
-      { title: "Manage Websites", href: "/dashboard/web-service", icon: Globe },
-      { title: "+ Create New Website", href: "/dashboard/web-service/create", icon: PlusCircle },
+      { title: "Website Control Panel", href: "/dashboard/web-service", icon: Globe },
+      { title: "E-Commerce Orders", href: "/dashboard/web-service/orders", icon: ReceiptText },
     ],
   },
   {

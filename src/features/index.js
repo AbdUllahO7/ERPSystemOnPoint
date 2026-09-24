@@ -7,7 +7,7 @@ export * from "./appointments";
 // CRM
 export * from "./crm";
 
-// E-Commerce
+// E-Commerce Store
 export * from "./ecommerce";
 
 // Events
@@ -33,3 +33,9 @@ export * from "./website-builder";
 
 // Website Content Editor
 export * from "./website-content";
+
+// E-Commerce Content Editor
+export * from "./ecommerce-content";
+
+// E-Commerce Orders
+export * from "./ecommerce-orders";
