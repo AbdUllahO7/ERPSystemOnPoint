@@ -12,12 +12,15 @@ export function StepPublishing({
       ? "Company Website"
       : "E-Commerce";
 
+  const stepNumber =
+    websiteType === WEBSITE_TYPES.ECOMMERCE ? 5 : 4;
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-8">
       {/* Step Header */}
       <div className="space-y-1">
         <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-          Step 4: Publishing
+          Step {stepNumber}: Publishing
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 font-medium">
           Verify the data before launching the site with one click
