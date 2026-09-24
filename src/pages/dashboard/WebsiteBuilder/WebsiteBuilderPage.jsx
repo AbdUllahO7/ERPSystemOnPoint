@@ -16,6 +16,13 @@ export function WebsiteBuilderPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const editId = searchParams.get("id");
+  const typeParam = searchParams.get("type");
+  const initialType =
+    typeParam === "ecommerce"
+      ? WEBSITE_TYPES.ECOMMERCE
+      : typeParam === "company"
+        ? WEBSITE_TYPES.COMPANY
+        : null;
 
   const {
     currentStep,
@@ -46,7 +53,7 @@ export function WebsiteBuilderPage() {
     goToPreviousStep,
     goToStep,
     handlePublish,
-  } = useWebsiteBuilder({ websiteId: editId });
+  } = useWebsiteBuilder({ websiteId: editId, initialType });
 
   const isEcommerce = websiteType === WEBSITE_TYPES.ECOMMERCE;
 
@@ -80,6 +87,7 @@ export function WebsiteBuilderPage() {
               currentStep={currentStep}
               totalSteps={totalSteps}
               isCategoryProductView={Boolean(selectedCategoryForProducts)}
+              isEditMode={Boolean(editId)}
               onPrevious={goToPreviousStep}
               onNext={goToNextStep}
               onPublish={() => handlePublish(onPublishComplete)}

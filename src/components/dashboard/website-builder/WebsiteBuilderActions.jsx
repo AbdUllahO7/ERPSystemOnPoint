@@ -5,6 +5,7 @@ export function WebsiteBuilderActions({
   currentStep,
   totalSteps = 4,
   isCategoryProductView = false,
+  isEditMode = false,
   onPrevious,
   onNext,
   onPublish,
@@ -44,7 +45,9 @@ export function WebsiteBuilderActions({
           className="w-full sm:w-auto py-3 px-8 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-sm shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          Publish & Proceed To Add Content
+          {isEditMode
+            ? "Save & Proceed To Add Content"
+            : "Publish & Proceed To Add Content"}
         </button>
       ) : (
         <button

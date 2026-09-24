@@ -10,12 +10,22 @@ import {
 import { websiteBuilderApi } from "../api/website-builder.api";
 import toast from "react-hot-toast";
 
-export function useWebsiteBuilder({ websiteId = null, initialConfig = INITIAL_BUILDER_STATE } = {}) {
+export function useWebsiteBuilder({
+  websiteId = null,
+  initialType = null,
+  initialConfig = INITIAL_BUILDER_STATE,
+} = {}) {
   const [currentStep, setCurrentStep] = useState(1);
-  const [websiteType, setWebsiteType] = useState(initialConfig.type || WEBSITE_TYPES.COMPANY);
+  const [websiteType, setWebsiteType] = useState(
+    initialType || initialConfig.type || WEBSITE_TYPES.COMPANY
+  );
   const [info, setInfo] = useState(initialConfig.info);
   const [identity, setIdentity] = useState(initialConfig.identity);
-  const [sections, setSections] = useState(initialConfig.sections);
+  const [sections, setSections] = useState(
+    (initialType === WEBSITE_TYPES.ECOMMERCE || initialConfig.type === WEBSITE_TYPES.ECOMMERCE)
+      ? DEFAULT_ECOMMERCE_SECTIONS
+      : DEFAULT_COMPANY_SECTIONS
+  );
   const [paymentMethods, setPaymentMethods] = useState(initialConfig.paymentMethods || ["knet", "credit_card"]);
   const [categories, setCategories] = useState(MOCK_INVENTORY_CATEGORIES);
   const [selectedCategoryForProducts, setSelectedCategoryForProducts] = useState(null);

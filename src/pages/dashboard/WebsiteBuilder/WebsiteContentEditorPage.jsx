@@ -78,14 +78,16 @@ export function WebsiteContentEditorPage() {
     }
   };
 
-  const handleNextWithSave = async () => {
-    await saveSection(activeTab);
-    goToNextTab();
+  const handleBack = () => {
+    if (hasPrevious) {
+      goToPreviousTab();
+    } else {
+      navigate("/dashboard/web-service");
+    }
   };
 
-  const handleSaveAll = async () => {
+  const handleSave = async () => {
     await saveSection(activeTab);
-    navigate("/profile");
   };
 
   return (
@@ -104,11 +106,8 @@ export function WebsiteContentEditorPage() {
           {/* Action Card */}
           <div className="lg:col-span-4 flex flex-col justify-center">
             <ContentEditorActions
-              hasPrevious={hasPrevious}
-              hasNext={hasNext}
-              onPrevious={goToPreviousTab}
-              onNext={handleNextWithSave}
-              onSave={handleSaveAll}
+              onBack={handleBack}
+              onSave={handleSave}
               isSaving={isSaving}
             />
           </div>

@@ -30,11 +30,11 @@ export function WebsitesListPage() {
         {/* Website Cards (1:1 with Figma Image 1) */}
         {!isLoading && (
           <div className="space-y-5">
-            {websites.map((site, index) => {
+            {websites.map((site) => {
               const isEcommerce =
                 site.type === WEBSITE_TYPES.ECOMMERCE ||
                 site.typeLabel === "E-Commerce" ||
-                index === 0;
+                site.type === "ecommerce";
 
               const initials = isEcommerce ? "EN" : "WN";
               const typePrefix = isEcommerce ? "Ecommerce Name :" : "Website Name :";
