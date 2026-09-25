@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
+<<<<<<< Updated upstream
 import {
   Select,
   SelectContent,
@@ -8,10 +9,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+=======
+>>>>>>> Stashed changes
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   createOffice,
   updateOffice,
@@ -52,7 +62,7 @@ export default function AddEditOffice() {
     queryFn: () => getDepartments({ pageNumber: 1, pageSize: 100 }),
   });
 
-  const { data: sectionsData } = useQuery({
+  const { data: sectionsData, isFetching: isFetchingSections } = useQuery({
     queryKey: ["getDepartmentSections", departmentId],
     queryFn: () => getDepartmentSections({ department_id: departmentId }),
     enabled: !!departmentId,
@@ -74,24 +84,29 @@ export default function AddEditOffice() {
     if (isEdit && officeData?.data) {
       const office = officeData.data;
       setValue("name_Office", office.office_name || office.name_Office || office.office_Name || "");
-      setValue("department_id", office.department_id || office.department_Id || "");
-      
-      // Delay setting sector_id to ensure sections data is fetched if it depends on department_id
-      setTimeout(() => {
-        setValue("sector_id", office.sector_id || office.section_Id || office.section_id || "");
-      }, 100);
+      setValue("department_id", String(office.department_id || office.department_Id || ""));
     }
   }, [isEdit, officeData, setValue]);
 
   useEffect(() => {
+    if (isEdit && officeData?.data && sectionsData) {
+      const office = officeData.data;
+      setValue("sector_id", String(office.sector_id || office.section_Id || office.section_id || ""));
+    }
+  }, [isEdit, officeData, sectionsData, setValue]);
+
+  useEffect(() => {
     if (sectionDataForAutoFill?.data && !isEdit) {
       const depId = sectionDataForAutoFill.data.department_Id || sectionDataForAutoFill.data.department_id || "";
-      setValue("department_id", depId);
-      setTimeout(() => {
-        setValue("sector_id", sectorIdFromState);
-      }, 100);
+      setValue("department_id", String(depId));
     }
-  }, [sectionDataForAutoFill, isEdit, setValue, sectorIdFromState]);
+  }, [sectionDataForAutoFill, isEdit, setValue]);
+
+  useEffect(() => {
+    if (sectionDataForAutoFill?.data && !isEdit && sectionsData) {
+      setValue("sector_id", String(sectorIdFromState || ""));
+    }
+  }, [sectionDataForAutoFill, isEdit, sectionsData, setValue, sectorIdFromState]);
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -104,8 +119,8 @@ export default function AddEditOffice() {
           })
         : createOffice(data),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries(["getOffices"]);
-      queryClient.invalidateQueries(["getSectionOffices"]);
+      queryClient.invalidateQueries({ queryKey: ["getOffices"] });
+      queryClient.invalidateQueries({ queryKey: ["getSectionOffices"] });
       toast.success(isEdit ? "Office updated successfully!" : "Office added successfully!");
       if (variables.sector_id) {
         navigate(`/dashboard/hr/sections/${variables.sector_id}?tab=office`);
@@ -123,10 +138,16 @@ export default function AddEditOffice() {
     mutation.mutate(data);
   };
 
-  const departments = departmentsData?.data?.items || [];
-  const sections = sectionsData?.data?.items || [];
+  const departmentsRaw = departmentsData?.data?.items || [];
+  const departments = departmentsRaw.filter(
+    (v, i, a) => a.findIndex((t) => (t.id || t.department_Id) === (v.id || v.department_Id)) === i
+  );
+  const sectionsRaw = sectionsData?.data?.items || [];
+  const sections = sectionsRaw.filter(
+    (v, i, a) => a.findIndex((t) => (t.id || t.section_Id) === (v.id || v.section_Id)) === i
+  );
   const pageTitle = isEdit ? "Edit Office" : "Add Office";
-  console.log("sections", sections);
+  console.log("sections", sections.length);
   console.log("departments", departments);
 
   return (
@@ -156,7 +177,7 @@ export default function AddEditOffice() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingOffice && isEdit ? (
+        {(isLoadingOffice && isEdit) || !departmentsData ? (
           <div className="text-sm text-muted-foreground">Loading details...</div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -195,6 +216,7 @@ export default function AddEditOffice() {
                     value={field.value ? String(field.value) : undefined}
                     onValueChange={field.onChange}
                   >
+<<<<<<< Updated upstream
                     <SelectTrigger className="w-full h-9 bg-transparent">
                       <SelectValue placeholder="Select Department" />
                     </SelectTrigger>
@@ -204,6 +226,20 @@ export default function AddEditOffice() {
                           {dept.departmentName || ""}
                         </SelectItem>
                       ))}
+=======
+                    <SelectTrigger className="w-full h-11 bg-transparent">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {departments.map((dept) => {
+                        const deptId = String(dept.id || dept.department_Id);
+                        return (
+                          <SelectItem key={deptId} value={deptId}>
+                            {dept.departmentName || ""}
+                          </SelectItem>
+                        );
+                      })}
+>>>>>>> Stashed changes
                     </SelectContent>
                   </Select>
                 )}
@@ -225,6 +261,7 @@ export default function AddEditOffice() {
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
+<<<<<<< Updated upstream
                   <Select
                     key={field.value}
                     value={field.value ? String(field.value) : undefined}
@@ -240,10 +277,47 @@ export default function AddEditOffice() {
                           {sec.name || sec.section_Name || sec.section_name}
                         </SelectItem>
                       ))}
+=======
+                    <Select
+                      key={field.value}
+                      value={field.value ? String(field.value) : undefined}
+                      onValueChange={field.onChange}
+                      disabled={!departmentId || isFetchingSections || (departmentId && sections.length === 0 && !isFetchingSections)}
+                    >
+                      <SelectTrigger className="w-full h-11 bg-transparent">
+                        <SelectValue
+                          placeholder={
+                            !departmentId
+                              ? "Select Section"
+                              : isFetchingSections
+                                ? "Loading sections..."
+                                : "Select Section"
+                          }
+                        />
+                      </SelectTrigger>
+                    <SelectContent position="popper">
+                      {Array.isArray(sections) &&
+                        sections.map((sec) => {
+                          const secId = String(sec.id || sec.section_Id);
+                          return (
+                            <SelectItem key={secId} value={secId}>
+                              {sec.name || sec.section_Name || sec.section_name}
+                            </SelectItem>
+                          );
+                        })}
+>>>>>>> Stashed changes
                     </SelectContent>
                   </Select>
                 )}
               />
+<<<<<<< Updated upstream
+=======
+              {!isFetchingSections && sections.length === 0 && departmentId && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  No sections available for this department
+                </p>
+              )}
+>>>>>>> Stashed changes
               {errors.sector_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

@@ -22,14 +22,14 @@ export default function AddLeavePage() {
     leave_Type_Id: "",
     start_Date: "",
     end_Date: "",
-    reason: ""
+    reason: "",
   });
 
   const { data: leaveTypesResponse } = useQuery({
     queryKey: ["getLeaveTypes"],
     queryFn: () => getLeaveTypes({ PageSize: 100 }),
   });
-  
+
   const leaveTypes = leaveTypesResponse?.data?.items || [];
 
   const applyMutation = useMutation({
@@ -41,7 +41,7 @@ export default function AddLeavePage() {
     onError: (error) => {
       console.error("Failed to apply for leave", error);
       toast.error("Failed to apply for leave!");
-    }
+    },
   });
 
   const handleAdd = () => {
@@ -50,7 +50,7 @@ export default function AddLeavePage() {
       leave_Type_Id: form.leave_Type_Id,
       start_Date: new Date(form.start_Date).toISOString(),
       end_Date: new Date(form.end_Date).toISOString(),
-      reason: form.reason
+      reason: form.reason,
     });
   };
 
@@ -64,16 +64,28 @@ export default function AddLeavePage() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <Link to="/dashboard/hr/employees" className="hover:underline">Employees</Link>
+            <Link to="/dashboard/hr/employees" className="hover:underline">
+              Employees
+            </Link>
             <span>/</span>
-            <Link to={`/dashboard/hr/employees/${employeeId}?tab=leaves`} className="hover:underline">Employee Details</Link>
+            <Link
+              to={`/dashboard/hr/employees/${employeeId}?tab=leaves`}
+              className="hover:underline"
+            >
+              Employee Details
+            </Link>
             <span>/</span>
             <span className="font-medium text-foreground">Add Leave</span>
           </div>
         </div>
-        <Button 
-          onClick={handleAdd} 
-          disabled={applyMutation.isPending || !form.leave_Type_Id || !form.start_Date || !form.end_Date} 
+        <Button
+          onClick={handleAdd}
+          disabled={
+            applyMutation.isPending ||
+            !form.leave_Type_Id ||
+            !form.start_Date ||
+            !form.end_Date
+          }
           className="px-8"
         >
           {applyMutation.isPending ? "Adding..." : "+ Add"}
@@ -82,14 +94,30 @@ export default function AddLeavePage() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        <form className="grid grid-cols-1 md:grid-cols-3 gap-6" onSubmit={(e) => e.preventDefault()}>
+        <form
+          className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          onSubmit={(e) => e.preventDefault()}
+        >
           <div className="space-y-2">
+<<<<<<< Updated upstream
             <label className="text-sm font-semibold text-foreground leading-none">Type</label>
             <Select
               value={form.leave_Type_Id ? String(form.leave_Type_Id) : undefined}
               onValueChange={(val) => setForm({ ...form, leave_Type_Id: val })}
             >
               <SelectTrigger className="w-full h-9 bg-transparent">
+=======
+            <label className="text-sm font-semibold text-foreground leading-none">
+              Type
+            </label>
+            <Select
+              value={
+                form.leave_Type_Id ? String(form.leave_Type_Id) : undefined
+              }
+              onValueChange={(val) => setForm({ ...form, leave_Type_Id: val })}
+            >
+              <SelectTrigger className="h-10 py-5 w-full bg-transparent">
+>>>>>>> Stashed changes
                 <SelectValue placeholder="Select Type" />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -101,31 +129,49 @@ export default function AddLeavePage() {
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Start Date</label>
+            <label className="text-sm font-semibold text-foreground leading-none">
+              Start Date
+            </label>
             <Input
               type="date"
+<<<<<<< Updated upstream
               className="h-9 bg-transparent"
+=======
+              className="h-11 w-full bg-transparent"
+>>>>>>> Stashed changes
               value={form.start_Date}
               onChange={(e) => setForm({ ...form, start_Date: e.target.value })}
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">End Date</label>
+            <label className="text-sm font-semibold text-foreground leading-none">
+              End Date
+            </label>
             <Input
               type="date"
+<<<<<<< Updated upstream
               className="h-9 bg-transparent"
+=======
+              className="h-11 w-full bg-transparent"
+>>>>>>> Stashed changes
               value={form.end_Date}
               onChange={(e) => setForm({ ...form, end_Date: e.target.value })}
             />
           </div>
 
           <div className="space-y-2 md:col-span-3">
-            <label className="text-sm font-semibold text-foreground leading-none">Reason</label>
+            <label className="text-sm font-semibold text-foreground leading-none">
+              Reason
+            </label>
             <Input
+<<<<<<< Updated upstream
               className="h-9 bg-transparent md:max-w-[calc(33.333%-1rem)]"
+=======
+              className="h-11 w-full bg-transparent md:max-w-[calc(33.333%-1rem)]"
+>>>>>>> Stashed changes
               value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })}
               placeholder="Enter reason for leave..."

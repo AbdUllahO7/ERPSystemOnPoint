@@ -96,7 +96,7 @@ export default function AddEditAccount() {
     const payload = {
       account_Number: data.account_Number,
       account_Name: data.account_Name,
-      parent_Account_Id: data.parent_Account_Id || null,
+      parent_Account_Id: data.parent_Account_Id === "none" ? null : (data.parent_Account_Id || null),
       final_Account: data.final_Account,
       account_Nature: data.account_Nature,
       financial_Statement: data.financial_Statement,
@@ -192,8 +192,13 @@ export default function AddEditAccount() {
                 render={({ field }) => (
                   <Select
                     key={field.value}
+<<<<<<< Updated upstream
                     value={field.value ? String(field.value) : "none"}
                     onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+=======
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+>>>>>>> Stashed changes
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
                       <SelectValue placeholder="No Parent (Main Account)" />

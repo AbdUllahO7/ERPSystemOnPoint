@@ -13,6 +13,13 @@ import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   createDepartment,
   updateDepartment,
   getDepartmentById,
@@ -63,12 +70,13 @@ export default function AddEditDepartment() {
   useEffect(() => {
     if (isEdit && departmentData?.data) {
       const dept = departmentData.data;
+
       setValue(
         "department_Name",
         dept.department_Name || dept.department_name || "",
       );
-      setValue("manager_id", dept.manager_Id || "");
-      setValue("branch_id", dept.branch_Id || "");
+      setValue("manager_id", String(dept.manager_Id || ""));
+      setValue("branch_id", String(dept.branch_Id || ""));
     }
   }, [isEdit, departmentData, setValue]);
 
@@ -78,7 +86,7 @@ export default function AddEditDepartment() {
         ? updateDepartment({ ...data, department_Id: id })
         : createDepartment(data),
     onSuccess: () => {
-      queryClient.invalidateQueries(["getDepartments"]);
+      queryClient.invalidateQueries({ queryKey: ["getDepartments"] });
       toast.success(
         isEdit
           ? "Department updated successfully!"
@@ -138,7 +146,7 @@ export default function AddEditDepartment() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingDepartment && isEdit ? (
+        {(isLoadingDepartment && isEdit) || !managersData || !branchData ? (
           <div className="text-sm text-muted-foreground">
             Loading details...
           </div>
@@ -176,6 +184,7 @@ export default function AddEditDepartment() {
                 render={({ field }) => (
                   <Select
                     key={field.value}
+<<<<<<< Updated upstream
                     value={field.value ? String(field.value) : undefined}
                     onValueChange={field.onChange}
                   >
@@ -185,6 +194,21 @@ export default function AddEditDepartment() {
                     <SelectContent position="popper">
                       {managers.map((manager) => (
                         <SelectItem key={manager.managerId} value={String(manager.managerId)}>
+=======
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-11 bg-transparent">
+                      <SelectValue placeholder="Select Manager Name" />
+                    </SelectTrigger>
+
+                    <SelectContent position="popper">
+                      {managers.map((manager) => (
+                        <SelectItem
+                          key={manager.managerId}
+                          value={String(manager.managerId)}
+                        >
+>>>>>>> Stashed changes
                           {manager.managerName}
                         </SelectItem>
                       ))}
@@ -211,12 +235,22 @@ export default function AddEditDepartment() {
                 render={({ field }) => (
                   <Select
                     key={field.value}
+<<<<<<< Updated upstream
                     value={field.value ? String(field.value) : undefined}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
                       <SelectValue placeholder="Select Branch Name" />
                     </SelectTrigger>
+=======
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-11 bg-transparent">
+                      <SelectValue placeholder="Select Branch Name" />
+                    </SelectTrigger>
+
+>>>>>>> Stashed changes
                     <SelectContent position="popper">
                       {branches.map((branch) => (
                         <SelectItem key={branch.id} value={String(branch.id)}>

@@ -59,7 +59,7 @@ export default function AddCategoryPage() {
       reset({
         serialNumber: data.code || "",
         categoryName: data.categoryName || "",
-        parentCategoryId: data.parentCategoryId || "",
+        parentCategoryId: data.parentCategoryId ? String(data.parentCategoryId) : "",
       });
       if (data.parentCategoryId) {
         setCategoryType("sub");

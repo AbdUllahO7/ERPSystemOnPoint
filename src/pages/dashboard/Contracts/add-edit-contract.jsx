@@ -140,11 +140,19 @@ export default function AddEditContractPage() {
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-semibold text-foreground leading-none">Employee Name</label>
                 <Select
+<<<<<<< Updated upstream
                   value={form.employeeId ? String(form.employeeId) : undefined}
                   onValueChange={(val) => setForm({ ...form, employeeId: val })}
                   disabled={!!prefillEmployeeId}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent disabled:bg-slate-100">
+=======
+                  value={form.employeeId ? String(form.employeeId) : ""}
+                  onValueChange={(val) => setForm({ ...form, employeeId: val })}
+                  disabled={!!prefillEmployeeId}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+>>>>>>> Stashed changes
                     <SelectValue placeholder="Select Employee" />
                   </SelectTrigger>
                   <SelectContent position="popper">

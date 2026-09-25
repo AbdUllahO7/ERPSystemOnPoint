@@ -13,6 +13,13 @@ import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   createEmployee,
   updateEmployee,
   getEmployeeById,
@@ -186,7 +193,7 @@ export default function AddEditEmployee() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingEmployee && isEdit ? (
+        {(isLoadingEmployee && isEdit) || !sectionsData || !positionsData || !jobTitlesData || !shiftRulesData || !officesData || !managersData || !statusData ? (
           <div className="text-sm text-muted-foreground">
             Loading details...
           </div>
