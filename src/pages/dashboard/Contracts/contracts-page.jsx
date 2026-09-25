@@ -15,14 +15,7 @@ const stats = [
   { title: "Total number of employees", value: "32", trend: "-1%", isUp: false, color: "bg-[#ff9548]", icon: UsersIcon }
 ];
 
-const mockContracts = [
-  { id: "1", employeeName: "Employee Name", startDate: "23/7/2025", endDate: "23/7/2026", status: "Active" },
-  { id: "2", employeeName: "Employee Name", startDate: "23/7/2025", endDate: "23/7/2026", status: "Cancelled" },
-  { id: "3", employeeName: "Employee Name", startDate: "23/7/2025", endDate: "23/7/2026", status: "Cancelled" },
-  { id: "4", employeeName: "Employee Name", startDate: "23/7/2025", endDate: "23/7/2026", status: "Cancelled" },
-  { id: "5", employeeName: "Employee Name", startDate: "23/7/2025", endDate: "23/7/2026", status: "Completed" },
-  { id: "6", employeeName: "Employee Name", startDate: "23/7/2025", endDate: "23/7/2026", status: "Completed" },
-];
+
 
 export default function ContractsPage() {
   const queryClient = useQueryClient();
@@ -220,7 +213,6 @@ export default function ContractsPage() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{ placeholder: "Search contracts...", value: search, onChange: setSearch }}
         filter={{ label: "Filter", onClick: () => setIsFilterOpen(!isFilterOpen) }}
         card={{

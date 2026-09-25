@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -24,6 +31,7 @@ export default function AddEditOffice() {
   const sectorIdFromState = location.state?.sectorId;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -162,7 +170,7 @@ export default function AddEditOffice() {
               <Input
                 id="name_Office"
                 placeholder="Office Name"
-                className="h-11 bg-transparent max-w-md"
+                className="h-9 bg-transparent max-w-md"
                 {...register("name_Office", { required: true })}
               />
               {errors.name_Office && (
@@ -177,18 +185,29 @@ export default function AddEditOffice() {
               >
                 Department
               </label>
-              <select
-                id="department_id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("department_id", { required: true })}
-              >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept.id || dept.department_Id} value={dept.id || dept.department_Id}>
-                    {dept.departmentName|| ""}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="department_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id || dept.department_Id} value={String(dept.id || dept.department_Id)}>
+                          {dept.departmentName || ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.department_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -201,19 +220,30 @@ export default function AddEditOffice() {
               >
                 Section
               </label>
-              <select
-                id="sector_id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("sector_id", { required: true })}
-                disabled={!departmentId}
-              >
-                <option value="">Select Section</option>
-                {Array.isArray(sections) && sections.map((sec) => (
-                  <option key={sec.id || sec.section_Id} value={sec.id || sec.section_Id}>
-                    {sec.name || sec.section_Name || sec.section_name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="sector_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                    disabled={!departmentId}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Section" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {Array.isArray(sections) && sections.map((sec) => (
+                        <SelectItem key={sec.id || sec.section_Id} value={String(sec.id || sec.section_Id)}>
+                          {sec.name || sec.section_Name || sec.section_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.sector_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

@@ -1,6 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -13,6 +20,7 @@ export default function AddBank() {
   const queryClient = useQueryClient();
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -93,7 +101,7 @@ export default function AddBank() {
             <label className="text-sm font-semibold text-foreground">Bank Name <span className="text-red-500">*</span></label>
             <Input
               placeholder="Bank Name"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("bank_Name", { required: true })}
             />
             {errors.bank_Name && <span className="text-red-500 text-xs">Required</span>}
@@ -103,7 +111,7 @@ export default function AddBank() {
             <label className="text-sm font-semibold text-foreground">Account Number <span className="text-red-500">*</span></label>
             <Input
               placeholder="Account Number"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("account_Number", { required: true })}
             />
             {errors.account_Number && <span className="text-red-500 text-xs">Required</span>}
@@ -113,7 +121,7 @@ export default function AddBank() {
             <label className="text-sm font-semibold text-foreground">IBAN</label>
             <Input
               placeholder="IBAN"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("iban")}
             />
           </div>
@@ -122,36 +130,63 @@ export default function AddBank() {
             <label className="text-sm font-semibold text-foreground">Swift Code</label>
             <Input
               placeholder="Swift Code"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("swift_Code")}
             />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Currency <span className="text-red-500">*</span></label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("currency_Id", { required: true })}
-            >
-              <option value="">Select Currency</option>
-              {currencies.map(c => (
-                <option key={c.id} value={c.id}>{c.name || c.currencyCode || c.currency_Name}</option>
-              ))}
-            </select>
+            <Controller
+              name="currency_Id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Currency" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {currencies.map(c => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name || c.currencyCode || c.currency_Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.currency_Id && <span className="text-red-500 text-xs">Required</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Branch</label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("branch_Id")}
-            >
-              <option value="">Select Branch</option>
-              {branches.map(b => (
-                <option key={b.id} value={b.id}>{b.branchName}</option>
-              ))}
-            </select>
+            <Controller
+              name="branch_Id"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Branch" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {branches.map(b => (
+                      <SelectItem key={b.id} value={String(b.id)}>
+                        {b.branchName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
         </form>
       </div>

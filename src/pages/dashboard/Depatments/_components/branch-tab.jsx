@@ -77,7 +77,7 @@ export default function BranchTab({ id }) {
     },
     {
       key: "sectionName",
-      label: "Section/Department Name",
+      label: "SectionName",
       render: (row) => <span>{row.name || row.sectionName || "N/A"}</span>
     },
     {
@@ -99,7 +99,6 @@ export default function BranchTab({ id }) {
         isLoading={isLoading}
         columns={columns}
         getRowId={(row) => row.id}
-        selectable
         search={{
           placeholder: "Search by id or section name...",
           value: search,

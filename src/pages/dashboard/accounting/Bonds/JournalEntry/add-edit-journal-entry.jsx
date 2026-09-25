@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -159,7 +166,7 @@ export default function AddEditJournalEntry() {
                 <label className="text-sm font-semibold text-foreground">Date</label>
                 <Input
                   type="date"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("date", { required: true })}
                 />
                 {errors.date && <span className="text-red-500 text-xs">Required</span>}
@@ -169,7 +176,7 @@ export default function AddEditJournalEntry() {
                 <label className="text-sm font-semibold text-foreground">Reference</label>
                 <Input
                   placeholder="Reference"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("bond_Number", { required: true })}
                 />
                 {errors.bond_Number && <span className="text-red-500 text-xs">Required</span>}
@@ -177,15 +184,29 @@ export default function AddEditJournalEntry() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Currency</label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("currency_Id", { required: true })}
-                >
-                  <option value="">Select Currency</option>
-                  {currencies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name || c.currency_Name || c.currencyCode}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="currency_Id"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Currency" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {currencies.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name || c.currency_Name || c.currencyCode}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.currency_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
@@ -230,40 +251,67 @@ export default function AddEditJournalEntry() {
                   {fields?.map((field, index) => (
                     <tr key={field.id} className="border-b last:border-0">
                       <td className="p-2 align-top">
-                        <select
-                          className="flex h-10 w-full min-w-[150px] items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:ring-1 focus:ring-primary"
-                          {...register(`lines.${index}.account_Id`, { required: true })}
-                        >
-                          <option value="">Account</option>
-                          {accounts.map((a) => (
-                            <option key={a.id} value={a.id}>{a.account_Name}</option>
-                          ))}
-                        </select>
+                        <Controller
+                          name={`lines.${index}.account_Id`}
+                          control={control}
+                          rules={{ required: true }}
+                          render={({ field }) => (
+                            <Select
+                              key={field.value}
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="w-full min-w-[150px] h-9 bg-transparent">
+                                <SelectValue placeholder="Account" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                {accounts.map((a) => (
+                                  <SelectItem key={a.id} value={String(a.id)}>
+                                    {a.account_Name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       </td>
                       <td className="p-2 align-top">
                         <Input
                           placeholder="Description"
-                          className="h-10 bg-transparent min-w-[150px]"
+                          className="h-9 bg-transparent min-w-[150px]"
                           {...register(`lines.${index}.description`)}
                         />
                       </td>
                       <td className="p-2 align-top">
-                        <select
-                          className="flex h-10 w-full min-w-[150px] items-center justify-between rounded-md border border-input bg-transparent px-3 py-1 text-sm focus:ring-1 focus:ring-primary"
-                          {...register(`lines.${index}.costCenter_Id`)}
-                        >
-                          <option value="">Cost Center</option>
-                          {costCenters.map((cc) => (
-                            <option key={cc.id} value={cc.id}>{cc.cost_Center_Name}</option>
-                          ))}
-                        </select>
+                        <Controller
+                          name={`lines.${index}.costCenter_Id`}
+                          control={control}
+                          render={({ field }) => (
+                            <Select
+                              key={field.value}
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                            >
+                              <SelectTrigger className="w-full min-w-[150px] h-9 bg-transparent">
+                                <SelectValue placeholder="Cost Center" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                {costCenters.map((cc) => (
+                                  <SelectItem key={cc.id} value={String(cc.id)}>
+                                    {cc.cost_Center_Name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                       </td>
                       <td className="p-2 align-top">
                         <Input
                           type="number"
                           min="0"
                           step="0.01"
-                          className="h-10 bg-transparent"
+                          className="h-9 bg-transparent"
                           {...register(`lines.${index}.debit`)}
                         />
                       </td>
@@ -272,7 +320,7 @@ export default function AddEditJournalEntry() {
                           type="number"
                           min="0"
                           step="0.01"
-                          className="h-10 bg-transparent"
+                          className="h-9 bg-transparent"
                           {...register(`lines.${index}.credit`)}
                         />
                       </td>

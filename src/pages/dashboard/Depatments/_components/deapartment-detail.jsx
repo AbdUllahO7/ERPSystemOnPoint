@@ -101,7 +101,7 @@ export default function DepartmentDetail() {
               value="section"
               className="data-[state=active]:border-b-primary data-[state=active]:text-primary data-[state=active]:shadow-none rounded-none border-b-2 border-transparent px-1 py-3 font-medium text-muted-foreground hover:text-foreground transition-all duration-200 ease-in-out whitespace-nowrap"
             >
-              Sections/Departments
+              Sections
             </TabsTrigger>
             <TabsTrigger 
               value="employee"

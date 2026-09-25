@@ -149,7 +149,7 @@ export function DataView({
   addButton,
   onAdd,
 
-  selectable = true,
+  selectable = false,
   selectedIds: controlledSelectedIds,
   onSelectionChange,
 
@@ -368,21 +368,25 @@ export function DataView({
                     col.className,
                   )}
                 >
-                  <button
-                    type="button"
-                    className="inline-flex items-center gap-1 cursor-pointer hover:text-slate-900 select-none"
-                    onClick={() =>
-                      onSort?.(
-                        sortAccessor,
-                        sortKey === sortAccessor && sortDirection === "asc"
-                          ? "desc"
-                          : "asc",
-                      )
-                    }
-                  >
+                  {col.sortable ? (
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 cursor-pointer hover:text-slate-900 select-none"
+                      onClick={() =>
+                        onSort?.(
+                          sortAccessor,
+                          sortKey === sortAccessor && sortDirection === "asc"
+                            ? "desc"
+                            : "asc",
+                        )
+                      }
+                    >
+                      <span>{colLabel}</span>
+                      <ChevronsUpDown className="size-3 text-slate-300 stroke-[2]" />
+                    </button>
+                  ) : (
                     <span>{colLabel}</span>
-                    <ChevronsUpDown className="size-3 text-slate-300 stroke-[2]" />
-                  </button>
+                  )}
                 </th>
               );
             })}

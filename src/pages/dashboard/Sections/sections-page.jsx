@@ -177,7 +177,7 @@ export default function Sections() {
     {
       key: "section_name",
       label: "Section Name",
-      sortable: true,
+      
     },
     {
       key: "department_Name",
@@ -286,7 +286,6 @@ export default function Sections() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{
           placeholder: "Search sections...",
           value: search,

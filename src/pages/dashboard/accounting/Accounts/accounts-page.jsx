@@ -117,12 +117,12 @@ export default function AccountsPage() {
     {
       key: "accountNumber",
       label: "Number",
-      sortable: true,
+    
     },
     {
       key: "accountName",
       label: "Name",
-      sortable: true,
+    
     },
     {
       key: "parentAccountName",
@@ -184,7 +184,7 @@ export default function AccountsPage() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
+        
         search={{
           placeholder: "Search accounts...",
           value: search,

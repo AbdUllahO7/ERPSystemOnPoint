@@ -3,7 +3,14 @@ import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { createCategory, updateCategory, getCategoryById, getAllCategories } from "@/lib/api";
 import toast from "react-hot-toast";
@@ -18,6 +25,7 @@ export default function AddCategoryPage() {
   const [categoryType, setCategoryType] = useState(stateParentId ? "sub" : "main");
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -158,7 +166,7 @@ export default function AddCategoryPage() {
             <Input
               id="serialNumber"
               placeholder="Serial Number"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("serialNumber", { required: true })}
             />
             {errors.serialNumber && (
@@ -176,7 +184,7 @@ export default function AddCategoryPage() {
             <Input
               id="categoryName"
               placeholder="Category Name"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("categoryName", { required: true })}
             />
             {errors.categoryName && (
@@ -192,17 +200,31 @@ export default function AddCategoryPage() {
               >
                 The category it belongs to
               </label>
-              <select
-                id="parentCategoryId"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("parentCategoryId", { required: categoryType === "sub" })}
-                disabled={Boolean(stateParentId)}
-              >
-                <option value="">Select Category</option>
-                {categoriesList.map(cat => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <Controller
+                name="parentCategoryId"
+                control={control}
+                rules={{ required: categoryType === "sub" }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                    disabled={Boolean(stateParentId)}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Category" />
+                    </SelectTrigger>
+
+                    <SelectContent position="popper">
+                      {categoriesList.map(cat => (
+                        <SelectItem key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.parentCategoryId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

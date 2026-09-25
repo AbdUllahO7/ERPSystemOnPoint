@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +29,7 @@ export default function AddEditSection() {
   const departmentIdFromState = location.state?.departmentId;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -131,7 +139,7 @@ export default function AddEditSection() {
               <Input
                 id="section_Name"
                 placeholder="Section Name"
-                className="h-11 bg-transparent max-w-md"
+                className="h-9 bg-transparent max-w-md"
                 {...register("section_Name", { required: true })}
               />
               {errors.section_Name && (
@@ -146,18 +154,29 @@ export default function AddEditSection() {
               >
                 Department
               </label>
-              <select
-                id="department_Id"
-                className="flex h-11 w-full max-w-md items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("department_Id", { required: true })}
-              >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept.id || dept.department_Id} value={dept.id || dept.department_Id}>
-                    {dept.departmentName || dept.department_Name || dept.department_name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="department_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full max-w-md h-9 bg-transparent">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id || dept.department_Id} value={String(dept.id || dept.department_Id)}>
+                          {dept.departmentName || dept.department_Name || dept.department_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.department_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

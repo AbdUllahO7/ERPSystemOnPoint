@@ -1,7 +1,14 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +28,7 @@ export default function AddEditDepartment() {
   const isEdit = !!id;
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -146,7 +154,7 @@ export default function AddEditDepartment() {
               <Input
                 id="department_Name"
                 placeholder="Department Name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("department_Name", { required: true })}
               />
               {errors.department_Name && (
@@ -161,18 +169,29 @@ export default function AddEditDepartment() {
               >
                 Manager Name
               </label>
-              <select
-                id="manager_id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("manager_id", { required: true })}
-              >
-                <option value="">Select Manager Name</option>
-                {managers.map((manager) => (
-                  <option key={manager.managerId} value={manager.managerId}>
-                    {manager.managerName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="manager_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Manager Name" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {managers.map((manager) => (
+                        <SelectItem key={manager.managerId} value={String(manager.managerId)}>
+                          {manager.managerName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.manager_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -185,18 +204,29 @@ export default function AddEditDepartment() {
               >
                 Branch Name
               </label>
-              <select
-                id="branch_id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("branch_id", { required: true })}
-              >
-                <option value="">Select Branch Name</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.branchName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="branch_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Branch Name" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>
+                          {branch.branchName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.branch_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

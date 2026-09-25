@@ -242,7 +242,7 @@ export default function DeductionsPage() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
+        
         search={{ placeholder: "Search deductions...", value: search, onChange: setSearch }}
         filter={{ label: "Filter", onClick: () => setIsFilterOpen(!isFilterOpen) }}
         card={{

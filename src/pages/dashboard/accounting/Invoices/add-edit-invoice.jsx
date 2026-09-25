@@ -28,16 +28,28 @@ export default function AddEditInvoice() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsList className="grid w-full xl:w-2/3 grid-cols-4 bg-transparent gap-2 h-auto mb-6 bg-card p-2 rounded-xl border shadow-sm">
-          <TabsTrigger value="purchases" className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 border py-3 rounded-lg flex items-center gap-2">
+          <TabsTrigger
+            value="purchases"
+            className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 border py-3 rounded-lg flex items-center gap-2"
+          >
             Purchases
           </TabsTrigger>
-          <TabsTrigger value="sales" className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200 border py-3 rounded-lg flex items-center gap-2">
+          <TabsTrigger
+            value="sales"
+            className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200 border py-3 rounded-lg flex items-center gap-2"
+          >
             Sales
           </TabsTrigger>
-          <TabsTrigger value="sales-return" className="data-[state=active]:bg-red-50 data-[state=active]:text-red-700 data-[state=active]:border-red-200 border py-3 rounded-lg flex items-center gap-2">
+          <TabsTrigger
+            value="sales-return"
+            className="data-[state=active]:bg-red-50 data-[state=active]:text-red-700 data-[state=active]:border-red-200 border py-3 rounded-lg flex items-center gap-2"
+          >
             Sales Return
           </TabsTrigger>
-          <TabsTrigger value="purchase-return" className="data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700 data-[state=active]:border-yellow-200 border py-3 rounded-lg flex items-center gap-2">
+          <TabsTrigger
+            value="purchase-return"
+            className="data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700 data-[state=active]:border-yellow-200 border py-3 rounded-lg flex items-center gap-2"
+          >
             Purchase Return
           </TabsTrigger>
         </TabsList>

@@ -85,25 +85,28 @@ export default function AddLeavePage() {
         <form className="grid grid-cols-1 md:grid-cols-3 gap-6" onSubmit={(e) => e.preventDefault()}>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Type</label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={form.leave_Type_Id}
-              onChange={(e) => setForm({ ...form, leave_Type_Id: e.target.value })}
+            <Select
+              value={form.leave_Type_Id ? String(form.leave_Type_Id) : undefined}
+              onValueChange={(val) => setForm({ ...form, leave_Type_Id: val })}
             >
-              <option value="">Select Type</option>
-              {leaveTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.leaveTypeName}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full h-9 bg-transparent">
+                <SelectValue placeholder="Select Type" />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {leaveTypes.map((type) => (
+                  <SelectItem key={type.id} value={String(type.id)}>
+                    {type.leaveTypeName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Start Date</label>
             <Input
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               value={form.start_Date}
               onChange={(e) => setForm({ ...form, start_Date: e.target.value })}
             />
@@ -113,7 +116,7 @@ export default function AddLeavePage() {
             <label className="text-sm font-semibold text-foreground leading-none">End Date</label>
             <Input
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               value={form.end_Date}
               onChange={(e) => setForm({ ...form, end_Date: e.target.value })}
             />
@@ -122,7 +125,7 @@ export default function AddLeavePage() {
           <div className="space-y-2 md:col-span-3">
             <label className="text-sm font-semibold text-foreground leading-none">Reason</label>
             <Input
-              className="h-11 bg-transparent md:max-w-[calc(33.333%-1rem)]"
+              className="h-9 bg-transparent md:max-w-[calc(33.333%-1rem)]"
               value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })}
               placeholder="Enter reason for leave..."

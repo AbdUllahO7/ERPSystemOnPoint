@@ -29,7 +29,6 @@ export default function InvoicesPage() {
     queryKey: ["getAllInvoices", params],
     queryFn: () => getAllInvoices(params),
   });
-  console.log(data)
 
   const displayRows = data?.data?.items || [];
   const totalPages = data?.data?.totalPages || 1;
@@ -61,13 +60,13 @@ export default function InvoicesPage() {
     {
       key: "invoice_Number",
       label: "Invoice Number",
-      sortable: true,
+      
     },
     {
       key: "invoice_Date",
       label: "Date",
-      sortable: true,
-      render: (val) => new Date(val).toLocaleString(),
+      
+      render: (row) => new Date(row.invoice_Date).toLocaleString(),
     },
     {
       key: "payment_Method",
@@ -76,7 +75,7 @@ export default function InvoicesPage() {
     {
       key: "net_Amount",
       label: "Net Amount",
-      render: (val) => `${Number(val?.net_Amount || 0).toFixed(2)}`,
+      render: (row) => `${Number(row?.net_Amount || 0).toFixed(2)}`,
     },
   ];
 
