@@ -140,12 +140,12 @@ export default function CostCenters() {
     {
       key: "cost_Center_Number",
       label: "Number",
-      sortable: true,
+      
     },
     {
       key: "cost_Center_Name",
       label: "Name",
-      sortable: true,
+      
     },
     {
       key: "linked_Account_Name",
@@ -195,7 +195,7 @@ export default function CostCenters() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
+      
         search={{
           placeholder: "Search cost centers...",
           value: search,

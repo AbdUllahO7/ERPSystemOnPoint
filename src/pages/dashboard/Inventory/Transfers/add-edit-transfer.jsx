@@ -2,7 +2,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { getWarehouses, addTransfer, getProductsByWarehouse } from "../../../../lib/api";
 
@@ -100,32 +107,60 @@ export default function AddEditTransfer() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Source Warehouse</label>
-            <select
-              className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.source_Warehouse_Id ? "border-red-500" : "border-input"}`}
-              {...register("source_Warehouse_Id", { required: "Source Warehouse is required" })}
-            >
-              <option value="">{warehousesLoading ? "Loading..." : "Select Source Warehouse"}</option>
-              {warehouseOptions.map((w) => (
-                <option key={w.id} value={w.id}>{w.name_Warehouse}</option>
-              ))}
-            </select>
+            <Controller
+              name="source_Warehouse_Id"
+              control={control}
+              rules={{ required: "Source Warehouse is required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent ${errors.source_Warehouse_Id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder={warehousesLoading ? "Loading..." : "Select Source Warehouse"} />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {warehouseOptions.map((w) => (
+                      <SelectItem key={w.id} value={String(w.id)}>
+                        {w.name_Warehouse}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.source_Warehouse_Id && <p className="text-red-500 text-xs">{errors.source_Warehouse_Id.message}</p>}
           </div>
           
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Destination Warehouse</label>
-            <select
-              className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.destination_Warehouse_Id ? "border-red-500" : "border-input"}`}
-              {...register("destination_Warehouse_Id", { 
+            <Controller
+              name="destination_Warehouse_Id"
+              control={control}
+              rules={{ 
                 required: "Destination Warehouse is required",
                 validate: (value, formValues) => value !== formValues.source_Warehouse_Id || "Destination must be different from source"
-              })}
-            >
-              <option value="">{warehousesLoading ? "Loading..." : "Select Destination Warehouse"}</option>
-              {warehouseOptions.map((w) => (
-                <option key={w.id} value={w.id}>{w.name_Warehouse}</option>
-              ))}
-            </select>
+              }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent ${errors.destination_Warehouse_Id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder={warehousesLoading ? "Loading..." : "Select Destination Warehouse"} />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {warehouseOptions.map((w) => (
+                      <SelectItem key={w.id} value={String(w.id)}>
+                        {w.name_Warehouse}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.destination_Warehouse_Id && <p className="text-red-500 text-xs">{errors.destination_Warehouse_Id.message}</p>}
           </div>
           
@@ -133,7 +168,7 @@ export default function AddEditTransfer() {
             <label className="text-sm font-semibold text-foreground">Transfer Date</label>
             <input
               type="datetime-local"
-              className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.transfer_Date ? "border-red-500" : "border-input"}`}
+              className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.transfer_Date ? "border-red-500" : "border-input"}`}
               {...register("transfer_Date", { required: "Date is required" })}
             />
             {errors.transfer_Date && <p className="text-red-500 text-xs">{errors.transfer_Date.message}</p>}
@@ -144,7 +179,7 @@ export default function AddEditTransfer() {
             <input
               type="text"
               placeholder="Internal notes..."
-              className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               {...register("notes")}
             />
           </div>
@@ -185,24 +220,38 @@ export default function AddEditTransfer() {
                   return (
                     <tr key={field.id} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
                       <td className="px-6 py-4 align-top">
-                        <select
-                          className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted ${errors.items?.[index]?.product_Variant_Id ? "border-red-500" : "border-input"}`}
-                          disabled={!source_Warehouse_Id || productOptions.length === 0}
-                          {...register(`items.${index}.product_Variant_Id`, { required: "Material is required" })}
-                        >
-                          <option value="">
-                            {!source_Warehouse_Id 
-                              ? "Select Warehouse first" 
-                              : productsLoading 
-                                ? "Loading products..."
-                                : productOptions.length === 0 
-                                  ? "No products available" 
-                                  : "Select material"}
-                          </option>
-                          {productOptions?.map((p) => (
-                            <option key={p.productVariantId} value={p.productVariantId}>{p.productName}</option>
-                          ))}
-                        </select>
+                        <Controller
+                          name={`items.${index}.product_Variant_Id`}
+                          control={control}
+                          rules={{ required: "Material is required" }}
+                          render={({ field }) => (
+                            <Select
+                              key={field.value}
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                              disabled={!source_Warehouse_Id || productOptions.length === 0}
+                            >
+                              <SelectTrigger className={`w-full h-9 bg-transparent ${errors.items?.[index]?.product_Variant_Id ? "border-red-500" : "border-input"}`}>
+                                <SelectValue placeholder={
+                                  !source_Warehouse_Id 
+                                    ? "Select Warehouse first" 
+                                    : productsLoading 
+                                      ? "Loading products..."
+                                      : productOptions.length === 0 
+                                        ? "No products available" 
+                                        : "Select material"
+                                } />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                {productOptions?.map((p) => (
+                                  <SelectItem key={p.productVariantId} value={String(p.productVariantId)}>
+                                    {p.productName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                         {errors.items?.[index]?.product_Variant_Id && <p className="text-red-500 text-[10px] mt-1">{errors.items[index].product_Variant_Id.message}</p>}
                       </td>
 
@@ -233,16 +282,30 @@ export default function AddEditTransfer() {
                       </td>
 
                       <td className="px-6 py-4 align-top">
-                        <select
-                          className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted ${errors.items?.[index]?.product_Unit_Id ? "border-red-500" : "border-input"}`}
-                          disabled={!selectedProductVariantId}
-                          {...register(`items.${index}.product_Unit_Id`, { required: "Unit required" })}
-                        >
-                          <option value="">Select Unit</option>
-                          {rowUnitOptions.map((u) => (
-                            <option key={u.productUnitId} value={u.productUnitId}>{u.unitName}</option>
-                          ))}
-                        </select>
+                        <Controller
+                          name={`items.${index}.product_Unit_Id`}
+                          control={control}
+                          rules={{ required: "Unit required" }}
+                          render={({ field }) => (
+                            <Select
+                              key={field.value}
+                              value={field.value || ""}
+                              onValueChange={field.onChange}
+                              disabled={!selectedProductVariantId}
+                            >
+                              <SelectTrigger className={`w-full h-9 bg-transparent ${errors.items?.[index]?.product_Unit_Id ? "border-red-500" : "border-input"}`}>
+                                <SelectValue placeholder="Select Unit" />
+                              </SelectTrigger>
+                              <SelectContent position="popper">
+                                {rowUnitOptions.map((u) => (
+                                  <SelectItem key={u.productUnitId} value={String(u.productUnitId)}>
+                                    {u.unitName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        />
                         {errors.items?.[index]?.product_Unit_Id && <p className="text-red-500 text-[10px] mt-1">{errors.items[index].product_Unit_Id.message}</p>}
                       </td>
 

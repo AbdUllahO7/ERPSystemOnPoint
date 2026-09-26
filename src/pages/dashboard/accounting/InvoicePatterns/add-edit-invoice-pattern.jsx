@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +29,7 @@ export default function AddEditInvoicePattern() {
   const isEdit = !!id;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -178,7 +186,7 @@ export default function AddEditInvoicePattern() {
               </label>
               <Input
                 placeholder="Name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("pattern_Name", { required: true })}
               />
               {errors.pattern_Name && (
@@ -190,16 +198,29 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Invoice Type <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("invoiceType", { required: true })}
-              >
-                <option value="Sales">Sales</option>
-                <option value="Purchases">Purchases</option>
-                <option value="Sales_Returns">Sales_Returns</option>
-                <option value="Purchases_Returns">Purchases_Returns</option>
-                <option value="Opening_Balance">Opening_Balance</option>
-              </select>
+              <Controller
+                name="invoiceType"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Invoice Type" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="Sales">Sales</SelectItem>
+                      <SelectItem value="Purchases">Purchases</SelectItem>
+                      <SelectItem value="Sales_Returns">Sales_Returns</SelectItem>
+                      <SelectItem value="Purchases_Returns">Purchases_Returns</SelectItem>
+                      <SelectItem value="Opening_Balance">Opening_Balance</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.invoiceType && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -209,17 +230,29 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Material Account <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("material_Account_Id", { required: true })}
-              >
-                <option value="">Select Account</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.account_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="material_Account_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Account" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={String(acc.id)}>
+                          {acc.account_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.material_Account_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -229,17 +262,29 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Cash Account <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("cash_Account_Id", { required: true })}
-              >
-                <option value="">Select Account</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.account_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="cash_Account_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Account" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={String(acc.id)}>
+                          {acc.account_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.cash_Account_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -249,17 +294,29 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Discount Account <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("discount_Account_Id", { required: true })}
-              >
-                <option value="">Select Account</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.account_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="discount_Account_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Account" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={String(acc.id)}>
+                          {acc.account_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.discount_Account_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -269,17 +326,29 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Warehouse <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("wareHouse_Id", { required: true })}
-              >
-                <option value="">Select Warehouse</option>
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w?.name_Warehouse  || "" }
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="wareHouse_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Warehouse" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {warehouses.map((w) => (
+                        <SelectItem key={w.id} value={String(w.id)}>
+                          {w?.name_Warehouse || " "}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.wareHouse_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -289,17 +358,29 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Cost Center <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("costCenter_id", { required: true })}
-              >
-                <option value="">Select Cost Center</option>
-                {costCenters.map((cc) => (
-                  <option key={cc.id} value={cc.id}>
-                    {cc.cost_Center_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="costCenter_id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Cost Center" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {costCenters.map((cc) => (
+                        <SelectItem key={cc.id} value={String(cc.id)}>
+                          {cc.cost_Center_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.costCenter_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -309,13 +390,26 @@ export default function AddEditInvoicePattern() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Payment Method <span className="text-red-500">*</span>
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                {...register("paymentPay", { required: true })}
-              >
-                <option value="Cash">Cash</option>
-                <option value="Credit">Credit</option>
-              </select>
+              <Controller
+                name="paymentPay"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Payment Method" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.paymentPay && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -328,7 +422,7 @@ export default function AddEditInvoicePattern() {
               <Input
                 type="number"
                 placeholder="0"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("tax_Percentage", { required: true })}
               />
               {errors.tax_Percentage && (
@@ -342,7 +436,7 @@ export default function AddEditInvoicePattern() {
               </label>
               <Input
                 placeholder="Notes..."
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("note", { required: true })}
               />
               {errors.note && (

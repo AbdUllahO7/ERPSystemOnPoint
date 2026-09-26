@@ -191,7 +191,6 @@ export default function EmployeePerformanceTab() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{
           placeholder: "Search performances...",
           value: search,

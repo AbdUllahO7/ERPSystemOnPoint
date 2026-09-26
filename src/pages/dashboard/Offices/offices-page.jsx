@@ -163,7 +163,7 @@ export default function Offices() {
     {
       key: "office_name",
       label: "Office Name",
-      sortable: true,
+      
     },
     {
       key: "department_name",
@@ -271,7 +271,6 @@ export default function Offices() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{
           placeholder: "Search offices...",
           value: search,

@@ -1,10 +1,17 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info, Trash2, Banknote, CreditCard, Landmark, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   createPurchaseReturnInvoice,
   getWarehouses,
@@ -169,75 +176,154 @@ console.log(invoicePatterns)
         <div className="bg-card p-6 rounded-xl border shadow-sm grid grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold">Return Invoice Number <span className="text-red-500">*</span></label>
-            <Input placeholder="Invoice Number" className={errors.invoice_Number ? "border-red-500" : ""} {...register("invoice_Number", { required: "Required" })} />
+            <Input placeholder="Invoice Number" className={`h-9 bg-transparent ${errors.invoice_Number ? "border-red-500" : ""}`} {...register("invoice_Number", { required: "Required" })} />
             {errors.invoice_Number && <span className="text-xs text-red-500">{errors.invoice_Number.message}</span>}
           </div>
           <div className="space-y-2">
             <label className="text-sm font-semibold">Date <span className="text-red-500">*</span></label>
-            <Input type="date" className={errors.invoice_Date ? "border-red-500" : ""} {...register("invoice_Date", { required: "Required" })} />
+            <Input type="date" className={`h-9 bg-transparent ${errors.invoice_Date ? "border-red-500" : ""}`} {...register("invoice_Date", { required: "Required" })} />
             {errors.invoice_Date && <span className="text-xs text-red-500">{errors.invoice_Date.message}</span>}
           </div>
           
           <div className="space-y-2">
             <label className="text-sm font-semibold">Invoice Pattern <span className="text-red-500">*</span></label>
-            <select className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm ${errors.invoicePattern_Id ? "border-red-500" : "border-input"}`} {...register("invoicePattern_Id", { required: "Required" })}>
-              <option value="">Select Invoice Pattern</option>
-              {invoicePatterns.map(ip => (
-                <option key={ip.id} value={ip.id}>{ip.pattern_Name}</option>
-              ))}
-            </select>
+            <Controller
+              name="invoicePattern_Id"
+              control={control}
+              rules={{ required: "Required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent ${errors.invoicePattern_Id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder="Select Invoice Pattern" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {invoicePatterns.map((ip) => (
+                      <SelectItem key={ip.id} value={String(ip.id)}>
+                        {ip.pattern_Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.invoicePattern_Id && <span className="text-xs text-red-500">{errors.invoicePattern_Id.message}</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold">Supplier Name <span className="text-red-500">*</span></label>
-            <select className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm ${errors.suppler_id ? "border-red-500" : "border-input"}`} {...register("suppler_id", { required: "Required" })}>
-              <option value="">Supplier Name</option>
-              {suppliers.map(s => (
-                <option key={s.id} value={s.id}>{s.supplier_Name}</option>
-              ))}
-            </select>
+            <Controller
+              name="suppler_id"
+              control={control}
+              rules={{ required: "Required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent ${errors.suppler_id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder="Supplier Name" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {suppliers.map((s) => (
+                      <SelectItem key={s.id} value={String(s.id)}>
+                        {s.supplier_Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.suppler_id && <span className="text-xs text-red-500">{errors.suppler_id.message}</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold">Warehouse <span className="text-red-500">*</span></label>
-            <select 
-              className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${errors.warehouse_Id ? "border-red-500" : "border-input"}`} 
-              {...register("warehouse_Id", { required: "Required" })}
-              disabled={!!selectedPattern?.wareHouse_Id}
-            >
-              <option value="">Select Warehouse</option>
-              {warehouses.map(w => (
-                <option key={w.id} value={w.id}>{w.name_Warehouse || ""}</option>
-              ))}
-            </select>
+            <Controller
+              name="warehouse_Id"
+              control={control}
+              rules={{ required: "Required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={field.onChange}
+                  disabled={!!selectedPattern?.wareHouse_Id}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent disabled:bg-slate-100 ${errors.warehouse_Id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder="Select Warehouse" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {warehouses.map((w) => (
+                      <SelectItem key={w.id} value={String(w.id)}>
+                        {w.name_Warehouse || ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.warehouse_Id && <span className="text-xs text-red-500">{errors.warehouse_Id.message}</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold">Currency <span className="text-red-500">*</span></label>
-            <select className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm ${errors.currency_Id ? "border-red-500" : "border-input"}`} {...register("currency_Id", { required: "Required" })}>
-              <option value="">Select Currency</option>
-              {currencies.map(c => (
-                <option key={c.id} value={c.id}>{c.currency_Name} ({c.currency_Symbol})</option>
-              ))}
-            </select>
+            <Controller
+              name="currency_Id"
+              control={control}
+              rules={{ required: "Required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent ${errors.currency_Id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder="Select Currency" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {currencies.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.currency_Name} ({c.currency_Symbol})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.currency_Id && <span className="text-xs text-red-500">{errors.currency_Id.message}</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold">Cost Center <span className="text-red-500">*</span></label>
-            <select 
-              className={`flex h-10 w-full rounded-md border bg-transparent px-3 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed ${errors.costCenter_Id ? "border-red-500" : "border-input"}`} 
-              {...register("costCenter_Id", { required: "Required" })}
-              disabled={!!selectedPattern?.costCenter_id}
-            >
-              <option value="">Cost Center</option>
-              {costCenters.map(cc => (
-                <option key={cc.id} value={cc.id}>{cc.cost_Center_Name}</option>
-              ))}
-            </select>
+            <Controller
+              name="costCenter_Id"
+              control={control}
+              rules={{ required: "Required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={field.onChange}
+                  disabled={!!selectedPattern?.costCenter_id}
+                >
+                  <SelectTrigger className={`w-full h-9 bg-transparent disabled:bg-slate-100 ${errors.costCenter_Id ? "border-red-500" : "border-input"}`}>
+                    <SelectValue placeholder="Cost Center" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {costCenters.map((cc) => (
+                      <SelectItem key={cc.id} value={String(cc.id)}>
+                        {cc.cost_Center_Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.costCenter_Id && <span className="text-xs text-red-500">{errors.costCenter_Id.message}</span>}
           </div>
 

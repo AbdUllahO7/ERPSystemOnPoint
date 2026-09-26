@@ -145,7 +145,6 @@ export default function Positions() {
     {
       key: "position_name",
       label: "Position Name",
-      sortable: true,
     },
     {
       key: "total_employees",
@@ -181,7 +180,6 @@ export default function Positions() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.position_Id}
-        selectable
         search={{
           placeholder: "Search positions...",
           value: search,

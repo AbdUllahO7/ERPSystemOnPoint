@@ -274,7 +274,6 @@ export default function LeavesPage() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{ placeholder: "Search leaves...", value: search, onChange: setSearch }}
         filter={{ label: "Filter", onClick: () => setIsFilterOpen(!isFilterOpen) }}
         card={{

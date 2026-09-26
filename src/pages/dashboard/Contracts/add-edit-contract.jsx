@@ -3,6 +3,13 @@ import { useParams, useNavigate, Link, useSearchParams } from "react-router-dom"
 import { Info, UploadCloud, File as FileIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createContract, updateContract, getContractById, getEmployees } from "../../../lib/api";
 import toast from "react-hot-toast";
@@ -64,7 +71,7 @@ export default function AddEditContractPage() {
       queryClient.invalidateQueries(["getAllContracts"]);
       queryClient.invalidateQueries(["getContractsByEmployeeId"]);
       toast.success(isEdit ? "Contract updated successfully!" : "Contract added successfully!");
-      navigate("/dashboard/hr/contracts");
+      navigate("/dashboard/hr/contractes");
     },
     onError: (error) => {
       console.log("Failed to save contract", error);
@@ -109,7 +116,7 @@ export default function AddEditContractPage() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <Link to="/dashboard/hr/contracts" className="hover:underline">Contracts</Link>
+            <Link to="/dashboard/hr/contractes" className="hover:underline">Contracts</Link>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -132,26 +139,37 @@ export default function AddEditContractPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 md:col-span-2">
                 <label className="text-sm font-semibold text-foreground leading-none">Employee Name</label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-slate-100"
-                  value={form.employeeId}
-                  onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
-                  disabled={ !!prefillEmployeeId}
+                <Select
+<<<<<<< Updated upstream
+                  value={form.employeeId ? String(form.employeeId) : undefined}
+                  onValueChange={(val) => setForm({ ...form, employeeId: val })}
+                  disabled={!!prefillEmployeeId}
                 >
-                  <option value="">Select Employee</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.fullName}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full h-9 bg-transparent disabled:bg-slate-100">
+=======
+                  value={form.employeeId ? String(form.employeeId) : ""}
+                  onValueChange={(val) => setForm({ ...form, employeeId: val })}
+                  disabled={!!prefillEmployeeId}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+>>>>>>> Stashed changes
+                    <SelectValue placeholder="Select Employee" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={String(emp.id)}>
+                        {emp.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground leading-none">Allowed Absence Days Per Month</label>
                 <Input
                   type="number"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   value={form.allowedAbsenceDaysPerMonth}
                   onChange={(e) => setForm({ ...form, allowedAbsenceDaysPerMonth: e.target.value })}
                   placeholder="0"
@@ -162,7 +180,7 @@ export default function AddEditContractPage() {
                 <label className="text-sm font-semibold text-foreground leading-none">Allowed Leave Hours Per Month</label>
                 <Input
                   type="number"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   value={form.allowedLeaveHoursPerMonth}
                   onChange={(e) => setForm({ ...form, allowedLeaveHoursPerMonth: e.target.value })}
                   placeholder="0"
@@ -173,7 +191,7 @@ export default function AddEditContractPage() {
                 <label className="text-sm font-semibold text-foreground leading-none">Salary</label>
                 <Input
                   type="number"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   value={form.salary}
                   onChange={(e) => setForm({ ...form, salary: e.target.value })}
                   placeholder="0"
@@ -184,7 +202,7 @@ export default function AddEditContractPage() {
                 <label className="text-sm font-semibold text-foreground leading-none">Custom Annual Leave Balance</label>
                 <Input
                   type="number"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   value={form.customAnnualLeaveBalance}
                   onChange={(e) => setForm({ ...form, customAnnualLeaveBalance: e.target.value })}
                   placeholder="0"
@@ -195,7 +213,7 @@ export default function AddEditContractPage() {
                 <label className="text-sm font-semibold text-foreground leading-none">Start Date</label>
                 <Input
                   type="date"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   value={form.startDate}
                   onChange={(e) => setForm({ ...form, startDate: e.target.value })}
                 />
@@ -205,7 +223,7 @@ export default function AddEditContractPage() {
                 <label className="text-sm font-semibold text-foreground leading-none">End Date</label>
                 <Input
                   type="date"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   value={form.endDate}
                   onChange={(e) => setForm({ ...form, endDate: e.target.value })}
                 />

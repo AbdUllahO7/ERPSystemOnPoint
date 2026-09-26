@@ -3,6 +3,13 @@ import { Link, useNavigate } from "react-router-dom";
 import { Info, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { applyForLeave, getLeaveTypes, getEmployees } from "../../../lib/api";
 import toast from "react-hot-toast";
@@ -18,14 +25,14 @@ export default function AddLeavePage() {
     reason: ""
   });
 
-  const { data: employeesResponse } = useQuery({
+  const { data: employeesResponse, isLoading: isLoadingEmployees } = useQuery({
     queryKey: ["getEmployeesList"],
     queryFn: () => getEmployees({ PageSize: 1000 }), // large page size for dropdown
   });
   
   const employeeOptions = useMemo(() => employeesResponse?.data?.items || [], [employeesResponse]);
 
-  const { data: leaveTypesResponse } = useQuery({
+  const { data: leaveTypesResponse, isLoading: isLoadingLeaveTypes } = useQuery({
     queryKey: ["getLeaveTypes"],
     queryFn: () => getLeaveTypes({ PageSize: 100 }),
   });
@@ -86,41 +93,49 @@ export default function AddLeavePage() {
         <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" onSubmit={(e) => e.preventDefault()}>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Employee</label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={form.employee_Id}
-              onChange={(e) => setForm({ ...form, employee_Id: e.target.value })}
+            <Select
+              value={form.employee_Id ? String(form.employee_Id) : ""}
+              onValueChange={(val) => setForm({ ...form, employee_Id: val })}
+              disabled={isLoadingEmployees}
             >
-              <option value="">Select Employee</option>
-              {employeeOptions.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.fullName}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full h-11 bg-transparent">
+                <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select Employee"} />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {employeeOptions.map((emp) => (
+                  <SelectItem key={emp.id} value={String(emp.id)}>
+                    {emp.fullName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Type</label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              value={form.leave_Type_Id}
-              onChange={(e) => setForm({ ...form, leave_Type_Id: e.target.value })}
+            <Select
+              value={form.leave_Type_Id ? String(form.leave_Type_Id) : ""}
+              onValueChange={(val) => setForm({ ...form, leave_Type_Id: val })}
+              disabled={isLoadingLeaveTypes}
             >
-              <option value="">Select Type</option>
-              {leaveTypes.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.leaveTypeName}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full h-11 bg-transparent">
+                <SelectValue placeholder={isLoadingLeaveTypes ? "Loading types..." : "Select Type"} />
+              </SelectTrigger>
+              <SelectContent position="popper">
+                {leaveTypes.map((type) => (
+                  <SelectItem key={type.id} value={String(type.id)}>
+                    {type.leaveTypeName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Start Date</label>
             <Input
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               value={form.start_Date}
               onChange={(e) => setForm({ ...form, start_Date: e.target.value })}
             />
@@ -130,7 +145,7 @@ export default function AddLeavePage() {
             <label className="text-sm font-semibold text-foreground leading-none">End Date</label>
             <Input
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               value={form.end_Date}
               onChange={(e) => setForm({ ...form, end_Date: e.target.value })}
             />
@@ -139,7 +154,7 @@ export default function AddLeavePage() {
           <div className="space-y-2 lg:col-span-4">
             <label className="text-sm font-semibold text-foreground leading-none">Reason</label>
             <Input
-              className="h-11 bg-transparent lg:max-w-[calc(25%-1.125rem)]"
+              className="h-9 bg-transparent lg:max-w-[calc(25%-1.125rem)]"
               value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })}
               placeholder="Enter reason for leave..."

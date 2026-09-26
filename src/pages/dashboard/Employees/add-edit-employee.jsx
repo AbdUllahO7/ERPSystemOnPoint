@@ -1,10 +1,24 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   createEmployee,
   updateEmployee,
@@ -26,6 +40,7 @@ export default function AddEditEmployee() {
   const isEdit = !!id;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -178,7 +193,7 @@ export default function AddEditEmployee() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingEmployee && isEdit ? (
+        {(isLoadingEmployee && isEdit) || !sectionsData || !positionsData || !jobTitlesData || !shiftRulesData || !officesData || !managersData || !statusData ? (
           <div className="text-sm text-muted-foreground">
             Loading details...
           </div>
@@ -190,7 +205,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="First Name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("firstName", { required: true })}
               />
               {errors.firstName && (
@@ -204,7 +219,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="Last name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("lastName", { required: true })}
               />
               {errors.lastName && (
@@ -218,7 +233,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="Father name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("fatherName", { required: true })}
               />
               {errors.fatherName && (
@@ -232,7 +247,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="Mother name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("motherName")}
               />
             </div>
@@ -243,7 +258,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 type="date"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("birthDate")}
               />
             </div>
@@ -252,17 +267,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Sector / Department
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("sectionId", { required: true })}
-              >
-                <option value="">Select Sector</option>
-                {sections.map((sec) => (
-                  <option key={sec.id} value={sec.id}>
-                    {sec.name || sec.sectionName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="sectionId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Sector" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {sections.map((sec) => (
+                        <SelectItem key={sec.id} value={String(sec.id)}>
+                          {sec.name || sec.sectionName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.sectionId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -272,17 +299,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Office
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("officeId", { required: true })}
-              >
-                <option value="">Select Office</option>
-                {offices?.map((office) => (
-                  <option key={office.id} value={office.id}>
-                    {office?.office_name || ""}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="officeId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Office" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {offices?.map((office) => (
+                        <SelectItem key={office.id} value={String(office.id)}>
+                          {office?.office_name || ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.officeId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -292,17 +331,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Position
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("positionId", { required: true })}
-              >
-                <option value="">Select Position</option>
-                {positions.map((pos) => (
-                  <option key={pos.id} value={pos.id}>
-                    {pos.name || pos.positionName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="positionId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Position" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {positions.map((pos) => (
+                        <SelectItem key={pos.id} value={String(pos.id)}>
+                          {pos.name || pos.positionName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.positionId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -312,17 +363,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Job Title
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("jobTitleId", { required: true })}
-              >
-                <option value="">Select Job Title</option>
-                {jobTitles.map((job) => (
-                  <option key={job.id} value={job.id}>
-                    {job.jobTitleName || job.name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="jobTitleId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Job Title" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {jobTitles.map((job) => (
+                        <SelectItem key={job.id} value={String(job.id)}>
+                          {job.jobTitleName || job.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.jobTitleId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -335,7 +398,7 @@ export default function AddEditEmployee() {
               <Input
                 type="email"
                 placeholder="Email"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("email", { required: true })}
               />
               {errors.email && (
@@ -349,7 +412,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="+965"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("phone", { required: true })}
               />
               {errors.phone && (
@@ -363,7 +426,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="Location"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("location")}
               />
             </div>
@@ -374,7 +437,7 @@ export default function AddEditEmployee() {
               </label>
               <Input
                 placeholder="Job Number"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("jobNumber", { required: true })}
               />
               {errors.jobNumber && (
@@ -387,17 +450,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Manager
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("managerId", { required: true })}
-              >
-                <option value="">Select Manager</option>
-                {managers.map((m) => (
-                  <option key={m.managerId || m.id} value={m.managerId || m.id}>
-                    {m.managerName || m.name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="managerId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Manager" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {managers.map((m) => (
+                        <SelectItem key={m.managerId || m.id} value={String(m.managerId || m.id)}>
+                          {m.managerName || m.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.managerId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -407,17 +482,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Shift Rule
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("shiftRules", { required: true })}
-              >
-                <option value="">Select Shift Rule</option>
-                {shiftRules.map((rule) => (
-                  <option key={rule.shift_Rule_id} value={rule.shift_Rule_id}>
-                    {rule.rule_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="shiftRules"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Shift Rule" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {shiftRules.map((rule) => (
+                        <SelectItem key={rule.shift_Rule_id} value={String(rule.shift_Rule_id)}>
+                          {rule.rule_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.shiftRules && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -427,17 +514,29 @@ export default function AddEditEmployee() {
               <label className="text-sm font-semibold text-foreground leading-none">
                 Status
               </label>
-              <select
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("statusId", { required: true })}
-              >
-                <option value="">Select Status</option>
-                {statuses.map((status) => (
-                  <option key={status.id} value={status.id}>
-                    {status.statusName || status.name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="statusId"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Status" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {statuses.map((status) => (
+                        <SelectItem key={status.id} value={String(status.id)}>
+                          {status.statusName || status.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.statusId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

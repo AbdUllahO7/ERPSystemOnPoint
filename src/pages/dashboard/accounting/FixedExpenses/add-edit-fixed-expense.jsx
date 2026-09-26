@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm, useWatch, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -200,66 +207,126 @@ export default function AddEditFixedExpense() {
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Payment Method <span className="text-red-500">*</span></label>
                 <div className="flex gap-2">
-                  <select
-                    className="flex h-11 w-1/3 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
+                  <Select
                     value={paymentMethodType}
-                    onChange={(e) => setPaymentMethodType(e.target.value)}
+                    onValueChange={(val) => setPaymentMethodType(val)}
                   >
-                    <option value="cash">Cash</option>
-                    <option value="card">Card</option>
-                  </select>
-                  <select
-                    className="flex h-11 w-2/3 items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                    {...register("payment_Method_Id", { required: true })}
-                  >
-                    <option value="">Select Account</option>
-                    {paymentAccounts.map((a) => (
-                      <option key={a.id} value={a.id}>{a.name}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger className="w-1/3 h-9 bg-transparent">
+                      <SelectValue placeholder="Method" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="cash">Cash</SelectItem>
+                      <SelectItem value="card">Card</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Controller
+                    name="payment_Method_Id"
+                    control={control}
+                    rules={{ required: true }}
+                    render={({ field }) => (
+                      <Select
+                        key={field.value}
+                        value={field.value || ""}
+                        onValueChange={field.onChange}
+                      >
+                        <SelectTrigger className="w-2/3 h-9 bg-transparent">
+                          <SelectValue placeholder="Select Account" />
+                        </SelectTrigger>
+                        <SelectContent position="popper">
+                          {paymentAccounts.map((a) => (
+                            <SelectItem key={a.id} value={String(a.id)}>
+                              {a.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
                 </div>
                 {errors.payment_Method_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Branch <span className="text-red-500">*</span></label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("branch_Id", { required: true })}
-                >
-                  <option value="">Select Branch</option>
-                  {branches.map((b) => (
-                    <option key={b.id} value={b.id}>{b.branchName}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="branch_Id"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Branch" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {branches.map((b) => (
+                          <SelectItem key={b.id} value={String(b.id)}>
+                            {b.branchName}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.branch_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Category <span className="text-red-500">*</span></label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("category_Account_Id", { required: true })}
-                >
-                  <option value="">Select Category</option>
-                  {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="category_Account_Id"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {categories.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.category_Account_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Vendor <span className="text-red-500">*</span></label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("vendor_Id", { required: true })}
-                >
-                  <option value="">Select Vendor</option>
-                  {suppliers.map((s) => (
-                    <option key={s.id} value={s.id}>{s.name || s.supplier_Name}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="vendor_Id"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Vendor" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {suppliers.map((s) => (
+                          <SelectItem key={s.id} value={String(s.id)}>
+                            {s.name || s.supplier_Name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.vendor_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
@@ -269,7 +336,7 @@ export default function AddEditFixedExpense() {
                   type="number"
                   min="0"
                   step="0.01"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("amount", { required: true })}
                 />
                 {errors.amount && <span className="text-red-500 text-xs">Required</span>}
@@ -281,7 +348,7 @@ export default function AddEditFixedExpense() {
                   type="number"
                   min="0"
                   step="0.01"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("tax_Amount", { required: true })}
                 />
                 {errors.tax_Amount && <span className="text-red-500 text-xs">Required</span>}
@@ -299,29 +366,57 @@ export default function AddEditFixedExpense() {
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Cost Center <span className="text-red-500">*</span></label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("costCenter_Id", { required: true })}
-                >
-                  <option value="">Select Cost Center</option>
-                  {costCenters.map((cc) => (
-                    <option key={cc.id} value={cc.id}>{cc.cost_Center_Name}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="costCenter_Id"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Cost Center" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {costCenters.map((cc) => (
+                          <SelectItem key={cc.id} value={String(cc.id)}>
+                            {cc.cost_Center_Name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.costCenter_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Currency <span className="text-red-500">*</span></label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("currency_Id", { required: true })}
-                >
-                  <option value="">Select Currency</option>
-                  {currencies.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name || c.currency_Name || c.currencyCode}</option>
-                  ))}
-                </select>
+                <Controller
+                  name="currency_Id"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Currency" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {currencies.map((c) => (
+                          <SelectItem key={c.id} value={String(c.id)}>
+                            {c.name || c.currency_Name || c.currencyCode}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.currency_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
@@ -344,14 +439,27 @@ export default function AddEditFixedExpense() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-foreground">Cycle <span className="text-red-500">*</span></label>
-                <select
-                  className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-                  {...register("cycle", { required: true })}
-                >
-                  <option value="Daily">Daily</option>
-                  <option value="Monthly">Monthly</option>
-                  <option value="Yearly">Yearly</option>
-                </select>
+                <Controller
+                  name="cycle"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
+                    <Select
+                      key={field.value}
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Cycle" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        <SelectItem value="Daily">Daily</SelectItem>
+                        <SelectItem value="Monthly">Monthly</SelectItem>
+                        <SelectItem value="Yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
                 {errors.cycle && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
@@ -360,7 +468,7 @@ export default function AddEditFixedExpense() {
                 <Input
                   type="number"
                   min="0"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("notify_Days_Before_Due", { required: true })}
                 />
                 {errors.notify_Days_Before_Due && <span className="text-red-500 text-xs">Required</span>}
@@ -370,7 +478,7 @@ export default function AddEditFixedExpense() {
                 <label className="text-sm font-semibold text-foreground">Start Date <span className="text-red-500">*</span></label>
                 <Input
                   type="date"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("start_Date", { required: true })}
                 />
                 {errors.start_Date && <span className="text-red-500 text-xs">Required</span>}
@@ -380,7 +488,7 @@ export default function AddEditFixedExpense() {
                 <label className="text-sm font-semibold text-foreground">End Date (optional)</label>
                 <Input
                   type="date"
-                  className="h-11 bg-transparent"
+                  className="h-9 bg-transparent"
                   {...register("end_Date")}
                 />
               </div>

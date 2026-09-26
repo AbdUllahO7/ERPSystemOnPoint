@@ -270,7 +270,7 @@ export default function AttendanceMonthly() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => `${row.year}-${row.month}`}
-        selectable
+        
         search={{
           placeholder: "Search by id or employee name...",
           value: search,

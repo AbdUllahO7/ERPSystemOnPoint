@@ -256,7 +256,6 @@ export default function EmployeeTab({ id }) {
         isLoading={isLoading}
         columns={columns}
         getRowId={(row) => row.id}
-        selectable
         search={{
           placeholder: "Search by id or employee name...",
           value: search,

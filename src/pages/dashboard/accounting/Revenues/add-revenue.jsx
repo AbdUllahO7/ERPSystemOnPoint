@@ -1,6 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +24,7 @@ export default function AddRevenue() {
   const navigate = useNavigate();
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -118,57 +126,113 @@ export default function AddRevenue() {
           
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Revenue Account <span className="text-red-500">*</span></label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("revenue_Account_Id", { required: true })}
-            >
-              <option value="">Select Account</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.account_Name}</option>
-              ))}
-            </select>
+            <Controller
+              name="revenue_Account_Id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Account" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={String(a.id)}>
+                        {a.account_Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.revenue_Account_Id && <span className="text-red-500 text-xs">Required</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Collection Account <span className="text-red-500">*</span></label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("collection_Account_Id", { required: true })}
-            >
-              <option value="">Select Collection Account</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>{a.account_Name}</option>
-              ))}
-            </select>
+            <Controller
+              name="collection_Account_Id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Collection Account" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {accounts.map((a) => (
+                      <SelectItem key={a.id} value={String(a.id)}>
+                        {a.account_Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.collection_Account_Id && <span className="text-red-500 text-xs">Required</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Customer <span className="text-red-500">*</span></label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("customer_Id", { required: true })}
-            >
-              <option value="">Select Customer</option>
-              {customers.map((c) => (
-                <option key={c.id} value={c.id}>{c.name || c.customerName || `Customer #${c.id.substring(0,4)}`}</option>
-              ))}
-            </select>
+            <Controller
+              name="customer_Id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Customer" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {customers.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name || c.customerName || `Customer #${c.id.substring(0,4)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.customer_Id && <span className="text-red-500 text-xs">Required</span>}
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Cost Center <span className="text-red-500">*</span></label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("costCenter_Id", { required: true })}
-            >
-              <option value="">Select Cost Center</option>
-              {costCenters.map((cc) => (
-                <option key={cc.id} value={cc.id}>{cc.cost_Center_Name || cc.name}</option>
-              ))}
-            </select>
+            <Controller
+              name="costCenter_Id"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Cost Center" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {costCenters.map((cc) => (
+                      <SelectItem key={cc.id} value={String(cc.id)}>
+                        {cc.cost_Center_Name || cc.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.costCenter_Id && <span className="text-red-500 text-xs">Required</span>}
           </div>
 
@@ -179,7 +243,7 @@ export default function AddRevenue() {
               step="0.01"
               min="0"
               placeholder="0.00"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("amount", { required: true })}
             />
             {errors.amount && <span className="text-red-500 text-xs">Required</span>}
@@ -192,7 +256,7 @@ export default function AddRevenue() {
               step="0.01"
               min="0"
               placeholder="0.00"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("tax_Amount", { required: true })}
             />
             {errors.tax_Amount && <span className="text-red-500 text-xs">Required</span>}
@@ -200,20 +264,32 @@ export default function AddRevenue() {
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Status</label>
-            <select
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:ring-1 focus:ring-primary"
-              {...register("status")}
-            >
-              <option value="Pending">Pending</option>
-              <option value="Collected">Collected</option>
-            </select>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="Pending">Pending</SelectItem>
+                    <SelectItem value="Collected">Collected</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground">Due Date <span className="text-red-500">*</span></label>
             <Input
               type="datetime-local"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("due_Date", { required: true })}
             />
             {errors.due_Date && <span className="text-red-500 text-xs">Required</span>}
@@ -223,7 +299,7 @@ export default function AddRevenue() {
             <label className="text-sm font-semibold text-foreground">Collected Date <span className="text-red-500">*</span></label>
             <Input
               type="datetime-local"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("collected_Date", { required: true })}
             />
             {errors.collected_Date && <span className="text-red-500 text-xs">Required</span>}

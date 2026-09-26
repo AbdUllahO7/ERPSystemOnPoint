@@ -1,10 +1,27 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+<<<<<<< Updated upstream
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+=======
+>>>>>>> Stashed changes
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   createSection,
   updateSection,
@@ -22,6 +39,7 @@ export default function AddEditSection() {
   const departmentIdFromState = location.state?.departmentId;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -29,7 +47,7 @@ export default function AddEditSection() {
   } = useForm({
     defaultValues: {
       section_Name: "",
-      department_Id: departmentIdFromState || "",
+      department_Id: departmentIdFromState ? String(departmentIdFromState) : "",
     },
   });
 
@@ -47,14 +65,14 @@ export default function AddEditSection() {
   useEffect(() => {
     if (isEdit && sectionData?.data) {
       const section = sectionData.data;
-      setValue("section_Name", section.section_name || "");
-      setValue("department_Id", section.department_Id || "");
+      setValue("section_Name", section.section_name || section.section_Name || "");
+      setValue("department_Id", String(section.department_Id || section.department_id || ""));
     }
   }, [isEdit, sectionData, setValue]);
 
   useEffect(() => {
     if (!isEdit && departmentIdFromState && departmentsData) {
-      setValue("department_Id", departmentIdFromState);
+      setValue("department_Id", String(departmentIdFromState));
     }
   }, [isEdit, departmentIdFromState, setValue, departmentsData]);
 
@@ -87,7 +105,10 @@ export default function AddEditSection() {
     mutation.mutate(data);
   };
 
-  const departments = departmentsData?.data?.items || [];
+  const departmentsRaw = departmentsData?.data?.items || [];
+  const departments = departmentsRaw.filter(
+    (v, i, a) => a.findIndex((t) => (t.id || t.department_Id) === (v.id || v.department_Id)) === i
+  );
   const pageTitle = isEdit ? "Edit Section" : "Add Section";
 
   return (
@@ -117,7 +138,7 @@ export default function AddEditSection() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingSection && isEdit ? (
+        {(isLoadingSection && isEdit) || !departmentsData ? (
           <div className="text-sm text-muted-foreground">Loading details...</div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -131,7 +152,11 @@ export default function AddEditSection() {
               <Input
                 id="section_Name"
                 placeholder="Section Name"
-                className="h-11 bg-transparent max-w-md"
+<<<<<<< Updated upstream
+                className="h-9 bg-transparent max-w-md"
+=======
+                className="h-11  w-full bg-transparent"
+>>>>>>> Stashed changes
                 {...register("section_Name", { required: true })}
               />
               {errors.section_Name && (
@@ -146,18 +171,44 @@ export default function AddEditSection() {
               >
                 Department
               </label>
-              <select
-                id="department_Id"
-                className="flex h-11 w-full max-w-md items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("department_Id", { required: true })}
-              >
-                <option value="">Select Department</option>
-                {departments.map((dept) => (
-                  <option key={dept.id || dept.department_Id} value={dept.id || dept.department_Id}>
-                    {dept.departmentName || dept.department_Name || dept.department_name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="department_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+<<<<<<< Updated upstream
+                    <SelectTrigger className="w-full max-w-md h-9 bg-transparent">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {departments.map((dept) => (
+                        <SelectItem key={dept.id || dept.department_Id} value={String(dept.id || dept.department_Id)}>
+                          {dept.departmentName || dept.department_Name || dept.department_name}
+                        </SelectItem>
+                      ))}
+=======
+                    <SelectTrigger className="h-10 py-5 w-full bg-transparent">
+                      <SelectValue placeholder="Select Department" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {departments.map((dept) => {
+                        const deptId = String(dept.id || dept.department_Id);
+                        return (
+                          <SelectItem key={deptId} value={deptId}>
+                            {dept.departmentName || dept.department_Name || dept.department_name}
+                          </SelectItem>
+                        );
+                      })}
+>>>>>>> Stashed changes
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.department_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

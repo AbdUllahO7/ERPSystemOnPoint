@@ -151,7 +151,7 @@ export default function Depatments() {
           },
           {
             key: "sections",
-            label: "Sections/Departments",
+            label: "Sections",
             icon: GitBranch,
             onClick: (row) =>
               navigate(`/dashboard/hr/departments/${row.id}?tab=section`),
@@ -336,7 +336,6 @@ export default function Depatments() {
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{
           placeholder: "Search departments...",
           value: search,

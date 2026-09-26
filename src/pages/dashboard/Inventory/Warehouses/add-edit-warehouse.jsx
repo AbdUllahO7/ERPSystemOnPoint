@@ -1,5 +1,12 @@
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
@@ -20,7 +27,7 @@ export default function AddEditWarehouse() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
+  const { control, register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     defaultValues: {
       warehouse_Code: "",
       name_Warehouse: "",
@@ -55,8 +62,8 @@ export default function AddEditWarehouse() {
         warehouse_Code: wData.warehouse_Code || "",
         name_Warehouse: wData.name_Warehouse || "",
         location: wData.location || "",
-        manager_Id: wData.manager_Id || "",
-        branch_Id: wData.branch_Id || "",
+        manager_Id: wData.manager_Id ? String(wData.manager_Id) : "",
+        branch_Id: wData.branch_Id ? String(wData.branch_Id) : "",
       });
     }
   }, [isEdit, warehouseData, reset]);
@@ -118,7 +125,7 @@ export default function AddEditWarehouse() {
               <Input 
                 id="warehouse_Code" 
                 placeholder="Warehouse Code" 
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("warehouse_Code", { required: true })}
               />
               {errors.warehouse_Code && (
@@ -133,7 +140,7 @@ export default function AddEditWarehouse() {
               <Input 
                 id="name_Warehouse" 
                 placeholder="Warehouse Name" 
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("name_Warehouse", { required: true })}
               />
               {errors.name_Warehouse && (
@@ -148,7 +155,7 @@ export default function AddEditWarehouse() {
               <Input 
                 id="location" 
                 placeholder="Location" 
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("location")}
               />
             </div>
@@ -157,18 +164,33 @@ export default function AddEditWarehouse() {
               <label htmlFor="manager_Id" className="text-sm font-semibold text-foreground leading-none">
                 Manager Name
               </label>
-              <select
-                id="manager_Id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("manager_Id", { required: true })}
-              >
-                <option value="">Select Manager Name</option>
-                {managers.map((manager) => (
-                  <option key={manager.managerId} value={manager.managerId}>
-                    {manager.managerName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="manager_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Manager Name" />
+                    </SelectTrigger>
+
+                    <SelectContent position="popper">
+                      {managers.map((manager) => (
+                        <SelectItem
+                          key={manager.managerId}
+                          value={String(manager.managerId)}
+                        >
+                          {manager.managerName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.manager_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -178,18 +200,30 @@ export default function AddEditWarehouse() {
               <label htmlFor="branch_Id" className="text-sm font-semibold text-foreground leading-none">
                 Branch Name
               </label>
-              <select
-                id="branch_Id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("branch_Id", { required: true })}
-              >
-                <option value="">Select Branch Name</option>
-                {branches.map((branch) => (
-                  <option key={branch.id} value={branch.id}>
-                    {branch.branchName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="branch_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Branch Name" />
+                    </SelectTrigger>
+
+                    <SelectContent position="popper">
+                      {branches.map((branch) => (
+                        <SelectItem key={branch.id} value={String(branch.id)}>
+                          {branch.branchName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.branch_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

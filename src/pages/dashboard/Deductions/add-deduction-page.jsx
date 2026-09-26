@@ -1,10 +1,17 @@
 import React, { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   getEmployees,
   addDiscount,
@@ -18,7 +25,9 @@ export default function AddDeductionPage() {
   const employeeIdParam = searchParams.get("employeeId");
 
   const {
+    control,
     register,
+    control,
     handleSubmit,
     setValue,
     formState: { errors },
@@ -106,19 +115,38 @@ export default function AddDeductionPage() {
             >
               Employee
             </label>
-            <select
-              id="employeeId"
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={!!employeeIdParam || isLoadingEmployees}
-              {...register("employeeId", { required: true })}
-            >
-              <option value="">Select Employee</option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.fullName}
-                </option>
-              ))}
-            </select>
+            <Controller
+              name="employeeId"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+<<<<<<< Updated upstream
+                  value={field.value ? String(field.value) : undefined}
+=======
+                  value={field.value ? String(field.value) : ""}
+>>>>>>> Stashed changes
+                  onValueChange={field.onChange}
+                  disabled={!!employeeIdParam || isLoadingEmployees}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+<<<<<<< Updated upstream
+                    <SelectValue placeholder="Select Employee" />
+=======
+                    <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select Employee"} />
+>>>>>>> Stashed changes
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {employees.map((emp) => (
+                      <SelectItem key={emp.id} value={String(emp.id)}>
+                        {emp.fullName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.employeeId && (
               <span className="text-red-500 text-xs">Required</span>
             )}
@@ -131,17 +159,33 @@ export default function AddDeductionPage() {
             >
               Discount Type
             </label>
-            <select
-              id="discountType"
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("discountType", { required: true })}
-            >
-              <option value="Damage">Damage</option>
-              <option value="LoanRepayment">LoanRepayment</option>
-              <option value="Tax">Tax</option>
-              <option value="Penalty">Penalty</option>
-              <option value="Other">Other</option>
-            </select>
+            <Controller
+              name="discountType"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+<<<<<<< Updated upstream
+                  value={field.value ? String(field.value) : undefined}
+=======
+                  value={field.value || ""}
+>>>>>>> Stashed changes
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Discount Type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="Damage">Damage</SelectItem>
+                    <SelectItem value="LoanRepayment">LoanRepayment</SelectItem>
+                    <SelectItem value="Tax">Tax</SelectItem>
+                    <SelectItem value="Penalty">Penalty</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.discountType && (
               <span className="text-red-500 text-xs">Required</span>
             )}
@@ -157,7 +201,7 @@ export default function AddDeductionPage() {
             <Input
               id="date"
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("date", { required: true })}
             />
             {errors.date && (
@@ -177,7 +221,7 @@ export default function AddDeductionPage() {
               type="number"
               step="0.01"
               placeholder="0.00"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("amount", { required: true, min: 0.01 })}
             />
             {errors.amount && (
@@ -195,7 +239,7 @@ export default function AddDeductionPage() {
             <Input
               id="notes"
               placeholder="Notes..."
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("notes")}
             />
           </div>

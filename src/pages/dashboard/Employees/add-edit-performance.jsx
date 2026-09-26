@@ -1,10 +1,27 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+<<<<<<< Updated upstream
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+=======
+>>>>>>> Stashed changes
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   addPerformance,
   updatePerformance,
@@ -20,6 +37,7 @@ export default function AddEditPerformance() {
   const isEdit = !!editItem;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -109,14 +127,33 @@ export default function AddEditPerformance() {
             >
               Type
             </label>
-            <select
-              id="type"
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("type", { required: true })}
-            >
-              <option value="Positive">Positive</option>
-              <option value="Negative">Negative</option>
-            </select>
+            <Controller
+              name="type"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+<<<<<<< Updated upstream
+                  value={field.value ? String(field.value) : undefined}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent">
+=======
+                  value={field.value}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger className="w-full h-11 bg-transparent">
+>>>>>>> Stashed changes
+                    <SelectValue placeholder="Select Type" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="Positive">Positive</SelectItem>
+                    <SelectItem value="Negative">Negative</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.type && (
               <span className="text-red-500 text-xs">Required</span>
             )}
@@ -132,7 +169,7 @@ export default function AddEditPerformance() {
             <Input
               id="date"
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("date", { required: true })}
             />
             {errors.date && (

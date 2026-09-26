@@ -1,6 +1,13 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,6 +27,7 @@ export default function AddEditCostCenter() {
   const isEdit = !!id;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -123,7 +131,7 @@ export default function AddEditCostCenter() {
               <Input
                 id="cost_Center_Number"
                 placeholder="Number"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("cost_Center_Number", { required: true })}
               />
               {errors.cost_Center_Number && (
@@ -141,7 +149,7 @@ export default function AddEditCostCenter() {
               <Input
                 id="cost_Center_Name"
                 placeholder="Name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("cost_Center_Name", { required: true })}
               />
               {errors.cost_Center_Name && (
@@ -156,18 +164,29 @@ export default function AddEditCostCenter() {
               >
                 Linked Account
               </label>
-              <select
-                id="linked_Account_Id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("linked_Account_Id", { required: true })}
-              >
-                <option value="">Select Linked Account</option>
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.account_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="linked_Account_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Linked Account" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={String(acc.id)}>
+                          {acc.account_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.linked_Account_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

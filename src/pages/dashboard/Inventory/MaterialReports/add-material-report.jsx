@@ -1,6 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +23,7 @@ export default function AddMaterialReport() {
   const queryClient = useQueryClient();
 
   const {
+    control,
     register,
     handleSubmit,
     formState: { errors },
@@ -104,18 +112,29 @@ export default function AddMaterialReport() {
             >
               Warehouse Name
             </label>
-            <select
-              id="warehouse_Id"
-              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("warehouse_Id", { required: "Warehouse is required" })}
-            >
-              <option value="">Select Warehouse Name</option>
-              {warehouses.map((warehouse) => (
-                <option key={warehouse.id} value={warehouse.id}>
-                  {warehouse.name_Warehouse || warehouse.warehouse_Name || `Warehouse ${warehouse.id.substring(0,4)}`}
-                </option>
-              ))}
-            </select>
+            <Controller
+              name="warehouse_Id"
+              control={control}
+              rules={{ required: "Warehouse is required" }}
+              render={({ field }) => (
+                <Select
+                  key={field.value}
+                  value={field.value || ""}
+                  onValueChange={field.onChange}
+                >
+                  <SelectTrigger id="warehouse_Id" className="w-full h-9 bg-transparent">
+                    <SelectValue placeholder="Select Warehouse Name" />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    {warehouses.map((warehouse) => (
+                      <SelectItem key={warehouse.id} value={String(warehouse.id)}>
+                        {warehouse.name_Warehouse || warehouse.warehouse_Name || `Warehouse ${warehouse.id.substring(0,4)}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.warehouse_Id && (
               <span className="text-red-500 text-xs">{errors.warehouse_Id.message}</span>
             )}
@@ -131,7 +150,7 @@ export default function AddMaterialReport() {
             <Input
               id="start_Date"
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("start_Date", { required: "Start date is required" })}
             />
             {errors.start_Date && (
@@ -149,7 +168,7 @@ export default function AddMaterialReport() {
             <Input
               id="end_Date"
               type="date"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("end_Date", { required: "End date is required" })}
             />
             {errors.end_Date && (
@@ -167,7 +186,7 @@ export default function AddMaterialReport() {
             <Input
               id="notes"
               placeholder="Enter notes"
-              className="h-11 bg-transparent"
+              className="h-9 bg-transparent"
               {...register("notes")}
             />
           </div>

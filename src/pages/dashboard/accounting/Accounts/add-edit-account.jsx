@@ -1,6 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +28,7 @@ export default function AddEditAccount() {
   const isEdit = !!id;
 
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -88,7 +96,7 @@ export default function AddEditAccount() {
     const payload = {
       account_Number: data.account_Number,
       account_Name: data.account_Name,
-      parent_Account_Id: data.parent_Account_Id || null,
+      parent_Account_Id: data.parent_Account_Id === "none" ? null : (data.parent_Account_Id || null),
       final_Account: data.final_Account,
       account_Nature: data.account_Nature,
       financial_Statement: data.financial_Statement,
@@ -145,7 +153,7 @@ export default function AddEditAccount() {
               <Input
                 id="account_Number"
                 placeholder="Number"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("account_Number", { required: true })}
               />
               {errors.account_Number && (
@@ -163,7 +171,7 @@ export default function AddEditAccount() {
               <Input
                 id="account_Name"
                 placeholder="Name"
-                className="h-11 bg-transparent"
+                className="h-9 bg-transparent"
                 {...register("account_Name", { required: true })}
               />
               {errors.account_Name && (
@@ -178,18 +186,34 @@ export default function AddEditAccount() {
               >
                 Parent Account
               </label>
-              <select
-                id="parent_Account_Id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("parent_Account_Id")}
-              >
-                <option value="">No Parent (Main Account)</option>
-                {parentAccounts.map((acc) => (
-                  <option key={acc.id} value={acc.id}>
-                    {acc.accountName}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="parent_Account_Id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+<<<<<<< Updated upstream
+                    value={field.value ? String(field.value) : "none"}
+                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+=======
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+>>>>>>> Stashed changes
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="No Parent (Main Account)" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="none">No Parent (Main Account)</SelectItem>
+                      {parentAccounts.map((acc) => (
+                        <SelectItem key={acc.id} value={String(acc.id)}>
+                          {acc.accountName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div className="space-y-2">
@@ -199,18 +223,29 @@ export default function AddEditAccount() {
               >
                 Currency
               </label>
-              <select
-                id="currency_Id"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("currency_Id", { required: true })}
-              >
-                <option value="">Select Currency</option>
-                {currencies.map((currency) => (
-                  <option key={currency?.id} value={currency?.id}>
-                    {currency?.currency_Name}
-                  </option>
-                ))}
-              </select>
+              <Controller
+                name="currency_Id"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Currency" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {currencies.map((currency) => (
+                        <SelectItem key={currency?.id} value={String(currency?.id)}>
+                          {currency?.currency_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.currency_Id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -223,15 +258,26 @@ export default function AddEditAccount() {
               >
                 Account Nature
               </label>
-              <select
-                id="account_Nature"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("account_Nature", { required: true })}
-              >
-                <option value="">Select Nature</option>
-                <option value="Debit">Debit</option>
-                <option value="Credit">Credit</option>
-              </select>
+              <Controller
+                name="account_Nature"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Nature" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="Debit">Debit</SelectItem>
+                      <SelectItem value="Credit">Credit</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.account_Nature && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -244,15 +290,26 @@ export default function AddEditAccount() {
               >
                 Final Account
               </label>
-              <select
-                id="final_Account"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("final_Account", { required: true })}
-              >
-                <option value="">Select Final Account</option>
-                <option value="BalanceSheet">Balance Sheet</option>
-                <option value="IncomeStatement">Income Statement</option>
-              </select>
+              <Controller
+                name="final_Account"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Final Account" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="BalanceSheet">Balance Sheet</SelectItem>
+                      <SelectItem value="IncomeStatement">Income Statement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.final_Account && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
@@ -265,15 +322,26 @@ export default function AddEditAccount() {
               >
                 Financial Statement
               </label>
-              <select
-                id="financial_Statement"
-                className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                {...register("financial_Statement", { required: true })}
-              >
-                <option value="">Select Financial Statement</option>
-                <option value="FinancialPosition">Financial Position</option>
-                <option value="IncomeStatement">Income Statement</option>
-              </select>
+              <Controller
+                name="financial_Statement"
+                control={control}
+                rules={{ required: true }}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Financial Statement" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      <SelectItem value="FinancialPosition">Financial Position</SelectItem>
+                      <SelectItem value="IncomeStatement">Income Statement</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
               {errors.financial_Statement && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

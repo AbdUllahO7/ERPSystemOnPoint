@@ -110,7 +110,7 @@ export default function AddEditPosition() {
               <Input
                 id="position_Name"
                 placeholder="Position Name"
-                className="h-11 bg-transparent max-w-md"
+                className="h-9 bg-transparent max-w-md"
                 {...register("position_Name", { required: true })}
               />
               {errors.position_Name && (
