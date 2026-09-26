@@ -6,7 +6,6 @@ import {
   getCustomerProjects,
   deleteCustomerProject,
   createCustomerProject,
-  updateCustomerProject,
   getCustomerById,
 } from "@/lib/api";
 import { Button } from "@/components/ui/button";
