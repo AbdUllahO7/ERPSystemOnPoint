@@ -45,23 +45,26 @@ export function EcommerceOrdersPage() {
         {/* 4 Metrics Cards */}
         <OrdersMetricsCards metrics={metrics} />
 
-        {/* Toolbar (Search, Filters, View Modes, Export) */}
-        <OrdersFilterToolbar
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onRefresh={refetch}
-          onExport={handleExport}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-        />
+        {/* Unified Table & Filters Container */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-5">
+          {/* Toolbar (Search, Filters, View Modes, Export) */}
+          <OrdersFilterToolbar
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            onRefresh={refetch}
+            onExport={handleExport}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+          />
 
-        {/* Orders Table */}
-        <OrdersTable
-          orders={orders}
-          selectedOrders={selectedOrders}
-          onToggleOrder={handleToggleOrder}
-          onToggleAllOrders={handleToggleAllOrders}
-        />
+          {/* Orders Table */}
+          <OrdersTable
+            orders={orders}
+            selectedOrders={selectedOrders}
+            onToggleOrder={handleToggleOrder}
+            onToggleAllOrders={handleToggleAllOrders}
+          />
+        </div>
       </div>
 
       {/* Footer */}

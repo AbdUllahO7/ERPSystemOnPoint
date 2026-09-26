@@ -12,7 +12,7 @@ export function OrdersTable({
     orders.length > 0 && selectedOrders.length === orders.length;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-6">
+    <div className="space-y-4">
       <div className="border border-slate-200/80 rounded-2xl overflow-hidden shadow-2xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs sm:text-sm">
