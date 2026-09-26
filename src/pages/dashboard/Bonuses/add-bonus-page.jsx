@@ -27,7 +27,6 @@ export default function AddBonusPage() {
   const {
     control,
     register,
-    control,
     handleSubmit,
     formState: { errors },
   } = useForm({
@@ -120,21 +119,12 @@ export default function AddBonusPage() {
               rules={{ required: true }}
               render={({ field }) => (
                 <Select
-                  key={field.value}
-<<<<<<< Updated upstream
                   value={field.value ? String(field.value) : undefined}
-=======
-                  value={field.value ? String(field.value) : ""}
->>>>>>> Stashed changes
                   onValueChange={field.onChange}
                   disabled={!!employeeIdParam || isLoadingEmployees}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-<<<<<<< Updated upstream
-                    <SelectValue placeholder="Select Employee" />
-=======
                     <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select Employee"} />
->>>>>>> Stashed changes
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {employees.map((emp) => (
@@ -165,11 +155,7 @@ export default function AddBonusPage() {
               render={({ field }) => (
                 <Select
                   key={field.value}
-<<<<<<< Updated upstream
                   value={field.value ? String(field.value) : undefined}
-=======
-                  value={field.value || ""}
->>>>>>> Stashed changes
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">

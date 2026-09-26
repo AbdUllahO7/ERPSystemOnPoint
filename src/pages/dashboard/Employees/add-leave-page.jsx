@@ -99,14 +99,6 @@ export default function AddLeavePage() {
           onSubmit={(e) => e.preventDefault()}
         >
           <div className="space-y-2">
-<<<<<<< Updated upstream
-            <label className="text-sm font-semibold text-foreground leading-none">Type</label>
-            <Select
-              value={form.leave_Type_Id ? String(form.leave_Type_Id) : undefined}
-              onValueChange={(val) => setForm({ ...form, leave_Type_Id: val })}
-            >
-              <SelectTrigger className="w-full h-9 bg-transparent">
-=======
             <label className="text-sm font-semibold text-foreground leading-none">
               Type
             </label>
@@ -117,7 +109,6 @@ export default function AddLeavePage() {
               onValueChange={(val) => setForm({ ...form, leave_Type_Id: val })}
             >
               <SelectTrigger className="h-10 py-5 w-full bg-transparent">
->>>>>>> Stashed changes
                 <SelectValue placeholder="Select Type" />
               </SelectTrigger>
               <SelectContent position="popper">
@@ -136,11 +127,7 @@ export default function AddLeavePage() {
             </label>
             <Input
               type="date"
-<<<<<<< Updated upstream
-              className="h-9 bg-transparent"
-=======
               className="h-11 w-full bg-transparent"
->>>>>>> Stashed changes
               value={form.start_Date}
               onChange={(e) => setForm({ ...form, start_Date: e.target.value })}
             />
@@ -152,11 +139,7 @@ export default function AddLeavePage() {
             </label>
             <Input
               type="date"
-<<<<<<< Updated upstream
-              className="h-9 bg-transparent"
-=======
               className="h-11 w-full bg-transparent"
->>>>>>> Stashed changes
               value={form.end_Date}
               onChange={(e) => setForm({ ...form, end_Date: e.target.value })}
             />
@@ -167,11 +150,7 @@ export default function AddLeavePage() {
               Reason
             </label>
             <Input
-<<<<<<< Updated upstream
-              className="h-9 bg-transparent md:max-w-[calc(33.333%-1rem)]"
-=======
               className="h-11 w-full bg-transparent md:max-w-[calc(33.333%-1rem)]"
->>>>>>> Stashed changes
               value={form.reason}
               onChange={(e) => setForm({ ...form, reason: e.target.value })}
               placeholder="Enter reason for leave..."
