@@ -165,7 +165,7 @@ export default function AddEditRentalInvoicePage() {
                   <SelectValue placeholder="Rental Contract" />
                 </SelectTrigger>
                 <SelectContent>
-                  {lookups.contracts.map((c) => (
+                  {(lookups.contracts || []).map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
                     </SelectItem>

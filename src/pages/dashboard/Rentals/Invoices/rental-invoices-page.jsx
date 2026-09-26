@@ -291,7 +291,7 @@ export default function RentalInvoicesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Contracts</SelectItem>
-                  {lookups.contracts.map((c) => (
+                  {(lookups.contracts || []).map((c) => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
                     </SelectItem>
@@ -316,7 +316,7 @@ export default function RentalInvoicesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Statuses</SelectItem>
-                  {lookups.statuses.map((st) => (
+                  {(lookups.statuses || []).map((st) => (
                     <SelectItem key={st} value={st}>
                       {st}
                     </SelectItem>

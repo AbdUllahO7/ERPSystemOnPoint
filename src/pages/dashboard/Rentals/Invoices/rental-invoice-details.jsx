@@ -372,7 +372,7 @@ export default function RentalInvoiceDetailsPage() {
                   <SelectValue placeholder="Method" />
                 </SelectTrigger>
                 <SelectContent>
-                  {lookups.paymentMethods.map((pm) => (
+                  {(lookups.paymentMethods || []).map((pm) => (
                     <SelectItem key={pm.id} value={pm.id}>
                       {pm.name}
                     </SelectItem>

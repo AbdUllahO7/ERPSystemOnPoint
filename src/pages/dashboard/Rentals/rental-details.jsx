@@ -445,7 +445,7 @@ export default function RentalDetailsPage() {
                 <SelectValue placeholder="Refund Account (Bank / Cash Box)" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.refundAccounts.map((acc) => (
+                {(lookups.refundAccounts || []).map((acc) => (
                   <SelectItem key={acc.id} value={acc.name}>
                     {acc.name}
                   </SelectItem>

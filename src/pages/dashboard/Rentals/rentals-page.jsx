@@ -318,7 +318,7 @@ export default function RentalsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Services</SelectItem>
-                  {lookups.services.map((s) => (
+                  {(lookups.services || []).map((s) => (
                     <SelectItem key={s.id} value={s.name}>
                       {s.name}
                     </SelectItem>
@@ -343,7 +343,7 @@ export default function RentalsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Resources</SelectItem>
-                  {lookups.resources.map((r) => (
+                  {(lookups.resources || []).map((r) => (
                     <SelectItem key={r.id} value={r.name}>
                       {r.name}
                     </SelectItem>

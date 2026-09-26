@@ -239,6 +239,7 @@ export async function getRentalInvoiceLookups() {
       status: 200,
       data: {
         contracts,
+        statuses: ["Paid", "Partial", "Pending", "Overdue"],
         paymentMethods: [
           { id: "Cash", name: "Cash" },
           { id: "Credit", name: "Credit / Card" },
@@ -252,6 +253,7 @@ export async function getRentalInvoiceLookups() {
       status: 200,
       data: {
         contracts: [],
+        statuses: ["Paid", "Partial", "Pending", "Overdue"],
         paymentMethods: [
           { id: "Cash", name: "Cash" },
           { id: "Credit", name: "Credit / Card" },
