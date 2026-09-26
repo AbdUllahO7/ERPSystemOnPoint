@@ -1,7 +1,8 @@
+import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
-// Static Initial Data for Events matching Figma
+// Static Initial Fallback Data
 // ==========================================
 
 export const INITIAL_EVENTS_STATS = [
@@ -48,228 +49,114 @@ export const EVENT_STATUS_TABS = [
   { id: "no-show", label: "No-Show" },
 ];
 
-export const INITIAL_EVENTS_LIST = [
-  {
-    id: 1,
-    code: "EVT-2026-001",
-    title: "Title",
-    fullTitle: "Global Health & Dental Symposium",
-    resource: "Resource",
-    resourceName: "Conference Hall A",
-    provider: "Provider",
-    providerName: "Dr. Alexander Wright",
-    service: "Service",
-    serviceName: "Advanced Dental Surgery Workshop",
-    period: "Period",
-    startDate: "2026-05-10",
-    endDate: "2026-05-12",
-    time: "Time",
-    startTime: "09:00",
-    endTime: "12:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 1,
-    maxCapacity: 20,
-    status: "Booked",
-    recurringDays: ["Sat", "Mon", "Wed"],
-    notes: "Main stage keynote and hands-on clinical breakout sessions.",
-    reservations: [
-      { id: "#12", customer: "Customer", customerName: "Ahmed Ali", qty: 1, status: "Booked" },
-      { id: "#12", customer: "Customer", customerName: "Sara Mansoor", qty: 1, status: "Canceled" },
-      { id: "#12", customer: "Customer", customerName: "Tariq Nasser", qty: 1, status: "Booked" },
-      { id: "#12", customer: "Customer", customerName: "Layla Hakeem", qty: 1, status: "Booked" },
-      { id: "#12", customer: "Customer", customerName: "Omar Qasim", qty: 1, status: "Booked" },
-    ],
-  },
-  {
-    id: 2,
-    code: "EVT-2026-002",
-    title: "Title",
-    fullTitle: "Orthodontics Clinical Masterclass",
-    resource: "Resource",
-    resourceName: "Auditorium 2",
-    provider: "Provider",
-    providerName: "Dr. Elena Rostova",
-    service: "Service",
-    serviceName: "Aligners & Braces Masterclass",
-    period: "Period",
-    startDate: "2026-06-01",
-    endDate: "2026-06-03",
-    time: "Time",
-    startTime: "10:00",
-    endTime: "14:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 4,
-    maxCapacity: 20,
-    status: "Booked",
-    recurringDays: ["Sun", "Tue", "Thu"],
-    notes: "Hands-on diagnostic imaging and appliance fitting tutorials.",
-    reservations: [
-      { id: "#21", customer: "Customer", customerName: "Zaid Hassan", qty: 2, status: "Booked" },
-      { id: "#22", customer: "Customer", customerName: "Mona Adel", qty: 2, status: "Booked" },
-    ],
-  },
-  {
-    id: 3,
-    code: "EVT-2026-003",
-    title: "Title",
-    fullTitle: "Laser Dentistry Innovations",
-    resource: "Resource",
-    resourceName: "Lab Room 4",
-    provider: "Provider",
-    providerName: "Dr. Marcus Vance",
-    service: "Service",
-    serviceName: "Laser Soft-Tissue Management",
-    period: "Period",
-    startDate: "2026-07-15",
-    endDate: "2026-07-16",
-    time: "Time",
-    startTime: "09:00",
-    endTime: "13:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 8,
-    maxCapacity: 20,
-    status: "Checked-In",
-    recurringDays: ["Sat", "Sun"],
-    notes: "Laser certification and clinical practical demonstration.",
-    reservations: [
-      { id: "#31", customer: "Customer", customerName: "Nour Al-Sabah", qty: 1, status: "Checked-In" },
-      { id: "#32", customer: "Customer", customerName: "Hani Shaker", qty: 2, status: "Booked" },
-    ],
-  },
-  {
-    id: 4,
-    code: "EVT-2026-004",
-    title: "Title",
-    fullTitle: "Implantology Annual Summit",
-    resource: "Resource",
-    resourceName: "Grand Ballroom",
-    provider: "Provider",
-    providerName: "Dr. Sarah Jenkins",
-    service: "Service",
-    serviceName: "Full-Arch Rehabilitation",
-    period: "Period",
-    startDate: "2026-08-20",
-    endDate: "2026-08-22",
-    time: "Time",
-    startTime: "08:30",
-    endTime: "17:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 18,
-    maxCapacity: 20,
-    status: "Completed",
-    recurringDays: ["Mon", "Tue", "Wed", "Thu"],
-    notes: "Live surgical demonstration broadcast and panel discussion.",
-    reservations: [
-      { id: "#41", customer: "Customer", customerName: "Dr. Bilal Kamel", qty: 3, status: "Completed" },
-    ],
-  },
-  {
-    id: 5,
-    code: "EVT-2026-005",
-    title: "Title",
-    fullTitle: "Pediatric Dentistry Workshop",
-    resource: "Resource",
-    resourceName: "Seminar Room B",
-    provider: "Provider",
-    providerName: "Dr. Maya Lin",
-    service: "Service",
-    serviceName: "Behavioral Management in Children",
-    period: "Period",
-    startDate: "2026-09-05",
-    endDate: "2026-09-06",
-    time: "Time",
-    startTime: "11:00",
-    endTime: "15:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 0,
-    maxCapacity: 20,
-    status: "Canceled",
-    recurringDays: ["Fri", "Sat"],
-    notes: "Specialized preventive treatment and behavior guidance.",
-    reservations: [],
-  },
-  {
-    id: 6,
-    code: "EVT-2026-006",
-    title: "Title",
-    fullTitle: "Digital Smile Design Live Clinic",
-    resource: "Resource",
-    resourceName: "Studio 1",
-    provider: "Provider",
-    providerName: "Dr. Julian Croft",
-    service: "Service",
-    serviceName: "Aesthetic Smile Design",
-    period: "Period",
-    startDate: "2026-10-12",
-    endDate: "2026-10-13",
-    time: "Time",
-    startTime: "13:00",
-    endTime: "18:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 5,
-    maxCapacity: 20,
-    status: "No-Show",
-    recurringDays: ["Sun", "Mon"],
-    notes: "3D intraoral scanning, facial photography, and smile mockup printing.",
-    reservations: [
-      { id: "#61", customer: "Customer", customerName: "Farah Salem", qty: 1, status: "No-Show" },
-    ],
-  },
-  {
-    id: 7,
-    code: "EVT-2026-007",
-    title: "Title",
-    fullTitle: "Endodontic Mastery Hands-On",
-    resource: "Resource",
-    resourceName: "Simulation Lab 3",
-    provider: "Provider",
-    providerName: "Dr. Alexander Wright",
-    service: "Service",
-    serviceName: "Rotary Instrumentation & Obturation",
-    period: "Period",
-    startDate: "2026-11-01",
-    endDate: "2026-11-02",
-    time: "Time",
-    startTime: "09:00",
-    endTime: "12:00",
-    price: "$300",
-    numericPrice: 300,
-    deposit: "USD 50.00",
-    numericDeposit: 50,
-    reserved: 12,
-    maxCapacity: 20,
-    status: "Booked",
-    recurringDays: ["Sat", "Sun"],
-    notes: "Microscope-assisted endodontics and complex anatomy navigation.",
-    reservations: [],
-  },
-];
-
-// Memory store for dynamic updates during session
-let memoryEvents = [...INITIAL_EVENTS_LIST];
+export const DAYS_OF_WEEK = ["Sat", "Sun", "Mon", "Wed", "Thu", "Fri"];
 
 // ==========================================
-// Service API Functions
+// Service Methods - Connected to Real Backend
 // ==========================================
 
+/**
+ * Fetch Lookups needed for Event forms (Services, Resources, Providers, Days)
+ */
+export async function getEventLookups() {
+  try {
+    const [servicesRes, resourcesRes, providersRes] = await Promise.allSettled([
+      apiHandler({
+        endPoint: "Inventory/Product/GetAll/GetAll",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "inventory/Resource/GetAll",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "inventory/ServiceProvider/GetAllServiceProviders",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+    ]);
+
+    // Parse Services (Products)
+    let services = [];
+    if (servicesRes.status === "fulfilled") {
+      const raw = servicesRes.value?.data || servicesRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      services = list.map((item) => {
+        const variantId = Array.isArray(item.variant_Ids) && item.variant_Ids.length > 0
+          ? item.variant_Ids[0]
+          : item.id;
+        const primaryPrice = Array.isArray(item.prices) && item.prices.length > 0
+          ? item.prices[0]
+          : (item.consumer_Price ?? item.price ?? 0);
+        return {
+          id: variantId,
+          productId: item.id,
+          name: item.name_Product || item.name || "Unnamed Service",
+          price: primaryPrice,
+        };
+      });
+    }
+
+    // Parse Resources (Halls, Rooms, Equipments)
+    let resources = [];
+    if (resourcesRes.status === "fulfilled") {
+      const raw = resourcesRes.value?.data || resourcesRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      resources = list.map((item) => ({
+        id: item.id,
+        name: item.resource_Name || item.name || item.resourceName || "Unnamed Resource",
+        capacity: item.capacity || item.maxCapacity || 20,
+      }));
+    }
+
+    // Parse Providers
+    let providers = [];
+    if (providersRes.status === "fulfilled") {
+      const raw = providersRes.value?.data || providersRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      providers = list.map((item) => ({
+        id: item.id,
+        name: item.name || item.fullName || "Unnamed Provider",
+        phone: item.phone || item.contact_Number || "",
+      }));
+    }
+
+    return {
+      status: 200,
+      data: {
+        services,
+        resources,
+        providers,
+        statuses: [
+          { id: "Booked", name: "Booked" },
+          { id: "CheckedIn", name: "Checked-In" },
+          { id: "Completed", name: "Completed" },
+          { id: "Canceled", name: "Canceled" },
+          { id: "NoShow", name: "No-Show" },
+        ],
+        days: DAYS_OF_WEEK,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching event lookups:", error);
+    return {
+      status: 200,
+      data: {
+        services: [],
+        resources: [],
+        providers: [],
+        statuses: [],
+        days: DAYS_OF_WEEK,
+      },
+    };
+  }
+}
+
+/**
+ * Fetch Stats for Events
+ */
 export async function getEventsStats() {
   return {
     status: 200,
@@ -277,233 +164,289 @@ export async function getEventsStats() {
   };
 }
 
+/**
+ * Get Paginated & Filtered Events List
+ * Endpoint: GET /api/inventory/Booking/GetAll
+ */
 export async function getEvents(params = {}) {
-  const {
-    PageNumber = 1,
-    PageSize = 10,
-    SearchTerm,
-    Status,
-    Service,
-    Provider,
-    Resource,
-  } = params;
+  try {
+    const queryParams = {
+      PageNumber: params.PageNumber || 1,
+      PageSize: params.PageSize || 10,
+      Search: params.SearchTerm || params.Search || undefined,
+      SearchTerm: params.SearchTerm || undefined,
+      ResourceId: params.Resource && params.Resource !== "all" ? params.Resource : undefined,
+      ServiceProviderId: params.Provider && params.Provider !== "all" ? params.Provider : undefined,
+      IsActive: params.IsActive !== undefined ? params.IsActive : undefined,
+      SortBy: params.SortBy || undefined,
+      SortDirection: params.SortDirection || undefined,
+    };
 
-  let filtered = [...memoryEvents];
+    const res = await apiHandler({
+      endPoint: "inventory/Booking/GetAll",
+      method: "GET",
+      params: queryParams,
+    });
 
-  if (SearchTerm) {
-    const term = SearchTerm.toLowerCase();
-    filtered = filtered.filter(
-      (e) =>
-        String(e.id).includes(term) ||
-        e.title?.toLowerCase().includes(term) ||
-        e.fullTitle?.toLowerCase().includes(term) ||
-        e.resource?.toLowerCase().includes(term) ||
-        e.provider?.toLowerCase().includes(term) ||
-        e.service?.toLowerCase().includes(term)
-    );
-  }
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-  if (Status && Status.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (e) => e.status?.toLowerCase() === Status.toLowerCase()
-    );
-  }
+    const mappedItems = items.map((e, idx) => {
+      const startDateStr = e.startDate ? new Date(e.startDate).toISOString().split("T")[0] : "";
+      const endDateStr = e.endDate ? new Date(e.endDate).toISOString().split("T")[0] : "";
+      const period = startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A";
 
-  if (Service && Service.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (e) =>
-        e.service?.toLowerCase() === Service.toLowerCase() ||
-        e.serviceName?.toLowerCase() === Service.toLowerCase()
-    );
-  }
+      const startTimeStr = e.startTime ? (typeof e.startTime === "string" ? e.startTime.substring(0, 5) : String(e.startTime)) : "09:00";
+      const endTimeStr = e.endTime ? (typeof e.endTime === "string" ? e.endTime.substring(0, 5) : String(e.endTime)) : "12:00";
+      const time = `${startTimeStr} - ${endTimeStr}`;
 
-  if (Provider && Provider.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (e) =>
-        e.provider?.toLowerCase() === Provider.toLowerCase() ||
-        e.providerName?.toLowerCase() === Provider.toLowerCase()
-    );
-  }
+      const priceVal = e.price ?? 0;
+      const displayPrice = typeof priceVal === "number" ? `$${priceVal}` : `$${priceVal}`;
 
-  if (Resource && Resource.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (e) =>
-        e.resource?.toLowerCase() === Resource.toLowerCase() ||
-        e.resourceName?.toLowerCase() === Resource.toLowerCase()
-    );
-  }
+      return {
+        id: e.id || idx + 1,
+        code: e.code || `EVT-${String(e.id || idx + 1).substring(0, 6)}`,
+        title: e.title || "Untitled Event",
+        fullTitle: e.title || "Untitled Event",
+        resource: e.resourceName || e.resource_Name || e.resourceId || "Resource",
+        resourceId: e.resourceId,
+        resourceName: e.resourceName || "Resource",
+        provider: e.serviceProviderName || e.serviceProviderId || "Provider",
+        providerId: e.serviceProviderId,
+        providerName: e.serviceProviderName || "Provider",
+        service: e.productVariantName || e.product_Name || "Service",
+        productVariantId: e.productVariantId,
+        period,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        time,
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        price: displayPrice,
+        numericPrice: priceVal,
+        deposit: e.advancePayment ? `$${e.advancePayment}` : "$0",
+        numericDeposit: e.advancePayment || 0,
+        reserved: e.reservedQuantity ?? e.reserved ?? 0,
+        maxCapacity: e.maxCapacity ?? e.capacity ?? 20,
+        status: e.status || (e.isActive ? "Booked" : "Canceled"),
+        isActive: e.isActive ?? true,
+        recurringDays: typeof e.recurringDays === "string" ? e.recurringDays.split(",").filter(Boolean) : (e.recurringDays || []),
+        notes: e.notes || "",
+      };
+    });
 
-  const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / PageSize) || 1;
-  const startIndex = (PageNumber - 1) * PageSize;
-  const items = filtered.slice(startIndex, startIndex + PageSize);
-
-  return {
-    status: 200,
-    data: {
-      items,
-      totalCount,
-      totalPages,
-      pageNumber: PageNumber,
-      pageSize: PageSize,
-    },
-  };
-}
-
-export async function getEventById(id) {
-  const event = memoryEvents.find((e) => String(e.id) === String(id));
-  if (!event) {
     return {
       status: 200,
       data: {
-        id: Number(id) || 1,
-        code: "EVT-2026-001",
-        title: "Title",
-        fullTitle: "Global Health & Dental Symposium",
-        resource: "Resource",
-        resourceName: "Conference Hall A",
-        provider: "Provider",
-        providerName: "Dr. Alexander Wright",
-        service: "Service",
-        serviceName: "Advanced Dental Surgery Workshop",
-        period: "Period",
-        startDate: "2026-05-10",
-        endDate: "2026-05-12",
-        time: "Time",
-        startTime: "09:00",
-        endTime: "12:00",
-        price: "$300",
-        numericPrice: 300,
-        deposit: "USD 50.00",
-        numericDeposit: 50,
-        reserved: 1,
-        maxCapacity: 10,
-        status: "Booked",
-        recurringDays: ["Sat", "Mon", "Wed"],
-        notes: "Annual workshop event with hands-on practice session.",
-        reservations: [
-          { id: "#12", customer: "Customer", customerName: "Ahmed Ali", qty: 1, status: "Booked" },
-          { id: "#12", customer: "Customer", customerName: "Sara Mansoor", qty: 1, status: "Canceled" },
-          { id: "#12", customer: "Customer", customerName: "Tariq Nasser", qty: 1, status: "Booked" },
-          { id: "#12", customer: "Customer", customerName: "Layla Hakeem", qty: 1, status: "Booked" },
-          { id: "#12", customer: "Customer", customerName: "Omar Qasim", qty: 1, status: "Booked" },
-        ],
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    return {
+      status: 200,
+      data: {
+        items: [],
+        totalCount: 0,
+        totalPages: 1,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
       },
     };
   }
-  return {
-    status: 200,
-    data: event,
-  };
 }
 
-export async function createEvent(payload) {
-  const newId = memoryEvents.length > 0 ? Math.max(...memoryEvents.map((e) => e.id)) + 1 : 1;
-  const newEvent = {
-    id: newId,
-    code: `EVT-2026-${String(newId).padStart(3, "0")}`,
-    title: payload.title || "Title",
-    fullTitle: payload.title || "Event Title",
-    service: payload.service || "Service",
-    serviceName: payload.serviceName || payload.service || "Service",
-    resource: payload.resource || "Resource",
-    resourceName: payload.resourceName || payload.resource || "Resource",
-    provider: payload.provider || "Provider",
-    providerName: payload.providerName || payload.provider || "Provider",
-    period: payload.startDate ? `${payload.startDate} - ${payload.endDate || payload.startDate}` : "Period",
-    startDate: payload.startDate || "2026-05-10",
-    endDate: payload.endDate || "2026-05-12",
-    time: payload.startTime ? `${payload.startTime} - ${payload.endTime || payload.startTime}` : "Time",
-    startTime: payload.startTime || "09:00",
-    endTime: payload.endTime || "12:00",
-    price: `$${payload.price || 0}`,
-    numericPrice: Number(payload.price) || 0,
-    deposit: `USD ${Number(payload.deposit || 0).toFixed(2)}`,
-    numericDeposit: Number(payload.deposit) || 0,
-    reserved: 0,
-    maxCapacity: Number(payload.maxCapacity) || 20,
-    status: "Booked",
-    recurringDays: payload.recurringDays || ["Sat", "Mon", "Wed"],
-    notes: payload.notes || "",
-    reservations: [],
-  };
+/**
+ * Get Event By ID
+ * Endpoint: GET /api/inventory/Booking/{id}
+ */
+export async function getEventById(id) {
+  try {
+    const res = await apiHandler({
+      endPoint: `inventory/Booking/${id}`,
+      method: "GET",
+    });
+    const e = res?.data || res || {};
 
-  memoryEvents = [newEvent, ...memoryEvents];
-  return {
-    status: 200,
-    data: newEvent,
-    message: "Event created successfully!",
-  };
-}
+    const startDateStr = e.startDate ? new Date(e.startDate).toISOString().split("T")[0] : "";
+    const endDateStr = e.endDate ? new Date(e.endDate).toISOString().split("T")[0] : "";
+    const startTimeStr = e.startTime ? (typeof e.startTime === "string" ? e.startTime.substring(0, 5) : String(e.startTime)) : "09:00";
+    const endTimeStr = e.endTime ? (typeof e.endTime === "string" ? e.endTime.substring(0, 5) : String(e.endTime)) : "12:00";
 
-export async function updateEvent(id, payload) {
-  const index = memoryEvents.findIndex((e) => String(e.id) === String(id));
-  if (index !== -1) {
-    memoryEvents[index] = {
-      ...memoryEvents[index],
-      ...payload,
-      price: payload.price !== undefined ? `$${payload.price}` : memoryEvents[index].price,
-      numericPrice: payload.price !== undefined ? Number(payload.price) : memoryEvents[index].numericPrice,
-      deposit: payload.deposit !== undefined ? `USD ${Number(payload.deposit).toFixed(2)}` : memoryEvents[index].deposit,
-      numericDeposit: payload.deposit !== undefined ? Number(payload.deposit) : memoryEvents[index].numericDeposit,
-    };
+    // Fetch linked attendee reservations if available
+    let linkedReservations = [];
+    try {
+      const attendeesRes = await apiHandler({
+        endPoint: "inventory/CustomerReseveration/GetAllReservations/GetAll",
+        method: "POST",
+        body: {
+          bookingEventId: id,
+          pageNumber: 1,
+          pageSize: 50,
+        },
+      });
+      const rawAttendees = attendeesRes?.data || attendeesRes || {};
+      const attendeesList = rawAttendees?.items || (Array.isArray(rawAttendees) ? rawAttendees : []);
+      linkedReservations = attendeesList.map((att, idx) => ({
+        id: att.id || `#${idx + 1}`,
+        customer: att.customerName || "Customer",
+        customerName: att.customerName || "Customer",
+        qty: att.quantity || 1,
+        status: att.status || "Booked",
+      }));
+    } catch {
+      // Ignored if no attendees found
+    }
+
     return {
       status: 200,
-      data: memoryEvents[index],
-      message: "Event updated successfully!",
+      data: {
+        id: e.id || id,
+        code: e.code || `EVT-${String(id).substring(0, 8)}`,
+        title: e.title || "Untitled Event",
+        fullTitle: e.title || "Untitled Event",
+        productVariantId: e.productVariantId || "",
+        service: e.productVariantName || "",
+        serviceName: e.productVariantName || "Service",
+        resourceId: e.resourceId || "",
+        resource: e.resourceName || "",
+        resourceName: e.resourceName || "Resource",
+        serviceProviderId: e.serviceProviderId || "",
+        provider: e.serviceProviderName || "",
+        providerName: e.serviceProviderName || "Provider",
+        startDate: startDateStr,
+        endDate: endDateStr,
+        period: startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A",
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        time: `${startTimeStr} - ${endTimeStr}`,
+        price: e.price ? `$${e.price}` : "$0",
+        numericPrice: e.price ?? 0,
+        deposit: e.advancePayment ? `$${e.advancePayment}` : "$0",
+        numericDeposit: e.advancePayment ?? 0,
+        reserved: e.reservedQuantity ?? linkedReservations.reduce((sum, r) => sum + (r.qty || 1), 0),
+        maxCapacity: e.maxCapacity ?? e.capacity ?? 20,
+        status: e.status || (e.isActive ? "Booked" : "Canceled"),
+        isActive: e.isActive ?? true,
+        recurringDays: typeof e.recurringDays === "string" ? e.recurringDays.split(",").filter(Boolean) : (e.recurringDays || []),
+        notes: e.notes || "",
+        reservations: linkedReservations,
+      },
     };
+  } catch (error) {
+    console.error("Error fetching event by id:", error);
+    throw error;
   }
+}
+
+/**
+ * Create New Event (Booking)
+ * Endpoint: POST /api/inventory/Booking/Create
+ */
+export async function createEvent(data) {
+  const formatTimeSpan = (t) => {
+    if (!t) return "00:00:00";
+    const parts = String(t).split(":");
+    if (parts.length === 2) return `${parts[0]}:${parts[1]}:00`;
+    if (parts.length === 3) return t;
+    return "00:00:00";
+  };
+
+  const payload = {
+    title: data.title,
+    productVariantId: data.productVariantId || data.service,
+    resourceId: data.resourceId || data.resource,
+    serviceProviderId: data.serviceProviderId || data.provider || null,
+    startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+    endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
+    startTime: formatTimeSpan(data.startTime),
+    endTime: formatTimeSpan(data.endTime),
+    recurringDays: Array.isArray(data.recurringDays) ? data.recurringDays.join(",") : (data.recurringDays || null),
+    price: Number(data.price) || 0,
+    advancePayment: data.deposit !== undefined ? Number(data.deposit) : (Number(data.advancePayment) || 0),
+  };
+
+  const res = await apiHandler({
+    endPoint: "inventory/Booking/Create",
+    method: "POST",
+    body: payload,
+  });
+
+  return {
+    status: 201,
+    data: res?.data || res,
+    message: "Event created successfully",
+  };
+}
+
+/**
+ * Update Existing Event
+ * Endpoint: POST /api/inventory/Booking/Update
+ */
+export async function updateEvent(id, data) {
+  const formatTimeSpan = (t) => {
+    if (!t) return "00:00:00";
+    const parts = String(t).split(":");
+    if (parts.length === 2) return `${parts[0]}:${parts[1]}:00`;
+    if (parts.length === 3) return t;
+    return "00:00:00";
+  };
+
+  const payload = {
+    id: id,
+    title: data.title,
+    productVariantId: data.productVariantId || data.service,
+    resourceId: data.resourceId || data.resource,
+    serviceProviderId: data.serviceProviderId || data.provider || null,
+    startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+    endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
+    startTime: formatTimeSpan(data.startTime),
+    endTime: formatTimeSpan(data.endTime),
+    recurringDays: Array.isArray(data.recurringDays) ? data.recurringDays.join(",") : (data.recurringDays || null),
+    price: Number(data.price) || 0,
+    advancePayment: data.deposit !== undefined ? Number(data.deposit) : (Number(data.advancePayment) || 0),
+  };
+
+  const res = await apiHandler({
+    endPoint: "inventory/Booking/Update",
+    method: "POST",
+    body: payload,
+  });
+
   return {
     status: 200,
-    message: "Event updated!",
+    data: res?.data || res,
+    message: "Event updated successfully",
+  };
+}
+
+/**
+ * Toggle Status / Delete Event
+ * Endpoint: POST /api/inventory/Booking/{id}/ToggleStatus
+ */
+export async function toggleEventStatus(id) {
+  const res = await apiHandler({
+    endPoint: `inventory/Booking/${id}/ToggleStatus`,
+    method: "POST",
+  });
+
+  return {
+    status: 200,
+    data: res?.data || res,
+    message: "Status updated successfully",
   };
 }
 
 export async function deleteEvent(id) {
-  memoryEvents = memoryEvents.filter((e) => String(e.id) !== String(id));
-  return {
-    status: 200,
-    data: { success: true },
-    message: "Event deleted successfully!",
-  };
+  return toggleEventStatus(id);
 }
 
 export async function changeEventStatus({ id, status }) {
-  const item = memoryEvents.find((e) => String(e.id) === String(id));
-  if (item) {
-    item.status = status;
-  }
-  return {
-    status: 200,
-    data: { id, status },
-    message: "Event status updated successfully!",
-  };
-}
-
-export async function getEventLookups() {
-  return {
-    status: 200,
-    data: {
-      services: [
-        { id: "dental-surgery", name: "Dental Surgery Workshop" },
-        { id: "orthodontics", name: "Orthodontics Masterclass" },
-        { id: "laser-clinic", name: "Laser Dentistry Innovations" },
-        { id: "implant-summit", name: "Implantology Annual Summit" },
-      ],
-      resources: [
-        { id: "hall-a", name: "Conference Hall A" },
-        { id: "auditorium-2", name: "Auditorium 2" },
-        { id: "lab-4", name: "Lab Room 4" },
-        { id: "ballroom", name: "Grand Ballroom" },
-      ],
-      providers: [
-        { id: "dr-wright", name: "Dr. Alexander Wright" },
-        { id: "dr-rostova", name: "Dr. Elena Rostova" },
-        { id: "dr-vance", name: "Dr. Marcus Vance" },
-        { id: "dr-jenkins", name: "Dr. Sarah Jenkins" },
-      ],
-      statuses: ["All", "Booked", "Checked-In", "Completed", "Canceled", "No-Show"],
-      days: ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"],
-    },
-  };
+  return toggleEventStatus(id);
 }

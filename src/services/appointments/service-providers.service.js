@@ -2,7 +2,7 @@ import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
-// Static Initial Data for Service Providers
+// Initial Data & Constants for Service Providers
 // ==========================================
 
 export const INITIAL_SERVICE_PROVIDERS_STATS = [
@@ -50,291 +50,7 @@ export const DAYS_OF_WEEK = [
   { id: "Fri", label: "Fri", full: "Friday" },
 ];
 
-export const INITIAL_SERVICE_PROVIDERS_LIST = [
-  {
-    id: 1,
-    employeeId: "EMP-101",
-    name: "Dr. Rami Haddad",
-    phone: "+963991000101",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 2,
-    employeeId: "EMP-102",
-    name: "Dr. Sara Al-Mansoor",
-    phone: "+963991000102",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 3,
-    employeeId: "EMP-103",
-    name: "Dr. Tariq Nasser",
-    phone: "+963991000103",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 4,
-    employeeId: "EMP-104",
-    name: "Dr. Layla Mahmoud",
-    phone: "+963991000104",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 5,
-    employeeId: "EMP-105",
-    name: "Dr. Khaled Al-Zahrani",
-    phone: "+963991000105",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 6,
-    employeeId: "EMP-106",
-    name: "Dr. Mona Al-Ahmad",
-    phone: "+963991000106",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 7,
-    employeeId: "EMP-107",
-    name: "Dr. Ziad Barakat",
-    phone: "+963991000107",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-  {
-    id: 8,
-    employeeId: "EMP-108",
-    name: "Dr. Reem Al-Khatib",
-    phone: "+963991000108",
-    workingDays: ["Sun", "Mon", "Tue", "Wed"],
-    status: "Active",
-  },
-];
-
-// Sample reservations data for calendar matching screenshot
-export const INITIAL_PROVIDER_RESERVATIONS = [
-  {
-    id: 101,
-    day: 29,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Ahmed Ali",
-    type: "blue", // blue badge
-    status: "Confirmed",
-  },
-  {
-    id: 102,
-    day: 1,
-    time: "9:00-9:30",
-    service: "Consultation",
-    patient: "Omar Farooq",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 103,
-    day: 3,
-    time: "9:00-9:30",
-    service: "Teeth Whitening",
-    patient: "Nour Salem",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 104,
-    day: 3,
-    time: "9:00-9:30",
-    service: "Root Canal Follow-up",
-    patient: "Hassan Qasim",
-    type: "orange",
-    status: "Scheduled",
-  },
-  {
-    id: 105,
-    day: 5,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Youssef Nabil",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 106,
-    day: 5,
-    time: "9:00-9:30",
-    service: "Orthodontic Checkup",
-    patient: "Fatima Zein",
-    type: "orange",
-    status: "Scheduled",
-  },
-  {
-    id: 107,
-    day: 7,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Kareem Adel",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 108,
-    day: 9,
-    time: "9:00-9:30",
-    service: "Tooth Extraction",
-    patient: "Samir Hanna",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 109,
-    day: 9,
-    time: "9:00-9:30",
-    service: "Crown Fitting",
-    patient: "Salma Mansour",
-    type: "orange",
-    status: "Scheduled",
-  },
-  {
-    id: 110,
-    day: 11,
-    time: "9:00-9:30",
-    service: "Routine Exam",
-    patient: "Ibrahim Khalil",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 111,
-    day: 13,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Hana Shaker",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 112,
-    day: 17,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Majid Al-Otaibi",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 113,
-    day: 19,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Layla Murad",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 114,
-    day: 19,
-    time: "9:00-9:30",
-    service: "Orthodontic Adjustment",
-    patient: "Bassam Tariq",
-    type: "orange",
-    status: "Scheduled",
-  },
-  {
-    id: 115,
-    day: 19,
-    time: "9:00-9:30",
-    service: "Urgent Consultation",
-    patient: "Dina Hamed",
-    type: "red",
-    status: "No Show",
-  },
-  {
-    id: 116,
-    day: 23,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Tarek Younis",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 117,
-    day: 25,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Amal Saad",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 118,
-    day: 25,
-    time: "9:00-9:30",
-    service: "Filling Replacement",
-    patient: "Fahad Al-Harbi",
-    type: "orange",
-    status: "Scheduled",
-  },
-  {
-    id: 119,
-    day: 25,
-    time: "9:00-9:30",
-    service: "Root Canal",
-    patient: "Nasser Al-Subaie",
-    type: "red",
-    status: "Cancelled",
-  },
-  {
-    id: 120,
-    day: 27,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Rana Jameel",
-    type: "blue",
-    status: "Confirmed",
-  },
-  {
-    id: 121,
-    day: 27,
-    time: "9:00-9:30",
-    service: "Checkup",
-    patient: "Walid Rasheed",
-    type: "orange",
-    status: "Scheduled",
-  },
-  {
-    id: 122,
-    day: 27,
-    time: "9:00-9:30",
-    service: "Emergency Pain Relief",
-    patient: "Mazen Al-Ghamdi",
-    type: "red",
-    status: "Cancelled",
-  },
-  {
-    id: 123,
-    day: 31,
-    time: "9:00-9:30",
-    service: "Dental Cleaning",
-    patient: "Ghassan Tawfiq",
-    type: "blue",
-    status: "Confirmed",
-  },
-];
-
-// In-memory state store
-let _serviceProviders = [...INITIAL_SERVICE_PROVIDERS_LIST];
-let _providerReservations = [...INITIAL_PROVIDER_RESERVATIONS];
-
-// ==========================================
-// Service Provider Service Methods
-// ==========================================
+export const INITIAL_SERVICE_PROVIDERS_LIST = [];
 
 export async function getServiceProvidersStats() {
   return {
@@ -343,144 +59,150 @@ export async function getServiceProvidersStats() {
   };
 }
 
+// ==========================================
+// Service Provider API Methods
+// ==========================================
+
 export async function getServiceProviders(params = {}) {
-  const { PageNumber = 1, PageSize = 10, SearchTerm, Status, Day } = params;
+  try {
+    const res = await apiHandler({
+      endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
+      method: "GET",
+      params: {
+        PageNumber: params.PageNumber || params.page || 1,
+        PageSize: params.PageSize || params.pageSize || 10,
+        Search: params.SearchTerm || params.search || undefined,
+        IsActive: params.Status === "Active" ? true : params.Status === "Inactive" ? false : undefined,
+        SortBy: params.SortBy || undefined,
+        SortDirection: params.SortDirection || undefined,
+      },
+    });
 
-  let filtered = [..._serviceProviders];
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-  if (SearchTerm) {
-    const term = SearchTerm.toLowerCase().trim();
-    filtered = filtered.filter(
-      (p) =>
-        p.employeeId.toLowerCase().includes(term) ||
-        p.name.toLowerCase().includes(term) ||
-        p.phone.toLowerCase().includes(term)
-    );
-  }
+    const mappedItems = items.map((p, idx) => ({
+      id: p.id || idx + 1,
+      employeeId: p.employeeId || p.hrEmployeeId || `#${idx + 101}`,
+      name: p.name || p.employeeName || p.hrEmployee?.name || `Provider ${idx + 1}`,
+      phone: p.phone || p.phoneNumber || p.hrEmployee?.phone || "-",
+      workingDays: Array.isArray(p.workingDays) && p.workingDays.length > 0 
+        ? p.workingDays 
+        : ["Sun", "Mon", "Tue", "Wed", "Thu"],
+      status: p.isActive === false || p.status === "Inactive" ? "Inactive" : "Active",
+      raw: p,
+    }));
 
-  if (Status && Status !== "all") {
-    filtered = filtered.filter(
-      (p) => p.status.toLowerCase() === Status.toLowerCase()
-    );
-  }
-
-  if (Day && Day !== "all") {
-    filtered = filtered.filter((p) => p.workingDays.includes(Day));
-  }
-
-  const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / PageSize) || 1;
-  const start = (PageNumber - 1) * PageSize;
-  const items = filtered.slice(start, start + PageSize);
-
-  return {
-    status: 200,
-    data: {
-      items,
-      totalCount,
-      totalPages,
-      pageNumber: PageNumber,
-      pageSize: PageSize,
-    },
-  };
-}
-
-export async function getServiceProviderById(id) {
-  const provider = _serviceProviders.find((p) => String(p.id) === String(id));
-  if (!provider) {
-    // Default fallback mock provider
     return {
       status: 200,
       data: {
-        id: Number(id),
-        employeeId: "#266544",
-        name: "Dr. Rami Haddad",
-        phone: "+965 4599 158 323",
-        workingDays: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-        status: "Active",
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
       },
     };
+  } catch (err) {
+    console.error("Failed to fetch service providers from API:", err);
+    throw err;
   }
-
-  return {
-    status: 200,
-    data: {
-      ...provider,
-      // If full days needed for details view matching mockup
-      workingDays: provider.workingDays || [
-        "Sun",
-        "Mon",
-        "Tue",
-        "Wed",
-        "Thu",
-        "Fri",
-        "Sat",
-      ],
-    },
-  };
 }
 
-export async function getServiceProviderReservations(providerId, monthYear = "2026-09") {
-  return {
-    status: 200,
-    data: _providerReservations,
-  };
+export async function getServiceProviderById(id) {
+  try {
+    const res = await apiHandler({
+      endPoint: `inventory/ServiceProvider/GetServiceProviderById/${id}`,
+      method: "GET",
+    });
+
+    const p = res?.data || res || {};
+    return {
+      status: 200,
+      data: {
+        id: p.id || id,
+        employeeId: p.employeeId || p.hrEmployeeId || `#${id}`,
+        name: p.name || p.employeeName || p.hrEmployee?.name || "Service Provider",
+        phone: p.phone || p.phoneNumber || p.hrEmployee?.phone || "-",
+        workingDays: Array.isArray(p.workingDays) && p.workingDays.length > 0
+          ? p.workingDays
+          : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        status: p.isActive === false || p.status === "Inactive" ? "Inactive" : "Active",
+        raw: p,
+      },
+    };
+  } catch (err) {
+    console.error(`Failed to get service provider with id ${id}:`, err);
+    throw err;
+  }
 }
 
 export async function createServiceProvider(data) {
-  const newId = _serviceProviders.length > 0
-    ? Math.max(..._serviceProviders.map((p) => p.id)) + 1
-    : 1;
-
-  const newProvider = {
-    id: newId,
-    employeeId: data.employeeId || `EMP-${100 + newId}`,
-    name: data.name || "",
-    phone: data.phone || "",
-    workingDays: data.workingDays || ["Sun", "Mon", "Tue", "Wed"],
-    status: data.active ? "Active" : "Inactive",
-  };
-
-  _serviceProviders.unshift(newProvider);
-
-  return {
-    status: 201,
-    data: newProvider,
-    message: "Service provider created successfully",
-  };
+  try {
+    const res = await apiHandler({
+      endPoint: "inventory/ServiceProvider/CreateServiceProvider",
+      method: "POST",
+      body: {
+        hrEmployeeId: data.hrEmployeeId || data.employeeId || undefined,
+        weeklySchedule: data.weeklySchedule || [],
+        ...data,
+      },
+    });
+    return {
+      status: 201,
+      data: res?.data || res,
+      message: "Service provider created successfully",
+    };
+  } catch (err) {
+    console.error("Failed to create service provider:", err);
+    throw err;
+  }
 }
 
 export async function updateServiceProvider(id, data) {
-  const index = _serviceProviders.findIndex((p) => String(p.id) === String(id));
-  if (index === -1) {
+  try {
+    const res = await apiHandler({
+      endPoint: "inventory/ServiceProvider/UpdateServiceProvider",
+      method: "POST",
+      body: {
+        id: id,
+        hrEmployeeId: data.hrEmployeeId || data.employeeId || undefined,
+        ...data,
+      },
+    });
     return {
-      status: 404,
-      message: "Service provider not found",
+      status: 200,
+      data: res?.data || res,
+      message: "Service provider updated successfully",
     };
+  } catch (err) {
+    console.error(`Failed to update service provider ${id}:`, err);
+    throw err;
   }
-
-  _serviceProviders[index] = {
-    ..._serviceProviders[index],
-    employeeId: data.employeeId || _serviceProviders[index].employeeId,
-    name: data.name || _serviceProviders[index].name,
-    phone: data.phone || _serviceProviders[index].phone,
-    workingDays: data.workingDays || _serviceProviders[index].workingDays,
-    status: data.active !== undefined
-      ? data.active ? "Active" : "Inactive"
-      : _serviceProviders[index].status,
-  };
-
-  return {
-    status: 200,
-    data: _serviceProviders[index],
-    message: "Service provider updated successfully",
-  };
 }
 
 export async function deleteServiceProvider(id) {
-  _serviceProviders = _serviceProviders.filter((p) => String(p.id) !== String(id));
+  try {
+    const res = await apiHandler({
+      endPoint: `inventory/ServiceProvider/DeleteServiceProvider/${id}`,
+      method: "POST",
+    });
+    return {
+      status: 200,
+      data: res,
+      message: "Service provider deleted successfully",
+    };
+  } catch (err) {
+    console.error(`Failed to delete service provider ${id}:`, err);
+    throw err;
+  }
+}
+
+export async function getServiceProviderReservations(providerId) {
   return {
     status: 200,
-    message: "Service provider deleted successfully",
+    data: [],
   };
 }

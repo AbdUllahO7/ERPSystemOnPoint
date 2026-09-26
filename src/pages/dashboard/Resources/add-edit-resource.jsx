@@ -28,14 +28,17 @@ export default function AddEditResourcePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Form state matching Image 2
+  // Form state
   const [formData, setFormData] = useState({
     name: "",
-    address: "",
-    capacity: "0",
-    status: "",
-    ownership: "",
-    fixedAsset: "",
+    referenceNumber: "",
+    capacity: "20",
+    ownership: "Owned",
+    fixedAssetId: "",
+    supplierId: "",
+    contractStartDate: "",
+    contractEndDate: "",
+    dailyRentalCost: "0",
     notes: "",
   });
 
@@ -45,10 +48,13 @@ export default function AddEditResourcePage() {
     queryFn: getResourceLookups,
   });
   const lookups = lookupsData?.data || {
-    addresses: [],
-    ownerships: [],
+    suppliers: [],
     fixedAssets: [],
     statuses: [],
+    ownerships: [
+      { id: "Owned", name: "Owned" },
+      { id: "Leased", name: "Leased / Rented" },
+    ],
   };
 
   // Fetch resource if in edit mode
@@ -63,11 +69,14 @@ export default function AddEditResourcePage() {
       const r = resourceData.data;
       setFormData({
         name: r.name || r.fullName || "",
-        address: r.address || r.fullAddress || "",
-        capacity: String(r.numericCapacity || r.capacity || 0),
-        status: r.status || "",
-        ownership: r.ownership || r.fullOwnership || "",
-        fixedAsset: r.fixedAsset || "",
+        referenceNumber: r.code || r.referenceNumber || "",
+        capacity: String(r.numericCapacity || r.capacity || 20),
+        ownership: r.rawOwnership || (r.ownership === "Rented" ? "Leased" : "Owned"),
+        fixedAssetId: r.fixedAssetId || "",
+        supplierId: r.supplierId || "",
+        contractStartDate: r.contractStartDate || "",
+        contractEndDate: r.contractEndDate || "",
+        dailyRentalCost: String(r.dailyRentalCost || 0),
         notes: r.notes || "",
       });
     }
@@ -82,8 +91,9 @@ export default function AddEditResourcePage() {
       toast.success(res?.message || (isEdit ? "Resource updated!" : "Resource created!"));
       navigate("/dashboard/resources");
     },
-    onError: () => {
-      toast.error(isEdit ? "Failed to update resource" : "Failed to create resource");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || (isEdit ? "Failed to update resource" : "Failed to create resource");
+      toast.error(msg);
     },
   });
 
@@ -107,6 +117,8 @@ export default function AddEditResourcePage() {
       </div>
     );
   }
+
+  const isLeased = formData.ownership === "Leased";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -133,20 +145,20 @@ export default function AddEditResourcePage() {
         </Button>
       </div>
 
-      {/* Reservation Info / Resource Info Card matching Image 2 */}
+      {/* Resource Info Card */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
         <h2 className="text-base font-bold text-slate-800">
-          Reservation Info
+          Resource Information
         </h2>
 
-        {/* Row 1: Name, Address, Total Capacity */}
+        {/* Row 1: Name, Reference Number, Total Capacity */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Name
+              Name <span className="text-rose-500">*</span>
             </Label>
             <Input
-              placeholder="Name"
+              placeholder="e.g. Conference Hall A"
               value={formData.name}
               onChange={(e) => handleInputChange("name", e.target.value)}
               className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -155,23 +167,14 @@ export default function AddEditResourcePage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Address
+              Reference / Code
             </Label>
-            <Select
-              value={formData.address}
-              onValueChange={(val) => handleInputChange("address", val)}
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="Address" />
-              </SelectTrigger>
-              <SelectContent>
-                {lookups.addresses.map((addr) => (
-                  <SelectItem key={addr.id} value={addr.name}>
-                    {addr.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              placeholder="e.g. RES-001"
+              value={formData.referenceNumber}
+              onChange={(e) => handleInputChange("referenceNumber", e.target.value)}
+              className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+            />
           </div>
 
           <div className="space-y-2">
@@ -180,7 +183,7 @@ export default function AddEditResourcePage() {
             </Label>
             <Input
               type="number"
-              placeholder="0"
+              placeholder="20"
               value={formData.capacity}
               onChange={(e) => handleInputChange("capacity", e.target.value)}
               className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -188,32 +191,11 @@ export default function AddEditResourcePage() {
           </div>
         </div>
 
-        {/* Row 2: Status, Ownership, Fixed Asset */}
+        {/* Row 2: Ownership, Fixed Asset (if owned) OR Supplier (if leased) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Status
-            </Label>
-            <Select
-              value={formData.status}
-              onValueChange={(val) => handleInputChange("status", val)}
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                {lookups.statuses.map((st) => (
-                  <SelectItem key={st} value={st}>
-                    {st}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">
-              Ownership
+              Ownership Model
             </Label>
             <Select
               value={formData.ownership}
@@ -223,48 +205,114 @@ export default function AddEditResourcePage() {
                 <SelectValue placeholder="Select Ownership" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.ownerships.map((o) => (
-                  <SelectItem key={o.id} value={o.name}>
-                    {o.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="Owned">Owned (مملوك)</SelectItem>
+                <SelectItem value="Leased">Leased / Rented (مستأجر)</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">
-              Fixed Asset
-            </Label>
-            <Select
-              value={formData.fixedAsset}
-              onValueChange={(val) => handleInputChange("fixedAsset", val)}
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="Select Fixed Asset" />
-              </SelectTrigger>
-              <SelectContent>
-                {lookups.fixedAssets.map((fa) => (
-                  <SelectItem key={fa.id} value={fa.name}>
-                    {fa.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!isLeased ? (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Linked Fixed Asset (Optional)
+              </Label>
+              <Select
+                value={formData.fixedAssetId || "none"}
+                onValueChange={(val) => handleInputChange("fixedAssetId", val === "none" ? "" : val)}
+              >
+                <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                  <SelectValue placeholder="Select Fixed Asset" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- None --</SelectItem>
+                  {lookups.fixedAssets.map((fa) => (
+                    <SelectItem key={fa.id} value={String(fa.id)}>
+                      {fa.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Supplier / Landlord
+              </Label>
+              <Select
+                value={formData.supplierId || "none"}
+                onValueChange={(val) => handleInputChange("supplierId", val === "none" ? "" : val)}
+              >
+                <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                  <SelectValue placeholder="Select Supplier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">-- Select Supplier --</SelectItem>
+                  {lookups.suppliers.map((s) => (
+                    <SelectItem key={s.id} value={String(s.id)}>
+                      {s.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {isLeased && (
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Daily Rental Cost
+              </Label>
+              <Input
+                type="number"
+                placeholder="0"
+                value={formData.dailyRentalCost}
+                onChange={(e) => handleInputChange("dailyRentalCost", e.target.value)}
+                className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+              />
+            </div>
+          )}
         </div>
 
-        {/* Row 3: Notes */}
+        {/* Row 3 (Conditional for Leased): Contract Start & End Date */}
+        {isLeased && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Contract Start Date
+              </Label>
+              <Input
+                type="date"
+                value={formData.contractStartDate}
+                onChange={(e) => handleInputChange("contractStartDate", e.target.value)}
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Contract End Date
+              </Label>
+              <Input
+                type="date"
+                value={formData.contractEndDate}
+                onChange={(e) => handleInputChange("contractEndDate", e.target.value)}
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Row 4: Notes */}
         <div className="space-y-2">
           <Label className="text-xs font-semibold text-slate-700">
             Notes
           </Label>
           <Textarea
             rows={4}
-            placeholder="Notes"
+            placeholder="Specifications, location guidelines, or notes..."
             value={formData.notes}
             onChange={(e) => handleInputChange("notes", e.target.value)}
-            className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+            className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
           />
         </div>
       </div>

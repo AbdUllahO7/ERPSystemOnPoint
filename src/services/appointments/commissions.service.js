@@ -2,7 +2,7 @@ import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
-// Static Initial Data for Commissions
+// Initial Data & Constants for Commissions
 // ==========================================
 
 export const INITIAL_COMMISSIONS_STATS = [
@@ -42,287 +42,11 @@ export const INITIAL_COMMISSIONS_STATS = [
 
 export const COMMISSION_TYPES = [
   { id: "Percentage", label: "Percentage" },
-  { id: "Fixed Amount", label: "Fixed Amount" },
+  { id: "FixedAmount", label: "Fixed Amount" },
 ];
 
-export const INITIAL_PROVIDER_COMMISSION_RULES = [
-  {
-    id: 1,
-    providerId: "1",
-    provider: "Dr. Rami Haddad",
-    serviceId: "1",
-    service: "Dental Cleaning",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 2,
-    providerId: "2",
-    provider: "Dr. Sara Al-Mansoor",
-    serviceId: "2",
-    service: "Teeth Whitening",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 3,
-    providerId: "3",
-    provider: "Dr. Tariq Nasser",
-    serviceId: "3",
-    service: "Tooth Extraction",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 4,
-    providerId: "4",
-    provider: "Dr. Layla Mahmoud",
-    serviceId: "4",
-    service: "Root Canal",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 5,
-    providerId: "5",
-    provider: "Dr. Khaled Al-Zahrani",
-    serviceId: "5",
-    service: "Consultation",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 6,
-    providerId: "6",
-    provider: "Dr. Mona Al-Ahmad",
-    serviceId: "6",
-    service: "Crown Fitting",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 7,
-    providerId: "7",
-    provider: "Dr. Ziad Barakat",
-    serviceId: "7",
-    service: "Orthodontic Checkup",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-  {
-    id: 8,
-    providerId: "8",
-    provider: "Dr. Reem Al-Khatib",
-    serviceId: "8",
-    service: "Routine Exam",
-    type: "Percentage",
-    value: "20%",
-    percentageValue: "20",
-    startDate: "2026-01-01",
-  },
-];
-
-export const INITIAL_COMMISSION_LEDGER_ENTRIES = [
-  {
-    id: 1,
-    date: "23/7/2025",
-    provider: "Dr. Rami Haddad",
-    service: "Dental Cleaning",
-    customer: "Ahmed Ali",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 2,
-    date: "23/7/2025",
-    provider: "Dr. Sara Al-Mansoor",
-    service: "Teeth Whitening",
-    customer: "Omar Farooq",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 3,
-    date: "23/7/2025",
-    provider: "Dr. Tariq Nasser",
-    service: "Tooth Extraction",
-    customer: "Nour Salem",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 4,
-    date: "23/7/2025",
-    provider: "Dr. Layla Mahmoud",
-    service: "Root Canal",
-    customer: "Hassan Qasim",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 5,
-    date: "23/7/2025",
-    provider: "Dr. Khaled Al-Zahrani",
-    service: "Consultation",
-    customer: "Youssef Nabil",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 6,
-    date: "23/7/2025",
-    provider: "Dr. Mona Al-Ahmad",
-    service: "Crown Fitting",
-    customer: "Fatima Zein",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 7,
-    date: "23/7/2025",
-    provider: "Dr. Ziad Barakat",
-    service: "Orthodontic Checkup",
-    customer: "Kareem Adel",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-  {
-    id: 8,
-    date: "23/7/2025",
-    provider: "Dr. Reem Al-Khatib",
-    service: "Routine Exam",
-    customer: "Samir Hanna",
-    amount: "$12",
-    numericAmount: 12,
-    status: "Pending",
-  },
-];
-
-// In-memory state
-let _commissionRules = [...INITIAL_PROVIDER_COMMISSION_RULES];
-let _commissionLedger = [...INITIAL_COMMISSION_LEDGER_ENTRIES];
-
-// ==========================================
-// Service Methods
-// ==========================================
-
-export async function getCommissionLookups() {
-  return {
-    status: 200,
-    data: {
-      providers: [
-        { id: "1", name: "Dr. Rami Haddad" },
-        { id: "2", name: "Dr. Sara Al-Mansoor" },
-        { id: "3", name: "Dr. Tariq Nasser" },
-        { id: "4", name: "Dr. Layla Mahmoud" },
-        { id: "5", name: "Dr. Khaled Al-Zahrani" },
-      ],
-      services: [
-        { id: "1", name: "Dental Cleaning" },
-        { id: "2", name: "Teeth Whitening" },
-        { id: "3", name: "Tooth Extraction" },
-        { id: "4", name: "Root Canal" },
-        { id: "5", name: "Consultation" },
-      ],
-      types: COMMISSION_TYPES,
-    },
-  };
-}
-
-export async function getProviderCommissionRules(params = {}) {
-  const { PageNumber = 1, PageSize = 10, SearchTerm, Provider, Service } = params;
-
-  let filtered = [..._commissionRules];
-
-  if (SearchTerm) {
-    const term = SearchTerm.toLowerCase().trim();
-    filtered = filtered.filter(
-      (r) =>
-        r.provider.toLowerCase().includes(term) ||
-        r.service.toLowerCase().includes(term) ||
-        r.type.toLowerCase().includes(term)
-    );
-  }
-
-  if (Provider && Provider !== "all") {
-    filtered = filtered.filter((r) => r.providerId === Provider || r.provider === Provider);
-  }
-
-  if (Service && Service !== "all") {
-    filtered = filtered.filter((r) => r.serviceId === Service || r.service === Service);
-  }
-
-  const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / PageSize) || 1;
-  const start = (PageNumber - 1) * PageSize;
-  const items = filtered.slice(start, start + PageSize);
-
-  return {
-    status: 200,
-    data: {
-      items,
-      totalCount,
-      totalPages,
-      pageNumber: PageNumber,
-      pageSize: PageSize,
-    },
-  };
-}
-
-export async function createCommissionRule(data) {
-  const newId = _commissionRules.length > 0
-    ? Math.max(..._commissionRules.map((r) => r.id)) + 1
-    : 1;
-
-  const newRule = {
-    id: newId,
-    providerId: data.providerId || "1",
-    provider: data.provider || "Dr. Rami Haddad",
-    serviceId: data.serviceId || "1",
-    service: data.service || "Dental Cleaning",
-    type: data.type || "Percentage",
-    value: data.type === "Percentage" ? `${data.percentage || "20"}%` : `$${data.value || "20"}`,
-    percentageValue: data.percentage || "20",
-    startDate: data.startDate || new Date().toISOString().split("T")[0],
-  };
-
-  _commissionRules.unshift(newRule);
-
-  return {
-    status: 201,
-    data: newRule,
-    message: "Commission rule added successfully",
-  };
-}
-
-export async function deleteCommissionRule(id) {
-  _commissionRules = _commissionRules.filter((r) => String(r.id) !== String(id));
-  return {
-    status: 200,
-    message: "Commission rule deleted successfully",
-  };
-}
+export const INITIAL_PROVIDER_COMMISSION_RULES = [];
+export const INITIAL_COMMISSION_LEDGER_ENTRIES = [];
 
 export async function getCommissionLedgerStats() {
   return {
@@ -331,45 +55,232 @@ export async function getCommissionLedgerStats() {
   };
 }
 
+// ==========================================
+// Lookups for Provider Commissions
+// ==========================================
+
+export async function getCommissionLookups() {
+  try {
+    const [providersRes, servicesRes] = await Promise.allSettled([
+      apiHandler({
+        endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
+        method: "GET",
+        params: { PageSize: 100 },
+      }),
+      apiHandler({
+        endPoint: "Inventory/Product/GetAll/GetAll",
+        method: "GET",
+        params: { PageSize: 100 },
+      }),
+    ]);
+
+    const providersRaw =
+      providersRes.status === "fulfilled"
+        ? providersRes.value?.data?.items || providersRes.value?.data || []
+        : [];
+    const servicesRaw =
+      servicesRes.status === "fulfilled"
+        ? servicesRes.value?.data?.items || servicesRes.value?.data || []
+        : [];
+
+    const providers = providersRaw.map((p, idx) => ({
+      id: p.id || String(idx + 1),
+      name: p.name || p.employeeName || p.hrEmployee?.name || `Provider ${idx + 1}`,
+      raw: p,
+    }));
+
+    const services = servicesRaw.map((s, idx) => ({
+      id: s.id || String(idx + 1),
+      variantId: (Array.isArray(s.variant_Ids) && s.variant_Ids.length > 0) ? s.variant_Ids[0] : (s.id || String(idx + 1)),
+      name: s.name_Product || s.name || `Service ${idx + 1}`,
+      raw: s,
+    }));
+
+    return {
+      status: 200,
+      data: {
+        providers,
+        services,
+        types: COMMISSION_TYPES,
+      },
+    };
+  } catch (err) {
+    console.error("Failed to load commission lookups:", err);
+    return {
+      status: 200,
+      data: {
+        providers: [],
+        services: [],
+        types: COMMISSION_TYPES,
+      },
+    };
+  }
+}
+
+// ==========================================
+// Provider Commission Rules API Methods
+// ==========================================
+
+export async function getProviderCommissionRules(params = {}) {
+  try {
+    const res = await apiHandler({
+      endPoint: "Inventory/ServiceProviderCommission/GetAllCommissions",
+      method: "GET",
+      params: {
+        PageNumber: params.PageNumber || params.page || 1,
+        PageSize: params.PageSize || params.pageSize || 10,
+        Search: params.SearchTerm || params.search || undefined,
+        ServiceProviderId: params.Provider !== "all" ? params.Provider : undefined,
+        ProductVariantId: params.Service !== "all" ? params.Service : undefined,
+        SortBy: params.SortBy || undefined,
+        SortDirection: params.SortDirection || undefined,
+      },
+    });
+
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
+
+    const mappedItems = items.map((r, idx) => {
+      const typeStr = r.commissionType === 1 || r.commissionType === "FixedAmount" ? "Fixed Amount" : "Percentage";
+      const displayVal = typeStr === "Percentage" ? `${r.commissionValue || 0}%` : `$${r.commissionValue || 0}`;
+
+      return {
+        id: r.id || idx + 1,
+        providerId: r.serviceProviderId || "",
+        provider: r.serviceProviderName || r.serviceProvider?.name || `Provider ${idx + 1}`,
+        serviceId: r.productVariantId || "",
+        service: r.productVariantName || r.productName || r.serviceName || `Service ${idx + 1}`,
+        type: typeStr,
+        value: displayVal,
+        percentageValue: String(r.commissionValue || 0),
+        startDate: r.effectiveDate ? r.effectiveDate.split("T")[0] : "-",
+        endDate: r.expirationDate ? r.expirationDate.split("T")[0] : "-",
+        raw: r,
+      };
+    });
+
+    return {
+      status: 200,
+      data: {
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  } catch (err) {
+    console.warn("Backend GetAllCommissions returned error (LINQ translation in backend):", err?.message);
+    return {
+      status: 200,
+      data: {
+        items: [],
+        totalCount: 0,
+        totalPages: 1,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  }
+}
+
+export async function createCommissionRule(data) {
+  try {
+    const res = await apiHandler({
+      endPoint: "Inventory/ServiceProviderCommission/CreateCommission",
+      method: "POST",
+      body: {
+        serviceProviderId: data.providerId || data.provider,
+        productVariantId: data.serviceId || data.service,
+        commissionType: data.type === "FixedAmount" || data.type === "Fixed Amount" ? "FixedAmount" : "Percentage",
+        commissionValue: Number(data.percentage || data.value || 0),
+        effectiveDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+        expirationDate: data.endDate ? new Date(data.endDate).toISOString() : undefined,
+      },
+    });
+
+    return {
+      status: 201,
+      data: res?.data || res,
+      message: "Commission rule added successfully",
+    };
+  } catch (err) {
+    console.error("Failed to create commission rule:", err);
+    throw err;
+  }
+}
+
+export async function deleteCommissionRule(id) {
+  try {
+    const res = await apiHandler({
+      endPoint: `Inventory/ServiceProviderCommission/DeleteCommission/${id}`,
+      method: "POST",
+    });
+
+    return {
+      status: 200,
+      data: res,
+      message: "Commission rule deleted successfully",
+    };
+  } catch (err) {
+    console.error(`Failed to delete commission rule ${id}:`, err);
+    throw err;
+  }
+}
+
+// ==========================================
+// Commission Ledger API Methods
+// ==========================================
+
 export async function getCommissionLedger(params = {}) {
-  const { PageNumber = 1, PageSize = 10, SearchTerm, Status, Provider } = params;
+  try {
+    const res = await apiHandler({
+      endPoint: "Inventory/CommissionLedger/GetAllLedgers",
+      method: "GET",
+      params: {
+        PageNumber: params.PageNumber || params.page || 1,
+        PageSize: params.PageSize || params.pageSize || 10,
+        Search: params.SearchTerm || params.search || undefined,
+        ServiceProviderId: params.Provider !== "all" ? params.Provider : undefined,
+        Status: params.Status !== "all" ? params.Status : undefined,
+        DateFrom: params.DateFrom || undefined,
+        DateTo: params.DateTo || undefined,
+        SortBy: params.SortBy || undefined,
+        SortDirection: params.SortDirection || undefined,
+      },
+    });
 
-  let filtered = [..._commissionLedger];
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-  if (SearchTerm) {
-    const term = SearchTerm.toLowerCase().trim();
-    filtered = filtered.filter(
-      (item) =>
-        item.provider.toLowerCase().includes(term) ||
-        item.service.toLowerCase().includes(term) ||
-        item.customer.toLowerCase().includes(term) ||
-        item.date.includes(term)
-    );
+    const mappedItems = items.map((item, idx) => ({
+      id: item.id || idx + 1,
+      date: item.date || item.createdAt ? (item.date || item.createdAt).split("T")[0] : "-",
+      provider: item.serviceProviderName || item.serviceProvider?.name || "Provider",
+      service: item.serviceName || item.productVariantName || "Service",
+      customer: item.customerName || item.customer?.name || "Customer",
+      amount: typeof item.amount === "number" ? `$${item.amount}` : (String(item.amount || 0).startsWith("$") ? item.amount : `$${item.amount || 0}`),
+      numericAmount: Number(item.amount || 0),
+      status: item.status || "Unpaid",
+      raw: item,
+    }));
+
+    return {
+      status: 200,
+      data: {
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  } catch (err) {
+    console.error("Failed to fetch commission ledger:", err);
+    throw err;
   }
-
-  if (Status && Status !== "all") {
-    filtered = filtered.filter(
-      (item) => item.status.toLowerCase() === Status.toLowerCase()
-    );
-  }
-
-  if (Provider && Provider !== "all") {
-    filtered = filtered.filter((item) => item.provider === Provider);
-  }
-
-  const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / PageSize) || 1;
-  const start = (PageNumber - 1) * PageSize;
-  const items = filtered.slice(start, start + PageSize);
-
-  return {
-    status: 200,
-    data: {
-      items,
-      totalCount,
-      totalPages,
-      pageNumber: PageNumber,
-      pageSize: PageSize,
-    },
-  };
 }

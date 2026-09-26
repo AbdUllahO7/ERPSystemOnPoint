@@ -20,9 +20,8 @@ import {
   updateEvent,
   getEventById,
   getEventLookups,
+  DAYS_OF_WEEK,
 } from "@/services/events";
-
-const DAYS_OF_WEEK = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
 
 export default function AddEditEventPage() {
   const { id } = useParams();
@@ -30,7 +29,7 @@ export default function AddEditEventPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Form State matching image 2
+  // Form State
   const [formData, setFormData] = useState({
     title: "",
     service: "",
@@ -72,9 +71,9 @@ export default function AddEditEventPage() {
       const e = eventData.data;
       setFormData({
         title: e.title || e.fullTitle || "",
-        service: e.service || "",
-        resource: e.resource || "",
-        provider: e.provider || "",
+        service: e.productVariantId || e.service || "",
+        resource: e.resourceId || e.resource || "",
+        provider: e.serviceProviderId || e.provider || "",
         maxCapacity: String(e.maxCapacity || 0),
         startDate: e.startDate || "",
         endDate: e.endDate || "",
@@ -97,8 +96,9 @@ export default function AddEditEventPage() {
       toast.success(res?.message || (isEdit ? "Event updated!" : "Event created!"));
       navigate("/dashboard/events");
     },
-    onError: () => {
-      toast.error(isEdit ? "Failed to update event" : "Failed to create event");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || (isEdit ? "Failed to update event" : "Failed to create event");
+      toast.error(msg);
     },
   });
 
@@ -122,6 +122,14 @@ export default function AddEditEventPage() {
     e?.preventDefault();
     if (!formData.title) {
       toast.error("Please enter event title");
+      return;
+    }
+    if (!formData.service) {
+      toast.error("Please select a service / product variant");
+      return;
+    }
+    if (!formData.resource) {
+      toast.error("Please select a resource / room");
       return;
     }
     saveMutation.mutate(formData);
@@ -160,10 +168,10 @@ export default function AddEditEventPage() {
         </Button>
       </div>
 
-      {/* Reservation Info / Event Info Card matching Image 2 */}
+      {/* Reservation Info / Event Info Card */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
         <h2 className="text-base font-bold text-slate-800">
-          Reservation Info
+          Event Info
         </h2>
 
         {/* Row 1: Title, Service, Resource */}
@@ -186,15 +194,22 @@ export default function AddEditEventPage() {
             </Label>
             <Select
               value={formData.service}
-              onValueChange={(val) => handleInputChange("service", val)}
+              onValueChange={(val) => {
+                handleInputChange("service", val);
+                // Optionally autofill price if available
+                const selectedSvc = lookups.services.find((s) => String(s.id) === String(val));
+                if (selectedSvc && selectedSvc.price && Number(formData.price) === 0) {
+                  handleInputChange("price", String(selectedSvc.price));
+                }
+              }}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
                 <SelectValue placeholder="Select Service" />
               </SelectTrigger>
               <SelectContent>
                 {lookups.services.map((svc) => (
-                  <SelectItem key={svc.id} value={svc.name}>
-                    {svc.name}
+                  <SelectItem key={svc.id} value={String(svc.id)}>
+                    {svc.name} {svc.price ? `($${svc.price})` : ""}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -207,15 +222,21 @@ export default function AddEditEventPage() {
             </Label>
             <Select
               value={formData.resource}
-              onValueChange={(val) => handleInputChange("resource", val)}
+              onValueChange={(val) => {
+                handleInputChange("resource", val);
+                const selectedRes = lookups.resources.find((r) => String(r.id) === String(val));
+                if (selectedRes && selectedRes.capacity && Number(formData.maxCapacity) === 0) {
+                  handleInputChange("maxCapacity", String(selectedRes.capacity));
+                }
+              }}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
                 <SelectValue placeholder="Select Resource" />
               </SelectTrigger>
               <SelectContent>
                 {lookups.resources.map((res) => (
-                  <SelectItem key={res.id} value={res.name}>
-                    {res.name}
+                  <SelectItem key={res.id} value={String(res.id)}>
+                    {res.name} (Cap: {res.capacity})
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -230,15 +251,16 @@ export default function AddEditEventPage() {
               Provider (optional)
             </Label>
             <Select
-              value={formData.provider}
-              onValueChange={(val) => handleInputChange("provider", val)}
+              value={formData.provider || "none"}
+              onValueChange={(val) => handleInputChange("provider", val === "none" ? "" : val)}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
                 <SelectValue placeholder="Select Provider" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">-- No Provider --</SelectItem>
                 {lookups.providers.map((prov) => (
-                  <SelectItem key={prov.id} value={prov.name}>
+                  <SelectItem key={prov.id} value={String(prov.id)}>
                     {prov.name}
                   </SelectItem>
                 ))}
@@ -294,12 +316,12 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Start
+              Start Time
             </Label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="9:00"
+                placeholder="09:00"
                 value={formData.startTime}
                 onChange={(e) => handleInputChange("startTime", e.target.value)}
                 className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
@@ -310,7 +332,7 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              End
+              End Time
             </Label>
             <div className="relative">
               <Input
@@ -354,7 +376,7 @@ export default function AddEditEventPage() {
           </div>
         </div>
 
-        {/* Row 5: Recurring Days Toggle Buttons matching Image 2 */}
+        {/* Row 5: Recurring Days */}
         <div className="space-y-2.5">
           <Label className="text-xs font-semibold text-slate-700">
             Recurring Days
@@ -387,10 +409,10 @@ export default function AddEditEventPage() {
           </Label>
           <Textarea
             rows={4}
-            placeholder="Notes"
+            placeholder="Additional requirements or event guidelines..."
             value={formData.notes}
             onChange={(e) => handleInputChange("notes", e.target.value)}
-            className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+            className="rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] resize-none"
           />
         </div>
       </div>

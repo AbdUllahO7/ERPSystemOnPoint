@@ -40,371 +40,306 @@ export const INITIAL_SERVICES_STATS = [
   },
 ];
 
-export const INITIAL_SERVICES_LIST = [
-  {
-    id: 1,
-    name: "Dental Cleaning",
-    category: "Dental",
-    billingMethod: "per-visit",
-    duration: "45 min",
-    defaultDuration: 45,
-    defaultInsuranceQty: 1,
-    cost: "$35",
-    costPrice: 35,
-    price: "$120",
-    consumerPrice: 120,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Dental Services Revenue",
-    expenseAccount: "Medical Supplies Expense",
-  },
-  {
-    id: 2,
-    name: "General Consultation",
-    category: "Consultation",
-    billingMethod: "per-visit",
-    duration: "30 min",
-    defaultDuration: 30,
-    defaultInsuranceQty: 1,
-    cost: "$20",
-    costPrice: 20,
-    price: "$60",
-    consumerPrice: 60,
-    contract: "-",
-    requiresContract: false,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "General Medical Revenue",
-    expenseAccount: "General Medical Expense",
-  },
-  {
-    id: 3,
-    name: "Dermatology Screening",
-    category: "Dermatology",
-    billingMethod: "per-visit",
-    duration: "45 min",
-    defaultDuration: 45,
-    defaultInsuranceQty: 1,
-    cost: "$50",
-    costPrice: 50,
-    price: "$150",
-    consumerPrice: 150,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Dermatology Revenue",
-    expenseAccount: "Dermatology Supplies Expense",
-  },
-  {
-    id: 4,
-    name: "Physiotherapy Session",
-    category: "Physical Therapy",
-    billingMethod: "per-visit",
-    duration: "60 min",
-    defaultDuration: 60,
-    defaultInsuranceQty: 5,
-    cost: "$30",
-    costPrice: 30,
-    price: "$80",
-    consumerPrice: 80,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Therapy Revenue",
-    expenseAccount: "Therapy Supplies Expense",
-  },
-  {
-    id: 5,
-    name: "Eye Examination",
-    category: "Ophthalmology",
-    billingMethod: "per-visit",
-    duration: "30 min",
-    defaultDuration: 30,
-    defaultInsuranceQty: 1,
-    cost: "$25",
-    costPrice: 25,
-    price: "$75",
-    consumerPrice: 75,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Optical Revenue",
-    expenseAccount: "Optical Supplies Expense",
-  },
-  {
-    id: 6,
-    name: "Blood Test Analysis",
-    category: "Laboratory",
-    billingMethod: "per-visit",
-    duration: "15 min",
-    defaultDuration: 15,
-    defaultInsuranceQty: 1,
-    cost: "$40",
-    costPrice: 40,
-    price: "$95",
-    consumerPrice: 95,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Lab Revenue",
-    expenseAccount: "Lab Reagents Expense",
-  },
-  {
-    id: 7,
-    name: "Cardiology Review",
-    category: "Cardiology",
-    billingMethod: "per-visit",
-    duration: "45 min",
-    defaultDuration: 45,
-    defaultInsuranceQty: 1,
-    cost: "$70",
-    costPrice: 70,
-    price: "$200",
-    consumerPrice: 200,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Specialist Revenue",
-    expenseAccount: "Specialist Medical Expense",
-  },
-  {
-    id: 8,
-    name: "Teeth Whitening",
-    category: "Dental",
-    billingMethod: "per-visit",
-    duration: "60 min",
-    defaultDuration: 60,
-    defaultInsuranceQty: 0,
-    cost: "$60",
-    costPrice: 60,
-    price: "$250",
-    consumerPrice: 250,
-    contract: "Required",
-    requiresContract: true,
-    canBeSold: true,
-    isActive: true,
-    revenueAccount: "Dental Services Revenue",
-    expenseAccount: "Dental Materials Expense",
-  },
-];
+export const INITIAL_SERVICES_LIST = [];
 
 export const SERVICE_LOOKUPS = {
   categories: [
-    { id: "1", label: "Dental", value: "Dental" },
-    { id: "2", label: "Consultation", value: "Consultation" },
-    { id: "3", label: "Dermatology", value: "Dermatology" },
-    { id: "4", label: "Physical Therapy", value: "Physical Therapy" },
-    { id: "5", label: "Ophthalmology", value: "Ophthalmology" },
-    { id: "6", label: "Laboratory", value: "Laboratory" },
-    { id: "7", label: "Cardiology", value: "Cardiology" },
+    { label: "Dental", value: "Dental" },
+    { label: "Consultation", value: "Consultation" },
+    { label: "Dermatology", value: "Dermatology" },
+    { label: "Therapy", value: "Therapy" },
+    { label: "Optometry", value: "Optometry" },
+    { label: "Laboratory", value: "Laboratory" },
+    { label: "Cardiology", value: "Cardiology" },
   ],
   billingMethods: [
-    { label: "per-visit", value: "per-visit" },
-    { label: "hourly", value: "hourly" },
-    { label: "fixed", value: "fixed" },
-    { label: "subscription", value: "subscription" },
+    { label: "Per Visit", value: "per-visit" },
+    { label: "Hourly", value: "hourly" },
+    { label: "Package", value: "package" },
   ],
   revenueAccounts: [
     { label: "Dental Services Revenue", value: "Dental Services Revenue" },
     { label: "General Medical Revenue", value: "General Medical Revenue" },
     { label: "Dermatology Revenue", value: "Dermatology Revenue" },
-    { label: "Therapy Revenue", value: "Therapy Revenue" },
-    { label: "Optical Revenue", value: "Optical Revenue" },
-    { label: "Lab Revenue", value: "Lab Revenue" },
-    { label: "Specialist Revenue", value: "Specialist Revenue" },
+    { label: "Physiotherapy Revenue", value: "Physiotherapy Revenue" },
+    { label: "Laboratory Revenue", value: "Laboratory Revenue" },
+    { label: "Cardiology Revenue", value: "Cardiology Revenue" },
   ],
   expenseAccounts: [
     { label: "Medical Supplies Expense", value: "Medical Supplies Expense" },
     { label: "General Medical Expense", value: "General Medical Expense" },
     { label: "Dermatology Supplies Expense", value: "Dermatology Supplies Expense" },
-    { label: "Therapy Supplies Expense", value: "Therapy Supplies Expense" },
-    { label: "Optical Supplies Expense", value: "Optical Supplies Expense" },
+    { label: "Therapy Equipment Expense", value: "Therapy Equipment Expense" },
     { label: "Lab Reagents Expense", value: "Lab Reagents Expense" },
-    { label: "Specialist Medical Expense", value: "Specialist Medical Expense" },
-    { label: "Dental Materials Expense", value: "Dental Materials Expense" },
+    { label: "Cardiology Supplies Expense", value: "Cardiology Supplies Expense" },
   ],
 };
 
-let storeServices = [...INITIAL_SERVICES_LIST];
-
-// ==========================================
-// Service Methods: Services List & Add/Edit
-// ==========================================
-
 export async function getServicesStats() {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: "Services/GetStats", method: "GET" });
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: INITIAL_SERVICES_STATS,
-        status: 200,
-        message: "Stats retrieved successfully",
-      });
-    }, 150);
-  });
+  return {
+    status: 200,
+    data: INITIAL_SERVICES_STATS,
+  };
 }
 
+// ==========================================
+// Service API Methods
+// ==========================================
+
 export async function getServices(params = {}) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: "Services/GetAll", method: "GET", params });
+  try {
+    const res = await apiHandler({
+      endPoint: "Inventory/Product/GetAll/GetAll",
+      method: "GET",
+      params: {
+        PageNumber: params.PageNumber || params.page || 1,
+        PageSize: params.PageSize || params.pageSize || 10,
+        SearchTerm: params.SearchTerm || params.search || undefined,
+        Category: params.Category !== "all" ? params.Category : undefined,
+        BillingMethod: params.BillingMethod !== "all" ? params.BillingMethod : undefined,
+        RequiresContract: params.RequiresContract !== "all"
+          ? params.RequiresContract === "yes"
+          : undefined,
+        Status: params.Status !== "all" ? params.Status : undefined,
+      },
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const {
-        SearchTerm = "",
-        Category = "all",
-        PageNumber = 1,
-        PageSize = 10,
-      } = params;
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-      let filtered = [...storeServices];
+    const mappedItems = items.map((s, idx) => {
+      const primaryPrice = (Array.isArray(s.prices) && s.prices.length > 0)
+        ? s.prices[0]
+        : (s.consumer_Price ?? s.cost_Price ?? s.consumerPrice ?? s.price ?? 0);
 
-      if (Category && Category !== "all") {
-        filtered = filtered.filter((item) => item.category === Category);
-      }
-      if (SearchTerm) {
-        const query = SearchTerm.toLowerCase();
-        filtered = filtered.filter(
-          (item) =>
-            String(item.id).includes(query) ||
-            item.name.toLowerCase().includes(query) ||
-            item.category.toLowerCase().includes(query) ||
-            item.billingMethod.toLowerCase().includes(query)
-        );
-      }
+      const displayPrice = typeof primaryPrice === "number" 
+        ? `$${primaryPrice}` 
+        : (String(primaryPrice).startsWith("$") ? primaryPrice : `$${primaryPrice}`);
 
-      const totalCount = filtered.length;
-      const totalPages = Math.ceil(totalCount / PageSize) || 1;
-      const start = (PageNumber - 1) * PageSize;
-      const items = filtered.slice(start, start + PageSize);
+      const primaryUnit = (Array.isArray(s.units) && s.units.length > 0)
+        ? s.units[0]
+        : (s.billing_Method || s.billingMethod || "per-visit");
 
-      resolve({
-        data: {
-          items,
-          totalPages,
-          totalCount,
-          pageNumber: PageNumber,
-          pageSize: PageSize,
-        },
-        status: 200,
-        message: "Services retrieved successfully",
-      });
-    }, 150);
-  });
+      const categoryName = s.category_name || s.categoryName || s.category?.name || s.category || "General Service";
+
+      return {
+        id: s.id || idx + 1,
+        name: s.name_Product || s.name || `Service ${idx + 1}`,
+        productNumber: s.product_Number || s.productNumber || "-",
+        productType: s.product_Type || s.productType || "Service",
+        category: categoryName,
+        billingMethod: primaryUnit,
+        units: s.units || [primaryUnit],
+        prices: s.prices || [primaryPrice],
+        duration: s.default_Duration_Minutes ? `${s.default_Duration_Minutes} min` : "30 min",
+        defaultDuration: s.default_Duration_Minutes || 30,
+        cost: s.cost_Price !== undefined ? `$${s.cost_Price}` : (s.prices && s.prices[1] !== undefined ? `$${s.prices[1]}` : "-"),
+        costPrice: s.cost_Price ?? (s.prices && s.prices[1]) ?? 0,
+        price: displayPrice,
+        consumerPrice: primaryPrice,
+        contract: s.requires_Contract || s.requiresContract ? "Required" : "-",
+        requiresContract: Boolean(s.requires_Contract || s.requiresContract),
+        canBeSold: Boolean(s.can_Be_Sold ?? s.canBeSold ?? true),
+        isActive: s.is_Active ?? s.isActive ?? true,
+        revenueAccount: s.revenueAccount || "-",
+        expenseAccount: s.expenseAccount || "-",
+        raw: s,
+      };
+    });
+
+    return {
+      status: 200,
+      data: {
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  } catch (err) {
+    console.error("Failed to fetch services from API:", err);
+    throw err;
+  }
 }
 
 export async function getServiceById(id) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: `Services/GetById/${id}`, method: "GET" });
+  try {
+    const res = await apiHandler({
+      endPoint: `Inventory/Product/GetById/GetById/${id}`,
+      method: "GET",
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const found = storeServices.find((s) => String(s.id) === String(id));
-      resolve({
-        data: found || storeServices[0] || INITIAL_SERVICES_LIST[0],
-        status: 200,
-        message: "Service retrieved successfully",
-      });
-    }, 150);
-  });
+    const s = res?.data || res || {};
+    
+    // Check variant / prices / units if any
+    const variant = Array.isArray(s.productVariantDtos) && s.productVariantDtos.length > 0 ? s.productVariantDtos[0] : null;
+
+    const consumerPrice = (Array.isArray(s.prices) && s.prices.length > 0)
+      ? s.prices[0]
+      : (s.consumer_Price ?? s.consumerPrice ?? variant?.consumer_Price ?? s.price ?? 0);
+
+    const costPrice = (Array.isArray(s.prices) && s.prices.length > 1)
+      ? s.prices[1]
+      : (s.cost_Price ?? s.costPrice ?? variant?.cost_Price ?? 0);
+
+    const billingMethod = s.billing_Method || s.billingMethod || (Array.isArray(s.units) && s.units.length > 0 ? s.units[0] : "") || "per-visit";
+    const category = s.category_Id || s.categoryId || s.category_name || s.categoryName || s.category || "";
+
+    return {
+      status: 200,
+      data: {
+        id: s.id || id,
+        name: s.name_Product || s.name || "",
+        category: category,
+        billingMethod: billingMethod,
+        defaultDuration: s.default_Duration_Minutes || s.defaultDuration || 30,
+        defaultInsuranceQty: s.default_Deposit_Amount || s.defaultInsuranceQty || 0,
+        costPrice: Number(costPrice) || 0,
+        consumerPrice: Number(consumerPrice) || 0,
+        requiresContract: Boolean(s.requires_Contract ?? s.requiresContract ?? false),
+        canBeSold: Boolean(s.can_Be_Sold ?? s.canBeSold ?? true),
+        isActive: Boolean(s.is_Active ?? s.isActive ?? true),
+        revenueAccount: s.revenue_Account_Id || s.revenueAccount || "",
+        expenseAccount: s.expense_Account_Id || s.expenseAccount || "",
+        raw: s,
+      },
+    };
+  } catch (err) {
+    console.error(`Failed to get service with id ${id}:`, err);
+    throw err;
+  }
 }
 
 export async function createService(payload) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: "Services/Create", method: "POST", data: payload });
+  try {
+    const res = await apiHandler({
+      endPoint: "Inventory/Product/CreateAppointmentService/appointment-service",
+      method: "POST",
+      body: {
+        name_Product: payload.name,
+        product_Number: payload.productNumber || `SRV-${Date.now()}`,
+        has_Expiry_Date: false,
+        category_Id: payload.category || undefined,
+        can_Be_Sold: payload.canBeSold ?? true,
+        requires_Contract: payload.requiresContract ?? false,
+        default_Deposit_Amount: Number(payload.defaultInsuranceQty || 0),
+        default_Duration_Minutes: Number(payload.defaultDuration || 30),
+        has_Variants: false,
+        revenue_Account_Id: payload.revenueAccount || undefined,
+        expense_Account_Id: payload.expenseAccount || undefined,
+        billing_Method: payload.billingMethod || "per-visit",
+        cost_Price: Number(payload.costPrice || 0),
+        consumer_Price: Number(payload.consumerPrice || 0),
+      },
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newId = storeServices.length
-        ? Math.max(...storeServices.map((s) => s.id)) + 1
-        : 1;
-      const newRecord = {
-        id: newId,
-        duration: `${payload.defaultDuration || 0} min`,
-        cost: `$${payload.costPrice || 0}`,
-        price: `$${payload.consumerPrice || 0}`,
-        contract: payload.requiresContract ? "Required" : "-",
-        ...payload,
-      };
-      storeServices = [newRecord, ...storeServices];
-      resolve({
-        data: newRecord,
-        status: 201,
-        message: "Service created successfully",
-      });
-    }, 200);
-  });
+    return {
+      status: 201,
+      data: res?.data || res,
+      message: "Service created successfully",
+    };
+  } catch (err) {
+    console.error("Failed to create service:", err);
+    throw err;
+  }
 }
 
 export async function updateService(id, payload) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: `Services/Update/${id}`, method: "PUT", data: payload });
+  try {
+    const res = await apiHandler({
+      endPoint: "Inventory/Product/UpdateProductService/service",
+      method: "POST",
+      body: {
+        id,
+        name_Product: payload.name,
+        category_Id: payload.category || undefined,
+        can_Be_Sold: payload.canBeSold ?? true,
+        requires_Contract: payload.requiresContract ?? false,
+        default_Deposit_Amount: Number(payload.defaultInsuranceQty || 0),
+        default_Duration_Minutes: Number(payload.defaultDuration || 30),
+        revenue_Account_Id: payload.revenueAccount || undefined,
+        expense_Account_Id: payload.expenseAccount || undefined,
+        billing_Method: payload.billingMethod || "per-visit",
+        cost_Price: Number(payload.costPrice || 0),
+        consumer_Price: Number(payload.consumerPrice || 0),
+      },
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const index = storeServices.findIndex((s) => String(s.id) === String(id));
-      if (index !== -1) {
-        storeServices[index] = {
-          ...storeServices[index],
-          ...payload,
-          duration: `${payload.defaultDuration ?? storeServices[index].defaultDuration} min`,
-          cost: `$${payload.costPrice ?? storeServices[index].costPrice}`,
-          price: `$${payload.consumerPrice ?? storeServices[index].consumerPrice}`,
-          contract: payload.requiresContract !== undefined
-            ? (payload.requiresContract ? "Required" : "-")
-            : storeServices[index].contract,
-        };
-        resolve({
-          data: storeServices[index],
-          status: 200,
-          message: "Service updated successfully",
-        });
-      } else {
-        resolve({
-          data: payload,
-          status: 200,
-          message: "Service updated successfully",
-        });
-      }
-    }, 200);
-  });
+    return {
+      status: 200,
+      data: res?.data || res,
+      message: "Service updated successfully",
+    };
+  } catch (err) {
+    console.error(`Failed to update service ${id}:`, err);
+    throw err;
+  }
 }
 
 export async function deleteService(id) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: `Services/Delete/${id}`, method: "DELETE" });
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      storeServices = storeServices.filter((s) => String(s.id) !== String(id));
-      resolve({
-        status: 200,
-        message: "Service deleted successfully",
-      });
-    }, 150);
-  });
+  try {
+    const res = await apiHandler({
+      endPoint: `Inventory/Product/ToggleStatus`,
+      method: "POST",
+      params: { id },
+    });
+    return {
+      status: 200,
+      data: res,
+      message: "Service deleted/toggled successfully",
+    };
+  } catch (err) {
+    console.error(`Failed to delete service ${id}:`, err);
+    throw err;
+  }
 }
 
 export async function getServiceLookups() {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: "Services/GetLookups", method: "GET" });
+  try {
+    const [categoriesRes, accountsRes] = await Promise.allSettled([
+      apiHandler({ endPoint: "inventory/Categories/GetAllCategories", method: "GET", params: { PageSize: 100 } }),
+      apiHandler({ endPoint: "account/Accounts/GetAllAccountsFlat/flat", method: "GET", params: { PageSize: 100 } }),
+    ]);
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: SERVICE_LOOKUPS,
-        status: 200,
-        message: "Lookups retrieved successfully",
-      });
-    }, 100);
-  });
+    const categoriesRaw = categoriesRes.status === "fulfilled" ? (categoriesRes.value?.data?.items || categoriesRes.value?.data || []) : [];
+    const accountsRaw = accountsRes.status === "fulfilled" ? (accountsRes.value?.data?.items || accountsRes.value?.data || []) : [];
+
+    const categories = categoriesRaw.map((c) => ({
+      id: c.id,
+      label: c.name || c.categoryName || "Category",
+      value: c.id || c.name,
+    }));
+
+    const accounts = accountsRaw.map((a) => ({
+      id: a.id,
+      label: `${a.accountNumber ? a.accountNumber + " - " : ""}${a.accountName || a.name || "Account"}`,
+      value: a.id || a.accountName || a.name,
+    }));
+
+    return {
+      status: 200,
+      data: {
+        categories: categories.length > 0 ? categories : SERVICE_LOOKUPS.categories,
+        billingMethods: [
+          { label: "Per Visit (خدمة مقطوعة)", value: "خدمة مقطوعة" },
+          { label: "Hourly (ساعة)", value: "ساعة" },
+          { label: "Project (مشروع)", value: "مشروع" },
+          { label: "Per Visit", value: "per-visit" },
+          { label: "Hourly", value: "hourly" },
+          { label: "Package", value: "package" },
+        ],
+        revenueAccounts: accounts.length > 0 ? accounts : SERVICE_LOOKUPS.revenueAccounts,
+        expenseAccounts: accounts.length > 0 ? accounts : SERVICE_LOOKUPS.expenseAccounts,
+      },
+    };
+  } catch (err) {
+    console.error("Error loading service lookups:", err);
+    return {
+      status: 200,
+      data: SERVICE_LOOKUPS,
+    };
+  }
 }
