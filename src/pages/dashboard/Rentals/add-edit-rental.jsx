@@ -35,9 +35,10 @@ export default function AddEditRentalPage() {
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
 
-  // Form State matching Image 2
+  // Form State
   const [formData, setFormData] = useState({
     contractNumber: "",
+    customerId: "",
     customerName: "",
     resource: "",
     service: "",
@@ -62,6 +63,7 @@ export default function AddEditRentalPage() {
     queryFn: getRentalLookups,
   });
   const lookups = lookupsData?.data || {
+    customers: [],
     resources: [],
     services: [],
     costCenters: [],
@@ -83,9 +85,10 @@ export default function AddEditRentalPage() {
       const c = contractData.data;
       setFormData({
         contractNumber: c.contractNumber || c.id || "",
+        customerId: c.customerId || "",
         customerName: c.customerName || c.customer || "",
-        resource: c.resource || "",
-        service: c.service || "",
+        resource: c.resourceName || c.resource || "",
+        service: c.title || c.service || "",
         costCenter: c.costCenter || "",
         currency: c.currency || "USD",
         startDate: c.startDate || "",
@@ -93,7 +96,7 @@ export default function AddEditRentalPage() {
         status: c.status || "Active",
         paymentMethod: c.paymentMethod || "Card",
         notes: c.notes || "",
-        rentalPrice: String(c.rentalPrice || 0),
+        rentalPrice: String(c.rentalPrice || c.totalAmount || 0),
         rateType: c.rateType || "1=Day",
         quantity: String(c.quantity || 1),
         discount: String(c.discount || 0),
@@ -145,8 +148,9 @@ export default function AddEditRentalPage() {
       toast.success(res?.message || (isEdit ? "Contract updated!" : "Contract created!"));
       navigate("/dashboard/rentals");
     },
-    onError: () => {
-      toast.error(isEdit ? "Failed to update contract" : "Failed to create contract");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || (isEdit ? "Failed to update contract" : "Failed to create contract");
+      toast.error(msg);
     },
   });
 
@@ -174,8 +178,8 @@ export default function AddEditRentalPage() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (!formData.customerName) {
-      toast.error("Please enter customer name");
+    if (!formData.customerName && !formData.customerId) {
+      toast.error("Please enter or select a customer");
       return;
     }
 
@@ -186,6 +190,7 @@ export default function AddEditRentalPage() {
 
     saveMutation.mutate({
       ...formData,
+      total: calculations.total,
       dynamicDetails,
     });
   };
@@ -206,9 +211,9 @@ export default function AddEditRentalPage() {
           title={isEdit ? "Edit Rental Contract" : "Add Rental Contract"}
           breadcrumbLinks={[
             { label: "Rental Contracts", href: "/dashboard/rentals" },
-            { label: isEdit ? "Edit Rental Contract" : "Add Rental Contract" },
+            { label: isEdit ? "Edit Contract" : "Add Contract" },
           ]}
-          infoTooltip="Create or edit rental contract agreement with pricing terms, rate schedules, and dynamic properties."
+          infoTooltip="Create rental agreements, allocate equipment/units, configure rate terms, and add dynamic variables."
         />
 
         <Button
@@ -223,24 +228,24 @@ export default function AddEditRentalPage() {
         </Button>
       </div>
 
-      {/* Main Grid: Left 8 cols (Form Cards) + Right 4 cols (Summary Card) */}
+      {/* Main Grid: Left 8 cols (Form Cards), Right 4 cols (Summary Card) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Form Cards (8 cols) */}
+        {/* Left Column: Form Cards (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Card 1: Contract Details */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-5">
+          {/* Card 1: Rental Info */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-800">
-              Contract Details
+              Rental Info
             </h2>
 
-            {/* Row 1: Contract Number, Customer Name */}
+            {/* Row 1: Contract Number, Customer */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
                   Contract Number
                 </Label>
                 <Input
-                  placeholder="Contract Number"
+                  placeholder="e.g. RC-1001"
                   value={formData.contractNumber}
                   onChange={(e) => handleInputChange("contractNumber", e.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -249,14 +254,40 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Customer Name
+                  Customer <span className="text-rose-500">*</span>
                 </Label>
-                <Input
-                  placeholder="Customer Name"
-                  value={formData.customerName}
-                  onChange={(e) => handleInputChange("customerName", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
+                {lookups.customers.length > 0 ? (
+                  <Select
+                    value={formData.customerId || "custom"}
+                    onValueChange={(val) => {
+                      if (val === "custom") {
+                        handleInputChange("customerId", "");
+                      } else {
+                        const cust = lookups.customers.find((c) => String(c.id) === String(val));
+                        handleInputChange("customerId", val);
+                        handleInputChange("customerName", cust?.name || "");
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                      <SelectValue placeholder={formData.customerName || "Select Customer"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {lookups.customers.map((c) => (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    placeholder="Customer Name"
+                    value={formData.customerName}
+                    onChange={(e) => handleInputChange("customerName", e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                  />
+                )}
               </div>
             </div>
 
@@ -264,19 +295,25 @@ export default function AddEditRentalPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Resource
+                  Resource / Equipment
                 </Label>
                 <Select
                   value={formData.resource}
-                  onValueChange={(val) => handleInputChange("resource", val)}
+                  onValueChange={(val) => {
+                    handleInputChange("resource", val);
+                    const selRes = lookups.resources.find((r) => r.name === val || String(r.id) === String(val));
+                    if (selRes && selRes.dailyRentalCost && Number(formData.rentalPrice) === 0) {
+                      handleInputChange("rentalPrice", String(selRes.dailyRentalCost));
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Resource" />
+                    <SelectValue placeholder="Select Resource" />
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.resources.map((res) => (
                       <SelectItem key={res.id} value={res.name}>
-                        {res.name}
+                        {res.name} {res.dailyRentalCost ? `($${res.dailyRentalCost}/day)` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -285,23 +322,14 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Service
+                  Contract Title / Service
                 </Label>
-                <Select
+                <Input
+                  placeholder="e.g. Vehicle / Facility Rental"
                   value={formData.service}
-                  onValueChange={(val) => handleInputChange("service", val)}
-                >
-                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Service" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {lookups.services.map((srv) => (
-                      <SelectItem key={srv.id} value={srv.name}>
-                        {srv.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  onChange={(e) => handleInputChange("service", e.target.value)}
+                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                />
               </div>
             </div>
 
@@ -309,14 +337,14 @@ export default function AddEditRentalPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Cost Center Account
+                  Cost Center
                 </Label>
                 <Select
                   value={formData.costCenter}
                   onValueChange={(val) => handleInputChange("costCenter", val)}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Cost Center Account" />
+                    <SelectValue placeholder="Select Cost Center" />
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.costCenters.map((cc) => (
@@ -350,11 +378,11 @@ export default function AddEditRentalPage() {
               </div>
             </div>
 
-            {/* Row 4: Contract Start, Contract End */}
+            {/* Row 4: Start Date, End Date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Contract Start
+                  Start Date
                 </Label>
                 <div className="relative">
                   <Input
@@ -369,7 +397,7 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Contract End
+                  End Date
                 </Label>
                 <div className="relative">
                   <Input
@@ -398,8 +426,8 @@ export default function AddEditRentalPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.statuses.map((st) => (
-                      <SelectItem key={st} value={st}>
-                        {st}
+                      <SelectItem key={st.id} value={st.id}>
+                        {st.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -419,7 +447,7 @@ export default function AddEditRentalPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.paymentMethods.map((pm) => (
-                      <SelectItem key={pm.id} value={pm.name}>
+                      <SelectItem key={pm.id} value={pm.id}>
                         {pm.name}
                       </SelectItem>
                     ))}
@@ -431,22 +459,22 @@ export default function AddEditRentalPage() {
             {/* Row 6: Notes */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Notes
+                Notes & Terms
               </Label>
               <Textarea
                 rows={4}
-                placeholder="Notes"
+                placeholder="Contract guidelines, terms, or conditions..."
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
-                className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
               />
             </div>
           </div>
 
-          {/* Card 2: Pricing matching Image 2 */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-5">
+          {/* Card 2: Pricing & Terms */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-800">
-              Pricing
+              Pricing & Rate Terms
             </h2>
 
             {/* Row 1: Rental Price, Rate Type */}
@@ -473,11 +501,11 @@ export default function AddEditRentalPage() {
                   onValueChange={(val) => handleInputChange("rateType", val)}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="1=Day" />
+                    <SelectValue placeholder="Rate Type" />
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.rateTypes.map((rt) => (
-                      <SelectItem key={rt.id} value={rt.name}>
+                      <SelectItem key={rt.id} value={rt.id}>
                         {rt.name}
                       </SelectItem>
                     ))}
@@ -486,7 +514,7 @@ export default function AddEditRentalPage() {
               </div>
             </div>
 
-            {/* Row 2: Quantity, Discount (USD) */}
+            {/* Row 2: Quantity, Discount */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
@@ -503,7 +531,7 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Discount (USD)
+                  Discount
                 </Label>
                 <Input
                   type="number"
@@ -515,11 +543,11 @@ export default function AddEditRentalPage() {
               </div>
             </div>
 
-            {/* Row 3: Tax (%), Security Deposit */}
+            {/* Row 3: Tax %, Security Deposit */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Tax (%)
+                  Tax %
                 </Label>
                 <Input
                   type="number"
@@ -544,179 +572,66 @@ export default function AddEditRentalPage() {
               </div>
             </div>
           </div>
-
-          {/* Card 3: Additional Data (dynamicDetails) matching Image 2 */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">
-                  Additional Data (dynamicDetails)
-                </h2>
-                <p className="text-xs text-slate-500 mt-1">
-                  {dynamicFields.length === 0
-                    ? "No extra fields. Add custom variables like DriverLicenseNumber, FuelLevel..."
-                    : `${dynamicFields.length} custom field(s) defined.`}
-                </p>
-              </div>
-
-              <Button
-                type="button"
-                onClick={() => setIsFieldModalOpen(true)}
-                className="bg-[#0066d1] hover:bg-[#0052a8] text-white h-10 px-4 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                Add
-              </Button>
-            </div>
-
-            {dynamicFields.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100">
-                {dynamicFields.map((field, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center justify-between p-3 rounded-xl border border-slate-200 bg-slate-50/60"
-                  >
-                    <div>
-                      <p className="text-xs font-semibold text-slate-800">
-                        {field.key}
-                      </p>
-                      <p className="text-xs text-slate-500">{field.value}</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveDynamicField(idx)}
-                      className="text-slate-400 hover:text-red-500 cursor-pointer p-1"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
-        {/* Right Summary Card (4 cols) matching Image 2 */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5 sticky top-6">
+        {/* Right Column: Calculations Summary Card (4 cols) */}
+        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
           <h2 className="text-base font-bold text-slate-800">
             Summary
           </h2>
 
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between text-slate-500">
-              <span>Units (Day)</span>
+          <div className="space-y-3.5 text-xs">
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Base Rate:</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.unitsDay.toFixed(2)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-slate-500">
-              <span>Subtotal</span>
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Discount:</span>
+              <span className="font-semibold text-slate-800">
+                -${calculations.discount.toFixed(2)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Subtotal:</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.subtotal.toFixed(2)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-slate-500">
-              <span>Discount</span>
-              <span className="font-semibold text-slate-800">
-                ${calculations.discount.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between text-slate-500">
-              <span>Tax ({calculations.taxRate}%)</span>
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Tax ({calculations.taxRate}%):</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.taxAmount.toFixed(2)}
               </span>
             </div>
-          </div>
 
-          <hr className="border-slate-100" />
-
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <span className="text-sm font-bold text-slate-800">Total</span>
-              <span className="text-base font-bold text-slate-900">
+            <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-slate-900 font-bold text-sm">
+              <span>Total:</span>
+              <span className="text-[#0066d1]">
                 ${calculations.total.toFixed(2)}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Security Deposit</span>
+            <div className="flex items-center justify-between text-slate-600 pt-1">
+              <span>Security Deposit:</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.deposit.toFixed(2)}
               </span>
             </div>
-          </div>
 
-          <hr className="border-slate-100" />
-
-          <div className="flex items-baseline justify-between pt-1">
-            <span className="text-xs font-semibold text-[#0066d1]">
-              Collected on Signing
-            </span>
-            <span className="text-sm font-bold text-[#0066d1]">
-              ${calculations.collectedOnSigning.toFixed(2)}
-            </span>
+            <div className="bg-blue-50/70 border border-blue-100 p-3.5 rounded-xl flex items-center justify-between text-slate-800 font-bold text-xs mt-2">
+              <span>Collected on Signing:</span>
+              <span className="text-[#0066d1] text-sm">
+                ${calculations.collectedOnSigning.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Add Custom Field Modal */}
-      <DynamicModal
-        open={isFieldModalOpen}
-        onOpenChange={setIsFieldModalOpen}
-        title="Add Dynamic Field"
-        icon={Plus}
-        showDefaultFooter={false}
-        size="md"
-        className="rounded-[28px] p-7"
-      >
-        <div className="space-y-4 pt-1">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">
-              Field Name / Key
-            </Label>
-            <Input
-              placeholder="e.g. DriverLicenseNumber, FuelLevel"
-              value={newFieldName}
-              onChange={(e) => setNewFieldName(e.target.value)}
-              className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">
-              Field Value
-            </Label>
-            <Input
-              placeholder="e.g. 9876543210, Full"
-              value={newFieldValue}
-              onChange={(e) => setNewFieldValue(e.target.value)}
-              className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
-            />
-          </div>
-
-          <div className="pt-2 flex justify-end gap-2.5">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsFieldModalOpen(false)}
-              className="h-11 px-5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium cursor-pointer"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={handleAddDynamicField}
-              className="h-11 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-semibold cursor-pointer"
-            >
-              Add Field
-            </Button>
-          </div>
-        </div>
-      </DynamicModal>
     </form>
   );
 }

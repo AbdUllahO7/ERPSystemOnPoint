@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { RefreshCcw, Loader2 } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
@@ -22,6 +22,7 @@ import {
 
 export default function ResourceDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
@@ -50,8 +51,9 @@ export default function ResourceDetailsPage() {
       toast.success(res?.message || "Resource status updated!");
       setIsStatusModalOpen(false);
     },
-    onError: () => {
-      toast.error("Failed to update status");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || "Failed to update status";
+      toast.error(msg);
     },
   });
 
@@ -66,9 +68,12 @@ export default function ResourceDetailsPage() {
       case "active":
         return "bg-emerald-50 text-emerald-600";
       case "rented":
+      case "leased":
         return "bg-blue-50 text-[#0066d1]";
+      case "undermaintenance":
       case "maintenance":
         return "bg-amber-50 text-amber-600";
+      case "outofservice":
       case "inactive":
         return "bg-rose-50 text-rose-600";
       default:
@@ -111,7 +116,7 @@ export default function ResourceDetailsPage() {
         </Button>
       </div>
 
-      {/* Details Grid (Left 8 cols, Right 4 cols) matching Image 3 */}
+      {/* Details Grid (Left 8 cols, Right 4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left: Details (8 cols) */}
         <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
@@ -121,58 +126,97 @@ export default function ResourceDetailsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div>
-              <p className="text-xs font-semibold text-slate-800">Code</p>
+              <p className="text-xs font-semibold text-slate-800">Code / Ref</p>
               <p className="text-xs text-slate-500 mt-1">
-                {resource.code || "code"}
+                {resource.code || "N/A"}
               </p>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Address</p>
+              <p className="text-xs font-semibold text-slate-800">Resource Name</p>
               <p className="text-xs text-slate-500 mt-1">
-                {resource.address || resource.fullAddress || "Address"}
+                {resource.name || resource.fullName || "Unnamed Resource"}
               </p>
             </div>
 
             <div>
               <p className="text-xs font-semibold text-slate-800">Total Capacity</p>
               <p className="text-xs text-slate-500 mt-1">
-                {resource.capacity || resource.numericCapacity || "Total Capacity"}
+                {resource.capacity || resource.numericCapacity || 20} Seats
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
             <div>
-              <p className="text-xs font-semibold text-slate-800">Ownership</p>
+              <p className="text-xs font-semibold text-slate-800">Ownership Model</p>
               <p className="text-xs text-slate-500 mt-1">
-                {resource.ownership || resource.fullOwnership || "Ownership"}
+                {resource.ownership || resource.fullOwnership || "Owned"}
               </p>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Fixed Asset</p>
+              <p className="text-xs font-semibold text-slate-800">Supplier / Fixed Asset</p>
               <p className="text-xs text-slate-500 mt-1">
-                {resource.fixedAsset || resource.supplierAssetName || "Fixed Asset"}
+                {resource.supplierAsset || resource.supplierAssetName || "N/A"}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-slate-800">Daily Rental Cost</p>
+              <p className="text-xs text-slate-500 mt-1">
+                ${resource.dailyRentalCost ?? 0}
               </p>
             </div>
           </div>
+
+          {resource.contractStartDate && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Contract Start</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {resource.contractStartDate}
+                </p>
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-slate-800">Contract End</p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {resource.contractEndDate || "Ongoing"}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Right: Status (4 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-3">
+        {/* Right: Status & Notes (4 cols) */}
+        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-4">
           <h2 className="text-base font-bold text-slate-800">
-            Status
+            Status & Info
           </h2>
 
-          <div>
-            <span
-              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusBadge(
-                resource.status
-              )}`}
-            >
-              {resource.status || "Active"}
-            </span>
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-slate-800 mb-1">
+                Status
+              </p>
+              <span
+                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(
+                  resource.status
+                )}`}
+              >
+                {resource.status || "Active"}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-slate-800 mb-1">
+                Notes / Specs
+              </p>
+              <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
+                {resource.notes || "No additional specifications provided."}
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -197,11 +241,15 @@ export default function ResourceDetailsPage() {
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.statuses.map((st) => (
-                  <SelectItem key={st} value={st}>
-                    {st}
-                  </SelectItem>
-                ))}
+                {lookups.statuses.map((st) => {
+                  const val = typeof st === "string" ? st : (st.id || st.name);
+                  const label = typeof st === "string" ? st : st.name;
+                  return (
+                    <SelectItem key={val} value={val}>
+                      {label}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>

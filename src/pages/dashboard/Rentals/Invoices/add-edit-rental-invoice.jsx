@@ -50,7 +50,10 @@ export default function AddEditRentalInvoicePage() {
   // Calculations for Summary Card
   const calculations = useMemo(() => {
     const damage = Number(formData.damageAmount) || 0;
-    const contractBase = formData.rentalContract ? 300 : 0;
+    const selectedContract = lookups.contracts.find(
+      (c) => String(c.id) === String(formData.rentalContract)
+    );
+    const contractBase = selectedContract ? (selectedContract.totalAmount || 0) : 0;
     const invoiceTotal = contractBase + damage;
 
     return {
@@ -58,7 +61,8 @@ export default function AddEditRentalInvoicePage() {
       damageFees: damage,
       invoiceTotal,
     };
-  }, [formData]);
+  }, [formData, lookups]);
+
 
   // Mutation for saving
   const saveMutation = useMutation({
@@ -161,12 +165,13 @@ export default function AddEditRentalInvoicePage() {
                   <SelectValue placeholder="Rental Contract" />
                 </SelectTrigger>
                 <SelectContent>
-                  {lookups.contracts.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
+                  {(lookups.contracts || []).map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
+
               </Select>
             </div>
 

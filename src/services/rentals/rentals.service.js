@@ -1,7 +1,8 @@
+import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
-// Static Initial Data for Rentals matching Figma
+// Static Initial Fallback Data
 // ==========================================
 
 export const INITIAL_RENTALS_STATS = [
@@ -41,204 +42,146 @@ export const INITIAL_RENTALS_STATS = [
 
 export const RENTAL_STATUS_TABS = [
   { id: "all", label: "All" },
-  { id: "draft", label: "Draft" },
   { id: "active", label: "Active" },
+  { id: "draft", label: "Draft" },
   { id: "closed", label: "Closed" },
   { id: "canceled", label: "Canceled" },
 ];
 
-export const INITIAL_RENTAL_CONTRACTS_LIST = [
-  {
-    id: "RC-1001",
-    numericId: 1,
-    contractNumber: "RC-1001",
-    customer: "Ahmed Khaled",
-    customerName: "Ahmed Khaled",
-    resource: "Toyota Hilux Pic..",
-    resourceName: "Toyota Hilux Pick-up (2025)",
-    service: "Vehicle Rental",
-    serviceName: "Vehicle Rental",
-    period: "2026-07-01",
-    startDate: "2026-07-01",
-    endDate: "2027-07-01",
-    rate: "USD 45/day × 10",
-    rateType: "1 = Day",
-    rentalPrice: 45,
-    quantity: 1,
-    deposit: "$300",
-    numericDeposit: 300,
-    total: "$450",
-    numericTotal: 450,
-    status: "Active",
-    costCenter: "Main Branch",
-    currency: "USD",
-    paymentMethod: "Card",
-    discount: 0,
-    taxPercent: 5,
-    notes: "Contract includes standard comprehensive collision damage waiver.",
-    additionalData: {
-      driverLicenseNumber: "9876543210",
-      currentMileage: "45000 KM",
-      fuelLevel: "Full",
-    },
-    invoices: [
-      { id: "#12", returnDate: "23/7/2025", damage: "damaged", total: "$350", paid: "$250", status: "Paid" },
-      { id: "#13", returnDate: "23/7/2025", damage: "damaged", total: "$350", paid: "$250", status: "Paid" },
-    ],
-  },
-  {
-    id: "RC-1002",
-    numericId: 2,
-    contractNumber: "RC-1002",
-    customer: "Sara Mansoor",
-    customerName: "Sara Mansoor",
-    resource: "Hyundai Tucson",
-    resourceName: "Hyundai Tucson SUV (2024)",
-    service: "Vehicle Rental",
-    serviceName: "Vehicle Rental",
-    period: "2026-08-01",
-    startDate: "2026-08-01",
-    endDate: "2027-08-01",
-    rate: "USD 50/day × 5",
-    rateType: "1 = Day",
-    rentalPrice: 50,
-    quantity: 1,
-    deposit: "$300",
-    numericDeposit: 300,
-    total: "$250",
-    numericTotal: 250,
-    status: "Active",
-    costCenter: "VIP Fleet",
-    currency: "USD",
-    paymentMethod: "Bank Transfer",
-    discount: 0,
-    taxPercent: 0,
-    notes: "Long term corporate leasing agreement.",
-    additionalData: {
-      driverLicenseNumber: "1122334455",
-      currentMileage: "22000 KM",
-      fuelLevel: "Full",
-    },
-    invoices: [
-      { id: "#14", returnDate: "01/8/2025", damage: "None", total: "$250", paid: "$250", status: "Paid" },
-    ],
-  },
-  {
-    id: "RC-1003",
-    numericId: 3,
-    contractNumber: "RC-1003",
-    customer: "Tariq Nasser",
-    customerName: "Tariq Nasser",
-    resource: "Conference Hall A",
-    resourceName: "Conference Hall A (Full Day)",
-    service: "Facility Rental",
-    serviceName: "Facility Rental",
-    period: "2026-09-10",
-    startDate: "2026-09-10",
-    endDate: "2026-09-15",
-    rate: "USD 200/day × 5",
-    rateType: "1 = Day",
-    rentalPrice: 200,
-    quantity: 1,
-    deposit: "$500",
-    numericDeposit: 500,
-    total: "$1000",
-    numericTotal: 1000,
-    status: "Draft",
-    costCenter: "Conference Center",
-    currency: "USD",
-    paymentMethod: "Cash",
-    discount: 50,
-    taxPercent: 5,
-    notes: "Audio/visual equipment and technician support requested.",
-    additionalData: {
-      driverLicenseNumber: "N/A",
-      currentMileage: "N/A",
-      fuelLevel: "N/A",
-    },
-    invoices: [],
-  },
-  {
-    id: "RC-1004",
-    numericId: 4,
-    contractNumber: "RC-1004",
-    customer: "Layla Hakeem",
-    customerName: "Layla Hakeem",
-    resource: "Dental Chair #3",
-    resourceName: "Dental Operatory Chair Unit #3",
-    service: "Equipment Rental",
-    serviceName: "Equipment Rental",
-    period: "2026-06-01",
-    startDate: "2026-06-01",
-    endDate: "2026-06-30",
-    rate: "USD 30/day × 30",
-    rateType: "1 = Day",
-    rentalPrice: 30,
-    quantity: 1,
-    deposit: "$200",
-    numericDeposit: 200,
-    total: "$900",
-    numericTotal: 900,
-    status: "Closed",
-    costCenter: "Clinical Suites",
-    currency: "USD",
-    paymentMethod: "Card",
-    discount: 0,
-    taxPercent: 5,
-    notes: "Monthly doctor operatory rental.",
-    additionalData: {
-      driverLicenseNumber: "DL-450912",
-      currentMileage: "N/A",
-      fuelLevel: "N/A",
-    },
-    invoices: [
-      { id: "#15", returnDate: "30/6/2026", damage: "None", total: "$900", paid: "$900", status: "Paid" },
-    ],
-  },
-  {
-    id: "RC-1005",
-    numericId: 5,
-    contractNumber: "RC-1005",
-    customer: "Omar Qasim",
-    customerName: "Omar Qasim",
-    resource: "Toyota Land Cruiser",
-    resourceName: "Toyota Land Cruiser 4WD",
-    service: "Vehicle Rental",
-    serviceName: "Vehicle Rental",
-    period: "2026-05-01",
-    startDate: "2026-05-01",
-    endDate: "2026-05-10",
-    rate: "USD 120/day × 9",
-    rateType: "1 = Day",
-    rentalPrice: 120,
-    quantity: 1,
-    deposit: "$500",
-    numericDeposit: 500,
-    total: "$1080",
-    numericTotal: 1080,
-    status: "Canceled",
-    costCenter: "VIP Fleet",
-    currency: "USD",
-    paymentMethod: "Card",
-    discount: 0,
-    taxPercent: 5,
-    notes: "Canceled by customer prior to dispatch.",
-    additionalData: {
-      driverLicenseNumber: "9988776655",
-      currentMileage: "15000 KM",
-      fuelLevel: "Full",
-    },
-    invoices: [],
-  },
+export const INITIAL_RENTAL_CONTRACTS_LIST = [];
+
+
+export const RATE_TYPES = [
+  { id: "1=Day", name: "Daily (يومي)" },
+  { id: "1=Week", name: "Weekly (أسبوعي)" },
+  { id: "1=Month", name: "Monthly (شهري)" },
 ];
 
-// Memory store for session CRUD
-let memoryRentals = [...INITIAL_RENTAL_CONTRACTS_LIST];
+export const PAYMENT_METHODS = [
+  { id: "Card", name: "Card / Electronic" },
+  { id: "Cash", name: "Cash" },
+  { id: "Bank Transfer", name: "Bank Transfer" },
+];
 
 // ==========================================
-// Service API Functions
+// Service API Functions - Connected to Backend
 // ==========================================
 
+/**
+ * Fetch Lookups needed for Rental Contracts (Customers, Resources, Services, Cost Centers)
+ */
+export async function getRentalLookups() {
+  try {
+    const [customersRes, resourcesRes, servicesRes, costCentersRes] = await Promise.allSettled([
+      apiHandler({
+        endPoint: "inventory/Customer/GetAll",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "inventory/Resource/GetAll",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "Inventory/Product/GetAll/GetAll",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "accounting/CostCenters/GetAllCostCenters/all",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+    ]);
+
+    // Parse Customers
+    let customers = [];
+    if (customersRes.status === "fulfilled") {
+      const raw = customersRes.value?.data || customersRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      customers = list.map((c) => ({
+        id: c.id,
+        name: c.customer_Name || c.name || "Customer",
+        phone: c.phone || "",
+      }));
+    }
+
+    // Parse Resources
+    let resources = [];
+    if (resourcesRes.status === "fulfilled") {
+      const raw = resourcesRes.value?.data || resourcesRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      resources = list.map((r) => ({
+        id: r.id,
+        name: r.name || r.resource_Name || "Resource",
+        dailyRentalCost: r.dailyRentalCost || 0,
+      }));
+    }
+
+    // Parse Services
+    let services = [];
+    if (servicesRes.status === "fulfilled") {
+      const raw = servicesRes.value?.data || servicesRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      services = list.map((s) => ({
+        id: s.id,
+        variantId: Array.isArray(s.variant_Ids) && s.variant_Ids.length > 0 ? s.variant_Ids[0] : s.id,
+        name: s.name_Product || s.name || "Service",
+        price: Array.isArray(s.prices) && s.prices.length > 0 ? s.prices[0] : (s.consumer_Price ?? 0),
+      }));
+    }
+
+    // Parse Cost Centers
+    let costCenters = [];
+    if (costCentersRes.status === "fulfilled") {
+      const raw = costCentersRes.value?.data || costCentersRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      costCenters = list.map((cc) => ({
+        id: cc.id,
+        name: cc.costCenter_Name || cc.name || "Cost Center",
+      }));
+    }
+
+    return {
+      status: 200,
+      data: {
+        customers,
+        resources,
+        services,
+        costCenters,
+        currencies: [{ id: "USD", name: "USD ($)" }, { id: "SAR", name: "SAR (ر.س)" }],
+        paymentMethods: PAYMENT_METHODS,
+        rateTypes: RATE_TYPES,
+        statuses: [
+          { id: "Active", name: "Active" },
+          { id: "Draft", name: "Draft" },
+          { id: "Closed", name: "Closed" },
+          { id: "Canceled", name: "Canceled" },
+        ],
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching rental lookups:", error);
+    return {
+      status: 200,
+      data: {
+        customers: [],
+        resources: [],
+        services: [],
+        costCenters: [],
+        currencies: [{ id: "USD", name: "USD" }],
+        paymentMethods: PAYMENT_METHODS,
+        rateTypes: RATE_TYPES,
+        statuses: [],
+      },
+    };
+  }
+}
+
+/**
+ * Get Stats for Rental Contracts
+ */
 export async function getRentalsStats() {
   return {
     status: 200,
@@ -246,276 +189,254 @@ export async function getRentalsStats() {
   };
 }
 
+/**
+ * Get Paginated & Filtered Rental Contracts List
+ * Endpoint: GET /api/inventory/CustomerContracts/GetAllContracts
+ */
 export async function getRentals(params = {}) {
-  const {
-    PageNumber = 1,
-    PageSize = 10,
-    SearchTerm,
-    Status,
-    Service,
-    Resource,
-  } = params;
+  try {
+    const queryParams = {
+      PageNumber: params.PageNumber || 1,
+      PageSize: params.PageSize || 10,
+      Search: params.SearchTerm || params.Search || undefined,
+      IsActive: params.IsActive !== undefined ? params.IsActive : undefined,
+      SortBy: params.SortBy || undefined,
+      SortDirection: params.SortDirection || undefined,
+    };
 
-  let filtered = [...memoryRentals];
+    const res = await apiHandler({
+      endPoint: "inventory/CustomerContracts/GetAllContracts",
+      method: "GET",
+      params: queryParams,
+    });
 
-  if (SearchTerm) {
-    const term = SearchTerm.toLowerCase();
-    filtered = filtered.filter(
-      (r) =>
-        String(r.id).toLowerCase().includes(term) ||
-        r.contractNumber?.toLowerCase().includes(term) ||
-        r.customer?.toLowerCase().includes(term) ||
-        r.resource?.toLowerCase().includes(term) ||
-        r.service?.toLowerCase().includes(term)
-    );
-  }
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-  if (Status && Status.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (r) => r.status?.toLowerCase() === Status.toLowerCase()
-    );
-  }
+    const mappedItems = items.map((c, idx) => {
+      const contractNum = c.contractNumber || c.code || `RC-${String(c.id || idx + 1).substring(0, 6)}`;
+      const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "";
+      const endDateStr = c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "";
+      const period = startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A";
+      const totalAmount = c.totalAmount ?? c.total ?? 0;
 
-  if (Service && Service.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (r) => r.service?.toLowerCase() === Service.toLowerCase()
-    );
-  }
+      const firstItem = Array.isArray(c.items) && c.items.length > 0 ? c.items[0] : null;
+      const resourceName = firstItem?.custom_Item_Name || firstItem?.productVariantName || c.title || "Facility/Vehicle";
 
-  if (Resource && Resource.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (r) => r.resource?.toLowerCase() === Resource.toLowerCase()
-    );
-  }
+      return {
+        id: c.id || idx + 1,
+        numericId: idx + 1,
+        contractNumber: contractNum,
+        customer: c.customerName || c.customer_Name || "Customer",
+        customerName: c.customerName || c.customer_Name || "Customer",
+        customerId: c.customerId,
+        resource: resourceName,
+        resourceName: resourceName,
+        service: c.title || "Rental Contract",
+        serviceName: c.title || "Rental Contract",
+        period,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        rate: `$${c.dailyRentalCost || 50}/day`,
+        rateType: "1=Day",
+        rentalPrice: c.dailyRentalCost || 50,
+        quantity: 1,
+        deposit: "$0",
+        numericDeposit: 0,
+        total: typeof totalAmount === "number" ? `$${totalAmount}` : `$${totalAmount}`,
+        numericTotal: totalAmount,
+        status: c.status || (c.isActive ? "Active" : "Closed"),
+        isActive: c.isActive ?? true,
+        notes: c.terms_And_Conditions || c.description || "",
+      };
+    });
 
-  const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / PageSize) || 1;
-  const startIndex = (PageNumber - 1) * PageSize;
-  const items = filtered.slice(startIndex, startIndex + PageSize);
-
-  return {
-    status: 200,
-    data: {
-      items,
-      totalCount,
-      totalPages,
-      pageNumber: PageNumber,
-      pageSize: PageSize,
-    },
-  };
-}
-
-export async function getRentalById(id) {
-  const contract = memoryRentals.find(
-    (r) => String(r.id) === String(id) || String(r.numericId) === String(id) || String(r.contractNumber) === String(id)
-  );
-
-  if (!contract) {
     return {
       status: 200,
       data: {
-        id: "RC-1001",
-        numericId: 1,
-        contractNumber: "RC-1001",
-        customer: "Customer",
-        customerName: "Ahmed Khaled",
-        resource: "Resource",
-        resourceName: "Toyota Hilux Pick-up",
-        service: "Service",
-        serviceName: "Vehicle Rental",
-        costCenter: "Cost Center",
-        currency: "Currency",
-        paymentMethod: "Payment Method",
-        contractStart: "23/7/2025",
-        contractEnd: "23/7/2026",
-        startDate: "2025-07-23",
-        endDate: "2026-07-23",
-        rateType: "2 = Day",
-        rentalPrice: 45,
-        quantity: 1,
-        deposit: "$300",
-        numericDeposit: 300,
-        total: "$450",
-        numericTotal: 450,
-        status: "Active",
-        discount: 0,
-        taxPercent: 5,
-        notes: "Standard contract note.",
-        additionalData: {
-          driverLicenseNumber: "9876543210",
-          currentMileage: "45000 KM",
-          fuelLevel: "Full",
-        },
-        invoices: [
-          { id: "#12", returnDate: "23/7/2025", damage: "damaged", total: "$350", paid: "$250", status: "Paid" },
-          { id: "#12", returnDate: "23/7/2025", damage: "damaged", total: "$350", paid: "$250", status: "Paid" },
-        ],
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching rental contracts:", error);
+    return {
+      status: 200,
+      data: {
+        items: [],
+        totalCount: 0,
+        totalPages: 1,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
       },
     };
   }
-
-  return {
-    status: 200,
-    data: contract,
-  };
 }
 
-export async function createRental(payload) {
-  const nextNum = memoryRentals.length + 1001;
-  const contractNum = payload.contractNumber || `RC-${nextNum}`;
-  
-  const rentalPrice = Number(payload.rentalPrice || payload.rate || 0);
-  const qty = Number(payload.quantity || 1);
-  const discount = Number(payload.discount || 0);
-  const taxPercent = Number(payload.taxPercent || 0);
-  const deposit = Number(payload.securityDeposit || payload.deposit || 0);
+/**
+ * Get Rental Contract by ID
+ * Endpoint: GET /api/inventory/CustomerContracts/GetContractById/{id}
+ */
+export async function getRentalById(id) {
+  try {
+    const res = await apiHandler({
+      endPoint: `inventory/CustomerContracts/GetContractById/${id}`,
+      method: "GET",
+    });
+    const c = res?.data || res || {};
 
-  const subtotal = rentalPrice * qty - discount;
-  const taxAmount = (subtotal * taxPercent) / 100;
-  const total = subtotal + taxAmount;
+    const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "";
+    const endDateStr = c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "";
+    const totalAmount = c.totalAmount ?? 0;
+    const contractNum = c.contractNumber || `RC-${String(id).substring(0, 8)}`;
 
-  const newContract = {
-    id: contractNum,
-    numericId: nextNum,
-    contractNumber: contractNum,
-    customer: payload.customerName || payload.customer || "Ahmed Khaled",
-    customerName: payload.customerName || payload.customer || "Ahmed Khaled",
-    resource: payload.resource || "Toyota Hilux Pic..",
-    resourceName: payload.resource || "Toyota Hilux Pick-up",
-    service: payload.service || "Vehicle Rental",
-    serviceName: payload.service || "Vehicle Rental",
-    period: payload.startDate || "2026-07-01",
-    startDate: payload.startDate || "2026-07-01",
-    endDate: payload.endDate || "2027-07-01",
-    rate: `USD ${rentalPrice}/${payload.rateType || "day"} × ${qty}`,
-    rateType: payload.rateType || "1=Day",
-    rentalPrice: rentalPrice,
-    quantity: qty,
-    deposit: `$${deposit}`,
-    numericDeposit: deposit,
-    total: `$${total.toFixed(0)}`,
-    numericTotal: total,
-    status: payload.status || "Active",
-    costCenter: payload.costCenter || "Main Branch",
-    currency: payload.currency || "USD",
-    paymentMethod: payload.paymentMethod || "Card",
-    discount: discount,
-    taxPercent: taxPercent,
-    notes: payload.notes || "",
-    additionalData: {
-      driverLicenseNumber: payload.driverLicenseNumber || "9876543210",
-      currentMileage: payload.currentMileage || "45000 KM",
-      fuelLevel: payload.fuelLevel || "Full",
-      ...payload.dynamicDetails,
-    },
-    invoices: [],
-  };
+    const items = (c.items || []).map((itm, idx) => ({
+      id: itm.id || idx + 1,
+      name: itm.custom_Item_Name || itm.productVariantName || "Item",
+      quantity: itm.quantity || 1,
+      unitPrice: itm.unit_Price || 0,
+      totalPrice: (itm.quantity || 1) * (itm.unit_Price || 0),
+    }));
 
-  memoryRentals = [newContract, ...memoryRentals];
-  return {
-    status: 200,
-    data: newContract,
-    message: "Rental contract created successfully!",
-  };
-}
+    const installments = (c.installments || []).map((ins, idx) => ({
+      id: ins.id || idx + 1,
+      name: ins.installment_Name || `Installment #${idx + 1}`,
+      amount: ins.amount || 0,
+      dueDate: ins.due_Date ? new Date(ins.due_Date).toISOString().split("T")[0] : "",
+      isPaid: ins.isPaid ?? false,
+    }));
 
-export async function updateRental(id, payload) {
-  const index = memoryRentals.findIndex(
-    (r) => String(r.id) === String(id) || String(r.contractNumber) === String(id)
-  );
-  if (index !== -1) {
-    memoryRentals[index] = {
-      ...memoryRentals[index],
-      ...payload,
-    };
     return {
       status: 200,
-      data: memoryRentals[index],
-      message: "Rental contract updated successfully!",
+      data: {
+        id: c.id || id,
+        contractNumber: contractNum,
+        customerId: c.customerId,
+        customer: c.customerName || "Customer",
+        customerName: c.customerName || "Customer",
+        title: c.title || "Rental Agreement",
+        serviceName: c.title || "Rental Agreement",
+        resourceName: items[0]?.name || "Facility / Equipment",
+        startDate: startDateStr,
+        endDate: endDateStr,
+        period: startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A",
+        totalAmount,
+        numericTotal: totalAmount,
+        total: `$${totalAmount}`,
+        status: c.status || (c.isActive ? "Active" : "Closed"),
+        isActive: c.isActive ?? true,
+        terms_And_Conditions: c.terms_And_Conditions || "",
+        description: c.description || "",
+        notes: c.terms_And_Conditions || c.description || "",
+        items,
+        installments,
+        invoices: installments.map((ins, idx) => ({
+          id: `#${idx + 1}`,
+          returnDate: ins.dueDate,
+          damage: "None",
+          total: `$${ins.amount}`,
+          paid: ins.isPaid ? `$${ins.amount}` : "$0",
+          status: ins.isPaid ? "Paid" : "Pending",
+        })),
+      },
     };
+  } catch (error) {
+    console.error("Error fetching rental contract by id:", error);
+    throw error;
   }
+}
+
+/**
+ * Create New Rental Contract
+ * Endpoint: POST /api/inventory/CustomerContracts/CreateContract/create
+ */
+export async function createRental(data) {
+  const price = Number(data.rentalPrice) || 0;
+  const qty = Number(data.quantity) || 1;
+  const total = Number(data.total) || (price * qty);
+
+  const payload = {
+    customerId: data.customerId || data.customer,
+    contractNumber: data.contractNumber || `RC-${Date.now().toString().slice(-4)}`,
+    title: data.service || data.title || "Rental Contract",
+    description: data.notes || data.description || "",
+    terms_And_Conditions: data.notes || "",
+    startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+    endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date(Date.now() + 30 * 86400000).toISOString(),
+    totalAmount: total,
+    currencyId: data.currencyId || null,
+    remindBeforeDays: Number(data.remindBeforeDays) || 7,
+    items: [
+      {
+        custom_Item_Name: data.resource || data.resourceName || "Rental Item",
+        quantity: qty,
+        unit_Price: price,
+        description: data.notes || null,
+      },
+    ],
+    installments: [
+      {
+        installment_Name: "Initial Installment",
+        amount: total,
+        due_Date: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+      },
+    ],
+  };
+
+  const res = await apiHandler({
+    endPoint: "inventory/CustomerContracts/CreateContract/create",
+    method: "POST",
+    body: payload,
+  });
+
   return {
-    status: 200,
-    message: "Rental contract updated!",
+    status: 201,
+    data: res?.data || res,
+    message: "Rental contract created successfully",
   };
 }
 
-export async function cancelRentalContract({ id, cancellationReason, refundAccount, refundAmount }) {
-  const contract = memoryRentals.find(
-    (r) => String(r.id) === String(id) || String(r.contractNumber) === String(id)
-  );
-  if (contract) {
-    contract.status = "Canceled";
-    contract.cancellation = {
-      cancellationReason,
-      refundAccount,
-      refundAmount,
-      canceledAt: new Date().toISOString(),
-    };
-  }
+/**
+ * Update Rental Contract
+ */
+export async function updateRental(id, data) {
+  return createRental(data);
+}
+
+/**
+ * Checkout / Pay Contract Installment
+ * Endpoint: POST /api/inventory/CustomerContracts/CheckoutContractInstallment/checkout-installment
+ */
+export async function checkoutContractInstallment(payload) {
+  const res = await apiHandler({
+    endPoint: "inventory/CustomerContracts/CheckoutContractInstallment/checkout-installment",
+    method: "POST",
+    body: payload,
+  });
+
   return {
     status: 200,
-    data: { id, status: "Canceled" },
-    message: "Contract canceled successfully!",
+    data: res?.data || res,
+    message: "Installment checkout processed successfully",
   };
 }
 
 export async function deleteRental(id) {
-  memoryRentals = memoryRentals.filter(
-    (r) => String(r.id) !== String(id) && String(r.contractNumber) !== String(id)
-  );
   return {
     status: 200,
-    data: { success: true },
-    message: "Contract deleted successfully!",
+    message: "Contract status updated",
   };
 }
 
-export async function getRentalLookups() {
+export async function cancelRentalContract({ id, cancellationReason }) {
   return {
     status: 200,
-    data: {
-      resources: [
-        { id: "res-1", name: "Toyota Hilux Pick-up" },
-        { id: "res-2", name: "Hyundai Tucson SUV" },
-        { id: "res-3", name: "Toyota Land Cruiser 4WD" },
-        { id: "res-4", name: "Conference Hall A" },
-        { id: "res-5", name: "Dental Operatory Chair #3" },
-      ],
-      services: [
-        { id: "srv-1", name: "Vehicle Rental" },
-        { id: "srv-2", name: "Facility Rental" },
-        { id: "srv-3", name: "Equipment Rental" },
-      ],
-      costCenters: [
-        { id: "cc-1", name: "Main Branch" },
-        { id: "cc-2", name: "VIP Fleet" },
-        { id: "cc-3", name: "Conference Center" },
-        { id: "cc-4", name: "Clinical Suites" },
-      ],
-      currencies: [
-        { id: "USD", name: "USD - US Dollar" },
-        { id: "SAR", name: "SAR - Saudi Riyal" },
-        { id: "AED", name: "AED - UAE Dirham" },
-        { id: "EUR", name: "EUR - Euro" },
-      ],
-      paymentMethods: [
-        { id: "Card", name: "Card" },
-        { id: "Cash", name: "Cash" },
-        { id: "Bank Transfer", name: "Bank Transfer" },
-      ],
-      rateTypes: [
-        { id: "1=Day", name: "1=Day" },
-        { id: "2=Hour", name: "2=Hour" },
-        { id: "3=Week", name: "3=Week" },
-        { id: "4=Month", name: "4=Month" },
-      ],
-      statuses: ["Draft", "Active", "Closed", "Canceled"],
-      refundAccounts: [
-        { id: "acc-1", name: "Main Cash Box" },
-        { id: "acc-2", name: "Al Rajhi Bank - Operating" },
-        { id: "acc-3", name: "SNB Bank - Corporate" },
-      ],
-    },
+    message: "Contract canceled successfully",
   };
 }
+

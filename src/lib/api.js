@@ -1741,3 +1741,40 @@ export async function completeOrCancelCustomerFollowUp(data) {
     body: data,
   });
 }
+export async function updateCustomerFollowUp(data) {
+  return apiHandler({
+    endPoint: "crm/FollowUpCustomer/Update",
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function deleteCustomerFollowUp(id) {
+  return apiHandler({
+    endPoint: `crm/FollowUpCustomer/delete${id}`,
+    method: "POST",
+  });
+}
+
+export async function getLeadFollowUpsTimeline(data) {
+  return apiHandler({
+    endPoint: "crm/FollowUpLead/GetTimeline",
+    method: "GET",
+    params: data,
+  });
+}
+
+export async function updateFollowUpLead(data) {
+  return apiHandler({
+    endPoint: "crm/FollowUpLead/Update",
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function deleteFollowUpLead(id) {
+  return apiHandler({
+    endPoint: `crm/FollowUpLead/delete${id}`,
+    method: "POST",
+  });
+}

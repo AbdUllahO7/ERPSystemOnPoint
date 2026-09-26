@@ -72,6 +72,54 @@ export default function AddEditService() {
     }
   }, [isEdit, existingData]);
 
+  // Dynamically ensure Select options have the current value
+  const categoryOptions = useMemo(() => {
+    const list = [...(lookups.categories || [])];
+    if (formData.category && !list.some((c) => c.value === formData.category || c.id === formData.category || c.label === formData.category)) {
+      list.unshift({
+        id: formData.category,
+        label: formData.category,
+        value: formData.category,
+      });
+    }
+    return list;
+  }, [lookups.categories, formData.category]);
+
+  const billingMethodOptions = useMemo(() => {
+    const list = [...(lookups.billingMethods || [])];
+    if (formData.billingMethod && !list.some((bm) => bm.value === formData.billingMethod || bm.label === formData.billingMethod)) {
+      list.unshift({
+        label: formData.billingMethod,
+        value: formData.billingMethod,
+      });
+    }
+    return list;
+  }, [lookups.billingMethods, formData.billingMethod]);
+
+  const revenueAccountOptions = useMemo(() => {
+    const list = [...(lookups.revenueAccounts || [])];
+    if (formData.revenueAccount && !list.some((ra) => ra.value === formData.revenueAccount || ra.id === formData.revenueAccount || ra.label === formData.revenueAccount)) {
+      list.unshift({
+        id: formData.revenueAccount,
+        label: formData.revenueAccount,
+        value: formData.revenueAccount,
+      });
+    }
+    return list;
+  }, [lookups.revenueAccounts, formData.revenueAccount]);
+
+  const expenseAccountOptions = useMemo(() => {
+    const list = [...(lookups.expenseAccounts || [])];
+    if (formData.expenseAccount && !list.some((ea) => ea.value === formData.expenseAccount || ea.id === formData.expenseAccount || ea.label === formData.expenseAccount)) {
+      list.unshift({
+        id: formData.expenseAccount,
+        label: formData.expenseAccount,
+        value: formData.expenseAccount,
+      });
+    }
+    return list;
+  }, [lookups.expenseAccounts, formData.expenseAccount]);
+
   // Mutations
   const createMutation = useMutation({
     mutationFn: (data) => createService(data),
@@ -100,7 +148,7 @@ export default function AddEditService() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.name.trim()) {
+    if (!formData.name?.trim()) {
       toast.error("Please enter a service name");
       return;
     }
@@ -168,8 +216,8 @@ export default function AddEditService() {
                 <SelectValue placeholder="Select Category" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.categories.map((c) => (
-                  <SelectItem key={c.id} value={c.value}>
+                {categoryOptions.map((c) => (
+                  <SelectItem key={c.id || c.value} value={c.value}>
                     {c.label}
                   </SelectItem>
                 ))}
@@ -189,7 +237,7 @@ export default function AddEditService() {
                 <SelectValue placeholder="Select Billing Method" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.billingMethods.map((bm) => (
+                {billingMethodOptions.map((bm) => (
                   <SelectItem key={bm.value} value={bm.value}>
                     {bm.label}
                   </SelectItem>
@@ -276,8 +324,8 @@ export default function AddEditService() {
                 <SelectValue placeholder="Select Revenue Account" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.revenueAccounts.map((ra) => (
-                  <SelectItem key={ra.value} value={ra.value}>
+                {revenueAccountOptions.map((ra) => (
+                  <SelectItem key={ra.id || ra.value} value={ra.value}>
                     {ra.label}
                   </SelectItem>
                 ))}
@@ -297,8 +345,8 @@ export default function AddEditService() {
                 <SelectValue placeholder="Select Expense Account" />
               </SelectTrigger>
               <SelectContent>
-                {lookups.expenseAccounts.map((ea) => (
-                  <SelectItem key={ea.value} value={ea.value}>
+                {expenseAccountOptions.map((ea) => (
+                  <SelectItem key={ea.id || ea.value} value={ea.value}>
                     {ea.label}
                   </SelectItem>
                 ))}

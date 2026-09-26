@@ -1,7 +1,8 @@
+import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
-// Static Initial Data for Resources matching Figma
+// Static Initial Fallback Data
 // ==========================================
 
 export const INITIAL_RESOURCES_STATS = [
@@ -39,135 +40,90 @@ export const INITIAL_RESOURCES_STATS = [
   },
 ];
 
-export const INITIAL_RESOURCES_LIST = [
-  {
-    id: 1,
-    code: "RES-2026-001",
-    name: "Name",
-    fullName: "Conference Hall A",
-    address: "Address",
-    fullAddress: "Building 3, Floor 2, Main Campus",
-    capacity: "Capacity",
-    numericCapacity: 20,
-    ownership: "Ownership",
-    fullOwnership: "Rented",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Al-Amal Real Estate Asset #101",
-    status: "Rented",
-    fixedAsset: "Asset #101 - Conference Hall",
-    notes: "Primary venue for clinical symposiums and seminars.",
-  },
-  {
-    id: 2,
-    code: "RES-2026-002",
-    name: "Name",
-    fullName: "Auditorium 2",
-    address: "Address",
-    fullAddress: "North Wing, Floor 1",
-    capacity: "Capacity",
-    numericCapacity: 50,
-    ownership: "Ownership",
-    fullOwnership: "Owned",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Hospital Fixed Asset #204",
-    status: "Rented",
-    fixedAsset: "Asset #204 - Main Auditorium",
-    notes: "Tiered seating auditorium equipped with 4K projection.",
-  },
-  {
-    id: 3,
-    code: "RES-2026-003",
-    name: "Name",
-    fullName: "Lab Room 4",
-    address: "Address",
-    fullAddress: "Clinical Training Center, Room 402",
-    capacity: "Capacity",
-    numericCapacity: 15,
-    ownership: "Ownership",
-    fullOwnership: "Rented",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Medical Tech Leasing #305",
-    status: "Rented",
-    fixedAsset: "Asset #305 - Simulation Lab",
-    notes: "Simulation workstations with compressed air and dental units.",
-  },
-  {
-    id: 4,
-    code: "RES-2026-004",
-    name: "Name",
-    fullName: "Grand Ballroom",
-    address: "Address",
-    fullAddress: "Palace Hotel & Convention Center",
-    capacity: "Capacity",
-    numericCapacity: 200,
-    ownership: "Ownership",
-    fullOwnership: "Rented",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Palace Hospitality Group",
-    status: "Rented",
-    fixedAsset: "Asset #401 - External Ballroom",
-    notes: "Annual gala and large congress partner facility.",
-  },
-  {
-    id: 5,
-    code: "RES-2026-005",
-    name: "Name",
-    fullName: "Seminar Room B",
-    address: "Address",
-    fullAddress: "East Tower, Floor 3",
-    capacity: "Capacity",
-    numericCapacity: 25,
-    ownership: "Ownership",
-    fullOwnership: "Owned",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Hospital Fixed Asset #108",
-    status: "Rented",
-    fixedAsset: "Asset #108 - Seminar Suite",
-    notes: "Interactive workshop layout with modular conference tables.",
-  },
-  {
-    id: 6,
-    code: "RES-2026-006",
-    name: "Name",
-    fullName: "Studio 1 - Photography",
-    address: "Address",
-    fullAddress: "Media Center, Suite 10",
-    capacity: "Capacity",
-    numericCapacity: 10,
-    ownership: "Ownership",
-    fullOwnership: "Rented",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Creative Studio Rentals",
-    status: "Rented",
-    fixedAsset: "Asset #501 - Studio Equipment",
-    notes: "Professional studio lighting and facial scanner booth.",
-  },
-  {
-    id: 7,
-    code: "RES-2026-007",
-    name: "Name",
-    fullName: "Simulation Lab 3",
-    address: "Address",
-    fullAddress: "Academy Building, Floor 2",
-    capacity: "Capacity",
-    numericCapacity: 30,
-    ownership: "Ownership",
-    fullOwnership: "Owned",
-    supplierAsset: "Supplier / Asset",
-    supplierAssetName: "Internal Asset #312",
-    status: "Rented",
-    fixedAsset: "Asset #312 - Simulation Lab 3",
-    notes: "Microscopes and phantom heads for endodontic practice.",
-  },
+export const RESOURCE_STATUSES = [
+  { id: "Active", name: "Active" },
+  { id: "UnderMaintenance", name: "Under Maintenance" },
+  { id: "OutOfService", name: "Out of Service" },
+  { id: "Rented", name: "Rented" },
 ];
 
-// Memory store for dynamic CRUD operations
-let memoryResources = [...INITIAL_RESOURCES_LIST];
+export const OWNERSHIP_TYPES = [
+  { id: "Owned", name: "Owned" },
+  { id: "Leased", name: "Leased / Rented" },
+];
 
 // ==========================================
-// Service API Functions
+// Service API Functions - Connected to Backend
 // ==========================================
 
+/**
+ * Fetch Lookups for Resources (Suppliers, Fixed Assets, Statuses, Ownerships)
+ */
+export async function getResourceLookups() {
+  try {
+    const [suppliersRes, assetsRes] = await Promise.allSettled([
+      apiHandler({
+        endPoint: "Inventory/Suppliers/GetAllSuppliers/GetAll",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "accounting/FixedAssets/GetAllFixedAssets/all",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+    ]);
+
+    // Parse Suppliers
+    let suppliers = [];
+    if (suppliersRes.status === "fulfilled") {
+      const raw = suppliersRes.value?.data || suppliersRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      suppliers = list.map((s) => ({
+        id: s.id,
+        name: s.supplier_Name || s.name || "Supplier",
+        phone: s.phone || s.contact_Number || "",
+      }));
+    }
+
+    // Parse Fixed Assets
+    let fixedAssets = [];
+    if (assetsRes.status === "fulfilled") {
+      const raw = assetsRes.value?.data || assetsRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      fixedAssets = list.map((a) => ({
+        id: a.id,
+        name: a.asset_Name || a.name || `Asset #${a.asset_Code || a.code || a.id}`,
+        code: a.asset_Code || a.code || "",
+      }));
+    }
+
+    return {
+      status: 200,
+      data: {
+        suppliers,
+        fixedAssets,
+        statuses: RESOURCE_STATUSES,
+        ownerships: OWNERSHIP_TYPES,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching resource lookups:", error);
+    return {
+      status: 200,
+      data: {
+        suppliers: [],
+        fixedAssets: [],
+        statuses: RESOURCE_STATUSES,
+        ownerships: OWNERSHIP_TYPES,
+      },
+    };
+  }
+}
+
+/**
+ * Get Stats for Resources
+ */
 export async function getResourcesStats() {
   return {
     status: 200,
@@ -175,183 +131,249 @@ export async function getResourcesStats() {
   };
 }
 
+/**
+ * Get Paginated & Filtered Resources List
+ * Endpoint: GET /api/inventory/Resource/GetAll
+ */
 export async function getResources(params = {}) {
-  const {
-    PageNumber = 1,
-    PageSize = 10,
-    SearchTerm,
-    Status,
-    Ownership,
-  } = params;
+  try {
+    const queryParams = {
+      PageNumber: params.PageNumber || 1,
+      PageSize: params.PageSize || 10,
+      Search: params.SearchTerm || params.Search || undefined,
+      Ownership: params.Ownership && params.Ownership !== "all" ? params.Ownership : undefined,
+      Status: params.Status && params.Status !== "all" ? params.Status : undefined,
+      IsActive: params.IsActive !== undefined ? params.IsActive : undefined,
+      SortBy: params.SortBy || undefined,
+      SortDirection: params.SortDirection || undefined,
+    };
 
-  let filtered = [...memoryResources];
+    const res = await apiHandler({
+      endPoint: "inventory/Resource/GetAll",
+      method: "GET",
+      params: queryParams,
+    });
 
-  if (SearchTerm) {
-    const term = SearchTerm.toLowerCase();
-    filtered = filtered.filter(
-      (r) =>
-        String(r.id).includes(term) ||
-        r.name?.toLowerCase().includes(term) ||
-        r.fullName?.toLowerCase().includes(term) ||
-        r.address?.toLowerCase().includes(term) ||
-        r.fullAddress?.toLowerCase().includes(term) ||
-        r.ownership?.toLowerCase().includes(term) ||
-        r.supplierAsset?.toLowerCase().includes(term)
-    );
-  }
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const totalCount = raw?.totalCount || items.length;
+    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-  if (Status && Status.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (r) => r.status?.toLowerCase() === Status.toLowerCase()
-    );
-  }
+    const mappedItems = items.map((r, idx) => {
+      const capacityVal = r.maxCapacity ?? r.capacity ?? 20;
+      const ownershipLabel = r.ownership === "Leased" ? "Rented" : (r.ownership || "Owned");
+      const supplierAssetLabel = r.ownership === "Leased"
+        ? (r.supplierName || r.supplier_Name || "Supplier Asset")
+        : (r.fixedAssetName || r.fixedAsset_Name || `Internal Asset #${String(r.id || idx + 1).substring(0, 4)}`);
 
-  if (Ownership && Ownership.toLowerCase() !== "all") {
-    filtered = filtered.filter(
-      (r) =>
-        r.ownership?.toLowerCase() === Ownership.toLowerCase() ||
-        r.fullOwnership?.toLowerCase() === Ownership.toLowerCase()
-    );
-  }
+      return {
+        id: r.id || idx + 1,
+        code: r.referenceNumber || r.code || `RES-${String(r.id || idx + 1).substring(0, 6)}`,
+        name: r.name || r.resource_Name || "Unnamed Resource",
+        fullName: r.name || r.resource_Name || "Unnamed Resource",
+        address: r.address || r.location || "Main Facility",
+        fullAddress: r.address || r.location || "Main Facility",
+        capacity: String(capacityVal),
+        numericCapacity: capacityVal,
+        ownership: ownershipLabel,
+        fullOwnership: ownershipLabel,
+        rawOwnership: r.ownership || "Owned",
+        supplierAsset: supplierAssetLabel,
+        supplierAssetName: supplierAssetLabel,
+        supplierId: r.supplierId,
+        fixedAssetId: r.fixedAssetId,
+        status: r.status || (r.isActive ? "Active" : "OutOfService"),
+        isActive: r.isActive ?? true,
+        dailyRentalCost: r.dailyRentalCost ?? 0,
+        contractStartDate: r.contractStartDate ? new Date(r.contractStartDate).toISOString().split("T")[0] : "",
+        contractEndDate: r.contractEndDate ? new Date(r.contractEndDate).toISOString().split("T")[0] : "",
+        notes: r.notes || "",
+      };
+    });
 
-  const totalCount = filtered.length;
-  const totalPages = Math.ceil(totalCount / PageSize) || 1;
-  const startIndex = (PageNumber - 1) * PageSize;
-  const items = filtered.slice(startIndex, startIndex + PageSize);
-
-  return {
-    status: 200,
-    data: {
-      items,
-      totalCount,
-      totalPages,
-      pageNumber: PageNumber,
-      pageSize: PageSize,
-    },
-  };
-}
-
-export async function getResourceById(id) {
-  const resource = memoryResources.find((r) => String(r.id) === String(id));
-  if (!resource) {
     return {
       status: 200,
       data: {
-        id: Number(id) || 1,
-        code: "RES-2026-001",
-        name: "Name",
-        fullName: "Conference Hall A",
-        address: "Address",
-        fullAddress: "Building 3, Floor 2",
-        capacity: "Capacity",
-        numericCapacity: 20,
-        ownership: "Ownership",
-        fullOwnership: "Rented",
-        supplierAsset: "Supplier / Asset",
-        supplierAssetName: "Al-Amal Real Estate Asset #101",
-        status: "Active",
-        fixedAsset: "Fixed Asset",
-        notes: "Primary venue for clinical symposiums and seminars.",
+        items: mappedItems,
+        totalCount,
+        totalPages,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching resources:", error);
+    return {
+      status: 200,
+      data: {
+        items: [],
+        totalCount: 0,
+        totalPages: 1,
+        pageNumber: params.PageNumber || 1,
+        pageSize: params.PageSize || 10,
       },
     };
   }
-  return {
-    status: 200,
-    data: resource,
-  };
 }
 
-export async function createResource(payload) {
-  const newId = memoryResources.length > 0 ? Math.max(...memoryResources.map((r) => r.id)) + 1 : 1;
-  const newResource = {
-    id: newId,
-    code: `RES-2026-${String(newId).padStart(3, "0")}`,
-    name: payload.name || "Name",
-    fullName: payload.name || "Resource Name",
-    address: payload.address || "Address",
-    fullAddress: payload.address || "Main Address",
-    capacity: payload.capacity ? String(payload.capacity) : "Capacity",
-    numericCapacity: Number(payload.capacity) || 0,
-    ownership: payload.ownership || "Ownership",
-    fullOwnership: payload.ownership || "Owned",
-    supplierAsset: payload.supplierAsset || payload.fixedAsset || "Supplier / Asset",
-    supplierAssetName: payload.fixedAsset || "Asset #101",
-    status: payload.status || "Rented",
-    fixedAsset: payload.fixedAsset || "Fixed Asset",
-    notes: payload.notes || "",
-  };
+/**
+ * Get Resource Details by ID
+ * Endpoint: GET /api/inventory/Resource/{id}
+ */
+export async function getResourceById(id) {
+  try {
+    const res = await apiHandler({
+      endPoint: `inventory/Resource/${id}`,
+      method: "GET",
+    });
+    const r = res?.data || res || {};
 
-  memoryResources = [newResource, ...memoryResources];
-  return {
-    status: 200,
-    data: newResource,
-    message: "Resource created successfully!",
-  };
-}
+    const capacityVal = r.maxCapacity ?? r.capacity ?? 20;
+    const ownershipLabel = r.ownership === "Leased" ? "Rented" : (r.ownership || "Owned");
+    const supplierAssetLabel = r.ownership === "Leased"
+      ? (r.supplierName || r.supplier_Name || "Supplier Asset")
+      : (r.fixedAssetName || r.fixedAsset_Name || `Internal Asset #${String(id).substring(0, 4)}`);
 
-export async function updateResource(id, payload) {
-  const index = memoryResources.findIndex((r) => String(r.id) === String(id));
-  if (index !== -1) {
-    memoryResources[index] = {
-      ...memoryResources[index],
-      ...payload,
-      numericCapacity: payload.capacity !== undefined ? Number(payload.capacity) : memoryResources[index].numericCapacity,
-    };
     return {
       status: 200,
-      data: memoryResources[index],
-      message: "Resource updated successfully!",
+      data: {
+        id: r.id || id,
+        code: r.referenceNumber || r.code || `RES-${String(id).substring(0, 8)}`,
+        name: r.name || r.resource_Name || "Resource",
+        fullName: r.name || r.resource_Name || "Resource",
+        address: r.address || r.location || "Main Facility",
+        fullAddress: r.address || r.location || "Main Facility",
+        capacity: String(capacityVal),
+        numericCapacity: capacityVal,
+        ownership: ownershipLabel,
+        fullOwnership: ownershipLabel,
+        rawOwnership: r.ownership || "Owned",
+        supplierAsset: supplierAssetLabel,
+        supplierAssetName: supplierAssetLabel,
+        supplierId: r.supplierId || "",
+        supplierName: r.supplierName || "",
+        fixedAssetId: r.fixedAssetId || "",
+        fixedAssetName: r.fixedAssetName || "",
+        status: r.status || (r.isActive ? "Active" : "OutOfService"),
+        isActive: r.isActive ?? true,
+        dailyRentalCost: r.dailyRentalCost ?? 0,
+        contractStartDate: r.contractStartDate ? new Date(r.contractStartDate).toISOString().split("T")[0] : "",
+        contractEndDate: r.contractEndDate ? new Date(r.contractEndDate).toISOString().split("T")[0] : "",
+        notes: r.notes || "Primary facility venue for clinical symposiums and operations.",
+      },
     };
+  } catch (error) {
+    console.error("Error fetching resource by id:", error);
+    throw error;
   }
+}
+
+/**
+ * Create New Resource
+ * Endpoint: POST /api/inventory/Resource/Create
+ */
+export async function createResource(data) {
+  const isLeased = data.ownership === "Leased" || data.ownership === "Rented";
+
+  const payload = {
+    name: data.name,
+    referenceNumber: data.referenceNumber || data.code || `RES-${Date.now().toString().slice(-4)}`,
+    maxCapacity: Number(data.capacity || data.maxCapacity) || 20,
+    ownership: isLeased ? "Leased" : "Owned",
+    supplierId: isLeased && data.supplierId ? data.supplierId : null,
+    contractStartDate: isLeased && data.contractStartDate ? new Date(data.contractStartDate).toISOString() : null,
+    contractEndDate: isLeased && data.contractEndDate ? new Date(data.contractEndDate).toISOString() : null,
+    dailyRentalCost: isLeased && data.dailyRentalCost ? Number(data.dailyRentalCost) : null,
+  };
+
+  const res = await apiHandler({
+    endPoint: "inventory/Resource/Create",
+    method: "POST",
+    body: payload,
+  });
+
+  return {
+    status: 201,
+    data: res?.data || res,
+    message: "Resource created successfully",
+  };
+}
+
+/**
+ * Update Existing Resource
+ * Endpoint: POST /api/inventory/Resource/Update
+ */
+export async function updateResource(id, data) {
+  const isLeased = data.ownership === "Leased" || data.ownership === "Rented";
+
+  const payload = {
+    id: id,
+    name: data.name,
+    referenceNumber: data.referenceNumber || data.code || `RES-${String(id).slice(0, 6)}`,
+    maxCapacity: Number(data.capacity || data.maxCapacity) || 20,
+    ownership: isLeased ? "Leased" : "Owned",
+    fixedAssetId: !isLeased && data.fixedAssetId ? data.fixedAssetId : null,
+    supplierId: isLeased && data.supplierId ? data.supplierId : null,
+    contractStartDate: isLeased && data.contractStartDate ? new Date(data.contractStartDate).toISOString() : null,
+    contractEndDate: isLeased && data.contractEndDate ? new Date(data.contractEndDate).toISOString() : null,
+    dailyRentalCost: isLeased && data.dailyRentalCost ? Number(data.dailyRentalCost) : null,
+  };
+
+  const res = await apiHandler({
+    endPoint: "inventory/Resource/Update",
+    method: "POST",
+    body: payload,
+  });
+
   return {
     status: 200,
-    message: "Resource updated!",
+    data: res?.data || res,
+    message: "Resource updated successfully",
+  };
+}
+
+/**
+ * Change Resource Status
+ * Endpoint: POST /api/inventory/Resource/{id}/ChangeStatus?newStatus={status}
+ */
+export async function changeResourceStatus({ id, status }) {
+  let mappedStatus = "Active";
+  const s = String(status).toLowerCase();
+  if (s === "active") mappedStatus = "Active";
+  else if (s.includes("maintenance")) mappedStatus = "UnderMaintenance";
+  else if (s.includes("out") || s.includes("inactive")) mappedStatus = "OutOfService";
+  else if (s.includes("rented") || s.includes("leased")) mappedStatus = "Rented";
+
+  const res = await apiHandler({
+    endPoint: `inventory/Resource/${id}/ChangeStatus`,
+    method: "POST",
+    params: { newStatus: mappedStatus },
+  });
+
+  return {
+    status: 200,
+    data: res?.data || res,
+    message: `Status updated to ${mappedStatus}`,
+  };
+}
+
+/**
+ * Toggle Resource Active Status
+ * Endpoint: POST /api/inventory/Resource/{id}/ToggleActive
+ */
+export async function toggleResourceActive(id) {
+  const res = await apiHandler({
+    endPoint: `inventory/Resource/${id}/ToggleActive`,
+    method: "POST",
+  });
+
+  return {
+    status: 200,
+    data: res?.data || res,
+    message: "Resource status toggled successfully",
   };
 }
 
 export async function deleteResource(id) {
-  memoryResources = memoryResources.filter((r) => String(r.id) !== String(id));
-  return {
-    status: 200,
-    data: { success: true },
-    message: "Resource deleted successfully!",
-  };
-}
-
-export async function changeResourceStatus({ id, status }) {
-  const item = memoryResources.find((r) => String(r.id) === String(id));
-  if (item) {
-    item.status = status;
-  }
-  return {
-    status: 200,
-    data: { id, status },
-    message: "Resource status updated successfully!",
-  };
-}
-
-export async function getResourceLookups() {
-  return {
-    status: 200,
-    data: {
-      addresses: [
-        { id: "addr-1", name: "Building 3, Floor 2, Main Campus" },
-        { id: "addr-2", name: "North Wing, Floor 1" },
-        { id: "addr-3", name: "Clinical Training Center, Room 402" },
-        { id: "addr-4", name: "Palace Hotel & Convention Center" },
-      ],
-      ownerships: [
-        { id: "owned", name: "Owned" },
-        { id: "rented", name: "Rented" },
-        { id: "leased", name: "Leased" },
-      ],
-      fixedAssets: [
-        { id: "asset-101", name: "Asset #101 - Conference Hall" },
-        { id: "asset-204", name: "Asset #204 - Main Auditorium" },
-        { id: "asset-305", name: "Asset #305 - Simulation Lab" },
-        { id: "asset-401", name: "Asset #401 - External Ballroom" },
-      ],
-      statuses: ["Active", "Rented", "Maintenance", "Inactive"],
-    },
-  };
+  return toggleResourceActive(id);
 }

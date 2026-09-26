@@ -118,9 +118,12 @@ export default function ServicesPage() {
         render: (row) => (
           <Link
             to={`/dashboard/appointments/services/edit/${row.id}`}
-            className="font-semibold text-primary hover:underline"
+            className="font-semibold text-primary hover:underline truncate max-w-[130px] inline-block"
+            title={row.productNumber || row.id}
           >
-            {row.id}
+            {row.productNumber && row.productNumber !== "-" 
+              ? row.productNumber 
+              : (String(row.id).length > 8 ? `${String(row.id).slice(0, 8)}...` : row.id)}
           </Link>
         ),
       },

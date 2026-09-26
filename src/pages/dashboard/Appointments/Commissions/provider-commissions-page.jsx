@@ -112,11 +112,11 @@ export default function ProviderCommissionsPage() {
 
   const handleAddRule = (e) => {
     e?.preventDefault();
-    if (!formData.provider) {
+    if (!formData.providerId && !formData.provider) {
       toast.error("Please select a provider");
       return;
     }
-    if (!formData.service) {
+    if (!formData.serviceId && !formData.service) {
       toast.error("Please select a service");
       return;
     }
@@ -343,10 +343,10 @@ export default function ProviderCommissionsPage() {
               <Select
                 value={formData.serviceId}
                 onValueChange={(val) => {
-                  const item = lookups.services.find((s) => s.id === val);
+                  const item = lookups.services.find((s) => s.id === val || s.variantId === val);
                   setFormData({
                     ...formData,
-                    serviceId: val,
+                    serviceId: item?.variantId || val,
                     service: item ? item.name : "",
                   });
                 }}

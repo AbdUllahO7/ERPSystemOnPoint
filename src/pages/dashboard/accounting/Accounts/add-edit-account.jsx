@@ -192,13 +192,8 @@ export default function AddEditAccount() {
                 render={({ field }) => (
                   <Select
                     key={field.value}
-<<<<<<< Updated upstream
                     value={field.value ? String(field.value) : "none"}
                     onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
-=======
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
->>>>>>> Stashed changes
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
                       <SelectValue placeholder="No Parent (Main Account)" />

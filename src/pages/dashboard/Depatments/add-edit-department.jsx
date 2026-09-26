@@ -12,13 +12,7 @@ import {
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   createDepartment,
   updateDepartment,
@@ -183,32 +177,15 @@ export default function AddEditDepartment() {
                 rules={{ required: true }}
                 render={({ field }) => (
                   <Select
-                    key={field.value}
-<<<<<<< Updated upstream
                     value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Manager Name" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {managers.map((manager) => (
-                        <SelectItem key={manager.managerId} value={String(manager.managerId)}>
-=======
-                    value={field.value || ""}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-11 bg-transparent">
                       <SelectValue placeholder="Select Manager Name" />
                     </SelectTrigger>
-
                     <SelectContent position="popper">
                       {managers.map((manager) => (
-                        <SelectItem
-                          key={manager.managerId}
-                          value={String(manager.managerId)}
-                        >
->>>>>>> Stashed changes
+                        <SelectItem key={manager.managerId} value={String(manager.managerId)}>
                           {manager.managerName}
                         </SelectItem>
                       ))}
@@ -235,22 +212,12 @@ export default function AddEditDepartment() {
                 render={({ field }) => (
                   <Select
                     key={field.value}
-<<<<<<< Updated upstream
                     value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Branch Name" />
-                    </SelectTrigger>
-=======
-                    value={field.value || ""}
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-11 bg-transparent">
                       <SelectValue placeholder="Select Branch Name" />
                     </SelectTrigger>
-
->>>>>>> Stashed changes
                     <SelectContent position="popper">
                       {branches.map((branch) => (
                         <SelectItem key={branch.id} value={String(branch.id)}>

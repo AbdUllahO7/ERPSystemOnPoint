@@ -52,8 +52,9 @@ export default function EventDetailsPage() {
       toast.success(res?.message || "Event status updated!");
       setIsStatusModalOpen(false);
     },
-    onError: () => {
-      toast.error("Failed to update status");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || "Failed to update status";
+      toast.error(msg);
     },
   });
 
@@ -67,12 +68,14 @@ export default function EventDetailsPage() {
     switch (s) {
       case "booked":
         return "bg-blue-50 text-[#0066d1]";
+      case "checkedin":
       case "checked-in":
         return "bg-emerald-50 text-emerald-600";
       case "completed":
         return "bg-slate-100 text-slate-700";
       case "canceled":
         return "bg-rose-50 text-rose-600 line-through";
+      case "noshow":
       case "no-show":
         return "bg-amber-50 text-amber-600";
       default:
@@ -88,8 +91,8 @@ export default function EventDetailsPage() {
     );
   }
 
-  const reservedCount = event.reserved ?? 1;
-  const maxCap = event.maxCapacity ?? 10;
+  const reservedCount = event.reserved ?? 0;
+  const maxCap = event.maxCapacity ?? 20;
   const remainingSeats = Math.max(0, maxCap - reservedCount);
   const capacityPercent = maxCap > 0 ? Math.min(100, Math.round((reservedCount / maxCap) * 100)) : 0;
   const reservationsList = event.reservations || [];
@@ -123,7 +126,7 @@ export default function EventDetailsPage() {
 
       {/* Top Grid: Left 8 cols (Event Details) + Right 4 cols (Capacity) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Event Details (8 cols) matching Image 3 */}
+        {/* Left: Event Details (8 cols) */}
         <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
           <h2 className="text-base font-bold text-slate-800">
             Event Details
@@ -140,14 +143,14 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-xs font-semibold text-slate-800">Service</p>
               <p className="text-xs text-slate-500 mt-1">
-                {event.service || "Service"}
+                {event.service || event.serviceName || "Service"}
               </p>
             </div>
 
             <div>
               <p className="text-xs font-semibold text-slate-800">Resource</p>
               <p className="text-xs text-slate-500 mt-1">
-                {event.resource || "Resource"}
+                {event.resource || event.resourceName || "Resource"}
               </p>
             </div>
           </div>
@@ -156,7 +159,7 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-xs font-semibold text-slate-800">Provider</p>
               <p className="text-xs text-slate-500 mt-1">
-                {event.provider || "Provider"}
+                {event.provider || event.providerName || "N/A"}
               </p>
             </div>
 
@@ -179,14 +182,14 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-xs font-semibold text-slate-800">Price</p>
               <p className="text-xs text-slate-500 mt-1">
-                {event.price || "Price"}
+                {event.price || "$0"}
               </p>
             </div>
 
             <div>
               <p className="text-xs font-semibold text-slate-800">Deposit</p>
               <p className="text-xs text-slate-500 mt-1">
-                {event.deposit || "Deposit"}
+                {event.deposit || "$0"}
               </p>
             </div>
 
@@ -195,13 +198,13 @@ export default function EventDetailsPage() {
               <p className="text-xs text-slate-500 mt-1">
                 {event.recurringDays && event.recurringDays.length > 0
                   ? event.recurringDays.join(", ")
-                  : "Sat, Mon, Wed"}
+                  : "N/A"}
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right: Capacity Card (4 cols) matching Image 3 */}
+        {/* Right: Capacity Card (4 cols) */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-4">
           <h2 className="text-base font-bold text-slate-800">
             Capacity
@@ -221,130 +224,79 @@ export default function EventDetailsPage() {
             </p>
           </div>
 
-          {/* Progress Bar matching mockup */}
-          <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden mt-3">
+          {/* Linear Progress Bar */}
+          <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
             <div
               className="bg-[#0066d1] h-full rounded-full transition-all duration-500"
               style={{ width: `${capacityPercent}%` }}
             />
           </div>
+
+          <div className="pt-2">
+            <p className="text-xs font-semibold text-slate-800 mb-1">
+              Status
+            </p>
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getStatusBadge(
+                event.status
+              )}`}
+            >
+              {event.status || "Booked"}
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* Bottom Card: Reservations on this Event matching Image 3 */}
-      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
-        <h2 className="text-base font-bold text-slate-800">
-          Reservations on this Event
-        </h2>
+      {/* Linked Reservations Section */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base font-bold text-slate-800">
+            Reservations ({reservationsList.length})
+          </h2>
+        </div>
 
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-xs">
-            <thead>
-              <tr className="border-b border-slate-100 text-slate-400 text-start font-medium">
-                <th className="py-3 px-4 text-start font-semibold text-slate-700">
-                  ID
-                </th>
-                <th className="py-3 px-4 text-start font-semibold text-slate-700">
-                  Customer
-                </th>
-                <th className="py-3 px-4 text-start font-semibold text-slate-700">
-                  Qty
-                </th>
-                <th className="py-3 px-4 text-start font-semibold text-slate-700">
-                  Status
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {reservationsList.length === 0 ? (
+        {reservationsList.length === 0 ? (
+          <div className="text-center py-8 text-slate-400 text-xs font-medium">
+            No customer reservations booked yet for this event.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="bg-slate-50/75 text-slate-700 font-semibold border-b border-slate-100">
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-slate-400">
-                    No reservations found for this event
-                  </td>
+                  <th className="py-3 px-4">Reservation ID</th>
+                  <th className="py-3 px-4">Customer</th>
+                  <th className="py-3 px-4">Quantity</th>
+                  <th className="py-3 px-4">Status</th>
                 </tr>
-              ) : (
-                reservationsList.map((item, idx) => (
-                  <tr
-                    key={idx}
-                    className="hover:bg-slate-50/60 transition-colors"
-                  >
-                    <td className="py-4 px-4 font-semibold text-[#0066d1]">
-                      {item.id}
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {reservationsList.map((resItem, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-3 px-4 font-semibold text-[#0066d1]">
+                      {resItem.id}
                     </td>
-                    <td className="py-4 px-4 text-slate-700 font-normal">
-                      {item.customer}
+                    <td className="py-3 px-4 text-slate-800 font-medium">
+                      {resItem.customerName || resItem.customer}
                     </td>
-                    <td className="py-4 px-4 text-slate-700 font-normal">
-                      {item.qty}
+                    <td className="py-3 px-4 font-semibold text-slate-800">
+                      {resItem.qty}
                     </td>
-                    <td className="py-4 px-4">
+                    <td className="py-3 px-4">
                       <span
                         className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${getStatusBadge(
-                          item.status
+                          resItem.status
                         )}`}
                       >
-                        {item.status}
+                        {resItem.status}
                       </span>
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Bottom Pagination matching Figma Image 3 */}
-        <div className="flex items-center justify-end gap-1.5 pt-4 border-t border-slate-100 text-xs">
-          <button
-            type="button"
-            disabled={page === 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="px-2.5 py-1 text-slate-600 hover:text-slate-900 disabled:opacity-40 cursor-pointer"
-          >
-            Pre
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage(1)}
-            className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center cursor-pointer ${
-              page === 1
-                ? "bg-[#0066d1] text-white"
-                : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            1
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage(2)}
-            className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center cursor-pointer ${
-              page === 2
-                ? "bg-[#0066d1] text-white"
-                : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            2
-          </button>
-          <span className="px-1 text-slate-400">...</span>
-          <button
-            type="button"
-            onClick={() => setPage(20)}
-            className={`w-7 h-7 rounded-lg text-xs font-semibold flex items-center justify-center cursor-pointer ${
-              page === 20
-                ? "bg-[#0066d1] text-white"
-                : "text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            20
-          </button>
-          <button
-            type="button"
-            onClick={() => setPage((p) => p + 1)}
-            className="px-2.5 py-1 text-slate-600 hover:text-slate-900 cursor-pointer"
-          >
-            Next
-          </button>
-        </div>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Change Status Modal */}
@@ -368,12 +320,15 @@ export default function EventDetailsPage() {
               </SelectTrigger>
               <SelectContent>
                 {lookups.statuses
-                  .filter((s) => s !== "All")
-                  .map((st) => (
-                    <SelectItem key={st} value={st}>
-                      {st}
-                    </SelectItem>
-                  ))}
+                  .map((st) => {
+                    const val = typeof st === "string" ? st : (st.id || st.name);
+                    const label = typeof st === "string" ? st : st.name;
+                    return (
+                      <SelectItem key={val} value={val}>
+                        {label}
+                      </SelectItem>
+                    );
+                  })}
               </SelectContent>
             </Select>
           </div>

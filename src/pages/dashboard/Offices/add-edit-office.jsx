@@ -1,16 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
-<<<<<<< Updated upstream
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-=======
->>>>>>> Stashed changes
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -216,17 +207,6 @@ export default function AddEditOffice() {
                     value={field.value ? String(field.value) : undefined}
                     onValueChange={field.onChange}
                   >
-<<<<<<< Updated upstream
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Department" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {departments.map((dept) => (
-                        <SelectItem key={dept.id || dept.department_Id} value={String(dept.id || dept.department_Id)}>
-                          {dept.departmentName || ""}
-                        </SelectItem>
-                      ))}
-=======
                     <SelectTrigger className="w-full h-11 bg-transparent">
                       <SelectValue placeholder="Select Department" />
                     </SelectTrigger>
@@ -239,7 +219,6 @@ export default function AddEditOffice() {
                           </SelectItem>
                         );
                       })}
->>>>>>> Stashed changes
                     </SelectContent>
                   </Select>
                 )}
@@ -261,40 +240,23 @@ export default function AddEditOffice() {
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
-<<<<<<< Updated upstream
                   <Select
                     key={field.value}
                     value={field.value ? String(field.value) : undefined}
                     onValueChange={field.onChange}
-                    disabled={!departmentId}
+                    disabled={!departmentId || isFetchingSections || (departmentId && sections.length === 0 && !isFetchingSections)}
                   >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Section" />
+                    <SelectTrigger className="w-full h-11 bg-transparent">
+                      <SelectValue
+                        placeholder={
+                          !departmentId
+                            ? "Select Section"
+                            : isFetchingSections
+                              ? "Loading sections..."
+                              : "Select Section"
+                        }
+                      />
                     </SelectTrigger>
-                    <SelectContent position="popper">
-                      {Array.isArray(sections) && sections.map((sec) => (
-                        <SelectItem key={sec.id || sec.section_Id} value={String(sec.id || sec.section_Id)}>
-                          {sec.name || sec.section_Name || sec.section_name}
-                        </SelectItem>
-                      ))}
-=======
-                    <Select
-                      key={field.value}
-                      value={field.value ? String(field.value) : undefined}
-                      onValueChange={field.onChange}
-                      disabled={!departmentId || isFetchingSections || (departmentId && sections.length === 0 && !isFetchingSections)}
-                    >
-                      <SelectTrigger className="w-full h-11 bg-transparent">
-                        <SelectValue
-                          placeholder={
-                            !departmentId
-                              ? "Select Section"
-                              : isFetchingSections
-                                ? "Loading sections..."
-                                : "Select Section"
-                          }
-                        />
-                      </SelectTrigger>
                     <SelectContent position="popper">
                       {Array.isArray(sections) &&
                         sections.map((sec) => {
@@ -305,19 +267,15 @@ export default function AddEditOffice() {
                             </SelectItem>
                           );
                         })}
->>>>>>> Stashed changes
                     </SelectContent>
                   </Select>
                 )}
               />
-<<<<<<< Updated upstream
-=======
               {!isFetchingSections && sections.length === 0 && departmentId && (
                 <p className="text-sm text-muted-foreground mt-1">
                   No sections available for this department
                 </p>
               )}
->>>>>>> Stashed changes
               {errors.sector_id && (
                 <span className="text-red-500 text-xs">Required</span>
               )}

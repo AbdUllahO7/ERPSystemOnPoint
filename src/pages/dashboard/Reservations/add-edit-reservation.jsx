@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Calendar as CalendarIcon, Wallet } from "lucide-react";
+import { Plus, Trash2, Calendar as CalendarIcon, Wallet, Loader2 } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { DynamicModal } from "@/components/common/dynamic-modal";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,7 @@ export default function AddEditReservation() {
     bookingEvent: "",
     quantity: "1",
     invoicePatternId: "",
-    paymentMethod: "",
+    paymentMethod: "Cash",
     costCenterId: "",
     notes: "",
     amountPaid: "0",
@@ -49,7 +49,7 @@ export default function AddEditReservation() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [paymentForm, setPaymentForm] = useState({
     amount: "",
-    dueDate: "2025-07-23",
+    dueDate: new Date().toISOString().split("T")[0],
     notes: "",
   });
 
@@ -62,7 +62,11 @@ export default function AddEditReservation() {
     customers: [],
     events: [],
     invoicePatterns: [],
-    paymentMethods: [],
+    paymentMethods: [
+      { id: "Cash", name: "Cash" },
+      { id: "Credit", name: "Credit / Card" },
+      { id: "Bank", name: "Bank Transfer" },
+    ],
     costCenters: [],
   };
 
@@ -77,14 +81,14 @@ export default function AddEditReservation() {
     if (reservationData?.data) {
       const r = reservationData.data;
       setFormData({
-        customerId: r.customerId || "1",
-        customer: r.customer || "Customer",
-        bookingEventId: r.bookingEventId || "1",
-        bookingEvent: r.bookingEvent || "Event",
+        customerId: r.customerId || "",
+        customer: r.customerName || "Customer",
+        bookingEventId: r.bookingEventId || "",
+        bookingEvent: r.eventName || "Event",
         quantity: String(r.quantity || 1),
-        invoicePatternId: r.invoicePatternId || "1",
-        paymentMethod: r.paymentMethod || "Card",
-        costCenterId: r.costCenterId || "1",
+        invoicePatternId: r.invoicePatternId || "",
+        paymentMethod: r.paymentMethod || "Cash",
+        costCenterId: r.costCenterId || "",
         notes: r.notes || "",
         amountPaid: String(r.numericPaid || 0),
         discountAmount: "0",
@@ -95,26 +99,31 @@ export default function AddEditReservation() {
     }
   }, [reservationData]);
 
+  // Set default pattern / costCenter when lookups load
+  useEffect(() => {
+    if (!formData.invoicePatternId && lookups.invoicePatterns.length > 0) {
+      setFormData((prev) => ({ ...prev, invoicePatternId: lookups.invoicePatterns[0].id }));
+    }
+    if (!formData.costCenterId && lookups.costCenters.length > 0) {
+      setFormData((prev) => ({ ...prev, costCenterId: lookups.costCenters[0].id }));
+    }
+  }, [lookups]);
+
   // Save Mutation
   const saveMutation = useMutation({
     mutationFn: (data) =>
       isEdit ? updateReservation(id, data) : createReservation(data),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries(["reservations"]);
       queryClient.invalidateQueries(["reservation", id]);
       toast.success(
-        isEdit
-          ? "Reservation updated successfully!"
-          : "Reservation created successfully!"
+        res?.message || (isEdit ? "Reservation updated successfully!" : "Reservation created successfully!")
       );
       navigate("/dashboard/reservations");
     },
-    onError: () => {
-      toast.error(
-        isEdit
-          ? "Failed to update reservation!"
-          : "Failed to create reservation!"
-      );
+    onError: (err) => {
+      const msg = err?.response?.data?.message || (isEdit ? "Failed to update reservation!" : "Failed to create reservation!");
+      toast.error(msg);
     },
   });
 
@@ -137,9 +146,9 @@ export default function AddEditReservation() {
       paymentSchedule: [...prev.paymentSchedule, newPayment],
     }));
 
-    setPaymentForm({ amount: "", dueDate: "2025-07-23", notes: "" });
+    setPaymentForm({ amount: "", dueDate: new Date().toISOString().split("T")[0], notes: "" });
     setIsPaymentModalOpen(false);
-    toast.success("Payment schedule installment added!");
+    toast.success("Payment installment added!");
   };
 
   const handleRemovePayment = (paymentId) => {
@@ -151,11 +160,11 @@ export default function AddEditReservation() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (!formData.customer) {
+    if (!formData.customerId && !formData.customer) {
       toast.error("Please select a customer");
       return;
     }
-    if (!formData.bookingEvent) {
+    if (!formData.bookingEventId && !formData.bookingEvent) {
       toast.error("Please select a booking event");
       return;
     }
@@ -167,7 +176,7 @@ export default function AddEditReservation() {
       {/* Page Title with Breadcrumb & Top Right Save Button */}
       <PageTitle
         title={isEdit ? "Edit Reservation" : "Add Reservations"}
-        breadcrumbs={[
+        breadcrumbLinks={[
           { label: "Reservations", href: "/dashboard/reservations" },
           { label: isEdit ? "Edit Reservation" : "Add Reservations" },
         ]}
@@ -176,14 +185,17 @@ export default function AddEditReservation() {
           <Button
             onClick={handleSubmit}
             disabled={saveMutation.isPending || isLoading}
-            className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 py-2 rounded-lg font-medium shadow-sm transition-all"
+            className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 py-2 rounded-xl font-medium shadow-xs transition-all cursor-pointer"
           >
+            {saveMutation.isPending && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
+            )}
             {saveMutation.isPending ? "Saving..." : "Save"}
           </Button>
         }
       />
 
-      {/* Form Content - 3 White Sections */}
+      {/* Form Content */}
       <div className="space-y-6">
         {/* Section 1: Reservation Info */}
         <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
@@ -200,7 +212,7 @@ export default function AddEditReservation() {
               <Select
                 value={formData.customerId}
                 onValueChange={(val) => {
-                  const cust = lookups.customers.find((c) => c.id === val);
+                  const cust = lookups.customers.find((c) => String(c.id) === String(val));
                   setFormData({
                     ...formData,
                     customerId: val,
@@ -208,12 +220,12 @@ export default function AddEditReservation() {
                   });
                 }}
               >
-                <SelectTrigger className="w-full h-11 rounded-lg border-slate-200 bg-white">
+                <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
                   <SelectValue placeholder="Select Customer" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.customers.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
+                    <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
                     </SelectItem>
                   ))}
@@ -228,21 +240,22 @@ export default function AddEditReservation() {
               <Select
                 value={formData.bookingEventId}
                 onValueChange={(val) => {
-                  const ev = lookups.events.find((e) => e.id === val);
+                  const ev = lookups.events.find((e) => String(e.id) === String(val));
                   setFormData({
                     ...formData,
                     bookingEventId: val,
                     bookingEvent: ev?.name || "Event",
+                    amountPaid: ev?.advancePayment ? String(ev.advancePayment) : formData.amountPaid,
                   });
                 }}
               >
-                <SelectTrigger className="w-full h-11 rounded-lg border-slate-200 bg-white">
+                <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
                   <SelectValue placeholder="Select Booking Event" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.events.map((e) => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name}
+                    <SelectItem key={e.id} value={String(e.id)}>
+                      {e.name} {e.price ? `($${e.price})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -251,15 +264,17 @@ export default function AddEditReservation() {
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Quantity (9 remaining)
+                Quantity
               </Label>
               <Input
-                placeholder="Select Provider"
+                type="number"
+                min="1"
+                placeholder="1"
                 value={formData.quantity}
                 onChange={(e) =>
                   setFormData({ ...formData, quantity: e.target.value })
                 }
-                className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
               />
             </div>
           </div>
@@ -276,12 +291,12 @@ export default function AddEditReservation() {
                   setFormData({ ...formData, invoicePatternId: val })
                 }
               >
-                <SelectTrigger className="w-full h-11 rounded-lg border-slate-200 bg-white">
+                <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
                   <SelectValue placeholder="Select Invoice Pattern" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.invoicePatterns.map((ip) => (
-                    <SelectItem key={ip.id} value={ip.id}>
+                    <SelectItem key={ip.id} value={String(ip.id)}>
                       {ip.name}
                     </SelectItem>
                   ))}
@@ -299,12 +314,12 @@ export default function AddEditReservation() {
                   setFormData({ ...formData, paymentMethod: val })
                 }
               >
-                <SelectTrigger className="w-full h-11 rounded-lg border-slate-200 bg-white">
+                <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
                   <SelectValue placeholder="Select Payment Method" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map((pm) => (
-                    <SelectItem key={pm.id} value={pm.name}>
+                    <SelectItem key={pm.id} value={pm.id}>
                       {pm.name}
                     </SelectItem>
                   ))}
@@ -317,17 +332,18 @@ export default function AddEditReservation() {
                 Cost Center
               </Label>
               <Select
-                value={formData.costCenterId}
+                value={formData.costCenterId || "none"}
                 onValueChange={(val) =>
-                  setFormData({ ...formData, costCenterId: val })
+                  setFormData({ ...formData, costCenterId: val === "none" ? "" : val })
                 }
               >
-                <SelectTrigger className="w-full h-11 rounded-lg border-slate-200 bg-white">
+                <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
                   <SelectValue placeholder="Select Cost Center" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">-- Default --</SelectItem>
                   {lookups.costCenters.map((cc) => (
-                    <SelectItem key={cc.id} value={cc.id}>
+                    <SelectItem key={cc.id} value={String(cc.id)}>
                       {cc.name}
                     </SelectItem>
                   ))}
@@ -342,12 +358,12 @@ export default function AddEditReservation() {
               Notes
             </Label>
             <Textarea
-              placeholder="Notes"
+              placeholder="Notes or special requirements..."
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
-              className="min-h-[100px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+              className="min-h-[100px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
             />
           </div>
         </div>
@@ -364,12 +380,13 @@ export default function AddEditReservation() {
                 Amount Paid
               </Label>
               <Input
+                type="number"
                 placeholder="0"
                 value={formData.amountPaid}
                 onChange={(e) =>
                   setFormData({ ...formData, amountPaid: e.target.value })
                 }
-                className="h-11 rounded-lg border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
               />
             </div>
 
@@ -378,12 +395,13 @@ export default function AddEditReservation() {
                 Discount Amount
               </Label>
               <Input
+                type="number"
                 placeholder="0"
                 value={formData.discountAmount}
                 onChange={(e) =>
                   setFormData({ ...formData, discountAmount: e.target.value })
                 }
-                className="h-11 rounded-lg border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
               />
             </div>
 
@@ -392,12 +410,13 @@ export default function AddEditReservation() {
                 Discount %
               </Label>
               <Input
+                type="number"
                 placeholder="0"
                 value={formData.discountPercent}
                 onChange={(e) =>
                   setFormData({ ...formData, discountPercent: e.target.value })
                 }
-                className="h-11 rounded-lg border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
               />
             </div>
           </div>
@@ -408,12 +427,13 @@ export default function AddEditReservation() {
                 Tax %
               </Label>
               <Input
+                type="number"
                 placeholder="0"
                 value={formData.taxPercent}
                 onChange={(e) =>
                   setFormData({ ...formData, taxPercent: e.target.value })
                 }
-                className="h-11 rounded-lg border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
               />
             </div>
           </div>
@@ -428,7 +448,7 @@ export default function AddEditReservation() {
             <Button
               type="button"
               onClick={() => setIsPaymentModalOpen(true)}
-              className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 rounded-xl font-medium text-xs h-10 gap-1.5 shadow-xs"
+              className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 rounded-xl font-medium text-xs h-10 gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
               Add
@@ -466,7 +486,7 @@ export default function AddEditReservation() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleRemovePayment(item.id)}
-                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50"
+                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
@@ -477,7 +497,7 @@ export default function AddEditReservation() {
         </div>
       </div>
 
-      {/* Add Payment Modal matching Image 4 */}
+      {/* Add Payment Modal */}
       <DynamicModal
         open={isPaymentModalOpen}
         onOpenChange={setIsPaymentModalOpen}
@@ -530,14 +550,14 @@ export default function AddEditReservation() {
               onChange={(e) =>
                 setPaymentForm({ ...paymentForm, notes: e.target.value })
               }
-              className="min-h-[90px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+              className="min-h-[90px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
             />
           </div>
 
           <div className="pt-2">
             <Button
               type="submit"
-              className="w-full bg-[#0066d1] hover:bg-[#0052a8] text-white py-3.5 h-auto rounded-xl font-medium text-sm transition-all"
+              className="w-full bg-[#0066d1] hover:bg-[#0052a8] text-white py-3.5 h-auto rounded-xl font-medium text-sm transition-all cursor-pointer"
             >
               Add
             </Button>

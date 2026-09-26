@@ -1,46 +1,22 @@
 import { apiHandler } from "@/lib/api-handler";
-import {
-  appointmentsDataStore,
-  setAppointmentsDataStore,
-} from "./appointments-list.service";
+import { getAllCustomers } from "@/lib/api";
 
 // ==========================================
-// Static Lookups for Add / Edit Appointments
+// Static Lookups & Fallbacks
 // ==========================================
 
 export const APPOINTMENT_LOOKUPS = {
-  customers: [
-    { id: "1", label: "Ahmed Khaled", value: "Ahmed Khaled" },
-    { id: "2", label: "Sarah Jenkins", value: "Sarah Jenkins" },
-    { id: "3", label: "Omar Al-Mansoor", value: "Omar Al-Mansoor" },
-    { id: "4", label: "Mona Salem", value: "Mona Salem" },
-    { id: "5", label: "David Miller", value: "David Miller" },
-    { id: "6", label: "Fatima Al-Sayed", value: "Fatima Al-Sayed" },
-    { id: "7", label: "Ali Hassan", value: "Ali Hassan" },
-    { id: "8", label: "Elena Rostova", value: "Elena Rostova" },
-  ],
-  services: [
-    { id: "1", label: "General Consultation", value: "General Consultation" },
-    { id: "2", label: "Dental Checkup", value: "Dental Checkup" },
-    { id: "3", label: "Dermatology Screening", value: "Dermatology Screening" },
-    { id: "4", label: "Physiotherapy Session", value: "Physiotherapy Session" },
-    { id: "5", label: "Eye Exam", value: "Eye Exam" },
-    { id: "6", label: "Blood Test Analysis", value: "Blood Test Analysis" },
-    { id: "7", label: "Cardiology Review", value: "Cardiology Review" },
-  ],
-  providers: [
-    { id: "1", label: "Dr. Rami Haddad", value: "Dr. Rami Haddad" },
-    { id: "2", label: "Dr. Michael Chen", value: "Dr. Michael Chen" },
-    { id: "3", label: "Dr. Layla Nour", value: "Dr. Layla Nour" },
-    { id: "4", label: "Dr. Karim Zaid", value: "Dr. Karim Zaid" },
-  ],
+  customers: [],
+  services: [],
+  providers: [],
   statuses: [
     "All",
     "Scheduled",
     "Confirmed",
-    "In Progress",
+    "CheckedIn",
     "Completed",
-    "No Show",
+    "Canceled",
+    "NoShow",
   ],
   currencies: [
     { label: "USD ($)", value: "USD" },
@@ -72,74 +48,120 @@ export const APPOINTMENT_LOOKUPS = {
 // ==========================================
 
 export async function getAppointmentLookups() {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: "Appointments/GetLookups", method: "GET" });
+  try {
+    const [customersRes, servicesRes, providersRes] = await Promise.allSettled([
+      apiHandler({ endPoint: "inventory/Customer/GetAllCustomers/all-customers", method: "GET", params: { PageSize: 100 } }),
+      apiHandler({ endPoint: "Inventory/Product/GetAll/GetAll", method: "GET", params: { PageSize: 100 } }),
+      apiHandler({ endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers", method: "GET", params: { PageSize: 100 } }),
+    ]);
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        data: APPOINTMENT_LOOKUPS,
-        status: 200,
-        message: "Lookups retrieved successfully",
-      });
-    }, 100);
-  });
+    const customersRaw = customersRes.status === "fulfilled" ? (customersRes.value?.data?.items || customersRes.value?.data || []) : [];
+    const servicesRaw = servicesRes.status === "fulfilled" ? (servicesRes.value?.data?.items || servicesRes.value?.data || []) : [];
+    const providersRaw = providersRes.status === "fulfilled" ? (providersRes.value?.data?.items || providersRes.value?.data || []) : [];
+
+    const customers = customersRaw.map((c) => ({
+      id: c.id,
+      label: c.name || c.companyName || "Unnamed Customer",
+      value: c.name || c.companyName || c.id,
+    }));
+
+    const services = servicesRaw.map((s) => ({
+      id: s.id,
+      label: s.name_Product || s.name || "Unnamed Service",
+      value: s.name_Product || s.name || s.id,
+      price: s.consumer_Price ?? s.consumerPrice ?? 0,
+      duration: s.default_Duration_Minutes || 30,
+    }));
+
+    const providers = providersRaw.map((p) => ({
+      id: p.id,
+      label: p.name || p.employeeName || p.hrEmployee?.name || "Service Provider",
+      value: p.name || p.employeeName || p.id,
+    }));
+
+    return {
+      data: {
+        ...APPOINTMENT_LOOKUPS,
+        customers: customers.length > 0 ? customers : APPOINTMENT_LOOKUPS.customers,
+        services: services.length > 0 ? services : APPOINTMENT_LOOKUPS.services,
+        providers: providers.length > 0 ? providers : APPOINTMENT_LOOKUPS.providers,
+      },
+      status: 200,
+      message: "Lookups retrieved successfully",
+    };
+  } catch (err) {
+    console.error("Error fetching appointment lookups:", err);
+    return {
+      data: APPOINTMENT_LOOKUPS,
+      status: 200,
+      message: "Fallback lookups",
+    };
+  }
+}
+
+export async function getAvailableTimeSlots(params = {}) {
+  try {
+    const res = await apiHandler({
+      endPoint: "inventory/ServiceAppointment/GetAvailableTimeSlots/available-slots",
+      method: "GET",
+      params: {
+        serviceProviderId: params.serviceProviderId,
+        date: params.date,
+        durationInMinutes: params.durationInMinutes || 30,
+      },
+    });
+    return res;
+  } catch (err) {
+    console.error("Failed to fetch available time slots:", err);
+    return { data: [] };
+  }
 }
 
 export async function createAppointment(payload) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: "Appointments/Create", method: "POST", data: payload });
+  try {
+    const res = await apiHandler({
+      endPoint: "inventory/ServiceAppointment/CreateAppointment",
+      method: "POST",
+      body: {
+        customerId: payload.customerId || undefined,
+        productVariantId: payload.productVariantId || payload.serviceId || undefined,
+        serviceProviderId: payload.serviceProviderId || payload.providerId || undefined,
+        appointmentDate: payload.appointmentDate || payload.date || new Date().toISOString(),
+        startTime: payload.startTime || "09:00:00",
+        endTime: payload.endTime || "09:30:00",
+        deposit: Number(payload.deposit || payload.amountPaidNow || 0),
+        unitOfMeasurementId: payload.unitOfMeasurementId || undefined,
+      },
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newId = appointmentsDataStore.length
-        ? Math.max(...appointmentsDataStore.map((a) => a.id)) + 1
-        : 1;
-      const newRecord = {
-        id: newId,
-        total: `$${payload.amountPaidNow || payload.price || 60}`,
-        price: payload.amountPaidNow || payload.price || "60",
-        currency: payload.currency || "USD",
-        isInvoiced: true,
-        paymentSchedules: payload.paymentSchedules || [],
-        ...payload,
-      };
-      setAppointmentsDataStore([newRecord, ...appointmentsDataStore]);
-      resolve({
-        data: newRecord,
-        status: 201,
-        message: "Appointment created successfully",
-      });
-    }, 200);
-  });
+    return {
+      status: 201,
+      data: res?.data || res,
+      message: "Appointment created successfully",
+    };
+  } catch (err) {
+    console.error("Failed to create appointment:", err);
+    throw err;
+  }
 }
 
 export async function updateAppointment(id, payload) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: `Appointments/Update/${id}`, method: "PUT", data: payload });
+  try {
+    if (payload.status) {
+      await apiHandler({
+        endPoint: "inventory/ServiceAppointment/ChangeAppointmentStatus",
+        method: "POST",
+        params: { appointmentId: id, newStatus: payload.status },
+      });
+    }
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const index = appointmentsDataStore.findIndex(
-        (a) => String(a.id) === String(id)
-      );
-      if (index !== -1) {
-        appointmentsDataStore[index] = {
-          ...appointmentsDataStore[index],
-          ...payload,
-        };
-        resolve({
-          data: appointmentsDataStore[index],
-          status: 200,
-          message: "Appointment updated successfully",
-        });
-      } else {
-        resolve({
-          data: payload,
-          status: 200,
-          message: "Appointment updated successfully",
-        });
-      }
-    }, 200);
-  });
+    return {
+      status: 200,
+      data: payload,
+      message: "Appointment updated successfully",
+    };
+  } catch (err) {
+    console.error(`Failed to update appointment ${id}:`, err);
+    throw err;
+  }
 }

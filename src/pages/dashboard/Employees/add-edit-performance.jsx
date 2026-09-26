@@ -1,16 +1,7 @@
 import React, { useEffect } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
-<<<<<<< Updated upstream
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-=======
->>>>>>> Stashed changes
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -134,17 +125,10 @@ export default function AddEditPerformance() {
               render={({ field }) => (
                 <Select
                   key={field.value}
-<<<<<<< Updated upstream
                   value={field.value ? String(field.value) : undefined}
                   onValueChange={field.onChange}
                 >
-                  <SelectTrigger className="w-full h-9 bg-transparent">
-=======
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
                   <SelectTrigger className="w-full h-11 bg-transparent">
->>>>>>> Stashed changes
                     <SelectValue placeholder="Select Type" />
                   </SelectTrigger>
                   <SelectContent position="popper">

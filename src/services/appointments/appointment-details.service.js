@@ -1,71 +1,72 @@
 import { apiHandler } from "@/lib/api-handler";
-import {
-  appointmentsDataStore,
-  INITIAL_APPOINTMENTS_LIST,
-} from "./appointments-list.service";
 
 // ==========================================
 // Service Methods: Appointment Details Page
 // ==========================================
 
 export async function getAppointmentById(id) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: `Appointments/GetById/${id}`, method: "GET" });
+  try {
+    const res = await apiHandler({
+      endPoint: `inventory/ServiceAppointment/GetAppointmentById/${id}`,
+      method: "GET",
+    });
 
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const found = appointmentsDataStore.find((a) => String(a.id) === String(id));
-      if (found) {
-        resolve({
-          data: found,
-          status: 200,
-          message: "Appointment retrieved successfully",
-        });
-      } else {
-        resolve({
-          data: appointmentsDataStore[0] || INITIAL_APPOINTMENTS_LIST[0],
-          status: 200,
-          message: "Appointment retrieved successfully",
-        });
-      }
-    }, 150);
-  });
+    const a = res?.data || res || {};
+    return {
+      status: 200,
+      data: {
+        id: a.id || id,
+        customer: a.customerName || a.customer?.name || "Customer",
+        service: a.serviceName || a.productVariant?.name || "Service",
+        provider: a.serviceProviderName || a.serviceProvider?.name || "Service Provider",
+        date: a.appointmentDate ? a.appointmentDate.split("T")[0] : new Date().toISOString().split("T")[0],
+        time: a.startTime && a.endTime ? `${a.startTime} – ${a.endTime}` : (a.time || "09:00 – 09:30"),
+        total: `$${a.totalAmount || a.deposit || 60}`,
+        price: String(a.totalAmount || a.deposit || "60"),
+        currency: a.currency || "USD",
+        status: a.status || "Scheduled",
+        isInvoiced: Boolean(a.isInvoiced || a.invoiceId),
+        notes: a.notes || "",
+        billingMethod: a.billingMethod || "per-visit",
+        paymentMethod: a.paymentMethod || "Cash",
+        costCenter: a.costCenter || "Main Clinic",
+        warehouse: a.warehouse || "Central Warehouse",
+        amountPaidNow: String(a.deposit || a.amountPaidNow || "0"),
+        materialDetails: a.materialDetails || "",
+        paymentSchedules: a.paymentSchedules || [],
+        raw: a,
+      },
+      message: "Appointment retrieved successfully",
+    };
+  } catch (err) {
+    console.error(`Failed to get appointment ${id}:`, err);
+    throw err;
+  }
+}
+
+export async function generateInvoiceForAppointment(appointmentId) {
+  try {
+    const res = await apiHandler({
+      endPoint: "inventory/ServiceAppointment/GenerateInvoiceForAppointment",
+      method: "POST",
+      body: { appointmentId },
+    });
+    return res;
+  } catch (err) {
+    console.error(`Failed to generate invoice for appointment ${appointmentId}:`, err);
+    throw err;
+  }
 }
 
 export async function addPaymentSchedule(appointmentId, scheduleData) {
-  // Real API call when ready:
-  // return apiHandler({ endPoint: `Appointments/${appointmentId}/PaymentSchedule`, method: "POST", data: scheduleData });
-
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const scheduleItem = {
-        id: Date.now(),
-        amount: scheduleData.amount,
-        date:
-          scheduleData.date ||
-          new Date().toLocaleDateString("en-US", {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          }),
-        notes: scheduleData.notes || "",
-      };
-
-      const target = appointmentsDataStore.find(
-        (a) => String(a.id) === String(appointmentId)
-      );
-      if (target) {
-        target.paymentSchedules = [
-          ...(target.paymentSchedules || []),
-          scheduleItem,
-        ];
-      }
-
-      resolve({
-        data: scheduleItem,
-        status: 201,
-        message: "Payment schedule added successfully",
-      });
-    }, 150);
-  });
+  return {
+    data: {
+      id: Date.now(),
+      amount: scheduleData.amount,
+      date: scheduleData.date || new Date().toLocaleDateString("en-US"),
+      notes: scheduleData.notes || "",
+    },
+    status: 201,
+    message: "Payment schedule added successfully",
+  };
 }
