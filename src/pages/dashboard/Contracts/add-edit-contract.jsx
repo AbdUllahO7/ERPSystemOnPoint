@@ -66,7 +66,7 @@ export default function AddEditContractPage() {
   }, [isEdit, contractData]);
 
   const mutation = useMutation({
-    mutationFn: (payload) => isEdit ? updateContract({ ...payload, contractId: id }) : createContract(payload),
+    mutationFn: (payload) => isEdit ? updateContract(payload) : createContract(payload),
     onSuccess: () => {
       queryClient.invalidateQueries(["getAllContracts"]);
       queryClient.invalidateQueries(["getContractsByEmployeeId"]);
@@ -98,6 +98,8 @@ export default function AddEditContractPage() {
     }
 
     if (isEdit) {
+      formData.append("ContractId", id);
+      formData.append("Id", id);
       formData.append("IsActive", form.isActive);
     }
     

@@ -2,8 +2,12 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 // ✨ إنشاء Axios instance بمواصفات أمان ومهلة زمنية
+const defaultBaseURL = import.meta.env.DEV
+  ? "/api/"
+  : "https://apierp.onpoint-teasting.com/api/";
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://apierp.onpoint-teasting.com/api/",
+  baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
   timeout: 20000, // 20 ثانية مهلة زمنية للطلب لمنع تعليق المتصفح
   headers: {
     "Accept": "application/json",

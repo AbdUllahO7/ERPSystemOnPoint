@@ -981,12 +981,33 @@ export async function getChartOfAccounts(params) {
 // ACCOUNTING INVOICE PATTERNS
 // ==========================================
 
-export async function getAllInvoicePatterns(params) {
-  return apiHandler({
-    endPoint: "accounting/InvoicePatterns/GetAll",
-    method: "GET",
-    params,
-  });
+export async function getAllInvoicePatterns(params = {}) {
+  const normalizedParams = {
+    ...params,
+    pageNumber: params.pageNumber || params.PageNumber || 1,
+    pageSize: params.pageSize || params.PageSize || 10,
+    PageNumber: params.PageNumber || params.pageNumber || 1,
+    PageSize: params.PageSize || params.pageSize || 10,
+  };
+
+  try {
+    return await apiHandler({
+      endPoint: "accounting/InvoicePatterns/GetAll",
+      method: "GET",
+      params: normalizedParams,
+    });
+  } catch (error) {
+    // Fallback if backend follows the accounting convention GetAllPatterns/all
+    try {
+      return await apiHandler({
+        endPoint: "accounting/InvoicePatterns/GetAllPatterns/all",
+        method: "GET",
+        params: normalizedParams,
+      });
+    } catch {
+      throw error;
+    }
+  }
 }
 
 export async function getInvoicePatternById(id) {
@@ -1659,7 +1680,7 @@ export async function getCustomerProjects(data) {
   return apiHandler({
     endPoint: "inventory/CustomerProjects/GetAllProjects/GetAll",
     method: "GET",
-    body: data,
+    params: data,
   });
 }
 
@@ -1751,7 +1772,7 @@ export async function updateCustomerFollowUp(data) {
 
 export async function deleteCustomerFollowUp(id) {
   return apiHandler({
-    endPoint: `crm/FollowUpCustomer/delete${id}`,
+    endPoint: `crm/FollowUpCustomer/delete/${id}`,
     method: "POST",
   });
 }
@@ -1774,7 +1795,7 @@ export async function updateFollowUpLead(data) {
 
 export async function deleteFollowUpLead(id) {
   return apiHandler({
-    endPoint: `crm/FollowUpLead/delete${id}`,
+    endPoint: `crm/FollowUpLead/delete/${id}`,
     method: "POST",
   });
 }

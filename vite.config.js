@@ -27,4 +27,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    proxy: {
+      "/api": {
+        target: "https://apierp.onpoint-teasting.com",
+        changeOrigin: true,
+        secure: false,
+      },
+    },
+  },
 })
