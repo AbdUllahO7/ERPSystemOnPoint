@@ -53,7 +53,8 @@ export default function InvoicePatternsPage() {
     queryFn: () => getAllInvoicePatterns(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const rawList = data?.data?.items || (Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []));
+  const displayRows = Array.isArray(rawList) ? rawList : [];
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 

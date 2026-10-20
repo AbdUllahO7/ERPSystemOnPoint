@@ -19,6 +19,7 @@ import {
   getLeafAccounts,
   getWarehouses,
   getAllCostCenters,
+  getAllCurrencies,
 } from "../../../../lib/api";
 import toast from "react-hot-toast";
 
@@ -66,6 +67,11 @@ export default function AddEditInvoicePattern() {
   const { data: costCentersData } = useQuery({
     queryKey: ["getAllCostCenters"],
     queryFn: () => getAllCostCenters({ pageNumber: 1, pageSize: 100 }),
+  });
+
+  const { data: currenciesData } = useQuery({
+    queryKey: ["getAllCurrencies"],
+    queryFn: () => getAllCurrencies({ pageNumber: 1, pageSize: 100 }),
   });
 
   const { data: patternData, isLoading: isLoadingPattern } = useQuery({
@@ -143,6 +149,7 @@ export default function AddEditInvoicePattern() {
   const accounts = accountsData?.data?.items || [];
   const warehouses = warehousesData?.data?.items || [];
   const costCenters = costCentersData?.data?.items || [];
+  const currencies = currenciesData?.data?.items || [];
   const pageTitle = isEdit ? "Edit Invoice Pattern" : "Add Invoice Pattern";
 
   return (
@@ -413,6 +420,62 @@ export default function AddEditInvoicePattern() {
               {errors.paymentPay && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground leading-none">
+                Currency
+              </label>
+              <Controller
+                name="currency_id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Currency" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {currencies.map((curr) => (
+                        <SelectItem key={curr.id} value={String(curr.id)}>
+                          {curr.currency_Name || curr.name || curr.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-foreground leading-none">
+                Service Account
+              </label>
+              <Controller
+                name="service_Account_Id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value || ""}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-transparent">
+                      <SelectValue placeholder="Select Service Account" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {accounts.map((acc) => (
+                        <SelectItem key={acc.id} value={String(acc.id)}>
+                          {acc.account_Name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
             </div>
 
             <div className="space-y-2">

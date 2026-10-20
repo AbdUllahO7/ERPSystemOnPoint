@@ -58,12 +58,15 @@ export default function AddEditWarehouse() {
   useEffect(() => {
     if (isEdit && warehouseData?.data) {
       const wData = warehouseData.data;
+      const rawBranchId = wData.branch_Id ?? wData.branchId ?? wData.branch_id ?? wData.branch?.id ?? wData.branch?.branchId ?? "";
+      const rawManagerId = wData.manager_Id ?? wData.managerId ?? wData.manager_id ?? wData.manager?.id ?? wData.manager?.managerId ?? "";
+
       reset({
-        warehouse_Code: wData.warehouse_Code || "",
-        name_Warehouse: wData.name_Warehouse || "",
+        warehouse_Code: wData.warehouse_Code || wData.warehouseCode || "",
+        name_Warehouse: wData.name_Warehouse || wData.nameWarehouse || "",
         location: wData.location || "",
-        manager_Id: wData.manager_Id ? String(wData.manager_Id) : "",
-        branch_Id: wData.branch_Id ? String(wData.branch_Id) : "",
+        manager_Id: rawManagerId ? String(rawManagerId) : "",
+        branch_Id: rawBranchId ? String(rawBranchId) : "",
       });
     }
   }, [isEdit, warehouseData, reset]);

@@ -66,7 +66,7 @@ export async function getReservationLookups() {
   try {
     const [customersRes, eventsRes, patternsRes, costCentersRes] = await Promise.allSettled([
       apiHandler({
-        endPoint: "inventory/Customer/GetAll",
+        endPoint: "inventory/Customer/GetAllCustomers/all-customers",
         method: "GET",
         params: { PageSize: 100, IsActive: true },
       }),

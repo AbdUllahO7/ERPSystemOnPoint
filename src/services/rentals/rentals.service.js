@@ -74,7 +74,7 @@ export async function getRentalLookups() {
   try {
     const [customersRes, resourcesRes, servicesRes, costCentersRes] = await Promise.allSettled([
       apiHandler({
-        endPoint: "inventory/Customer/GetAll",
+        endPoint: "inventory/Customer/GetAllCustomers/all-customers",
         method: "GET",
         params: { PageSize: 100, IsActive: true },
       }),
