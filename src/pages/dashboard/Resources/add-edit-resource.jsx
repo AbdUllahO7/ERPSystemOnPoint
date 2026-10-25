@@ -1,7 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
+import {
+  Loader2,
+  Building2,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
+  Calendar,
+  Layers,
+  DollarSign,
+  HelpCircle,
+} from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +37,9 @@ export default function AddEditResourcePage() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Initial resource state for impact analysis on edits
+  const [initialResource, setInitialResource] = useState(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -67,20 +80,38 @@ export default function AddEditResourcePage() {
   useEffect(() => {
     if (isEdit && resourceData?.data) {
       const r = resourceData.data;
-      setFormData({
+      const initial = {
         name: r.name || r.fullName || "",
         referenceNumber: r.code || r.referenceNumber || "",
         capacity: String(r.numericCapacity || r.capacity || 20),
-        ownership: r.rawOwnership || (r.ownership === "Rented" ? "Leased" : "Owned"),
+        ownership: r.rawOwnership === "Leased" ? "Leased" : "Owned",
         fixedAssetId: r.fixedAssetId || "",
         supplierId: r.supplierId || "",
         contractStartDate: r.contractStartDate || "",
         contractEndDate: r.contractEndDate || "",
         dailyRentalCost: String(r.dailyRentalCost || 0),
         notes: r.notes || "",
+      };
+      setFormData(initial);
+      setInitialResource({
+        capacity: Number(r.numericCapacity || r.capacity || 20),
+        contractEndDate: r.contractEndDate || "",
       });
     }
   }, [isEdit, resourceData]);
+
+  // Impact Analysis (Page 6: فحص أثر تخفيض السعة أو تقصير عقد الإيجار على الأحداث المرتبطة)
+  const isCapacityDecreased = useMemo(() => {
+    if (!isEdit || !initialResource) return false;
+    const current = Number(formData.capacity) || 0;
+    return current > 0 && current < initialResource.capacity;
+  }, [isEdit, initialResource, formData.capacity]);
+
+  const isContractShortened = useMemo(() => {
+    if (!isEdit || !initialResource?.contractEndDate || formData.ownership !== "Leased") return false;
+    if (!formData.contractEndDate) return false;
+    return new Date(formData.contractEndDate) < new Date(initialResource.contractEndDate);
+  }, [isEdit, initialResource, formData.contractEndDate, formData.ownership]);
 
   // Mutation for saving
   const saveMutation = useMutation({
@@ -103,10 +134,33 @@ export default function AddEditResourcePage() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (!formData.name) {
-      toast.error("Please enter resource name");
+    if (!formData.name.trim()) {
+      toast.error("يرجى إدخال اسم المورد (Resource name is required)");
       return;
     }
+
+    const cap = Number(formData.capacity);
+    if (!cap || cap <= 0) {
+      toast.error("السعة القصوى يجب أن تكون رقماً موجباً أكبر من صفر (Max Capacity must be > 0)");
+      return;
+    }
+
+    // Validation matching Page 6 rules
+    if (formData.ownership === "Leased") {
+      if (!formData.supplierId || formData.supplierId === "none") {
+        toast.error("المورد المستأجر يتطلب تحديد المورد/المالك (SupplierId is required for leased resources)");
+        return;
+      }
+      if (!formData.contractStartDate || !formData.contractEndDate) {
+        toast.error("يجب تحديد تاريخ بداية ونهاية عقد الاستئجار (Contract Start and End Dates are required)");
+        return;
+      }
+      if (new Date(formData.contractEndDate) < new Date(formData.contractStartDate)) {
+        toast.error("تاريخ نهاية العقد يجب أن يكون لاحقاً لتاريخ البداية (End date must be after start date)");
+        return;
+      }
+    }
+
     saveMutation.mutate(formData);
   };
 
@@ -144,6 +198,54 @@ export default function AddEditResourcePage() {
           Save
         </Button>
       </div>
+
+      {/* Page 6 Guidance Alert (فهم النظام: الموارد) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-4 bg-blue-50/90 border-r-4 border-blue-600 rounded-xl text-xs space-y-1.5">
+          <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
+            <Building2 className="w-4 h-4 text-blue-600" />
+            الموارد: المكان أو الأصل (Resources & Assets):
+          </p>
+          <p className="text-blue-900 leading-relaxed">
+            قاعة، سيارة، جهاز أو مساحة تستخدمها عند تقديم خدمة أو تنظيم حدث. المورد المملوك يتطلب ربطه بأصل ثابت (FixedAssetId)، بينما المورد المستأجر يتطلب مورداً (SupplierId) وفترة عقد استئجار.
+          </p>
+        </div>
+
+        <div className="p-4 bg-teal-50/90 border-r-4 border-teal-600 rounded-xl text-xs space-y-1.5">
+          <p className="font-bold text-teal-950 flex items-center gap-1.5 text-sm">
+            <DollarSign className="w-4 h-4 text-teal-600" />
+            تكلفة المورد وسعر بيعه (Cost vs Price):
+          </p>
+          <p className="text-teal-900 leading-relaxed">
+            الحقل DailyRentalCost يمثل تكلفة استئجار المورد على شركتك. أما BookingEvent.Price فيمثل سعر الحدث وفق قاعدة التسعير التي تحددها، وليس مطلوباً أن يتساويا.
+          </p>
+        </div>
+      </div>
+
+      {/* Impact Analysis Alerts on Edit (Page 6) */}
+      {isCapacityDecreased && (
+        <div className="p-3.5 bg-amber-50 border-r-4 border-amber-600 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold">فحص أثر تخفيض السعة (Capacity Impact Warning):</p>
+            <p className="leading-relaxed">
+              لقد قمت بتخفيض السعة القصوى من <strong>{initialResource.capacity}</strong> إلى <strong>{formData.capacity}</strong>. يرجى التحقق من الأحداث والحجوزات المرتبطة مسبقاً بهذا المورد للتأكد من عدم تجاوز الحضور للسعة الجديدة.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {isContractShortened && (
+        <div className="p-3.5 bg-amber-50 border-r-4 border-amber-600 rounded-xl text-xs text-amber-900 flex items-start gap-2.5">
+          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-bold">فحص أثر تقصير عقد الإيجار (Lease Period Impact Warning):</p>
+            <p className="leading-relaxed">
+              لقد تم تقصير تاريخ نهاية عقد الاستئجار إلى <strong>{formData.contractEndDate}</strong> (السابق كان {initialResource.contractEndDate}). يرجى التحقق من الأحداث المستقبلية المجدولة بعد هذا التاريخ لتفادي التعارض التشغيلي.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Resource Info Card */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
@@ -214,17 +316,17 @@ export default function AddEditResourcePage() {
           {!isLeased ? (
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Linked Fixed Asset (Optional)
+                الأصل الثابت المرتبط (Fixed Asset)
               </Label>
               <Select
                 value={formData.fixedAssetId || "none"}
                 onValueChange={(val) => handleInputChange("fixedAssetId", val === "none" ? "" : val)}
               >
                 <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                  <SelectValue placeholder="Select Fixed Asset" />
+                  <SelectValue placeholder="اختر الأصل الثابت" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-- None --</SelectItem>
+                  <SelectItem value="none">-- غير مرتبط بأصل ثابت دفتري --</SelectItem>
                   {lookups.fixedAssets.map((fa) => (
                     <SelectItem key={fa.id} value={String(fa.id)}>
                       {fa.name}
@@ -232,21 +334,24 @@ export default function AddEditResourcePage() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-slate-500 leading-tight">
+                المورد المملوك يربط بأصل ثابت، ويمكن تركه فارغاً إذا كان لا يمثل أصلاً دفترياً.
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Supplier / Landlord
+                المورد / المالك (Supplier) <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.supplierId || "none"}
                 onValueChange={(val) => handleInputChange("supplierId", val === "none" ? "" : val)}
               >
                 <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                  <SelectValue placeholder="Select Supplier" />
+                  <SelectValue placeholder="اختر المورد أو المالك" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-- Select Supplier --</SelectItem>
+                  <SelectItem value="none">-- اختر المورد أو المؤجر --</SelectItem>
                   {lookups.suppliers.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.name}
@@ -254,13 +359,16 @@ export default function AddEditResourcePage() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-slate-500 leading-tight">
+                المورد المستأجر يتطلب اختيار المورد أو الجهة المؤجرة.
+              </p>
             </div>
           )}
 
           {isLeased && (
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Daily Rental Cost
+                تكلفة الإيجار اليومية (Daily Rental Cost)
               </Label>
               <Input
                 type="number"
@@ -269,6 +377,9 @@ export default function AddEditResourcePage() {
                 onChange={(e) => handleInputChange("dailyRentalCost", e.target.value)}
                 className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
               />
+              <p className="text-[11px] text-slate-500 leading-tight">
+                تكلفة استئجار المورد على شركتك (لا تشترط التساوي مع سعر بيع الحدث للعميل).
+              </p>
             </div>
           )}
         </div>
@@ -278,7 +389,7 @@ export default function AddEditResourcePage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Contract Start Date
+                تاريخ بداية عقد الاستئجار (Contract Start Date) <span className="text-rose-500">*</span>
               </Label>
               <Input
                 type="date"
@@ -290,7 +401,7 @@ export default function AddEditResourcePage() {
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Contract End Date
+                تاريخ نهاية عقد الاستئجار (Contract End Date) <span className="text-rose-500">*</span>
               </Label>
               <Input
                 type="date"

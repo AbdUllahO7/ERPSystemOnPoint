@@ -139,7 +139,7 @@ export default function SupplierDetails() {
           {activeTab === "Contacts" && <ContactsTab supplierId={id} />}
           {activeTab === "Projects" && <ProjectsTab />}
           {activeTab === "Contracts" && <ContractsTab supplierId={id} />}
-          {activeTab === "Invoices" && <InvoicesTab />}
+          {activeTab === "Invoices" && <InvoicesTab supplierId={id} />}
           {activeTab === "Follow-Ups" && <FollowUpsTab />}
           {activeTab === "Files" && <FilesTab supplierId={id} />}
           {activeTab === "Notes" && <NotesTab supplierId={id} />}

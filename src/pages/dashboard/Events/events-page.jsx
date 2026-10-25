@@ -1,7 +1,20 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Calendar,
+  Sparkles,
+  Building2,
+  Users,
+  Clock,
+  Layers,
+  CheckCircle2,
+} from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
@@ -30,6 +43,7 @@ export default function EventsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [deleteRowId, setDeleteRowId] = useState(null);
   const [selectedService, setSelectedService] = useState("all");
+  const [selectedResource, setSelectedResource] = useState("all");
   const [selectedProvider, setSelectedProvider] = useState("all");
 
   const navigate = useNavigate();
@@ -62,9 +76,10 @@ export default function EventsPage() {
       SearchTerm: search || undefined,
       Status: activeTab !== "all" ? activeTab : undefined,
       Service: selectedService !== "all" ? selectedService : undefined,
+      ResourceId: selectedResource !== "all" ? selectedResource : undefined,
       Provider: selectedProvider !== "all" ? selectedProvider : undefined,
     }),
-    [page, search, activeTab, selectedService, selectedProvider]
+    [page, search, activeTab, selectedService, selectedResource, selectedProvider]
   );
 
   // Events Query
@@ -101,19 +116,19 @@ export default function EventsPage() {
         items: [
           {
             key: "view",
-            label: "View Details",
+            label: "View Details (عرض التفاصيل)",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/events/${row.id}`),
           },
           {
             key: "edit",
-            label: "Edit Event",
+            label: "Edit Event (تعديل الحدث)",
             icon: Pencil,
             onClick: (row) => navigate(`/dashboard/events/edit/${row.id}`),
           },
           {
             key: "delete",
-            label: "Delete",
+            label: "Delete (حذف)",
             icon: Trash2,
             variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
@@ -124,80 +139,168 @@ export default function EventsPage() {
     [navigate]
   );
 
+  const getStatusBadge = (status) => {
+    const s = String(status || "").toLowerCase();
+    if (s === "booked") return "bg-blue-50 text-[#0066d1] border-blue-200";
+    if (s.includes("checked")) return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    if (s === "completed") return "bg-slate-100 text-slate-700 border-slate-200";
+    if (s === "canceled") return "bg-rose-50 text-rose-700 border-rose-200 line-through";
+    if (s.includes("show")) return "bg-amber-50 text-amber-700 border-amber-200";
+    return "bg-blue-50 text-[#0066d1] border-blue-200";
+  };
+
   const columns = useMemo(
     () => [
       {
-        accessorKey: "id",
-        header: "ID",
+        accessorKey: "code",
+        header: "Ref / Code",
         cell: ({ row }) => (
           <Link
             to={`/dashboard/events/${row.original.id}`}
-            className="font-semibold text-[#0066d1] hover:underline text-xs"
+            className="font-semibold text-[#0066d1] hover:underline text-xs flex items-center gap-1.5 font-mono"
           >
-            {row.original.id}
+            <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            {row.original.code || `EVT-${row.original.id}`}
           </Link>
         ),
       },
       {
         accessorKey: "title",
-        header: "Title",
+        header: "Event & Service",
         cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.title}
-          </span>
+          <div>
+            <span className="text-xs font-semibold text-slate-800 block">
+              {row.original.title}
+            </span>
+            <span className="text-[11px] text-slate-500">
+              {row.original.service || "Standard Service"}
+            </span>
+          </div>
         ),
       },
       {
         accessorKey: "resource",
-        header: "Resource",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.resource}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "provider",
-        header: "Provider",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.provider}
-          </span>
-        ),
+        header: "Resource / Venue",
+        cell: ({ row }) => {
+          const resId = row.original.resourceId;
+          return (
+            <div>
+              {resId ? (
+                <Link
+                  to={`/dashboard/resources/${resId}`}
+                  className="text-xs font-medium text-slate-800 hover:text-[#0066d1] hover:underline flex items-center gap-1"
+                >
+                  <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                  {row.original.resource}
+                </Link>
+              ) : (
+                <span className="text-xs font-normal text-slate-700">
+                  {row.original.resource}
+                </span>
+              )}
+              <span className="text-[10px] text-slate-400 block">
+                {row.original.provider || "General Host"}
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "period",
-        header: "Period",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.period}
-          </span>
-        ),
+        header: "Period & Time",
+        cell: ({ row }) => {
+          const isOvernight = row.original.startTime && row.original.endTime && row.original.endTime <= row.original.startTime;
+          return (
+            <div>
+              <span className="text-xs font-medium text-slate-700 block">
+                {row.original.period || "All Season"}
+              </span>
+              <span className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                <Clock className="w-3 h-3 text-slate-400" />
+                {row.original.time}
+                {isOvernight && (
+                  <span className="text-[9px] font-bold text-indigo-700 bg-indigo-50 px-1 rounded border border-indigo-200">
+                    Overnight
+                  </span>
+                )}
+              </span>
+            </div>
+          );
+        },
       },
       {
-        accessorKey: "time",
-        header: "Time",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.time}
-          </span>
-        ),
+        accessorKey: "recurringDays",
+        header: "Recurring Days",
+        cell: ({ row }) => {
+          const days = row.original.recurringDays || [];
+          if (days.length === 0) {
+            return <span className="text-xs text-slate-400">Daily / Single</span>;
+          }
+          return (
+            <div className="flex flex-wrap gap-1 max-w-[130px]">
+              {days.map((d) => (
+                <span
+                  key={d}
+                  className="inline-block px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-[#0066d1] border border-blue-200/60"
+                >
+                  {d}
+                </span>
+              ))}
+            </div>
+          );
+        },
       },
       {
         accessorKey: "price",
         header: "Price",
         cell: ({ row }) => (
-          <span className="text-xs font-semibold text-[#0066d1]">
-            {row.original.price}
-          </span>
+          <div>
+            <span className="text-xs font-bold text-[#0066d1]">
+              {row.original.price}
+            </span>
+            {row.original.deposit && (
+              <span className="text-[10px] text-slate-400 block">
+                عربون: {row.original.deposit}
+              </span>
+            )}
+          </div>
         ),
       },
       {
         accessorKey: "reservedMax",
-        header: "Reserved / Max",
+        header: "Capacity (Reserved / Max)",
+        cell: ({ row }) => {
+          const reserved = row.original.reserved || 0;
+          const max = row.original.maxCapacity || 20;
+          const pct = max > 0 ? Math.min(100, Math.round((reserved / max) * 100)) : 0;
+          return (
+            <div className="space-y-1 min-w-[85px]">
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                <span>{reserved}/{max}</span>
+                <span className="text-[10px] text-slate-400 font-normal">{pct}%</span>
+              </div>
+              <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    pct >= 100 ? "bg-rose-500" : pct >= 75 ? "bg-amber-500" : "bg-[#0066d1]"
+                  }`}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "status",
+        header: "Status",
         cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.reserved}/{row.original.maxCapacity || 20}
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getStatusBadge(
+              row.original.status
+            )}`}
+          >
+            {row.original.status || "Booked"}
           </span>
         ),
       },
@@ -209,9 +312,37 @@ export default function EventsPage() {
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Events"
-        infoTooltip="Manage and organize events, schedule workshops, and track attendance capacity."
+        title="Events & Bookings (الأحداث والأيام المتكررة)"
+        infoTooltip="طرح الخدمات في موارد ومواعيد محددة مع ضبط الأيام المتكررة، السعة المحجوزة، وأسعار التذاكر."
       />
+
+      {/* Page 7 System Guidance Banner */}
+      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
+                <Sparkles className="w-3.5 h-3.5" />
+                07 / فهم النظام: الأحداث والأيام المتكررة
+              </span>
+              <span className="text-xs text-slate-500">طرح خدمة في مورد وموعد محددين، ثم فتحه للحجز</span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong>مثال:</strong> خدمة «دورة إنكليزي»، داخل «قاعة A»، من 1 إلى 30 نوفمبر، يومي الأحد والثلاثاء من 10 إلى 12. هذا <code>BookingEvent</code>؛ أما تسجيل عميل فيه فهو حجز منفصل <code>Reservation</code>. الحجز للدورة كاملة يمثل سعة مشتركة، بينما الحجز لكل جلسة مستقلة يتطلب مواعيد فرعية.
+            </p>
+          </div>
+          <div className="flex flex-wrap lg:flex-col gap-2 shrink-0 text-[11px] text-slate-600">
+            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>دورة كاملة: سعة مشتركة لجميع الجلسات</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+              <Layers className="w-3.5 h-3.5 text-amber-600" />
+              <span>جلسات مستقلة: مواعيد فرعية لكل يوم</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Top 4 Stats Cards matching mockup */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -273,7 +404,7 @@ export default function EventsPage() {
         columns={columns}
         isLoading={isLoading}
         rowActionsMenu={rowActionsMenu}
-        searchPlaceholder="Search by id or employee name..."
+        searchPlaceholder="ابحث باسم الحدث، الرقم المرجعي، أو القاعة..."
         searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);
@@ -290,7 +421,7 @@ export default function EventsPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Service
+                Service (الخدمة / الصنف)
               </Label>
               <Select
                 value={selectedService}
@@ -300,12 +431,12 @@ export default function EventsPage() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Service" />
+                  <SelectValue placeholder="All Services" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
+                  <SelectItem value="all">All Services (جميع الخدمات)</SelectItem>
                   {lookups.services.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
+                    <SelectItem key={s.id} value={String(s.id)}>
                       {s.name}
                     </SelectItem>
                   ))}
@@ -315,7 +446,32 @@ export default function EventsPage() {
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Provider
+                Resource (المكان / المورد)
+              </Label>
+              <Select
+                value={selectedResource}
+                onValueChange={(val) => {
+                  setSelectedResource(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All Resources" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Resources (جميع الموارد)</SelectItem>
+                  {lookups.resources.map((r) => (
+                    <SelectItem key={r.id} value={String(r.id)}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-600">
+                Provider (مقدم الخدمة)
               </Label>
               <Select
                 value={selectedProvider}
@@ -325,12 +481,12 @@ export default function EventsPage() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Provider" />
+                  <SelectValue placeholder="All Providers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Providers</SelectItem>
+                  <SelectItem value="all">All Providers (جميع مقدمي الخدمات)</SelectItem>
                   {lookups.providers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
+                    <SelectItem key={p.id} value={String(p.id)}>
                       {p.name}
                     </SelectItem>
                   ))}
@@ -344,6 +500,7 @@ export default function EventsPage() {
                 size="sm"
                 onClick={() => {
                   setSelectedService("all");
+                  setSelectedResource("all");
                   setSelectedProvider("all");
                   setPage(1);
                 }}
@@ -355,7 +512,7 @@ export default function EventsPage() {
                 className="bg-[#0066d1] hover:bg-[#0052a8]"
                 onClick={() => setIsFilterOpen(false)}
               >
-                Apply
+                Apply Filters
               </Button>
             </div>
           </div>

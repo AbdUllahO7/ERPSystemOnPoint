@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,23 +11,87 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { FolderKanban, CheckCircle2, ArrowLeft } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getAllCustomers,
+  getCustomerContracts,
+  createCustomerProject,
+  updateCustomerProject,
+  getCustomerProjectById,
+} from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 export default function AddEditProject() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
-    name: "",
-    company: "",
-    email: "",
-    phone: "",
-    source: "",
-    status: "",
-    expectedValue: "",
-    responsible: "",
-    notes: "",
+    customerId: "",
+    contractId: "",
+    projectName: "",
+    status: "InProgress",
+    completionPercentage: "0",
+    value: "",
+    startDate: new Date().toISOString().split("T")[0],
+    endDate: new Date(Date.now() + 90 * 86400000).toISOString().split("T")[0],
+    description: "",
+  });
+
+  // Load Customers
+  const { data: customersData } = useQuery({
+    queryKey: ["allCustomersList"],
+    queryFn: () => getAllCustomers({ PageNumber: 1, PageSize: 100 }),
+  });
+
+  const customers = customersData?.data?.items || [];
+
+  // Load Contracts for selected Customer
+  const { data: contractsData } = useQuery({
+    queryKey: ["customerContractsForProject", formData.customerId],
+    queryFn: () => getCustomerContracts({ CustomerId: formData.customerId, PageSize: 50 }),
+    enabled: !!formData.customerId,
+  });
+
+  const contracts = contractsData?.data?.items || [];
+
+  // Load existing project if edit
+  const { data: existingProjectData, isLoading: isLoadingProject } = useQuery({
+    queryKey: ["projectDetails", id],
+    queryFn: () => getCustomerProjectById(id),
+    enabled: isEdit,
+  });
+
+  useEffect(() => {
+    if (existingProjectData?.data) {
+      const p = existingProjectData.data;
+      setFormData({
+        customerId: p.customerId || "",
+        contractId: p.contractId || "",
+        projectName: p.projectName || "",
+        status: p.status || "InProgress",
+        completionPercentage: (p.completionPercentage ?? 0).toString(),
+        value: (p.projectValue ?? p.value ?? "").toString(),
+        startDate: p.startDate ? p.startDate.split("T")[0] : "",
+        endDate: p.endDate ? p.endDate.split("T")[0] : "",
+        description: p.description || "",
+      });
+    }
+  }, [existingProjectData]);
+
+  const saveMutation = useMutation({
+    mutationFn: (data) =>
+      isEdit ? updateCustomerProject({ ...data, id }) : createCustomerProject(data),
+    onSuccess: () => {
+      toast.success(isEdit ? "Project updated successfully" : "Project created successfully");
+      queryClient.invalidateQueries(["allCustomerProjects"]);
+      navigate("/dashboard/crm/projects");
+    },
+    onError: (err) => {
+      toast.error(err?.message || (isEdit ? "Failed to update project" : "Failed to create project"));
+    },
   });
 
   const handleChange = (e) => {
@@ -35,155 +99,254 @@ export default function AddEditProject() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSelectChange = (name, value) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Submit mock lead data:", formData);
-    navigate("/dashboard/crm/leads");
+    if (!formData.projectName.trim()) {
+      toast.error("Project name is required");
+      return;
+    }
+    if (!formData.customerId) {
+      toast.error("Please select a customer");
+      return;
+    }
+
+    const payload = {
+      customerId: formData.customerId,
+      contractId: formData.contractId || null,
+      projectName: formData.projectName,
+      description: formData.description,
+      completionPercentage: Number(formData.completionPercentage) || 0,
+      value: Number(formData.value) || 0,
+      status: formData.status,
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : new Date().toISOString(),
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : new Date().toISOString(),
+    };
+
+    saveMutation.mutate(payload);
   };
 
+  if (isEdit && isLoadingProject) {
+    return <div className="p-8 text-center text-muted-foreground">Loading project details...</div>;
+  }
+
   return (
-    <div className="space-y-6 max-w-[1200px] mx-auto w-full">
+    <div className="space-y-6 max-w-[1000px] mx-auto w-full">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-foreground">
-            {isEdit ? "Edit Lead" : "Add Lead"}
-          </h2>
-          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/leads")}>Leads</span>
-            <span>/</span>
-            <span>{isEdit ? "Edit Lead" : "Add Lead"}</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => navigate("/dashboard/crm/projects")}
+            >
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <h2 className="text-xl font-bold text-foreground">
+              {isEdit ? "Edit Customer Project" : "Create Customer Project"}
+            </h2>
           </div>
+          <p className="text-sm text-muted-foreground mt-1 ml-10">
+            {isEdit
+              ? "Update project parameters, status, and milestone delivery"
+              : "Define project scope, client assignment, value, and timelines"}
+          </p>
         </div>
-        <Button onClick={handleSubmit} className="gap-2">
-          <Plus className="w-4 h-4" />
-          {isEdit ? "Save" : "Add"}
-        </Button>
+
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => navigate("/dashboard/crm/projects")}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            className="bg-blue-600 hover:bg-blue-700 font-medium"
+            disabled={saveMutation.isPending}
+          >
+            {saveMutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Project"}
+          </Button>
+        </div>
       </div>
 
-      <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6">
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Guidance Callout */}
+      <div className="p-4 bg-blue-50/80 border-r-4 border-blue-600 rounded-xl text-xs space-y-1">
+        <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
+          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+          قواعد ربط المشروع والفوترة (Project & Progress Rules):
+        </p>
+        <p className="text-blue-900 leading-relaxed">
+          يتضمن المشروع العميل والاسم والوصف والفترة والقيمة والحالة ونسبة الإنجاز، مع إمكانية ربطه بعقد. تذكر أن إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل؛ لذلك تُقاس نسبة الإنجاز بتقدم المهام ومراحل التنفيذ الفعلي المعتمدة.
+        </p>
+      </div>
+
+      {/* Form Card */}
+      <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-semibold text-foreground">Name</Label>
+            <Label className="text-sm font-semibold">
+              Project Name (اسم المشروع) <span className="text-red-500">*</span>
+            </Label>
             <Input
-              id="name"
-              name="name"
-              placeholder="Name"
-              className="h-11 bg-transparent"
-              value={formData.name}
+              name="projectName"
+              placeholder="e.g. مشروع تجهيز قاعة لشركة"
+              value={formData.projectName}
               onChange={handleChange}
+              required
+              className="h-11"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="company" className="text-sm font-semibold text-foreground">Company</Label>
-            <Input
-              id="company"
-              name="company"
-              placeholder="Company"
-              className="h-11 bg-transparent"
-              value={formData.company}
-              onChange={handleChange}
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">
+                Customer (العميل) <span className="text-red-500">*</span>
+              </Label>
+              <Select
+                value={formData.customerId}
+                onValueChange={(val) => {
+                  setFormData((prev) => ({ ...prev, customerId: val, contractId: "" }));
+                }}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select Customer" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.customerName || c.customer_Name || `Customer #${c.id.substring(0, 8)}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Linked Contract (عقد العميل - اختياري)</Label>
+              <Select
+                value={formData.contractId || "none"}
+                onValueChange={(val) =>
+                  setFormData((prev) => ({ ...prev, contractId: val === "none" ? "" : val }))
+                }
+                disabled={!formData.customerId}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue
+                    placeholder={
+                      !formData.customerId
+                        ? "Select a customer first"
+                        : contracts.length === 0
+                        ? "No active contracts found"
+                        : "Link to Customer Contract (Optional)"
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                  {contracts.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.title || c.contractNumber || `Contract #${c.id.substring(0, 8)}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Status (الحالة)</Label>
+              <Select
+                value={formData.status}
+                onValueChange={(val) => setFormData((prev) => ({ ...prev, status: val }))}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Select Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Planning">Planning (تخطيط)</SelectItem>
+                  <SelectItem value="InProgress">In Progress (قيد التنفيذ)</SelectItem>
+                  <SelectItem value="Pending">Pending (معلق)</SelectItem>
+                  <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled (ملغي)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Contractual Value ($) (القيمة)</Label>
+              <Input
+                type="number"
+                name="value"
+                placeholder="e.g. 5000"
+                value={formData.value}
+                onChange={handleChange}
+                min="0"
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <Label className="text-sm font-semibold">Progress (%) (نسبة الإنجاز)</Label>
+                <span className="text-xs text-blue-600 font-bold">{formData.completionPercentage}%</span>
+              </div>
+              <Input
+                type="number"
+                name="completionPercentage"
+                placeholder="0"
+                value={formData.completionPercentage}
+                onChange={handleChange}
+                min="0"
+                max="100"
+                className="h-11"
+              />
+              <span className="text-[10px] text-muted-foreground block">
+                مبني على إنجاز المهام وليس الفوترة
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">Start Date (تاريخ البداية)</Label>
+              <Input
+                type="date"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+                required
+                className="h-11"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-semibold">End Date (تاريخ النهاية)</Label>
+              <Input
+                type="date"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+                required
+                className="h-11"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold text-foreground">E-mail</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="e-mail"
-              className="h-11 bg-transparent"
-              value={formData.email}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-semibold text-foreground">Phone</Label>
-            <Input
-              id="phone"
-              name="phone"
-              placeholder="phone"
-              className="h-11 bg-transparent"
-              value={formData.phone}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="source" className="text-sm font-semibold text-foreground">Source</Label>
-            <Select value={formData.source} onValueChange={(val) => handleSelectChange("source", val)}>
-              <SelectTrigger className="!h-11 w-full bg-transparent">
-                <SelectValue placeholder="Select Source" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Facebook">Facebook</SelectItem>
-                <SelectItem value="Website">Website</SelectItem>
-                <SelectItem value="Referral">Referral</SelectItem>
-                <SelectItem value="LinkedIn">LinkedIn</SelectItem>
-                <SelectItem value="Google">Google</SelectItem>
-                <SelectItem value="Twitter">Twitter</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="status" className="text-sm font-semibold text-foreground">Status</Label>
-            <Select value={formData.status} onValueChange={(val) => handleSelectChange("status", val)}>
-              <SelectTrigger className="!h-11 w-full bg-transparent">
-                <SelectValue placeholder="Select Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Contacted">Contacted</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Quotation">Quotation</SelectItem>
-                <SelectItem value="Converted">Converted</SelectItem>
-                <SelectItem value="Lost">Lost</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="expectedValue" className="text-sm font-semibold text-foreground">Expected value</Label>
-            <Input
-              id="expectedValue"
-              name="expectedValue"
-              placeholder="Expected value"
-              className="h-11 bg-transparent"
-              value={formData.expectedValue}
-              onChange={handleChange}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="responsible" className="text-sm font-semibold text-foreground">Responsible</Label>
-            <Select value={formData.responsible} onValueChange={(val) => handleSelectChange("responsible", val)}>
-              <SelectTrigger className="!h-11 w-full bg-transparent">
-                <SelectValue placeholder="Select Responsible" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="John Doe">John Doe</SelectItem>
-                <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                <SelectItem value="Mike Johnson">Mike Johnson</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="notes" className="text-sm font-semibold text-foreground">Notes</Label>
+            <Label className="text-sm font-semibold">Project Scope & Notes (الوصف ونطاق العمل)</Label>
             <Textarea
-              id="notes"
-              name="notes"
-              placeholder="Notes"
-              className="min-h-[120px] bg-transparent"
-              value={formData.notes}
+              name="description"
+              placeholder="Detailed description of the project deliverables, milestones, and client agreements..."
+              value={formData.description}
               onChange={handleChange}
+              className="min-h-[120px] resize-none"
             />
           </div>
         </form>

@@ -173,7 +173,7 @@ export default function AddEditLead() {
               key={formData.status} // Force re-render when data arrives to avoid Radix UI desync
               value={formData.status || "New"} 
               onValueChange={(val) => handleSelectChange("status", val)}
-              disabled={!isEdit} // Disable changing status when creating
+              disabled={!isEdit || formData.status === "Converted"} // Disable changing status when creating or if already converted
             >
               <SelectTrigger className="!h-11 w-full bg-transparent">
                 <SelectValue placeholder="Select Status" />
@@ -183,15 +183,29 @@ export default function AddEditLead() {
                 <SelectItem value="Contacted">Contacted</SelectItem>
                 <SelectItem value="Qualified">Qualified</SelectItem>
                 <SelectItem value="Quotation">Quotation</SelectItem>
-                <SelectItem value="Converted">Converted</SelectItem>
+                {formData.status === "Converted" && (
+                  <SelectItem value="Converted" disabled>Converted (Locked)</SelectItem>
+                )}
                 <SelectItem value="Lost">Lost</SelectItem>
               </SelectContent>
             </Select>
+            {formData.status === "Converted" ? (
+              <p className="text-xs text-amber-600">
+                This opportunity has already been converted to a customer and cannot change status.
+              </p>
+            ) : isEdit ? (
+              <p className="text-xs text-muted-foreground">
+                Note: Conversion to customer must be completed via the official "Convert to Customer" workflow.
+              </p>
+            ) : null}
           </div>
 
 
           <div className="space-y-2">
-            <Label htmlFor="expectedValue" className="text-sm font-semibold text-foreground">Expected value</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="expectedValue" className="text-sm font-semibold text-foreground">Expected value ($)</Label>
+              <span className="text-[11px] text-muted-foreground">Opportunity estimate</span>
+            </div>
             <Input
               id="expectedValue"
               name="expectedValue"
@@ -200,6 +214,9 @@ export default function AddEditLead() {
               value={formData.expectedValue}
               onChange={handleChange}
             />
+            <p className="text-[11px] text-muted-foreground">
+              Opportunity estimation; does not represent an invoice or accounting revenue.
+            </p>
           </div>
 
           {/* <div className="space-y-2">

@@ -366,7 +366,7 @@ export const router = createBrowserRouter([
       { path: "/dashboard/crm/projects", element: lazyLoad(() => import("../pages/dashboard/crm/projects/projects-page")) },
       { path: "/dashboard/crm/projects/add", element: lazyLoad(() => import("../pages/dashboard/crm/projects/add-edit-project")) },
       { path: "/dashboard/crm/projects/edit/:id", element: lazyLoad(() => import("../pages/dashboard/crm/projects/add-edit-project")) },
-      { path: "/dashboard/crm/projects/:id", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/supplier-details")) },
+      { path: "/dashboard/crm/projects/:id", element: lazyLoad(() => import("../pages/dashboard/crm/projects/project-details")) },
 
       { path: "/dashboard/appointments", element: lazyLoad(() => import("../pages/dashboard/Appointments/appointments-page")) },
       { path: "/dashboard/appointments/add", element: lazyLoad(() => import("../pages/dashboard/Appointments/add-edit-appointment")) },

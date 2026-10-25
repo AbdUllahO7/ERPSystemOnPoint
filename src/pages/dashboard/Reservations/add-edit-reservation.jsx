@@ -1,7 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Trash2, Calendar as CalendarIcon, Wallet, Loader2 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Calendar as CalendarIcon,
+  Wallet,
+  Loader2,
+  Sparkles,
+  AlertTriangle,
+  CheckCircle2,
+  Users,
+  DollarSign,
+  FileText,
+  ShieldCheck,
+  CreditCard,
+} from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { DynamicModal } from "@/components/common/dynamic-modal";
 import { Button } from "@/components/ui/button";
@@ -109,12 +123,59 @@ export default function AddEditReservation() {
     }
   }, [lookups]);
 
+  // Selected Event metadata for capacity checks & pricing
+  const selectedEvent = useMemo(() => {
+    if (!formData.bookingEventId || !lookups.events) return null;
+    return lookups.events.find((e) => String(e.id) === String(formData.bookingEventId));
+  }, [formData.bookingEventId, lookups.events]);
+
+  // Seat Availability & Capacity Math (Page 8: التحقق من صلاحية الحدث وتوافر المقاعد: المحجوز الحالي + الطلب لا يتجاوز سعة الحدث)
+  const capacityCheck = useMemo(() => {
+    if (!selectedEvent) return { available: 0, max: 0, reserved: 0, isExceeded: false, newRemaining: 0 };
+    const max = Number(selectedEvent.maxCapacity) || 20;
+    const reserved = Number(selectedEvent.reservedQuantity) || 0;
+    const available = Math.max(0, max - reserved);
+    const requested = Number(formData.quantity) || 0;
+    const isExceeded = requested > available;
+    const newRemaining = Math.max(0, available - requested);
+    return {
+      available,
+      max,
+      reserved,
+      isExceeded,
+      newRemaining,
+      newReserved: reserved + requested,
+    };
+  }, [selectedEvent, formData.quantity]);
+
+  // Total Booking Financials
+  const financialSummary = useMemo(() => {
+    const unitPrice = Number(selectedEvent?.price) || 0;
+    const qty = Number(formData.quantity) || 1;
+    const subtotal = unitPrice * qty;
+    const discount = Number(formData.discountAmount) || 0;
+    const afterDiscount = Math.max(0, subtotal - discount);
+    const tax = (afterDiscount * (Number(formData.taxPercent) || 0)) / 100;
+    const grandTotal = afterDiscount + tax;
+    const paid = Number(formData.amountPaid) || 0;
+    const due = Math.max(0, grandTotal - paid);
+    return {
+      unitPrice,
+      qty,
+      subtotal,
+      grandTotal,
+      paid,
+      due,
+    };
+  }, [selectedEvent, formData.quantity, formData.discountAmount, formData.taxPercent, formData.amountPaid]);
+
   // Save Mutation
   const saveMutation = useMutation({
     mutationFn: (data) =>
       isEdit ? updateReservation(id, data) : createReservation(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(["reservations"]);
+      queryClient.invalidateQueries(["events"]);
       queryClient.invalidateQueries(["reservation", id]);
       toast.success(
         res?.message || (isEdit ? "Reservation updated successfully!" : "Reservation created successfully!")
@@ -130,7 +191,7 @@ export default function AddEditReservation() {
   const handleAddPayment = (e) => {
     e?.preventDefault();
     if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
-      toast.error("Please enter a valid amount");
+      toast.error("Please enter a valid installment amount");
       return;
     }
 
@@ -161,53 +222,121 @@ export default function AddEditReservation() {
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!formData.customerId && !formData.customer) {
-      toast.error("Please select a customer");
+      toast.error("يرجى اختيار العميل (Customer is required)");
       return;
     }
     if (!formData.bookingEventId && !formData.bookingEvent) {
-      toast.error("Please select a booking event");
+      toast.error("يرجى اختيار الحدث (Booking Event is required)");
       return;
     }
+
+    const reqQty = Number(formData.quantity) || 0;
+    if (reqQty <= 0) {
+      toast.error("كمية التذاكر يجب أن تكون 1 على الأقل");
+      return;
+    }
+
+    // Step 2 Rule: المحجوز الحالي + الطلب لا يتجاوز سعة الحدث
+    if (capacityCheck.isExceeded) {
+      toast.error(`المقاعد المطلوبة (${reqQty}) تتجاوز المقاعد المتاحة بالحدث (${capacityCheck.available} مقعداً فقط)`);
+      return;
+    }
+
     saveMutation.mutate(formData);
   };
 
   return (
     <div className="space-y-6">
-      {/* Page Title with Breadcrumb & Top Right Save Button */}
+      {/* Page Title with Top Actions */}
       <PageTitle
-        title={isEdit ? "Edit Reservation" : "Add Reservations"}
+        title={isEdit ? "Edit Reservation (تعديل الحجز)" : "New Reservation (حجز عميل جديد)"}
         breadcrumbLinks={[
           { label: "Reservations", href: "/dashboard/reservations" },
-          { label: isEdit ? "Edit Reservation" : "Add Reservations" },
+          { label: isEdit ? "Edit Reservation" : "New Reservation" },
         ]}
-        infoTooltip="Create new booking reservation, ticket allotments, and payment terms."
+        infoTooltip="ربط العميل بالكمية المطلوبة في الحدث، إنشاء الفاتورة، والتحقق التلقائي من توافر المقاعد."
         actions={
-          <Button
-            onClick={handleSubmit}
-            disabled={saveMutation.isPending || isLoading}
-            className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 py-2 rounded-xl font-medium shadow-xs transition-all cursor-pointer"
-          >
-            {saveMutation.isPending && (
-              <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
-            )}
-            {saveMutation.isPending ? "Saving..." : "Save"}
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/dashboard/reservations")}
+              className="h-10 px-5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              disabled={saveMutation.isPending || isLoading || capacityCheck.isExceeded}
+              className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-medium shadow-xs transition-all cursor-pointer"
+            >
+              {saveMutation.isPending && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
+              )}
+              {saveMutation.isPending ? "Saving..." : "Confirm Reservation (تأكيد الحجز)"}
+            </Button>
+          </div>
         }
       />
+
+      {/* Page 8 System Guidance Card */}
+      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
+                <Sparkles className="w-3.5 h-3.5" />
+                08 / فهم النظام: حجز العميل والإلغاء الجزئي
+              </span>
+              <span className="text-xs text-slate-500">الحدث يحدد العرض المتاح، والحجز يربط العميل بالكمية التي اختارها</span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong>دورة إنشاء الحجز المعتمدة:</strong> (1) اختيار العميل والحدث والكمية والمبلغ المستلم فعلياً. (2) التحقق من صلاحية وتوافر المقاعد: <code>المحجوز الحالي + الطلب &le; سعة الحدث</code>. (3) إنشاء الفاتورة وفق السياسة المعتمدة، ثم حفظ الحجز وتحديث كمية المقاعد. (4) ضمان اتساق الفاتورة والحجز والسعة عند النجاح أو الفشل.
+            </p>
+          </div>
+        </div>
+
+        {/* Practical Example from Page 8 */}
+        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/80 text-emerald-900 space-y-1 shadow-2xs">
+          <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-900">
+            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <span>مثال عملي موجه:</span>
+          </div>
+          <p className="text-[11px] text-emerald-800 leading-relaxed">
+            حدث سعته 20 مقعداً، سعر المقعد 25. حجز العميل 3 مقاعد: قيمة الحجز 75، والمحجوز يصبح 3، والمتاح 17. وإذا تم إلغاء مقعد لاحقاً، يصبح المحجوز 2 والمتاح 18.
+          </p>
+        </div>
+      </div>
+
+      {/* Seat Availability Warning Alert */}
+      {capacityCheck.isExceeded && (
+        <div className="p-4 bg-rose-50 border border-rose-300 rounded-2xl text-rose-800 text-xs flex items-start gap-3 shadow-sm">
+          <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-bold text-rose-900 text-sm">
+              تجاوز السعة المتاحة للحدث!
+            </span>
+            <p className="text-xs text-rose-700 leading-relaxed">
+              المقاعد المطلوبة ({formData.quantity}) تتجاوز المقاعد المتبقية في الحدث ({capacityCheck.available} مقعداً متاحاً فقط من أصل {capacityCheck.max}). يرجى تقليل الكمية لتتوافق مع السعة الشاغرة.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Form Content */}
       <div className="space-y-6">
         {/* Section 1: Reservation Info */}
         <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
-          <h2 className="text-base font-bold text-slate-800">
-            Reservation Info
+          <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+            <Users className="w-4 h-4 text-[#0066d1]" />
+            بيانات الحجز والحدث (Reservation & Event Information)
           </h2>
 
           {/* Row 1: Customer, Booking Event, Quantity */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Customer <span className="text-rose-500">*</span>
+                العميل (Customer) <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.customerId}
@@ -221,12 +350,12 @@ export default function AddEditReservation() {
                 }}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Customer" />
+                  <SelectValue placeholder="اختر العميل" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.customers.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
-                      {c.name}
+                      {c.name} {c.phone ? `(${c.phone})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -235,27 +364,29 @@ export default function AddEditReservation() {
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Booking Event <span className="text-rose-500">*</span>
+                الحدث المتاح (Booking Event) <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.bookingEventId}
                 onValueChange={(val) => {
                   const ev = lookups.events.find((e) => String(e.id) === String(val));
+                  const defaultPrice = ev?.price || 0;
+                  const defaultAdvance = ev?.advancePayment || defaultPrice;
                   setFormData({
                     ...formData,
                     bookingEventId: val,
                     bookingEvent: ev?.name || "Event",
-                    amountPaid: ev?.advancePayment ? String(ev.advancePayment) : formData.amountPaid,
+                    amountPaid: String(defaultAdvance),
                   });
                 }}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Booking Event" />
+                  <SelectValue placeholder="اختر الحدث المطروح" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.events.map((e) => (
                     <SelectItem key={e.id} value={String(e.id)}>
-                      {e.name} {e.price ? `($${e.price})` : ""}
+                      {e.name} (المتاح: {e.remainingQty ?? 20} مقعداً | السعر: ${e.price})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -263,9 +394,16 @@ export default function AddEditReservation() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-800">
-                Quantity
-              </Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-slate-800">
+                  الكمية المطلوبة (Quantity / Seats) <span className="text-rose-500">*</span>
+                </Label>
+                {selectedEvent && (
+                  <span className="text-[11px] font-medium text-slate-500">
+                    المتبقي بالحدث: <strong className="text-[#0066d1]">{capacityCheck.available}</strong> مقعد
+                  </span>
+                )}
+              </div>
               <Input
                 type="number"
                 min="1"
@@ -274,16 +412,40 @@ export default function AddEditReservation() {
                 onChange={(e) =>
                   setFormData({ ...formData, quantity: e.target.value })
                 }
-                className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                className={`h-11 rounded-xl bg-white focus-visible:ring-[#0066d1] ${
+                  capacityCheck.isExceeded ? "border-rose-400 focus-visible:ring-rose-500" : "border-slate-200"
+                }`}
               />
             </div>
           </div>
 
+          {/* Live Capacity & Financial Math Preview Box */}
+          {selectedEvent && (
+            <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div>
+                <span className="text-slate-500 block">سعر المقعد</span>
+                <span className="text-sm font-bold text-slate-800">${financialSummary.unitPrice}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">إجمالي قيمة التذاكر</span>
+                <span className="text-sm font-bold text-[#0066d1]">${financialSummary.subtotal}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">المحجوز بعد هذا الطلب</span>
+                <span className="text-sm font-bold text-slate-800">{capacityCheck.newReserved} / {capacityCheck.max}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block">المقاعد الشاغرة المتبقية</span>
+                <span className="text-sm font-bold text-emerald-600">{capacityCheck.newRemaining} مقعد</span>
+              </div>
+            </div>
+          )}
+
           {/* Row 2: Invoice Pattern, Payment Method, Cost Center */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 border-t border-slate-50">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Invoice Pattern
+                نمط الفاتورة المعتمد (Invoice Pattern)
               </Label>
               <Select
                 value={formData.invoicePatternId}
@@ -292,7 +454,7 @@ export default function AddEditReservation() {
                 }
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Invoice Pattern" />
+                  <SelectValue placeholder="اختر نمط الفاتورة" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.invoicePatterns.map((ip) => (
@@ -302,11 +464,14 @@ export default function AddEditReservation() {
                   ))}
                 </SelectContent>
               </Select>
+              <p className="text-[10px] text-slate-400">
+                إنشاء الفاتورة آلياً وفق السياسة المعتمدة لضمان اتساق القيود.
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Payment Method
+                طريقة الدفع (Payment Method)
               </Label>
               <Select
                 value={formData.paymentMethod}
@@ -315,7 +480,7 @@ export default function AddEditReservation() {
                 }
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Payment Method" />
+                  <SelectValue placeholder="اختر طريقة الدفع" />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map((pm) => (
@@ -329,7 +494,7 @@ export default function AddEditReservation() {
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Cost Center
+                مركز التكلفة (Cost Center)
               </Label>
               <Select
                 value={formData.costCenterId || "none"}
@@ -338,10 +503,10 @@ export default function AddEditReservation() {
                 }
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Cost Center" />
+                  <SelectValue placeholder="اختر مركز التكلفة" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">-- Default --</SelectItem>
+                  <SelectItem value="none">-- المركز الافتراضي --</SelectItem>
                   {lookups.costCenters.map((cc) => (
                     <SelectItem key={cc.id} value={String(cc.id)}>
                       {cc.name}
@@ -353,31 +518,37 @@ export default function AddEditReservation() {
           </div>
 
           {/* Row 3: Notes */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-2 border-t border-slate-50">
             <Label className="text-xs font-semibold text-slate-800">
-              Notes
+              ملاحظات أو شروط خاصة بالحجز (Notes)
             </Label>
             <Textarea
-              placeholder="Notes or special requirements..."
+              placeholder="شروط المقاعد، تفاصيل تسجيل المشترك، متطلبات الشهادة أو الحضور..."
               value={formData.notes}
               onChange={(e) =>
                 setFormData({ ...formData, notes: e.target.value })
               }
-              className="min-h-[100px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
+              className="min-h-[85px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
             />
           </div>
         </div>
 
-        {/* Section 2: Amounts & Discounts */}
+        {/* Section 2: Financials & Settlement */}
         <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
-          <h2 className="text-base font-bold text-slate-800">
-            Amounts & Discounts
-          </h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+              <DollarSign className="w-4 h-4 text-[#0066d1]" />
+              القيم المالية والمبلغ المستلم فعلياً (Amounts & Actual Paid)
+            </h2>
+            <span className="text-xs font-semibold text-slate-600">
+              الإجمالي الصافي: <strong className="text-[#0066d1]">${financialSummary.grandTotal.toFixed(2)}</strong>
+            </span>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Amount Paid
+                المبلغ المستلم فعلياً (Amount Actually Paid)
               </Label>
               <Input
                 type="number"
@@ -386,13 +557,16 @@ export default function AddEditReservation() {
                 onChange={(e) =>
                   setFormData({ ...formData, amountPaid: e.target.value })
                 }
-                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] font-semibold text-[#0066d1]"
               />
+              <p className="text-[10px] text-slate-400">
+                المبلغ المسدد نقداً أو بالبطاقة عند إجراء الحجز.
+              </p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Discount Amount
+                مبلغ الخصم (Discount Amount)
               </Label>
               <Input
                 type="number"
@@ -407,24 +581,7 @@ export default function AddEditReservation() {
 
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                Discount %
-              </Label>
-              <Input
-                type="number"
-                placeholder="0"
-                value={formData.discountPercent}
-                onChange={(e) =>
-                  setFormData({ ...formData, discountPercent: e.target.value })
-                }
-                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold text-slate-800">
-                Tax %
+                نسبة الضريبة (Tax %)
               </Label>
               <Input
                 type="number"
@@ -436,60 +593,66 @@ export default function AddEditReservation() {
                 className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-800">
+                المتبقي كدين على العميل (Due Balance)
+              </Label>
+              <div className="h-11 rounded-xl bg-slate-50 border border-slate-200 px-3.5 flex items-center font-bold text-slate-800">
+                ${financialSummary.due.toFixed(2)}
+              </div>
+              <p className="text-[10px] text-slate-400">
+                {financialSummary.due > 0 ? "فاتورة آجلة / مدفوعة جزئياً" : "حجز مدفوع بالكامل"}
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Section 3: Payment Schedule */}
+        {/* Section 3: Payment Installments Schedule (Optional) */}
         <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-800">
-              Payment Schedule
-            </h2>
+            <div>
+              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                <CreditCard className="w-4 h-4 text-[#0066d1]" />
+                جدول الدفعات والأقساط (Payment Installment Schedule)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                في حال كان الحجز آجلاً أو مقسطاً على دفعات.
+              </p>
+            </div>
             <Button
               type="button"
               onClick={() => setIsPaymentModalOpen(true)}
               className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 rounded-xl font-medium text-xs h-10 gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              Add
+              Add Installment
             </Button>
           </div>
 
           {formData.paymentSchedule.length === 0 ? (
-            <p className="text-xs text-slate-500 pt-1">
-              No installments — full amount due at appointment
-            </p>
+            <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
+              لا توجد أقساط مجدولة مسجلة.
+            </div>
           ) : (
-            <div className="space-y-3 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
               {formData.paymentSchedule.map((item) => (
                 <div
                   key={item.id}
-                  className="border border-slate-200 rounded-xl p-4 flex items-center justify-between bg-white"
+                  className="p-3.5 rounded-xl border border-slate-200 bg-white flex items-center justify-between"
                 >
                   <div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold text-slate-800">
-                        ${item.amount}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        Due: {item.dueDate}
-                      </span>
-                    </div>
-                    {item.notes && (
-                      <p className="text-xs text-slate-600 mt-1 max-w-xl">
-                        {item.notes}
-                      </p>
-                    )}
+                    <span className="font-bold text-slate-800 text-sm">${item.amount}</span>
+                    <span className="text-[11px] text-slate-400 block">{item.dueDate}</span>
+                    {item.notes && <p className="text-[10px] text-slate-500 mt-1">{item.notes}</p>}
                   </div>
-                  <Button
+                  <button
                     type="button"
-                    variant="ghost"
-                    size="sm"
                     onClick={() => handleRemovePayment(item.id)}
-                    className="text-rose-500 hover:text-rose-700 hover:bg-rose-50 cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
                   >
                     <Trash2 className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </div>
               ))}
             </div>
@@ -497,11 +660,11 @@ export default function AddEditReservation() {
         </div>
       </div>
 
-      {/* Add Payment Modal */}
+      {/* Add Payment Installment Modal */}
       <DynamicModal
         open={isPaymentModalOpen}
         onOpenChange={setIsPaymentModalOpen}
-        title="Add Payment"
+        title="Add Payment Installment (إضافة قسط مجدول)"
         icon={Wallet}
         showDefaultFooter={false}
         size="md"
@@ -510,22 +673,22 @@ export default function AddEditReservation() {
         <form onSubmit={handleAddPayment} className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Amount
+              مبلغ القسط (Amount)
             </Label>
             <Input
               type="number"
-              placeholder="Amount"
+              placeholder="0"
               value={paymentForm.amount}
               onChange={(e) =>
                 setPaymentForm({ ...paymentForm, amount: e.target.value })
               }
-              className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+              className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
             />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Due Date
+              تاريخ الاستحقاق (Due Date)
             </Label>
             <div className="relative">
               <Input
@@ -534,32 +697,40 @@ export default function AddEditReservation() {
                 onChange={(e) =>
                   setPaymentForm({ ...paymentForm, dueDate: e.target.value })
                 }
-                className="h-11 rounded-xl border-slate-200 bg-white pr-10 focus-visible:ring-[#0066d1]"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
               />
-              <CalendarIcon className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <CalendarIcon className="w-4 h-4 text-slate-400 absolute end-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Notes
+              ملاحظات الدفعة (Notes)
             </Label>
             <Textarea
-              placeholder="Notes"
+              placeholder="ملاحظات القسط..."
               value={paymentForm.notes}
               onChange={(e) =>
                 setPaymentForm({ ...paymentForm, notes: e.target.value })
               }
-              className="min-h-[90px] rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
+              className="min-h-[80px] rounded-xl border-slate-200 bg-white resize-none"
             />
           </div>
 
-          <div className="pt-2">
+          <div className="pt-2 flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPaymentModalOpen(false)}
+              className="h-11 px-5 rounded-xl border-slate-200"
+            >
+              Cancel
+            </Button>
             <Button
               type="submit"
-              className="w-full bg-[#0066d1] hover:bg-[#0052a8] text-white py-3.5 h-auto rounded-xl font-medium text-sm transition-all cursor-pointer"
+              className="h-11 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white"
             >
-              Add
+              Add Installment
             </Button>
           </div>
         </form>

@@ -1,7 +1,19 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import {
+  Eye,
+  Pencil,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  Sparkles,
+  Users,
+  Calendar,
+  CheckCircle2,
+  DollarSign,
+  XCircle,
+} from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
@@ -30,6 +42,8 @@ export default function ReservationsPage() {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [deleteRowId, setDeleteRowId] = useState(null);
   const [selectedPayment, setSelectedPayment] = useState("all");
+  const [selectedCustomer, setSelectedCustomer] = useState("all");
+  const [selectedEvent, setSelectedEvent] = useState("all");
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -39,7 +53,7 @@ export default function ReservationsPage() {
     queryKey: ["reservationLookups"],
     queryFn: getReservationLookups,
   });
-  const lookups = lookupsData?.data || { paymentMethods: [] };
+  const lookups = lookupsData?.data || { paymentMethods: [], customers: [], events: [] };
 
   // Stats Query
   const { data: statsData } = useQuery({
@@ -56,8 +70,10 @@ export default function ReservationsPage() {
       SearchTerm: search || undefined,
       Status: activeTab !== "all" ? activeTab : undefined,
       Payment: selectedPayment !== "all" ? selectedPayment : undefined,
+      CustomerId: selectedCustomer !== "all" ? selectedCustomer : undefined,
+      BookingEventId: selectedEvent !== "all" ? selectedEvent : undefined,
     }),
-    [page, search, activeTab, selectedPayment]
+    [page, search, activeTab, selectedPayment, selectedCustomer, selectedEvent]
   );
 
   // Reservations Query
@@ -78,11 +94,12 @@ export default function ReservationsPage() {
     mutationFn: (id) => deleteReservation(id),
     onSuccess: () => {
       queryClient.invalidateQueries(["reservations"]);
-      toast.success("Reservation deleted successfully!");
+      queryClient.invalidateQueries(["events"]);
+      toast.success("Reservation canceled and released successfully!");
       setDeleteRowId(null);
     },
     onError: () => {
-      toast.error("Failed to delete reservation!");
+      toast.error("Failed to cancel reservation!");
       setDeleteRowId(null);
     },
   });
@@ -94,25 +111,21 @@ export default function ReservationsPage() {
         items: [
           {
             key: "view",
-            label: "View Details",
+            label: "View Details (عرض التفاصيل)",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/reservations/${row.id}`),
           },
           {
             key: "edit",
-            label: "Edit Reservation",
+            label: "Edit Reservation (تعديل الحجز)",
             icon: Pencil,
             onClick: (row) => navigate(`/dashboard/reservations/edit/${row.id}`),
           },
-        ],
-      },
-      {
-        items: [
           {
             key: "delete",
-            label: "Delete Reservation",
+            label: "Cancel / Refund (إلغاء واسترداد)",
             icon: Trash2,
-            destructive: true,
+            variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
           },
         ],
@@ -122,19 +135,20 @@ export default function ReservationsPage() {
   );
 
   const getStatusBadge = (status) => {
-    switch (status?.toLowerCase()) {
+    const s = String(status || "").toLowerCase().replace("-", "");
+    switch (s) {
       case "booked":
-        return "bg-[#eaf4ff] text-[#0066d1]";
-      case "checked-in":
-        return "bg-[#f3e8ff] text-[#9333ea]";
+        return "bg-blue-50 text-[#0066d1] border-blue-200";
+      case "checkedin":
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "completed":
-        return "bg-[#eaf8f1] text-[#22c55e]";
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
       case "canceled":
-        return "bg-[#fee2e2] text-[#ef4444]";
-      case "no-show":
-        return "bg-[#fff7ed] text-[#ea580c]";
+        return "bg-rose-50 text-rose-700 border-rose-200 line-through";
+      case "noshow":
+        return "bg-amber-50 text-amber-700 border-amber-200";
       default:
-        return "bg-slate-100 text-slate-600";
+        return "bg-slate-100 text-slate-700 border-slate-200";
     }
   };
 
@@ -142,13 +156,13 @@ export default function ReservationsPage() {
     () => [
       {
         accessorKey: "id",
-        header: "ID",
+        header: "Ref / ID",
         cell: ({ row }) => (
           <Link
             to={`/dashboard/reservations/${row.original.id}`}
-            className="text-xs font-semibold text-[#0066d1] hover:underline"
+            className="text-xs font-semibold text-[#0066d1] hover:underline font-mono"
           >
-            {row.original.id}
+            #{row.original.id}
           </Link>
         ),
       },
@@ -156,7 +170,7 @@ export default function ReservationsPage() {
         accessorKey: "customer",
         header: "Customer",
         cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
+          <span className="text-xs font-semibold text-slate-800 block">
             {row.original.customer}
           </span>
         ),
@@ -165,52 +179,53 @@ export default function ReservationsPage() {
         accessorKey: "event",
         header: "Event",
         cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
+          <span className="text-xs font-medium text-slate-700 block">
             {row.original.event}
           </span>
         ),
       },
       {
         accessorKey: "qty",
-        header: "Qty",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.qty}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "canceled",
-        header: "Canceled",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
-            {row.original.canceled ?? 0}
-          </span>
-        ),
+        header: "Seats (Active / Total)",
+        cell: ({ row }) => {
+          const total = row.original.qty || 1;
+          const canceled = row.original.canceled || 0;
+          const active = Math.max(0, total - canceled);
+          return (
+            <div>
+              <span className="text-xs font-bold text-slate-800">
+                {active} نشط
+              </span>
+              <span className="text-[11px] text-slate-400 block">
+                من أصل {total} مقعد {canceled > 0 && `(${canceled} ملغى)`}
+              </span>
+            </div>
+          );
+        },
       },
       {
         accessorKey: "payment",
-        header: "Payment",
+        header: "Payment Method",
         cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-700">
+          <span className="text-xs font-normal text-slate-600">
             {row.original.payment}
           </span>
         ),
       },
       {
         accessorKey: "paid",
-        header: "Paid",
+        header: "Paid (المستلم)",
         cell: ({ row }) => (
-          <span className="text-xs font-semibold text-[#0066d1]">
+          <span className="text-xs font-bold text-[#0066d1]">
             {row.original.paid}
           </span>
         ),
       },
       {
         accessorKey: "total",
-        header: "Total",
+        header: "Total (الإجمالي)",
         cell: ({ row }) => (
-          <span className="text-xs font-semibold text-[#0066d1]">
+          <span className="text-xs font-bold text-slate-800">
             {row.original.total}
           </span>
         ),
@@ -222,7 +237,7 @@ export default function ReservationsPage() {
           const status = row.original.status || "Booked";
           return (
             <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${getStatusBadge(
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getStatusBadge(
                 status
               )}`}
             >
@@ -239,9 +254,37 @@ export default function ReservationsPage() {
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Reservations"
-        infoTooltip="Manage all customer reservations, event ticket bookings, and attendee check-ins."
+        title="Reservations & Bookings (حجز العميل والإلغاء الجزئي)"
+        infoTooltip="إدارة حجوزات العملاء في الفعاليات، متابعة المقاعد النشطة والملغاة، وتسوية المستحقات المالية."
       />
+
+      {/* Page 8 System Guidance Banner */}
+      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
+                <Sparkles className="w-3.5 h-3.5" />
+                08 / فهم النظام: حجز العميل والإلغاء الجزئي
+              </span>
+              <span className="text-xs text-slate-500">الحدث يحدد العرض المتاح، والحجز يربط العميل بالكمية التي اختارها</span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong>قواعد الحجز والإلغاء المعتمدة:</strong> التحقق من توفر المقاعد (المحجوز الحالي + الطلب &le; سعة الحدث). عند الإلغاء الجزئي أو الكامل، يتم تحرير المقاعد للحدث آلياً، والتحقق من التسوية المالية: <em>المرتجع ليس دائماً استرداداً نقدياً</em>؛ فالفواتير الآجلة أو المدفوعة جزئياً يقل الدين على العميل أولاً قبل دفع أي مبالغ نقدية.
+            </p>
+          </div>
+          <div className="flex flex-wrap lg:flex-col gap-2 shrink-0 text-[11px] text-slate-600">
+            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>تحقق السعة: المحجوز + الطلب &le; السعة</span>
+            </div>
+            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
+              <XCircle className="w-3.5 h-3.5 text-rose-600" />
+              <span>إلغاء جزئي: تحرير المقاعد وتسوية الدين</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Top 4 Stats Cards matching mockup */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -303,7 +346,7 @@ export default function ReservationsPage() {
         columns={columns}
         isLoading={isLoading}
         rowActionsMenu={rowActionsMenu}
-        searchPlaceholder="Search by id or employee name..."
+        searchPlaceholder="ابحث برقم الحجز، اسم العميل، أو الفعالية..."
         searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);
@@ -320,7 +363,57 @@ export default function ReservationsPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Payment Method
+                Customer (العميل)
+              </Label>
+              <Select
+                value={selectedCustomer}
+                onValueChange={(val) => {
+                  setSelectedCustomer(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All Customers" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Customers (جميع العملاء)</SelectItem>
+                  {lookups.customers?.map((c) => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-600">
+                Booking Event (الحدث)
+              </Label>
+              <Select
+                value={selectedEvent}
+                onValueChange={(val) => {
+                  setSelectedEvent(val);
+                  setPage(1);
+                }}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="All Events" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Events (جميع الأحداث)</SelectItem>
+                  {lookups.events?.map((e) => (
+                    <SelectItem key={e.id} value={String(e.id)}>
+                      {e.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-xs font-medium text-slate-600">
+                Payment Method (طريقة الدفع)
               </Label>
               <Select
                 value={selectedPayment}
@@ -349,6 +442,8 @@ export default function ReservationsPage() {
                 size="sm"
                 onClick={() => {
                   setSelectedPayment("all");
+                  setSelectedCustomer("all");
+                  setSelectedEvent("all");
                   setPage(1);
                 }}
               >
@@ -359,7 +454,7 @@ export default function ReservationsPage() {
                 className="bg-[#0066d1] hover:bg-[#0052a8]"
                 onClick={() => setIsFilterOpen(false)}
               >
-                Apply
+                Apply Filters
               </Button>
             </div>
           </div>
@@ -369,12 +464,12 @@ export default function ReservationsPage() {
         onPageChange={setPage}
       />
 
-      {/* Delete Confirm Dialog */}
+      {/* Delete / Cancel Confirm Dialog */}
       <DeleteConfirmDialog
         open={!!deleteRowId}
         onOpenChange={(open) => !open && setDeleteRowId(null)}
-        title="Delete Reservation"
-        description="Are you sure you want to delete this reservation? This action cannot be undone."
+        title="Cancel Reservation & Release Seats"
+        description="Are you sure you want to cancel this reservation? All remaining seats will be released back to the event capacity."
         onConfirm={() => deleteMutation.mutate(deleteRowId)}
         isLoading={deleteMutation.isPending}
       />

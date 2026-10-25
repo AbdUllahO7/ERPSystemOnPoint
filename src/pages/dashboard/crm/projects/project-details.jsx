@@ -1,224 +1,221 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Info, Plus, Trash2, Check, FileText } from "lucide-react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Info, Plus, Trash2, Check, FileText, ArrowLeft, ShieldCheck, CheckCircle2, User, Calendar, Edit } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCustomerProjectById, updateProjectPercentage } from "@/lib/api";
+import { toast } from "react-hot-toast";
 
 export default function ProjectDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: projectData, isLoading, isError } = useQuery({
+    queryKey: ["projectDetails", id],
+    queryFn: () => getCustomerProjectById(id),
+    enabled: !!id,
+  });
+
+  const project = projectData?.data || {};
+
+  const updateMutation = useMutation({
+    mutationFn: (data) => updateProjectPercentage(data),
+    onSuccess: () => {
+      toast.success("Progress updated successfully");
+      queryClient.invalidateQueries(["projectDetails", id]);
+    },
+    onError: () => toast.error("Failed to update progress"),
+  });
+
+  if (isLoading) {
+    return <div className="p-8 text-center text-muted-foreground">Loading project details...</div>;
+  }
+
+  if (isError || !project.id) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-500 mb-4">Project details could not be loaded.</p>
+        <Button variant="outline" onClick={() => navigate("/dashboard/crm/projects")}>
+          Back to Projects
+        </Button>
+      </div>
+    );
+  }
+
+  const completionPerc = Number(project.completionPercentage || 0);
+  const initials = project.projectName ? project.projectName.substring(0, 2).toUpperCase() : "PR";
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
+      {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-            Project Details
-            <Info className="w-4 h-4 text-muted-foreground" />
-          </h2>
-          <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/projects")}>Projects</span>
-            <span>/</span>
-            <span>Project Details</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => navigate("/dashboard/crm/projects")}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+              Project Details
+              <Info className="w-4 h-4 text-muted-foreground" />
+            </h2>
+            <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+              <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/projects")}>
+                Projects
+              </span>
+              <span>/</span>
+              <span>{project.projectName}</span>
+            </div>
           </div>
         </div>
+
+        <Button
+          variant="outline"
+          className="gap-2 bg-white"
+          onClick={() => navigate(`/dashboard/crm/projects/edit/${id}`)}
+        >
+          <Edit className="w-4 h-4" />
+          Edit Project
+        </Button>
       </div>
 
       {/* Header Card */}
-      <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
-          <div className="w-24 h-24 bg-blue-500 rounded-[20px] flex items-center justify-center text-white font-bold text-4xl shadow-sm">
-            PN
+          <div className="w-20 h-20 bg-blue-600 rounded-2xl flex items-center justify-center text-white font-bold text-2xl shadow-sm shrink-0">
+            {initials}
           </div>
-          <div className="space-y-1">
-            <h3 className="text-2xl font-bold">Project Name</h3>
-            <span className="inline-block bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">In Progress</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-2xl font-bold">{project.projectName}</h3>
+              <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-semibold">
+                {project.status || "InProgress"}
+              </span>
+            </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              ID: #{project.id.substring(0, 8)} • Value: ${Number(project.projectValue || project.value || 0).toLocaleString()}
+            </p>
+            {project.customerId && (
+              <button
+                onClick={() => navigate(`/dashboard/crm/customers/${project.customerId}`)}
+                className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1 font-medium"
+              >
+                <User className="w-3.5 h-3.5" />
+                Customer: {project.customerName || `#${project.customerId.substring(0, 8)}`}
+              </button>
+            )}
           </div>
         </div>
-        
+
         <div className="flex gap-4 overflow-x-auto w-full md:w-auto">
-          <div className="flex-1 md:flex-none border border-purple-200 bg-purple-50 rounded-lg p-4 text-center min-w-[120px]">
-            <p className="text-purple-600 text-sm mb-1 font-medium">Completion Rate</p>
-            <p className="text-purple-600 font-semibold">50%</p>
+          <div className="flex-1 md:flex-none border border-blue-200 bg-blue-50/60 rounded-xl p-3.5 text-center min-w-[120px]">
+            <p className="text-blue-700 text-xs mb-1 font-medium">Operational Progress</p>
+            <p className="text-blue-900 font-bold text-xl">{completionPerc}%</p>
           </div>
-          <div className="flex-1 md:flex-none border border-emerald-200 bg-emerald-50 rounded-lg p-4 text-center min-w-[120px]">
-            <p className="text-emerald-600 text-sm mb-1 font-medium">Start Date</p>
-            <p className="text-emerald-600 font-semibold">23/7/2025</p>
+          <div className="flex-1 md:flex-none border border-emerald-200 bg-emerald-50/60 rounded-xl p-3.5 text-center min-w-[120px]">
+            <p className="text-emerald-700 text-xs mb-1 font-medium">Start Date</p>
+            <p className="text-emerald-900 font-semibold text-sm">
+              {project.startDate ? new Date(project.startDate).toLocaleDateString() : "-"}
+            </p>
           </div>
-          <div className="flex-1 md:flex-none border border-red-200 bg-red-50 rounded-lg p-4 text-center min-w-[120px]">
-            <p className="text-red-600 text-sm mb-1 font-medium">End Date</p>
-            <p className="text-red-600 font-semibold">23/7/2026</p>
-          </div>
-          <div className="flex-1 md:flex-none border border-blue-200 bg-blue-50 rounded-lg p-4 text-center min-w-[120px]">
-            <p className="text-blue-600 text-sm mb-1 font-medium">Tasks</p>
-            <p className="text-blue-600 font-semibold">3</p>
+          <div className="flex-1 md:flex-none border border-purple-200 bg-purple-50/60 rounded-xl p-3.5 text-center min-w-[120px]">
+            <p className="text-purple-700 text-xs mb-1 font-medium">End Date</p>
+            <p className="text-purple-900 font-semibold text-sm">
+              {project.endDate ? new Date(project.endDate).toLocaleDateString() : "-"}
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Tasks Section */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="font-semibold text-lg">Tasks</h3>
-              <Button className="gap-2">
-                <Plus className="w-4 h-4" />
-                Add
-              </Button>
-            </div>
-            
-            <div className="space-y-4">
-              {/* Task 1 */}
-              <div className="border rounded-xl p-4 flex gap-4">
-                <div className="pt-1">
-                  <div className="w-10 h-10 rounded-full border border-gray-300 flex items-center justify-center bg-white"></div>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-foreground">User interface design</h4>
-                      <p className="text-sm text-muted-foreground">Due June 21, 2026</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="bg-blue-100 text-blue-600 px-3 py-1.5 rounded-md text-xs font-medium">Scheduled</span>
-                      <Select defaultValue="status">
-                        <SelectTrigger className="w-32 h-9 text-sm">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="status">Status</SelectItem>
-                          <SelectItem value="in-progress">In Progress</SelectItem>
-                          <SelectItem value="completed">Completed</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <Button variant="outline" size="icon" className="h-9 w-9 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
-                    <h5 className="font-semibold text-sm mb-1">Notes</h5>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here' making it look like readable English. Many desktop publishing packages and web page editors now use Lorem
-                    </p>
-                  </div>
-                </div>
-              </div>
+      {/* Guidance Callout */}
+      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
+        <p className="font-bold text-blue-950 flex items-center gap-1.5">
+          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+          الفوترة ليست إنجازاً تشغيلياً (Operational Execution vs Billing):
+        </p>
+        <p className="text-blue-900 leading-relaxed">
+          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. ترتبط نسبة الإنجاز (CompletionPercentage) بتقدم المهام أو مراحل التنفيذ المعتمدة في الميدان، مع إظهار الفوترة كمؤشر مستقل.
+        </p>
+      </div>
 
-              {/* Task 2 */}
-              <div className="border rounded-xl p-4 flex gap-4">
-                <div className="pt-1">
-                  <div className="w-10 h-10 rounded-full border border-emerald-500 bg-emerald-50 flex items-center justify-center text-emerald-500">
-                    <Check className="w-5 h-5" />
-                  </div>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h4 className="font-semibold text-foreground">User interface design</h4>
-                      <p className="text-sm text-muted-foreground">Due June 21, 2026</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="bg-emerald-100 text-emerald-600 px-3 py-1.5 rounded-md text-xs font-medium">Completed</span>
-                      <Button variant="outline" size="icon" className="h-9 w-9 text-red-500 border-red-200 hover:bg-red-50 hover:text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div>
-                    <h5 className="font-semibold text-sm mb-1">Notes</h5>
-                    <p className="text-sm text-muted-foreground leading-relaxed">
-                      It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here' making it look like readable English. Many desktop publishing packages and web page editors now use Lorem
-                    </p>
-                  </div>
-                </div>
-              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Scope and Deliverables */}
+        <div className="lg:col-span-2 space-y-6">
+          <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 space-y-4">
+            <h4 className="font-bold text-base text-foreground">Project Scope & Description</h4>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+              {project.description || "No description provided for this project."}
+            </p>
+          </div>
+
+          {/* Quick Progress Update Card */}
+          <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 space-y-4">
+            <h4 className="font-bold text-base text-foreground">Update Execution Progress</h4>
+            <p className="text-xs text-muted-foreground">
+              Adjust the operational completion percentage based on current milestone deliverables.
+            </p>
+            <div className="flex items-center gap-3">
+              {[25, 50, 75, 100].map((val) => (
+                <Button
+                  key={val}
+                  variant={completionPerc === val ? "default" : "outline"}
+                  size="sm"
+                  onClick={() =>
+                    updateMutation.mutate({
+                      id: project.id,
+                      newPercentage: val,
+                      status: val === 100 ? "Completed" : "InProgress",
+                    })
+                  }
+                  disabled={updateMutation.isPending}
+                >
+                  {val}%
+                </Button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Sidebar Sections */}
+        {/* Sidebar Info */}
         <div className="space-y-6">
-          {/* Files & Attachments */}
           <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 space-y-4">
-            <h3 className="font-semibold text-lg mb-4">Files & Attachments</h3>
+            <h4 className="font-bold text-base text-foreground">Contractual Details</h4>
             
-            {/* File 1 */}
-            <div className="border rounded-xl p-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-12 bg-red-600 text-white rounded-[4px] rounded-tr-xl flex flex-col items-center justify-end pb-1 font-bold text-[10px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-3 h-3 bg-red-800 rounded-bl-lg"></div>
-                PDF
+            <div className="space-y-3 text-xs">
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Contractual Value</span>
+                <span className="font-bold text-blue-600 text-sm">
+                  ${Number(project.projectValue || project.value || 0).toLocaleString()}
+                </span>
               </div>
-              <div>
-                <p className="font-medium text-sm text-foreground">Medical Insurance Card</p>
-                <p className="text-xs text-muted-foreground mt-0.5">1.2 MB • Uploaded Mar 2022</p>
+
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Status</span>
+                <span className="font-semibold text-foreground">{project.status || "InProgress"}</span>
+              </div>
+
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Linked Contract</span>
+                <span className="font-medium text-foreground">
+                  {project.contractId ? `#${project.contractId.substring(0, 8)}` : "None"}
+                </span>
               </div>
             </div>
 
-            {/* File 2 */}
-            <div className="border rounded-xl p-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-12 bg-blue-600 text-white rounded-[4px] rounded-tr-xl flex flex-col items-center justify-end pb-1 font-bold text-[10px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-3 h-3 bg-blue-800 rounded-bl-lg"></div>
-                DOC
-              </div>
-              <div>
-                <p className="font-medium text-sm text-foreground">Medical Insurance Card</p>
-                <p className="text-xs text-muted-foreground mt-0.5">1.2 MB • Uploaded Mar 2022</p>
-              </div>
-            </div>
-
-            {/* File 3 */}
-            <div className="border rounded-xl p-4 flex items-center gap-4 shadow-sm">
-              <div className="w-10 h-12 bg-emerald-600 text-white rounded-[4px] rounded-tr-xl flex flex-col items-center justify-end pb-1 font-bold text-[10px] relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-3 h-3 bg-emerald-800 rounded-bl-lg"></div>
-                CSV
-              </div>
-              <div>
-                <p className="font-medium text-sm text-foreground">Medical Insurance Card</p>
-                <p className="text-xs text-muted-foreground mt-0.5">1.2 MB • Uploaded Mar 2022</p>
-              </div>
-            </div>
-
-            <Button variant="outline" className="w-full gap-2 border-dashed h-12 text-muted-foreground bg-gray-50/50 hover:bg-gray-50">
-              <Plus className="w-4 h-4" />
-              Upload File
-            </Button>
-          </div>
-
-          {/* Contracts & Invoices */}
-          <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 space-y-4">
-            <h3 className="font-semibold text-lg mb-2">Contracts & Invoices</h3>
-            
-            <div className="border rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3 text-sm">
-                <FileText className="w-5 h-5 text-muted-foreground" />
-                <span className="font-medium text-foreground">App Development Contract</span>
-              </div>
-              <span className="font-semibold text-blue-600 text-sm">$1300</span>
-            </div>
-
-            <div className="border rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3 text-sm">
-                <FileText className="w-5 h-5 text-muted-foreground" />
-                <span className="font-medium text-foreground">INV-312</span>
-              </div>
-              <span className="font-semibold text-blue-600 text-sm">$1300</span>
-            </div>
-
-            <div className="border rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3 text-sm">
-                <FileText className="w-5 h-5 text-muted-foreground" />
-                <span className="font-medium text-foreground">INV-312</span>
-              </div>
-              <span className="font-semibold text-blue-600 text-sm">$1300</span>
-            </div>
+            {project.customerId && (
+              <Button
+                variant="outline"
+                className="w-full text-xs"
+                onClick={() => navigate(`/dashboard/crm/customers/${project.customerId}`)}
+              >
+                View Customer Profile
+              </Button>
+            )}
           </div>
         </div>
       </div>

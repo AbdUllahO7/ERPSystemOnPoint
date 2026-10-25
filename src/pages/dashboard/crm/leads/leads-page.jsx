@@ -108,11 +108,30 @@ export default function LeadsPage() {
   });
 
   const handleStatusSubmit = () => {
+    if (statusForm.status === "Converted") {
+      if (selectedLead?.status === "Converted") {
+        toast.error("This opportunity has already been converted to a customer.");
+        return;
+      }
+      if (!statusForm.isPriceOfferAccepted) {
+        toast.error("Please confirm acceptance of the price offer by the client.");
+        return;
+      }
+      if (!statusForm.projectName?.trim()) {
+        toast.error("Please provide a project name.");
+        return;
+      }
+      if (!statusForm.projectValue || Number(statusForm.projectValue) <= 0) {
+        toast.error("Please provide an approved project value.");
+        return;
+      }
+    }
+
     const payload = {
       leadId: selectedLead.id,
       newStatus: statusForm.status,
       isPriceOfferAccepted: statusForm.status === "Converted" ? statusForm.isPriceOfferAccepted : false,
-      projectName: statusForm.status === "Converted" ? statusForm.projectName : "",
+      projectName: statusForm.status === "Converted" ? statusForm.projectName.trim() : "",
       projectValue: statusForm.status === "Converted" ? Number(statusForm.projectValue) || 0 : 0,
     };
     statusMutation.mutate(payload);
@@ -304,7 +323,14 @@ export default function LeadsPage() {
               <Label>Status</Label>
               <Select 
                 value={statusForm.status} 
-                onValueChange={(val) => setStatusForm(prev => ({...prev, status: val}))}
+                onValueChange={(val) => {
+                  setStatusForm(prev => ({
+                    ...prev, 
+                    status: val,
+                    projectValue: val === "Converted" && !prev.projectValue ? String(selectedLead?.expectedValue || "") : prev.projectValue,
+                    projectName: val === "Converted" && !prev.projectName ? `Project - ${selectedLead?.company || selectedLead?.name || ""}` : prev.projectName,
+                  }));
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select Status" />
@@ -314,44 +340,63 @@ export default function LeadsPage() {
                   <SelectItem value="Contacted">Contacted</SelectItem>
                   <SelectItem value="Qualified">Qualified</SelectItem>
                   <SelectItem value="Quotation">Quotation</SelectItem>
-                  <SelectItem value="Converted">Converted</SelectItem>
+                  <SelectItem value="Converted" disabled={selectedLead?.status === "Converted"}>
+                    {selectedLead?.status === "Converted" ? "Converted (Already Converted)" : "Converted"}
+                  </SelectItem>
                   <SelectItem value="Lost">Lost</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {statusForm.status === "Converted" && (
-              <div className="space-y-4 p-4 border border-orange-200 bg-orange-50/50 rounded-xl">
-                <p className="text-sm text-orange-600 font-medium mb-2">
-                  The conversion requires accepting the price offer and creating a project for the client.
-                </p>
-                <div className="flex items-center gap-2">
+              <div className="space-y-4 p-4 border border-teal-200 bg-teal-50/50 rounded-xl">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-teal-900">
+                    What happens upon conversion? (ما الذي يحدث عند التحويل؟)
+                  </p>
+                  <p className="text-xs text-teal-700 leading-relaxed">
+                    In this conversion flow, an accounting account, customer, and customer project are created. The project value should reflect the approved final agreement value (not necessarily the initial expected estimate).
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2 border-t border-teal-200/60">
                   <input 
                     type="checkbox"
                     id="accept" 
                     checked={statusForm.isPriceOfferAccepted}
                     onChange={(e) => setStatusForm(prev => ({...prev, isPriceOfferAccepted: e.target.checked}))}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
                   />
-                  <Label htmlFor="accept">The price offer was accepted by the client</Label>
+                  <Label htmlFor="accept" className="text-xs font-semibold text-teal-900 cursor-pointer">
+                    The price offer was accepted by the client <span className="text-rose-500">*</span>
+                  </Label>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Project name</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-foreground">Project Name <span className="text-rose-500">*</span></Label>
                   <Input 
                     placeholder="Project name"
                     value={statusForm.projectName}
                     onChange={(e) => setStatusForm(prev => ({...prev, projectName: e.target.value}))}
+                    className="h-9 text-xs bg-white"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Project value</Label>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-foreground">Approved Project Value ($) <span className="text-rose-500">*</span></Label>
+                    {selectedLead?.expectedValue ? (
+                      <span className="text-[11px] text-muted-foreground">Estimated: ${selectedLead.expectedValue}</span>
+                    ) : null}
+                  </div>
                   <Input 
                     type="number"
-                    placeholder="Project value"
+                    placeholder="Approved project value"
                     value={statusForm.projectValue}
                     onChange={(e) => setStatusForm(prev => ({...prev, projectValue: e.target.value}))}
+                    className="h-9 text-xs bg-white"
+                    min="0.01"
+                    step="any"
                   />
                 </div>
               </div>
@@ -362,7 +407,10 @@ export default function LeadsPage() {
             <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>Cancel</Button>
             <Button 
               onClick={handleStatusSubmit} 
-              disabled={statusMutation.isPending || (statusForm.status === "Converted" && (!statusForm.projectName || !statusForm.projectValue))}
+              disabled={
+                statusMutation.isPending || 
+                (statusForm.status === "Converted" && (!statusForm.isPriceOfferAccepted || !statusForm.projectName?.trim() || !statusForm.projectValue || selectedLead?.status === "Converted"))
+              }
             >
               {statusMutation.isPending ? "Saving..." : (statusForm.status === "Converted" ? "Transform & Create Project" : "Change Status")}
             </Button>

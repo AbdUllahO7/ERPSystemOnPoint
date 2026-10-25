@@ -21,6 +21,7 @@ import {
   getAllInvoicePatterns,
   getAllCurrencies,
   getAllSuppliers,
+  getSupplierContracts,
 } from "../../../../../lib/api";
 
 export default function PurchaseInvoiceForm() {
@@ -41,6 +42,7 @@ export default function PurchaseInvoiceForm() {
       note: "",
       invoicePattern_Id: "",
       suppler_id: "",
+      contractSupplierId: "",
       warehouse_Id: "",
       currency_Id: "",
       costCenter_Id: "",
@@ -65,6 +67,8 @@ export default function PurchaseInvoiceForm() {
   const watchWarehouse = watch("warehouse_Id");
   const watchDetails = watch("createInvoiceDetailsDto");
   const watchInvoicePatternId = watch("invoicePattern_Id");
+  const watchSupplierId = watch("suppler_id");
+  const watchContractSupplierId = watch("contractSupplierId");
   const paymentMethod = watch("payment_Method");
   const payInInstallments = watch("payInInstallments");
 
@@ -88,7 +92,6 @@ export default function PurchaseInvoiceForm() {
     queryKey: ["getAllInvoicePatterns", "Purchases"],
     queryFn: () => getAllInvoicePatterns({ Type: "Purchases", pageNumber: 1, pageSize: 100 }),
   });
-  console.log(invoicePatternsData?.data?.items)
 
   const { data: currenciesData } = useQuery({
     queryKey: ["getAllCurrencies"],
@@ -100,12 +103,30 @@ export default function PurchaseInvoiceForm() {
     queryFn: () => getAllSuppliers({ pageNumber: 1, pageSize: 100 }),
   });
 
+  const { data: supplierContractsData } = useQuery({
+    queryKey: ["getSupplierContracts", watchSupplierId],
+    queryFn: () => getSupplierContracts({ SupplierId: watchSupplierId, Status: "Active", PageNumber: 1, PageSize: 50 }),
+    enabled: !!watchSupplierId,
+  });
+
   const warehouses = warehousesData?.data?.items || [];
   const costCenters = costCentersData?.data?.items || [];
   const products = productsData?.data?.items || [];
   const invoicePatterns = invoicePatternsData?.data?.items || [];
   const currencies = currenciesData?.data?.items || [];
   const suppliers = suppliersData?.data?.items || [];
+  const supplierContracts = supplierContractsData?.data?.items || [];
+
+  const selectedContract = useMemo(() => {
+    return supplierContracts.find(c => c.id === watchContractSupplierId) || null;
+  }, [watchContractSupplierId, supplierContracts]);
+
+  const contractRemaining = useMemo(() => {
+    if (!selectedContract) return null;
+    const total = Number(selectedContract.totalValue || 0);
+    const consumed = Number(selectedContract.consumedAmount || 0);
+    return Math.max(0, total - consumed);
+  }, [selectedContract]);
 
   const selectedPattern = useMemo(() => {
     return invoicePatterns.find(p => p.id === watchInvoicePatternId) || null;
@@ -243,7 +264,10 @@ export default function PurchaseInvoiceForm() {
                 <Select
                   key={field.value}
                   value={field.value ? String(field.value) : undefined}
-                  onValueChange={field.onChange}
+                  onValueChange={(val) => {
+                    field.onChange(val);
+                    setValue("contractSupplierId", "");
+                  }}
                 >
                   <SelectTrigger className={`w-full h-9 bg-transparent ${errors.suppler_id ? "border-red-500" : "border-input"}`}>
                     <SelectValue placeholder="Supplier Name" />
@@ -259,6 +283,54 @@ export default function PurchaseInvoiceForm() {
               )}
             />
             {errors.suppler_id && <span className="text-xs text-red-500">{errors.suppler_id.message}</span>}
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-semibold">Supplier Contract (عقد المورد)</label>
+              <span className="text-[11px] text-muted-foreground">Optional Contract Link</span>
+            </div>
+            <Controller
+              name="contractSupplierId"
+              control={control}
+              render={({ field }) => (
+                <Select
+                  key={field.value || "none"}
+                  value={field.value ? String(field.value) : "none"}
+                  onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
+                  disabled={!watchSupplierId}
+                >
+                  <SelectTrigger className="w-full h-9 bg-transparent border-input">
+                    <SelectValue placeholder={!watchSupplierId ? "Select a supplier first" : supplierContracts.length === 0 ? "No active contracts found" : "Link to Supplier Contract (Optional)"} />
+                  </SelectTrigger>
+                  <SelectContent position="popper">
+                    <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                    {supplierContracts.map((c) => {
+                      const rem = Math.max(0, Number(c.totalValue || 0) - Number(c.consumedAmount || 0));
+                      return (
+                        <SelectItem key={c.id} value={String(c.id)}>
+                          {c.contractName} (Remaining: ${rem.toLocaleString()})
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              )}
+            />
+            {selectedContract && (
+              <div className="p-2.5 bg-blue-50/80 border border-blue-200 rounded-lg text-xs space-y-1">
+                <div className="flex justify-between font-semibold text-blue-950">
+                  <span>Ceiling: ${Number(selectedContract.totalValue || 0).toLocaleString()}</span>
+                  <span>Consumed: ${Number(selectedContract.consumedAmount || 0).toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between font-bold text-emerald-800 pt-0.5 border-t border-blue-200">
+                  <span>Available Balance: ${contractRemaining?.toLocaleString()}</span>
+                  {summary.total > (contractRemaining || 0) && (
+                    <span className="text-rose-600 font-bold">⚠️ Exceeds ceiling</span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

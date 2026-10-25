@@ -140,22 +140,83 @@ export function ContractsTab({ supplierId }) {
   }
 
   const columns = [
-    { key: "contractName", label: "Contract Name", render: (row) => <span className="font-medium">{row.contractName}</span> },
-    { key: "totalValue", label: "Total Value", render: (row) => <span className="text-blue-500 font-semibold">{row.totalValue}</span> },
-    { key: "startDate", label: "Start Date", render: (row) => row.startDate ? new Date(row.startDate).toLocaleDateString() : "-" },
-    { key: "endDate", label: "End Date", render: (row) => row.endDate ? new Date(row.endDate).toLocaleDateString() : "-" },
-    { 
-      key: "status", 
+    {
+      key: "contractName",
+      label: "Contract Name",
+      render: (row) => (
+        <div>
+          <span className="font-semibold text-foreground block">{row.contractName}</span>
+          <span className="text-[11px] text-muted-foreground">ID: #{row.id?.substring(0, 8)}</span>
+        </div>
+      ),
+    },
+    {
+      key: "totalValue",
+      label: "Ceiling (TotalValue)",
+      render: (row) => (
+        <div>
+          <span className="text-blue-600 font-bold block">${Number(row.totalValue || 0).toLocaleString()}</span>
+          <span className="text-[10px] text-muted-foreground">Agreed Ceiling</span>
+        </div>
+      ),
+    },
+    {
+      key: "consumedAmount",
+      label: "Consumed (المستهلك)",
+      render: (row) => {
+        const consumed = Number(row.consumedAmount || 0);
+        return (
+          <div>
+            <span className="text-amber-600 font-semibold block">${consumed.toLocaleString()}</span>
+            <span className="text-[10px] text-muted-foreground">Invoiced purchases</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: "remainingAmount",
+      label: "Remaining (المتبقي)",
+      render: (row) => {
+        const total = Number(row.totalValue || 0);
+        const consumed = Number(row.consumedAmount || 0);
+        const remaining = Math.max(0, total - consumed);
+        const percentage = total > 0 ? Math.min(100, Math.round((consumed / total) * 100)) : 0;
+        return (
+          <div>
+            <span className={`font-bold block ${remaining <= 0 ? "text-rose-600" : "text-emerald-600"}`}>
+              ${remaining.toLocaleString()}
+            </span>
+            <span className="text-[10px] text-muted-foreground">{percentage}% consumed</span>
+          </div>
+        );
+      },
+    },
+    {
+      key: "startDate",
+      label: "Start Date",
+      render: (row) => (row.startDate ? new Date(row.startDate).toLocaleDateString() : "-"),
+    },
+    {
+      key: "endDate",
+      label: "End Date",
+      render: (row) => (row.endDate ? new Date(row.endDate).toLocaleDateString() : "-"),
+    },
+    {
+      key: "status",
       label: "Status",
       render: (row) => {
         const colorClasses = {
-          "Active": "bg-green-100 text-green-600",
-          "Expired": "bg-orange-100 text-orange-600",
-          "Canceled": "bg-red-100 text-red-600"
+          Active: "bg-green-100 text-green-700 border-green-200",
+          Expired: "bg-orange-100 text-orange-700 border-orange-200",
+          Canceled: "bg-red-100 text-red-700 border-red-200",
         };
-        const colorClass = colorClasses[row.status] || "bg-gray-100 text-gray-600";
-        return <span className={`px-3 py-1 ${colorClass} rounded-full text-xs font-medium`}>{row.status || 'Unknown'}</span>;
-      }
+        const colorClass = colorClasses[row.status] || "bg-gray-100 text-gray-700 border-gray-200";
+        return (
+          <span className={`px-2.5 py-0.5 border ${colorClass} rounded-full text-xs font-semibold`}>
+            {row.status || "Active"}
+          </span>
+        );
+      },
     },
   ];
 
@@ -183,8 +244,59 @@ export function ContractsTab({ supplierId }) {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-end mb-4">
+    <div className="space-y-6">
+      {/* Supplier Contract Guidance & Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="p-4 border rounded-xl bg-blue-50/50 border-blue-200">
+          <span className="text-xs text-blue-700 font-semibold block uppercase">Total Contracts Ceiling (TotalValue)</span>
+          <span className="text-2xl font-bold text-blue-900 mt-1 block">
+            ${items.reduce((acc, c) => acc + Number(c.totalValue || 0), 0).toLocaleString()}
+          </span>
+          <p className="text-[11px] text-blue-700 mt-0.5">Agreed purchase ceiling across all contracts</p>
+        </div>
+        <div className="p-4 border rounded-xl bg-amber-50/50 border-amber-200">
+          <span className="text-xs text-amber-700 font-semibold block uppercase">Total Invoiced (ConsumedAmount)</span>
+          <span className="text-2xl font-bold text-amber-900 mt-1 block">
+            ${items.reduce((acc, c) => acc + Number(c.consumedAmount || 0), 0).toLocaleString()}
+          </span>
+          <p className="text-[11px] text-amber-700 mt-0.5">Purchases invoiced on contracts to date</p>
+        </div>
+        <div className="p-4 border rounded-xl bg-emerald-50/50 border-emerald-200">
+          <span className="text-xs text-emerald-700 font-semibold block uppercase">Remaining Ceiling (المتبقي)</span>
+          <span className="text-2xl font-bold text-emerald-900 mt-1 block">
+            ${items
+              .reduce(
+                (acc, c) => acc + Math.max(0, Number(c.totalValue || 0) - Number(c.consumedAmount || 0)),
+                0
+              )
+              .toLocaleString()}
+          </span>
+          <p className="text-[11px] text-emerald-700 mt-0.5">Available balance for future purchase invoices</p>
+        </div>
+      </div>
+
+      {/* Rules Callout from Specification */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-3.5 bg-teal-50/80 border-r-4 border-teal-600 rounded-lg text-xs space-y-1">
+          <p className="font-bold text-teal-900">
+            تصحيح أساسي (Core Accounting Rule):
+          </p>
+          <p className="text-teal-800 leading-relaxed">
+            ConsumedAmount ليس المبلغ المدفوع. قد تستهلك فاتورة شراء 2,000 من عقد قيمته 10,000 بينما تكون الفاتورة آجلة ولم تدفع منها شيئاً. المتبقي من العقد يصبح 8,000، أما المدفوع فيبقى صفراً.
+          </p>
+        </div>
+
+        <div className="p-3.5 bg-amber-50/80 border-r-4 border-amber-500 rounded-lg text-xs space-y-1">
+          <p className="font-bold text-amber-900">
+            الحالة والمدة والسقف (Status & Duration):
+          </p>
+          <p className="text-amber-800 leading-relaxed">
+            انتهاء مدة العقد، وإلغاؤه، واستهلاك كامل قيمته حالات مختلفة. لا يُعد العقد منتهياً زمنياً لمجرد استهلاك سقفه؛ كما أن متابعات العملاء لا تنطبق تلقائياً على الموردين.
+          </p>
+        </div>
+      </div>
+
+      <div className="flex justify-end mb-2">
         <Dialog open={isAddModalOpen} onOpenChange={(open) => {
           if (!open) closeModal();
           else setIsAddModalOpen(true);
