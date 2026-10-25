@@ -1,7 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Clock, Loader2 } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Loader2,
+  Building2,
+  Sparkles,
+  AlertTriangle,
+  Info,
+  CheckCircle2,
+  Users,
+  DollarSign,
+  Globe,
+  Layers,
+  HelpCircle,
+} from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +35,8 @@ import {
   getEventById,
   getEventLookups,
   DAYS_OF_WEEK,
+  DAYS_OF_WEEK_CONFIG,
+  calculateEventOccurrences,
 } from "@/services/events";
 
 export default function AddEditEventPage() {
@@ -35,14 +51,18 @@ export default function AddEditEventPage() {
     service: "",
     resource: "",
     provider: "",
-    maxCapacity: "0",
+    maxCapacity: "20",
     startDate: "",
     endDate: "",
-    startTime: "09:00",
+    startTime: "10:00",
     endTime: "12:00",
     price: "0",
     deposit: "0",
-    recurringDays: [],
+    pricingModel: "PerSeat", // "PerSeat" | "PerBooking"
+    bookingModel: "FullCourse", // "FullCourse" | "PerSession"
+    timeZone: "Asia/Riyadh",
+    recurringDays: ["Sun", "Tue"],
+    isOvernight: false,
     notes: "",
   });
 
@@ -74,26 +94,83 @@ export default function AddEditEventPage() {
         service: e.productVariantId || e.service || "",
         resource: e.resourceId || e.resource || "",
         provider: e.serviceProviderId || e.provider || "",
-        maxCapacity: String(e.maxCapacity || 0),
+        maxCapacity: String(e.maxCapacity || 20),
         startDate: e.startDate || "",
         endDate: e.endDate || "",
-        startTime: e.startTime || "09:00",
+        startTime: e.startTime || "10:00",
         endTime: e.endTime || "12:00",
         price: String(e.numericPrice || e.price || 0),
         deposit: String(e.numericDeposit || e.deposit || 0),
-        recurringDays: e.recurringDays || [],
-        notes: e.notes || "",
+        pricingModel: e.notes?.includes("pricingModel:PerBooking") ? "PerBooking" : "PerSeat",
+        bookingModel: e.notes?.includes("bookingModel:PerSession") ? "PerSession" : "FullCourse",
+        timeZone: "Asia/Riyadh",
+        recurringDays: Array.isArray(e.recurringDays) && e.recurringDays.length > 0 ? e.recurringDays : ["Sun", "Tue"],
+        isOvernight: e.startTime && e.endTime && e.endTime < e.startTime,
+        notes: (e.notes || "").replace(/\[pricingModel:.*?\]/g, "").replace(/\[bookingModel:.*?\]/g, "").trim(),
       });
     }
   }, [isEdit, eventData]);
 
+  // Selected Resource metadata for capacity & lease contract compatibility checks
+  const selectedResource = useMemo(() => {
+    if (!formData.resource || !lookups.resources) return null;
+    return lookups.resources.find((r) => String(r.id) === String(formData.resource));
+  }, [formData.resource, lookups.resources]);
+
+  // Capacity Compatibility Check
+  const capacityWarning = useMemo(() => {
+    if (!selectedResource) return null;
+    const requestedCap = Number(formData.maxCapacity) || 0;
+    const resourceMax = Number(selectedResource.capacity) || 0;
+    if (resourceMax > 0 && requestedCap > resourceMax) {
+      return `سعة الحدث (${requestedCap}) تتجاوز السعة القصوى للمورد المحدد (${resourceMax} مقعداً).`;
+    }
+    return null;
+  }, [selectedResource, formData.maxCapacity]);
+
+  // Duration & Lease Contract Compatibility Check
+  const leaseContractWarning = useMemo(() => {
+    if (!selectedResource || selectedResource.ownership !== "Leased" || !selectedResource.contractEndDate) {
+      return null;
+    }
+    if (!formData.endDate) return null;
+    const eventEnd = new Date(formData.endDate);
+    const leaseEnd = new Date(selectedResource.contractEndDate);
+    if (!isNaN(eventEnd.getTime()) && !isNaN(leaseEnd.getTime()) && eventEnd > leaseEnd) {
+      return `تاريخ نهاية الحدث (${formData.endDate}) يتجاوز تاريخ انتهاء عقد استئجار المورد (${selectedResource.contractEndDate}).`;
+    }
+    return null;
+  }, [selectedResource, formData.endDate]);
+
+  // Check if session spans past midnight
+  const isOvernightDetected = useMemo(() => {
+    if (!formData.startTime || !formData.endTime) return false;
+    return formData.endTime <= formData.startTime;
+  }, [formData.startTime, formData.endTime]);
+
+  // Occurrence Calculation (Page 7: تفسير وتطبيق RecurringDays وحساب عدد الجلسات الإجمالية داخل الفترة)
+  const sessionOccurrences = useMemo(() => {
+    return calculateEventOccurrences(
+      formData.startDate,
+      formData.endDate,
+      formData.recurringDays
+    );
+  }, [formData.startDate, formData.endDate, formData.recurringDays]);
+
   // Mutation for saving
   const saveMutation = useMutation({
-    mutationFn: (data) =>
-      isEdit ? updateEvent(id, data) : createEvent(data),
+    mutationFn: (data) => {
+      // Embed metadata into notes for backend persistence
+      const metaTag = `[pricingModel:${data.pricingModel}][bookingModel:${data.bookingModel}]`;
+      const enrichedPayload = {
+        ...data,
+        notes: `${metaTag} ${data.notes || ""}`.trim(),
+      };
+      return isEdit ? updateEvent(id, enrichedPayload) : createEvent(enrichedPayload);
+    },
     onSuccess: (res) => {
       queryClient.invalidateQueries(["events"]);
-      toast.success(res?.message || (isEdit ? "Event updated!" : "Event created!"));
+      toast.success(res?.message || (isEdit ? "Event updated successfully!" : "Event created successfully!"));
       navigate("/dashboard/events");
     },
     onError: (err) => {
@@ -120,18 +197,33 @@ export default function AddEditEventPage() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (!formData.title) {
-      toast.error("Please enter event title");
+    if (!formData.title.trim()) {
+      toast.error("يرجى إدخال عنوان أو اسم الحدث (Event title is required)");
       return;
     }
     if (!formData.service) {
-      toast.error("Please select a service / product variant");
+      toast.error("يرجى اختيار الصنف أو الخدمة التي يمثلها الحدث (Service/Product is required)");
       return;
     }
     if (!formData.resource) {
-      toast.error("Please select a resource / room");
+      toast.error("يرجى اختيار المكان أو المورد (Resource is required)");
       return;
     }
+    if (!formData.startDate || !formData.endDate) {
+      toast.error("يرجى تحديد بداية ونهاية فترة الحدث (Start and End dates are required)");
+      return;
+    }
+    if (new Date(formData.endDate) < new Date(formData.startDate)) {
+      toast.error("تاريخ نهاية الفترة يجب أن يكون لاحقاً لتاريخ البداية");
+      return;
+    }
+
+    const cap = Number(formData.maxCapacity);
+    if (!cap || cap <= 0) {
+      toast.error("السعة القصوى للحدث يجب أن تكون أكبر من صفر");
+      return;
+    }
+
     saveMutation.mutate(formData);
   };
 
@@ -148,40 +240,140 @@ export default function AddEditEventPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageTitle
-          title={isEdit ? "Edit Event" : "Add Event"}
+          title={isEdit ? "Edit Event (تعديل الحدث)" : "Add Event (إنشاء حدث جديد)"}
           breadcrumbLinks={[
             { label: "Events", href: "/dashboard/events" },
             { label: isEdit ? "Edit Event" : "Add Event" },
           ]}
-          infoTooltip="Fill in the event information, assign service & resource, set period, capacity and pricing."
+          infoTooltip="طرح خدمة في مورد وموعد محددين مع ضبط الأيام المتكررة، السعة، والتسعير."
         />
 
-        <Button
-          type="submit"
-          disabled={saveMutation.isPending}
-          className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
-        >
-          {saveMutation.isPending && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
-          )}
-          Save
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/dashboard/events")}
+            className="h-10 px-5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={saveMutation.isPending}
+            className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
+          >
+            {saveMutation.isPending && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
+            )}
+            Save Event (حفظ الحدث)
+          </Button>
+        </div>
       </div>
 
-      {/* Reservation Info / Event Info Card */}
+      {/* Page 7 System Guidance Card */}
+      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
+                <Sparkles className="w-3.5 h-3.5" />
+                07 / فهم النظام: الأحداث والأيام المتكررة (Events & Recurring Days)
+              </span>
+              <span className="text-xs text-slate-500">طرح خدمة في مورد وموعد محددين، ثم فتحه للحجز</span>
+            </div>
+            <p className="text-xs text-slate-700 leading-relaxed">
+              <strong>مثال معتمد:</strong> خدمة «دورة إنكليزي»، داخل «قاعة A»، من 1 إلى 30 نوفمبر، يومي الأحد والثلاثاء من 10 إلى 12. هذا هو <code>BookingEvent</code>؛ أما تسجيل عميل فيه فهو حجز منفصل.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white/80 px-3 py-1.5 rounded-xl border border-slate-200/60 shadow-2xs">
+            <Globe className="w-4 h-4 text-[#0066d1]" />
+            <span>المنطقة الزمنية: {formData.timeZone} (توقيت مكة)</span>
+          </div>
+        </div>
+
+        {/* The Two Booking Models (Green & Yellow Cards from Page 7) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+          {/* Green Card: Full Course Booking */}
+          <div
+            onClick={() => handleInputChange("bookingModel", "FullCourse")}
+            className={`p-4 rounded-xl border transition-all cursor-pointer ${
+              formData.bookingModel === "FullCourse"
+                ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-400/30 shadow-xs"
+                : "bg-emerald-50/40 border-emerald-100 hover:bg-emerald-50/70"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                الحجز للدورة كاملة (Full Course Booking)
+              </span>
+              <span className="text-[10px] uppercase font-bold text-emerald-700 bg-white px-2 py-0.5 rounded">
+                الافتراضي
+              </span>
+            </div>
+            <p className="text-[11px] text-emerald-800 mt-2 leading-relaxed">
+              إذا كانت المجموعة نفسها تحضر كل جلسات الدورة، يمثل الحدث مجموعة واحدة بسعة مشتركة. حجز مقعدين يعني تسجيل شخصين في الدورة كاملة.
+            </p>
+          </div>
+
+          {/* Yellow Card: Per-Session Booking */}
+          <div
+            onClick={() => handleInputChange("bookingModel", "PerSession")}
+            className={`p-4 rounded-xl border transition-all cursor-pointer ${
+              formData.bookingModel === "PerSession"
+                ? "bg-amber-50/90 border-amber-300 ring-2 ring-amber-400/30 shadow-xs"
+                : "bg-amber-50/40 border-amber-100 hover:bg-amber-50/70"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+                <Layers className="w-4 h-4 text-amber-600" />
+                الحجز لكل جلسة مستقلة (Per-Session / Occurrences)
+              </span>
+              <span className="text-[10px] font-semibold text-amber-700 bg-white px-2 py-0.5 rounded">
+                مواعيد فرعية
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-800 mt-2 leading-relaxed">
+              إذا كان العميل يحجز الأحد أو الثلاثاء كلاً على حدة، يحتاج النظام أحداثاً منفصلة أو جدول مواعيد فرعي مثل <code>BookingOccurrence</code> مع سعة وحجوزات لكل موعد مستقل.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Warnings & Compatibility Alerts */}
+      {(capacityWarning || leaseContractWarning) && (
+        <div className="space-y-2">
+          {capacityWarning && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs flex items-center gap-2 shadow-xs">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>{capacityWarning}</span>
+            </div>
+          )}
+          {leaseContractWarning && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2 shadow-xs">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+              <span>{leaseContractWarning}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Event Specification Card */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
-        <h2 className="text-base font-bold text-slate-800">
-          Event Info
+        <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-[#0066d1]" />
+          بيانات وتخصيص الحدث (Event Specifications)
         </h2>
 
-        {/* Row 1: Title, Service, Resource */}
+        {/* Row 1: Title, Service (ProductVariantId), Resource (ResourceId) */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Title
+              عنوان الحدث / الدورة (Event Title) *
             </Label>
             <Input
-              placeholder="Title"
+              placeholder="مثال: دورة إنكليزي مكثفة - المستوى الأول"
               value={formData.title}
               onChange={(e) => handleInputChange("title", e.target.value)}
               className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -190,13 +382,12 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Service
+              الصنف / الخدمة (ProductVariantId) *
             </Label>
             <Select
               value={formData.service}
               onValueChange={(val) => {
                 handleInputChange("service", val);
-                // Optionally autofill price if available
                 const selectedSvc = lookups.services.find((s) => String(s.id) === String(val));
                 if (selectedSvc && selectedSvc.price && Number(formData.price) === 0) {
                   handleInputChange("price", String(selectedSvc.price));
@@ -204,7 +395,7 @@ export default function AddEditEventPage() {
               }}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="Select Service" />
+                <SelectValue placeholder="اختر الخدمة أو الصنف" />
               </SelectTrigger>
               <SelectContent>
                 {lookups.services.map((svc) => (
@@ -218,25 +409,25 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Resource
+              المكان أو المورد (ResourceId) *
             </Label>
             <Select
               value={formData.resource}
               onValueChange={(val) => {
                 handleInputChange("resource", val);
                 const selectedRes = lookups.resources.find((r) => String(r.id) === String(val));
-                if (selectedRes && selectedRes.capacity && Number(formData.maxCapacity) === 0) {
+                if (selectedRes && selectedRes.capacity && (Number(formData.maxCapacity) === 0 || Number(formData.maxCapacity) === 20)) {
                   handleInputChange("maxCapacity", String(selectedRes.capacity));
                 }
               }}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="Select Resource" />
+                <SelectValue placeholder="اختر المورد أو القاعة" />
               </SelectTrigger>
               <SelectContent>
                 {lookups.resources.map((res) => (
                   <SelectItem key={res.id} value={String(res.id)}>
-                    {res.name} (Cap: {res.capacity})
+                    {res.name} (السعة: {res.capacity} مقعداً) {res.ownership === "Leased" ? "- مستأجر" : "- مملوك"}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -244,21 +435,21 @@ export default function AddEditEventPage() {
           </div>
         </div>
 
-        {/* Row 2: Provider (optional), Max Capacity, Start Date */}
+        {/* Row 2: Provider (ServiceProviderId), Max Capacity (MaxCapacity), Start Date */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Provider (optional)
+              مقدم الخدمة الاختياري (ServiceProviderId)
             </Label>
             <Select
               value={formData.provider || "none"}
               onValueChange={(val) => handleInputChange("provider", val === "none" ? "" : val)}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="Select Provider" />
+                <SelectValue placeholder="اختر مقدم الخدمة (اختياري)" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">-- No Provider --</SelectItem>
+                <SelectItem value="none">-- بدون مقدم خدمة محدد --</SelectItem>
                 {lookups.providers.map((prov) => (
                   <SelectItem key={prov.id} value={String(prov.id)}>
                     {prov.name}
@@ -270,20 +461,28 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Max Capacity
+              سعة الحدث القصوى (MaxCapacity) *
             </Label>
-            <Input
-              type="number"
-              placeholder="0"
-              value={formData.maxCapacity}
-              onChange={(e) => handleInputChange("maxCapacity", e.target.value)}
-              className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-            />
+            <div className="relative">
+              <Input
+                type="number"
+                placeholder="20"
+                value={formData.maxCapacity}
+                onChange={(e) => handleInputChange("maxCapacity", e.target.value)}
+                className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] pe-9"
+              />
+              <Users className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </div>
+            {selectedResource && (
+              <p className="text-[10px] text-slate-400">
+                السعة القصوى للمورد المحدد: {selectedResource.capacity} مقعد
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Start Date
+              بداية الفترة (StartDate) *
             </Label>
             <div className="relative">
               <Input
@@ -297,11 +496,11 @@ export default function AddEditEventPage() {
           </div>
         </div>
 
-        {/* Row 3: End Date, Start Time, End Time, Price */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
+        {/* Row 3: End Date, Start Time, End Time, Overnight Indicator */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              End Date
+              نهاية الفترة (EndDate) *
             </Label>
             <div className="relative">
               <Input
@@ -316,100 +515,164 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Start Time
+              توقيت بدء الجلسة (StartTime)
             </Label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="09:00"
+                placeholder="10:00"
                 value={formData.startTime}
                 onChange={(e) => handleInputChange("startTime", e.target.value)}
-                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9 font-mono text-xs"
               />
               <Clock className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">
-              End Time
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold text-slate-700">
+                توقيت انتهاء الجلسة (EndTime)
+              </Label>
+              {isOvernightDetected && (
+                <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                  تمتد لليوم التالي (Overnight)
+                </span>
+              )}
+            </div>
             <div className="relative">
               <Input
                 type="text"
                 placeholder="12:00"
                 value={formData.endTime}
                 onChange={(e) => handleInputChange("endTime", e.target.value)}
-                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
+                className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9 font-mono text-xs"
               />
               <Clock className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
           </div>
+        </div>
+
+        {/* Row 4: Pricing Model, Price (Price), Advance Payment / Deposit (AdvancePayment) */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2 border-t border-slate-50">
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold text-slate-700">
+              قاعدة التسعير (Pricing Basis)
+            </Label>
+            <Select
+              value={formData.pricingModel}
+              onValueChange={(val) => handleInputChange("pricingModel", val)}
+            >
+              <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                <SelectValue placeholder="حدد قاعدة التسعير" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PerSeat">سعر لكل مقعد / مشارك (Per Seat)</SelectItem>
+                <SelectItem value="PerBooking">سعر لكامل الحجز / المجموعة (Per Booking)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-slate-400">
+              حدد إن كان السعر والعربون للمقعد الواحد أو للحجز الإجمالي.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Price
+              سعر الحدث (Price / BookingEvent.Price)
             </Label>
-            <Input
-              type="number"
-              placeholder="0"
-              value={formData.price}
-              onChange={(e) => handleInputChange("price", e.target.value)}
-              className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-            />
+            <div className="relative">
+              <Input
+                type="number"
+                placeholder="0"
+                value={formData.price}
+                onChange={(e) => handleInputChange("price", e.target.value)}
+                className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] pe-9 font-semibold"
+              />
+              <DollarSign className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </div>
+            <p className="text-[10px] text-slate-400">
+              سعر البيع للعميل (لا يلزم تساويه مع تكلفة المورد DailyRentalCost).
+            </p>
           </div>
-        </div>
 
-        {/* Row 4: Deposit */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              Deposit
+              العربون / الدفعة المقدمة (AdvancePayment)
             </Label>
-            <Input
-              type="number"
-              placeholder="0"
-              value={formData.deposit}
-              onChange={(e) => handleInputChange("deposit", e.target.value)}
-              className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-            />
+            <div className="relative">
+              <Input
+                type="number"
+                placeholder="0"
+                value={formData.deposit}
+                onChange={(e) => handleInputChange("deposit", e.target.value)}
+                className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] pe-9 font-semibold"
+              />
+              <DollarSign className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            </div>
           </div>
         </div>
 
-        {/* Row 5: Recurring Days */}
-        <div className="space-y-2.5">
-          <Label className="text-xs font-semibold text-slate-700">
-            Recurring Days
-          </Label>
+        {/* Row 5: Recurring Days Selection & Occurrence Calculation */}
+        <div className="space-y-3 pt-3 border-t border-slate-50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <Label className="text-xs font-bold text-slate-800">
+                أيام التكرار داخل الفترة (RecurringDays)
+              </Label>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                تحديد أيام الأسبوع التي تنعقد فيها جلسات الحدث داخل الفترة المحددة.
+              </p>
+            </div>
+
+            {/* Calculated Sessions Badge */}
+            {sessionOccurrences.count > 0 && (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#0066d1] border border-blue-200">
+                <Calendar className="w-3.5 h-3.5" />
+                إجمالي الجلسات المحسوبة: {sessionOccurrences.count} جلسة
+              </span>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-2.5">
-            {DAYS_OF_WEEK.map((day) => {
-              const isSelected = formData.recurringDays.includes(day);
+            {DAYS_OF_WEEK_CONFIG.map((day) => {
+              const isSelected = formData.recurringDays.includes(day.id);
               return (
                 <button
-                  key={day}
+                  key={day.id}
                   type="button"
-                  onClick={() => toggleRecurringDay(day)}
-                  className={`min-w-[70px] h-10 px-4 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
+                  onClick={() => toggleRecurringDay(day.id)}
+                  className={`min-w-[95px] h-11 px-3.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     isSelected
                       ? "border-[#0066d1] bg-[#0066d1] text-white shadow-xs"
                       : "border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
                   }`}
                 >
-                  {day}
+                  <span>{day.arabic}</span>
+                  <span className="text-[10px] opacity-80 font-mono">({day.id})</span>
                 </button>
               );
             })}
           </div>
+
+          {sessionOccurrences.dates.length > 0 && (
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-600">
+              <span className="font-semibold text-slate-800">مواعيد الجلسات الفعلية المحسوبة: </span>
+              <span className="text-slate-500 font-mono text-[11px]">
+                {sessionOccurrences.dates.slice(0, 6).join(", ")}
+                {sessionOccurrences.dates.length > 6 && ` ... (+${sessionOccurrences.dates.length - 6} جلسات أخرى)`}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Row 6: Notes */}
-        <div className="space-y-2">
+        <div className="space-y-2 pt-2 border-t border-slate-50">
           <Label className="text-xs font-semibold text-slate-700">
-            Notes
+            ملاحظات وشروط إضافية (Notes)
           </Label>
           <Textarea
-            rows={4}
-            placeholder="Additional requirements or event guidelines..."
+            rows={3}
+            placeholder="تعليمات القاعة، تجهيزات البروجكتر، مستلزمات الضيافة أو شروط الحضور..."
             value={formData.notes}
             onChange={(e) => handleInputChange("notes", e.target.value)}
             className="rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] resize-none"

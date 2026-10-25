@@ -1,102 +1,201 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
-  Users as UsersIcon,
+  FolderKanban,
   Pencil,
   Trash2,
   Eye,
-  Building,
+  CheckCircle2,
+  Clock,
+  AlertCircle,
+  Plus,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { useNavigate } from "react-router-dom";
-
-const stats = [
-  {
-    title: "Number of system Departments",
-    value: "32",
-    trend: "+5%",
-    isUp: true,
-    color: "bg-blue-600",
-    icon: Building,
-  },
-  {
-    title: "Total number of employees",
-    value: "32",
-    trend: "-1%",
-    isUp: false,
-    color: "bg-emerald-500",
-    icon: UsersIcon,
-  },
-  {
-    title: "Number of system Departments",
-    value: "32",
-    trend: "+5%",
-    isUp: true,
-    color: "bg-blue-900",
-    icon: Building,
-  },
-  {
-    title: "Total number of employees",
-    value: "32",
-    trend: "-1%",
-    isUp: false,
-    color: "bg-orange-500",
-    icon: UsersIcon,
-  },
-];
-
-const MOCK_LEADS = [
-  { id: "1", name: "Ahmed", company: "Company A", phone: "+971 25648..", source: "Facebook", value: "$350,000", responsible: "John Doe", status: "New", createdAt: "23/7/2025" },
-  { id: "2", name: "Sarah", company: "Company B", phone: "+971 25648..", source: "Website", value: "$150,000", responsible: "Jane Smith", status: "Contacted", createdAt: "23/7/2025" },
-  { id: "3", name: "Mike", company: "Company C", phone: "+971 25648..", source: "Referral", value: "$550,000", responsible: "Mike Johnson", status: "Qualified", createdAt: "23/7/2025" },
-  { id: "4", name: "Emma", company: "Company D", phone: "+971 25648..", source: "LinkedIn", value: "$250,000", responsible: "Emily Brown", status: "Quotation", createdAt: "23/7/2025" },
-  { id: "5", name: "Tom", company: "Company E", phone: "+971 25648..", source: "Google", value: "$450,000", responsible: "Tom Wilson", status: "Converted", createdAt: "23/7/2025" },
-  { id: "6", name: "Lucy", company: "Company F", phone: "+971 25648..", source: "Twitter", value: "$650,000", responsible: "Lucy Davis", status: "Lost", createdAt: "23/7/2025" },
-];
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getCustomerProjects, deleteCustomerProject } from "@/lib/api";
+import { toast } from "react-hot-toast";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { Button } from "@/components/ui/button";
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
+  const [deleteId, setDeleteId] = useState(null);
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
-  const tabs = ["All", "New", "Contacted", "Qualified", "Quotation", "Converted", "Lost"];
+  const tabs = ["All", "Planning", "InProgress", "Pending", "Completed", "Cancelled"];
 
-  // Filter leads based on active tab and search (mock logic)
-  let filteredLeads = MOCK_LEADS;
-  if (activeTab !== "All") {
-    filteredLeads = filteredLeads.filter(lead => lead.status === activeTab);
-  }
-  if (search) {
-    filteredLeads = filteredLeads.filter(
-      lead => lead.name.toLowerCase().includes(search.toLowerCase()) || lead.id.includes(search)
-    );
-  }
+  const { data: projectsData, isLoading } = useQuery({
+    queryKey: ["allCustomerProjects", page, search],
+    queryFn: () =>
+      getCustomerProjects({
+        PageNumber: page,
+        PageSize: 10,
+        Search: search || undefined,
+      }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteCustomerProject(id),
+    onSuccess: () => {
+      toast.success("Project deleted successfully");
+      queryClient.invalidateQueries(["allCustomerProjects"]);
+      setDeleteId(null);
+    },
+    onError: () => {
+      toast.error("Failed to delete project");
+      setDeleteId(null);
+    },
+  });
+
+  const raw = projectsData?.data || projectsData || {};
+  const items = raw?.items || (Array.isArray(raw) ? raw : []);
+  const totalPages = raw?.totalPages || 1;
+
+  // Filter based on active tab and search
+  const filteredProjects = useMemo(() => {
+    let list = items;
+    if (activeTab !== "All") {
+      list = list.filter((p) => {
+        const s = (p.status || "").toLowerCase().replace(/[^a-z]/g, "");
+        const target = activeTab.toLowerCase().replace(/[^a-z]/g, "");
+        return s === target;
+      });
+    }
+    if (search) {
+      list = list.filter(
+        (p) =>
+          p.projectName?.toLowerCase().includes(search.toLowerCase()) ||
+          p.id?.toLowerCase().includes(search.toLowerCase()) ||
+          p.customerName?.toLowerCase().includes(search.toLowerCase())
+      );
+    }
+    return list;
+  }, [items, activeTab, search]);
+
+  // Aggregate stats
+  const totalValue = items.reduce((acc, p) => acc + Number(p.projectValue || p.value || 0), 0);
+  const inProgressCount = items.filter((p) => (p.status || "").toLowerCase().includes("progress")).length;
+  const completedCount = items.filter((p) => (p.status || "").toLowerCase().includes("completed")).length;
+
+  const stats = [
+    {
+      title: "Total Customer Projects",
+      value: items.length.toString(),
+      sub: "Active tracked projects",
+      color: "bg-blue-600",
+      icon: FolderKanban,
+    },
+    {
+      title: "In Progress (قيد التنفيذ)",
+      value: inProgressCount.toString(),
+      sub: "Currently executing",
+      color: "bg-amber-500",
+      icon: Clock,
+    },
+    {
+      title: "Completed (مكتمل)",
+      value: completedCount.toString(),
+      sub: "Handed over successfully",
+      color: "bg-emerald-500",
+      icon: CheckCircle2,
+    },
+    {
+      title: "Total Contractual Value",
+      value: `$${totalValue.toLocaleString()}`,
+      sub: "Portfolio value",
+      color: "bg-purple-600",
+      icon: AlertCircle,
+    },
+  ];
 
   const columns = [
-    { key: "id", label: "ID", render: (row) => <span className="text-blue-500 font-medium">{row.id}</span> },
-    { key: "name", label: "Name" },
-    { key: "company", label: "Company" },
-    { key: "phone", label: "Phone" },
-    { key: "source", label: "Source" },
-    { key: "value", label: "Value", render: (row) => <span className="text-blue-500">{row.value}</span> },
-    { key: "responsible", label: "Responsible" },
-    { 
-      key: "status", 
+    {
+      key: "projectName",
+      label: "Project",
+      render: (row) => (
+        <div>
+          <span className="font-semibold text-foreground block">{row.projectName}</span>
+          <span className="text-[11px] text-muted-foreground">ID: #{row.id?.substring(0, 8)}</span>
+        </div>
+      ),
+    },
+    {
+      key: "customerName",
+      label: "Customer (العميل)",
+      render: (row) => (
+        <span className="font-medium text-foreground">
+          {row.customerName || (row.customerId ? `Customer #${row.customerId.substring(0, 8)}` : "-")}
+        </span>
+      ),
+    },
+    {
+      key: "status",
       label: "Status",
       render: (row) => {
-        let colorClass = "bg-gray-100 text-gray-600";
-        switch(row.status) {
-          case "New": colorClass = "bg-green-100 text-green-600"; break;
-          case "Contacted": colorClass = "bg-blue-100 text-blue-600"; break;
-          case "Qualified": colorClass = "bg-teal-100 text-teal-600"; break;
-          case "Quotation": colorClass = "bg-yellow-100 text-yellow-600"; break;
-          case "Converted": colorClass = "bg-purple-100 text-purple-600"; break;
-          case "Lost": colorClass = "bg-red-100 text-red-600"; break;
-        }
-        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{row.status}</span>;
-      }
+        const colorClasses = {
+          Planning: "bg-blue-100 text-blue-700 border-blue-200",
+          InProgress: "bg-amber-100 text-amber-700 border-amber-200",
+          "In Progress": "bg-amber-100 text-amber-700 border-amber-200",
+          Pending: "bg-purple-100 text-purple-700 border-purple-200",
+          Completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
+          Cancelled: "bg-rose-100 text-rose-700 border-rose-200",
+        };
+        const colorClass = colorClasses[row.status] || "bg-gray-100 text-gray-700 border-gray-200";
+        return (
+          <span className={`px-2.5 py-0.5 border rounded-full text-xs font-semibold ${colorClass}`}>
+            {row.status || "Planning"}
+          </span>
+        );
+      },
     },
-    { key: "createdAt", label: "Created At" },
+    {
+      key: "completionPercentage",
+      label: "Progress (نسبة الإنجاز)",
+      render: (row) => {
+        const perc = Number(row.completionPercentage || 0);
+        return (
+          <div className="min-w-[130px]">
+            <div className="flex items-center justify-between text-xs font-medium mb-1">
+              <span className="text-foreground">{perc}%</span>
+              <span className="text-[10px] text-muted-foreground">Operational</span>
+            </div>
+            <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-2 rounded-full ${
+                  perc >= 100 ? "bg-emerald-500" : perc >= 50 ? "bg-blue-600" : "bg-amber-500"
+                }`}
+                style={{ width: `${Math.min(100, perc)}%` }}
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: "projectValue",
+      label: "Value",
+      render: (row) => (
+        <span className="font-bold text-blue-600">
+          ${Number(row.projectValue || row.value || 0).toLocaleString()}
+        </span>
+      ),
+    },
+    {
+      key: "dates",
+      label: "Period",
+      render: (row) => {
+        const start = row.startDate ? new Date(row.startDate).toLocaleDateString() : "-";
+        const end = row.endDate ? new Date(row.endDate).toLocaleDateString() : "-";
+        return (
+          <span className="text-xs text-muted-foreground">
+            {start} → {end}
+          </span>
+        );
+      },
+    },
   ];
 
   const rowActionsMenu = [
@@ -104,59 +203,80 @@ export default function ProjectsPage() {
       items: [
         {
           key: "view",
-          label: "View",
+          label: "View Details",
           icon: Eye,
-          onClick: (row) =>navigate(`/dashboard/crm/projects/${row.id}`),
+          onClick: (row) => navigate(`/dashboard/crm/projects/${row.id}`),
         },
         {
           key: "edit",
-          label: "Edit",
+          label: "Edit Project",
           icon: Pencil,
-          onClick: (row) => navigate(`/dashboard/crm/leads/edit/${row.id}`),
+          onClick: (row) => navigate(`/dashboard/crm/projects/edit/${row.id}`),
         },
-      ]
-    },
-    {
-      items: [
         {
           key: "delete",
-          label: "Delete",
+          label: "Delete Project",
           icon: Trash2,
           destructive: true,
-          onClick: (row) => console.log("Delete", row.id),
+          onClick: (row) => setDeleteId(row.id),
         },
-      ]
-    }
+      ],
+    },
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
-        <span>Leads</span>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">Customer Projects (المشاريع)</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Manage client scopes of work, contractual milestones, and execution progress
+          </p>
+        </div>
+        <Button
+          className="gap-2 bg-blue-600 hover:bg-blue-700"
+          onClick={() => navigate("/dashboard/crm/projects/add")}
+        >
+          <Plus className="w-4 h-4" />
+          Add Project
+        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
-          <div key={i} className="bg-card text-card-foreground p-4 rounded-xl border flex items-center gap-4 shadow-sm">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-white ${stat.color}`}>
+          <div
+            key={i}
+            className="bg-card text-card-foreground p-4 rounded-xl border flex items-center gap-4 shadow-sm"
+          >
+            <div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center text-white ${stat.color} shrink-0`}
+            >
               <stat.icon className="w-6 h-6" />
             </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-2xl font-bold text-foreground">{stat.value}</span>
-                <span className={`text-xs font-semibold ${stat.isUp ? "text-green-500" : "text-red-500"}`}>
-                  {stat.trend} {stat.isUp ? "↑" : "↓"}
-                </span>
-              </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
+              <div className="text-2xl font-bold text-foreground mt-0.5">{stat.value}</div>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{stat.sub}</p>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex items-center gap-6 border-b border-border mb-4 overflow-x-auto">
+      {/* Guidance Alert */}
+      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
+        <p className="font-bold text-blue-950 flex items-center gap-1.5">
+          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+          الفوترة ليست إنجازاً تشغيلياً (Operational Progress vs Invoicing):
+        </p>
+        <p className="text-blue-900 leading-relaxed">
+          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. ترتبط نسبة الإنجاز (CompletionPercentage) بتقدم المهام ومراحل التنفيذ المعتمدة، مع إظهار الفوترة كمؤشر مستقل.
+        </p>
+      </div>
+
+      {/* Status Tabs */}
+      <div className="flex items-center gap-6 border-b border-border overflow-x-auto bg-white px-2 pt-2 rounded-t-xl">
         {tabs.map((tab) => (
           <button
             key={tab}
@@ -164,50 +284,47 @@ export default function ProjectsPage() {
               setActiveTab(tab);
               setPage(1);
             }}
-            className={`pb-3 text-sm font-medium transition-colors relative whitespace-nowrap ${
+            className={`pb-3 text-sm font-semibold transition-colors relative whitespace-nowrap ${
               activeTab === tab
-                ? "text-primary"
+                ? "text-blue-600"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             {tab}
             {activeTab === tab && (
-              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
             )}
           </button>
         ))}
       </div>
 
+      {/* DataView */}
       <DataView
-        data={filteredLeads}
+        data={filteredProjects}
+        isLoading={isLoading}
         getRowId={(row) => row.id}
-        selectable
         search={{
-          placeholder: "Search by id or employee name...",
+          placeholder: "Search projects by name, customer, or ID...",
           value: search,
           onChange: setSearch,
-        }}
-        filter={{
-          label: "Filter",
-          onClick: () => console.log("Filter clicked"),
-        }}
-        export={{
-          label: "Export",
-          onClick: () => console.log("Export clicked"),
-        }}
-        addButton={{
-          label: "Add",
-          onClick: () => navigate("/dashboard/crm/leads/add"),
         }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         pagination={{
           page: page,
-          totalPages: 1,
+          totalPages: totalPages,
           onPageChange: setPage,
           prevLabel: "Pre",
           nextLabel: "Next",
         }}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={!!deleteId}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => deleteMutation.mutate(deleteId)}
+        title="Delete Customer Project"
+        description="Are you sure you want to delete this project? This action cannot be undone."
       />
     </div>
   );

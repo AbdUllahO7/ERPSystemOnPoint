@@ -1,23 +1,16 @@
 import { useMemo, useState } from "react";
 import { DataView } from "@/components/data-view/DataView";
 import { useQuery } from "@tanstack/react-query";
-import { getAllPosSalesInvoices, getAllCategories } from "@/lib/api";
+import { getAllInvoices } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FileText, Eye } from "lucide-react";
+import { FileText, Receipt, ShieldCheck } from "lucide-react";
 
-export function InvoicesTab() {
+export function InvoicesTab({ supplierId }) {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
-  const [filters, setFilters] = useState({ Category_Id: "", FromDate: "", ToDate: "", PaymentMethodId: "" });
-
-  const { data: categoryData } = useQuery({
-    queryKey: ["getAllCategories"],
-    queryFn: () => getAllCategories({ pageNumber: 1, pageSize: 100 }),
-  });
-  const categories = categoryData?.data?.items || [];
+  const [filters, setFilters] = useState({ FromDate: "", ToDate: "", PaymentMethodId: "" });
 
   const params = useMemo(() => {
     const p = {
@@ -25,16 +18,16 @@ export function InvoicesTab() {
       PageNumber: page,
       PageSize: 10,
     };
-    if (filters.Category_Id) p.Category_Id = filters.Category_Id;
+    if (supplierId) p.Supplier_Id = supplierId;
     if (filters.FromDate) p.FromDate = filters.FromDate;
     if (filters.ToDate) p.ToDate = filters.ToDate;
-    if (filters.PaymentMethodId) p.PaymentMethodId = filters.PaymentMethodId;
+    if (filters.PaymentMethodId) p.Payment_Method = filters.PaymentMethodId;
     return p;
-  }, [page, search, filters]);
+  }, [page, search, filters, supplierId]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["getAllPosSalesInvoices", params],
-    queryFn: () => getAllPosSalesInvoices(params),
+    queryKey: ["getSupplierInvoices", params],
+    queryFn: () => getAllInvoices(params),
   });
 
   const displayRows = data?.data?.items || [];
@@ -50,11 +43,23 @@ export function InvoicesTab() {
     { 
       key: "invoice_Number", 
       label: "Invoice #", 
-      render: (row) => <span className="text-blue-500 font-medium">{row.invoice_Number}</span> 
+      render: (row) => <span className="text-blue-600 font-semibold">{row.invoice_Number}</span> 
     },
     { 
-      key: "customer_Account_Name", 
-      label: "Customer" 
+      key: "contractSupplierId", 
+      label: "Contract Link (ContractSupplierId)", 
+      render: (row) => (
+        row.contractSupplierId ? (
+          <div className="flex items-center gap-1.5">
+            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+              #{row.contractSupplierId.substring(0, 8)}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-muted-foreground italic">No contract linked</span>
+        )
+      )
     },
     { 
       key: "invoice_Date", 
@@ -64,19 +69,34 @@ export function InvoicesTab() {
     { 
       key: "total_Amount", 
       label: "Total Amount", 
-      render: (row) => <span className="font-semibold">${row.total_Amount}</span> 
+      render: (row) => <span className="font-medium text-foreground">${Number(row.total_Amount || 0).toLocaleString()}</span> 
     },
     { 
       key: "net_Amount", 
-      label: "Net Amount", 
-      render: (row) => <span className="text-emerald-600 font-semibold">${row.net_Amount}</span> 
+      label: "Net Consumed (صافي الفاتورة)", 
+      render: (row) => (
+        <div>
+          <span className="text-emerald-700 font-bold block">${Number(row.net_Amount || 0).toLocaleString()}</span>
+          <span className="text-[10px] text-muted-foreground">Consumes contract</span>
+        </div>
+      )
+    },
+    { 
+      key: "paid_Amount", 
+      label: "Paid Amount (المدفوع)", 
+      render: (row) => (
+        <div>
+          <span className="font-semibold text-blue-600 block">${Number(row.paid_Amount || 0).toLocaleString()}</span>
+          <span className="text-[10px] text-muted-foreground">Cash paid</span>
+        </div>
+      )
     },
     { 
       key: "payment_Method_Name", 
       label: "Payment Method",
       render: (row) => (
-        <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-          {row.payment_Method_Name || "N/A"}
+        <span className="px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-full text-xs font-medium">
+          {row.payment_Method_Name || row.payment_Method || "N/A"}
         </span>
       )
     },
@@ -84,6 +104,16 @@ export function InvoicesTab() {
 
   return (
     <div className="space-y-4">
+      {/* Informative Guidance Banner */}
+      <div className="p-3.5 bg-teal-50/80 border-r-4 border-teal-600 rounded-lg text-xs space-y-1">
+        <p className="font-bold text-teal-900">
+          كيف ترتبط الفاتورة بالعقد واستحقاق المشتريات:
+        </p>
+        <p className="text-teal-800 leading-relaxed">
+          صافي الفاتورة (Net Amount) يستهلك سقف عقد المورد المحدد بـ ContractSupplierId، بينما يمثل المدفوع (Paid Amount) السيولة المسددة فعلياً. الفاتورة الآجلة تستهلك سقف العقد فور إصدارها حتى لو كان المدفوع صفراً.
+        </p>
+      </div>
+
       {/* Filter Menu */}
       <div
         className={`grid transition-all duration-300 ease-in-out ${
@@ -116,34 +146,11 @@ export function InvoicesTab() {
               />
             </div>
 
-            {/* <div className="flex flex-col gap-2 w-full sm:max-w-[200px]">
-              <label className="text-sm font-medium text-foreground">Category</label>
-              <Select
-                value={filters.Category_Id || "all"}
-                onValueChange={(val) => {
-                  setFilters((prev) => ({ ...prev, Category_Id: val === "all" ? "" : val }));
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categories.map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name || c.categoryName || "Unnamed Category"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div> */}
-
             {Object.values(filters).some((val) => val !== "") && (
               <Button
                 variant="outline"
                 onClick={() => {
-                  setFilters({ Category_Id: "", FromDate: "", ToDate: "", PaymentMethodId: "" });
+                  setFilters({ FromDate: "", ToDate: "", PaymentMethodId: "" });
                   setPage(1);
                 }}
               >
@@ -159,7 +166,7 @@ export function InvoicesTab() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         search={{
-          placeholder: "Search invoices...",
+          placeholder: "Search supplier invoices...",
           value: search,
           onChange: handleSearch,
         }}
@@ -169,12 +176,16 @@ export function InvoicesTab() {
         }}
         columns={columns}
         card={{
-          icon: FileText,
+          icon: Receipt,
           title: (row) => row.invoice_Number,
           subtitle: (row) => `Date: ${row.invoice_Date ? new Date(row.invoice_Date).toLocaleDateString() : "-"}`,
           fields: [
-            { label: "Customer:", value: (row) => row.customer_Account_Name },
-            { label: "Net Amount:", value: (row) => `$${row.net_Amount}` },
+            { label: "Net Amount:", value: (row) => `$${row.net_Amount || 0}` },
+            { label: "Paid Amount:", value: (row) => `$${row.paid_Amount || 0}` },
+            { 
+              label: "Contract:", 
+              value: (row) => row.contractSupplierId ? `#${row.contractSupplierId.substring(0, 8)}` : "None" 
+            },
           ],
         }}
         pagination={{
@@ -184,7 +195,7 @@ export function InvoicesTab() {
           prevLabel: "Prev",
           nextLabel: "Next",
         }}
-        emptyMessage="No invoices found"
+        emptyMessage="No supplier invoices found"
       />
     </div>
   );

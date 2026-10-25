@@ -99,18 +99,24 @@ export async function getReservationLookups() {
       }));
     }
 
-    // Parse Events (Bookings)
+    // Parse Events (Bookings) with capacity and reserved counts
     let events = [];
     if (eventsRes.status === "fulfilled") {
       const raw = eventsRes.value?.data || eventsRes.value || {};
       const list = raw?.items || (Array.isArray(raw) ? raw : []);
-      events = list.map((e) => ({
-        id: e.id,
-        name: e.title || "Event",
-        price: e.price || 0,
-        advancePayment: e.advancePayment || 0,
-        remainingQty: (e.maxCapacity ?? 20) - (e.reservedQuantity ?? 0),
-      }));
+      events = list.map((e) => {
+        const maxCap = e.maxCapacity ?? e.capacity ?? 20;
+        const resQty = e.reservedQuantity ?? 0;
+        return {
+          id: e.id,
+          name: e.title || "Event",
+          price: e.price || 0,
+          advancePayment: e.advancePayment || 0,
+          maxCapacity: maxCap,
+          reservedQuantity: resQty,
+          remainingQty: Math.max(0, maxCap - resQty),
+        };
+      });
     }
 
     // Parse Invoice Patterns
@@ -386,9 +392,11 @@ export async function updateReservation(id, data) {
  * Cancel Reservation Tickets (Reverse Reservation)
  * Endpoint: POST /api/inventory/CustomerReseveration/ReverseReservation/reverse
  */
-export async function cancelReservationTickets(id, quantityToCancel, paymentMethod = "Cash") {
+export async function cancelReservationTickets(id, quantityToCancel, options = "Cash") {
+  const isObj = typeof options === "object" && options !== null;
+  const pmRaw = isObj ? (options.paymentMethod || "Cash") : (options || "Cash");
   let pm = "Cash";
-  const pStr = String(paymentMethod || "").toLowerCase();
+  const pStr = String(pmRaw || "").toLowerCase();
   if (pStr.includes("card") || pStr.includes("credit")) pm = "Credit";
   else if (pStr.includes("bank")) pm = "Bank";
 
@@ -396,6 +404,8 @@ export async function cancelReservationTickets(id, quantityToCancel, paymentMeth
     reservationId: id,
     quantityToCancel: Number(quantityToCancel) || 1,
     paymentMethod: pm,
+    returnInvoicePatternId: isObj ? options.returnInvoicePatternId || null : null,
+    notes: isObj ? options.notes || null : null,
   };
 
   const res = await apiHandler({
@@ -407,7 +417,7 @@ export async function cancelReservationTickets(id, quantityToCancel, paymentMeth
   return {
     status: 200,
     data: res?.data || res,
-    message: "Tickets canceled successfully",
+    message: "Tickets canceled and seats released successfully",
   };
 }
 

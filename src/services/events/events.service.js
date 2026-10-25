@@ -49,7 +49,64 @@ export const EVENT_STATUS_TABS = [
   { id: "no-show", label: "No-Show" },
 ];
 
-export const DAYS_OF_WEEK = ["Sat", "Sun", "Mon", "Wed", "Thu", "Fri"];
+export const DAYS_OF_WEEK = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
+
+export const DAYS_OF_WEEK_CONFIG = [
+  { id: "Sat", name: "Saturday", arabic: "السبت", dayIndex: 6 },
+  { id: "Sun", name: "Sunday", arabic: "الأحد", dayIndex: 0 },
+  { id: "Mon", name: "Monday", arabic: "الإثنين", dayIndex: 1 },
+  { id: "Tue", name: "Tuesday", arabic: "الثلاثاء", dayIndex: 2 },
+  { id: "Wed", name: "Wednesday", arabic: "الأربعاء", dayIndex: 3 },
+  { id: "Thu", name: "Thursday", arabic: "الخميس", dayIndex: 4 },
+  { id: "Fri", name: "Friday", arabic: "الجمعة", dayIndex: 5 },
+];
+
+/**
+ * Calculate the exact occurrences and session count of recurring days within a period
+ * (Page 7: تفسير وتطبيق RecurringDays وحساب الجلسات الفعلية داخل الفترة)
+ */
+export function calculateEventOccurrences(startDate, endDate, recurringDays = []) {
+  if (!startDate || !endDate) return { count: 0, dates: [] };
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) {
+    return { count: 0, dates: [] };
+  }
+
+  const dayMap = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+
+  const targetDayIndices = (recurringDays || [])
+    .map((d) => dayMap[d])
+    .filter((d) => d !== undefined);
+
+  if (targetDayIndices.length === 0) {
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return { count: diffDays, dates: [] };
+  }
+
+  const occurrences = [];
+  const current = new Date(start);
+  while (current <= end) {
+    if (targetDayIndices.includes(current.getDay())) {
+      occurrences.push(new Date(current).toISOString().split("T")[0]);
+    }
+    current.setDate(current.getDate() + 1);
+  }
+
+  return {
+    count: occurrences.length,
+    dates: occurrences,
+  };
+}
 
 // ==========================================
 // Service Methods - Connected to Real Backend
@@ -99,7 +156,7 @@ export async function getEventLookups() {
       });
     }
 
-    // Parse Resources (Halls, Rooms, Equipments)
+    // Parse Resources (Halls, Rooms, Equipments) with capacity and lease details
     let resources = [];
     if (resourcesRes.status === "fulfilled") {
       const raw = resourcesRes.value?.data || resourcesRes.value || {};
@@ -108,6 +165,9 @@ export async function getEventLookups() {
         id: item.id,
         name: item.resource_Name || item.name || item.resourceName || "Unnamed Resource",
         capacity: item.capacity || item.maxCapacity || 20,
+        ownership: item.ownership === "Leased" ? "Leased" : "Owned",
+        contractEndDate: item.contractEndDate ? new Date(item.contractEndDate).toISOString().split("T")[0] : null,
+        dailyRentalCost: item.dailyRentalCost ?? 0,
       }));
     }
 
@@ -175,8 +235,8 @@ export async function getEvents(params = {}) {
       PageSize: params.PageSize || 10,
       Search: params.SearchTerm || params.Search || undefined,
       SearchTerm: params.SearchTerm || undefined,
-      ResourceId: params.Resource && params.Resource !== "all" ? params.Resource : undefined,
-      ServiceProviderId: params.Provider && params.Provider !== "all" ? params.Provider : undefined,
+      ResourceId: params.ResourceId || (params.Resource && params.Resource !== "all" ? params.Resource : undefined),
+      ServiceProviderId: params.ServiceProviderId || (params.Provider && params.Provider !== "all" ? params.Provider : undefined),
       IsActive: params.IsActive !== undefined ? params.IsActive : undefined,
       SortBy: params.SortBy || undefined,
       SortDirection: params.SortDirection || undefined,
@@ -362,7 +422,7 @@ export async function createEvent(data) {
     title: data.title,
     productVariantId: data.productVariantId || data.service,
     resourceId: data.resourceId || data.resource,
-    serviceProviderId: data.serviceProviderId || data.provider || null,
+    serviceProviderId: (data.serviceProviderId || data.provider) === "none" ? null : (data.serviceProviderId || data.provider || null),
     startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
     endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
     startTime: formatTimeSpan(data.startTime),
@@ -370,6 +430,8 @@ export async function createEvent(data) {
     recurringDays: Array.isArray(data.recurringDays) ? data.recurringDays.join(",") : (data.recurringDays || null),
     price: Number(data.price) || 0,
     advancePayment: data.deposit !== undefined ? Number(data.deposit) : (Number(data.advancePayment) || 0),
+    maxCapacity: Number(data.maxCapacity) || 20,
+    notes: data.notes || null,
   };
 
   const res = await apiHandler({
@@ -403,7 +465,7 @@ export async function updateEvent(id, data) {
     title: data.title,
     productVariantId: data.productVariantId || data.service,
     resourceId: data.resourceId || data.resource,
-    serviceProviderId: data.serviceProviderId || data.provider || null,
+    serviceProviderId: (data.serviceProviderId || data.provider) === "none" ? null : (data.serviceProviderId || data.provider || null),
     startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
     endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
     startTime: formatTimeSpan(data.startTime),
@@ -411,6 +473,8 @@ export async function updateEvent(id, data) {
     recurringDays: Array.isArray(data.recurringDays) ? data.recurringDays.join(",") : (data.recurringDays || null),
     price: Number(data.price) || 0,
     advancePayment: data.deposit !== undefined ? Number(data.deposit) : (Number(data.advancePayment) || 0),
+    maxCapacity: Number(data.maxCapacity) || 20,
+    notes: data.notes || null,
   };
 
   const res = await apiHandler({

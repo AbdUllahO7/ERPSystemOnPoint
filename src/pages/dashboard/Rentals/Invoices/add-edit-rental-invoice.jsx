@@ -1,7 +1,17 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Plus, Trash2, Loader2 } from "lucide-react";
+import {
+  Calendar,
+  Plus,
+  Trash2,
+  Loader2,
+  Receipt,
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  Layers,
+} from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,7 +40,7 @@ export default function AddEditRentalInvoicePage() {
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldValue, setNewFieldValue] = useState("");
 
-  // Form state matching Image 2
+  // Form state matching Image 2 & Page 6
   const [formData, setFormData] = useState({
     rentalContract: "",
     returnDate: "",
@@ -38,6 +48,8 @@ export default function AddEditRentalInvoicePage() {
     damageAmount: "0",
     closeContractAfterInvoicing: false,
     damageNote: "",
+    paymentMethod: "Credit", // Default to Credit to support partial cash collection
+    paidAmount: "0",
   });
 
   // Lookups Query
@@ -99,10 +111,29 @@ export default function AddEditRentalInvoicePage() {
     setDynamicFields((prev) => prev.filter((_, i) => i !== index));
   };
 
+  const selectedContract = useMemo(() => {
+    return (lookups.contracts || []).find(
+      (c) => String(c.id) === String(formData.rentalContract)
+    ) || null;
+  }, [formData.rentalContract, lookups.contracts]);
+
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!formData.rentalContract) {
       toast.error("Please select a rental contract");
+      return;
+    }
+
+    // Payment method compatibility check (Page 6 from guide)
+    const paid = Number(formData.paidAmount) || 0;
+    if (
+      (formData.paymentMethod === "Cash" || formData.paymentMethod === "Bank") &&
+      paid < calculations.invoiceTotal &&
+      calculations.invoiceTotal > 0
+    ) {
+      toast.error(
+        `الدفع النقدي أو البنكي يتطلب سداد كامل الفاتورة ($${calculations.invoiceTotal.toFixed(2)}). للتحصيل الجزئي ($${paid.toFixed(2)}) يرجى التبديل لنمط دفع آجل (Credit).`
+      );
       return;
     }
 
@@ -142,6 +173,22 @@ export default function AddEditRentalInvoicePage() {
         </Button>
       </div>
 
+      {/* Page 6 Guidance Alert */}
+      <div className="p-4 bg-blue-50/90 border-r-4 border-blue-600 rounded-xl text-xs space-y-1.5">
+        <div className="flex items-center justify-between">
+          <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
+            <Receipt className="w-4 h-4 text-blue-600" />
+            إصدار الفاتورة من العقد وتوافق الدفع (Invoicing & Payment Compatibility - وسام):
+          </p>
+          <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
+            ContractItemsDtoInvoices & Collections
+          </span>
+        </div>
+        <p className="text-blue-900 leading-relaxed">
+          الفاتورة النقدية أو البنكية تجعل الفاتورة مدفوعة بالكامل. للتحصيل الجزئي يجب استخدام نمط آجل (Credit) لمنع تعارض مالية العقد مع الفاتورة. حالة القسط «مفوتر» لا تعني «مدفوع»، ويسجل المبلغ المستلم فقط في Paid Amount.
+        </p>
+      </div>
+
       {/* Main Grid: Left 8 cols (Form) + Right 4 cols (Summary) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Section (8 cols) */}
@@ -171,8 +218,24 @@ export default function AddEditRentalInvoicePage() {
                     </SelectItem>
                   ))}
                 </SelectContent>
-
               </Select>
+
+              {selectedContract && (
+                <div className="p-3 bg-slate-50 border rounded-xl space-y-1.5 text-xs mt-2">
+                  <div className="flex items-center justify-between text-slate-700 font-semibold">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      مرجع العقد المنظم: {selectedContract.contractNumber}
+                    </span>
+                    <span className="text-blue-700">
+                      القيمة: ${Number(selectedContract.totalAmount || 0).toLocaleString()}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    الأقساط المجدولة: {selectedContract.installments?.length || 0} قسط متاح للربط
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Row 2: Return Date, Invoice Mode */}
@@ -251,6 +314,61 @@ export default function AddEditRentalInvoicePage() {
                 onChange={(e) => handleInputChange("damageNote", e.target.value)}
                 className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
               />
+            </div>
+
+            {/* Row 5: Payment Method & Paid Amount (Page 6) */}
+            <div className="pt-4 border-t border-slate-100 space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center">
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    طريقة الدفع (Payment Method)
+                  </Label>
+                  <Select
+                    value={formData.paymentMethod}
+                    onValueChange={(val) => handleInputChange("paymentMethod", val)}
+                  >
+                    <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                      <SelectValue placeholder="Payment Method" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Credit">Credit / آجل (تسمح بالتحصيل الجزئي)</SelectItem>
+                      <SelectItem value="Cash">Cash / نقدي (تتطلب السداد الكامل)</SelectItem>
+                      <SelectItem value="Bank">Bank Transfer / بنكي (تتطلب السداد الكامل)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
+                    <span>مبلغ التحصيل الفعلي (Paid Amount)</span>
+                    <span className="text-[11px] text-slate-400 font-normal">
+                      المتبقي ديناً: ${(Math.max(0, calculations.invoiceTotal - (Number(formData.paidAmount) || 0))).toFixed(2)}
+                    </span>
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={formData.paidAmount}
+                    onChange={(e) => handleInputChange("paidAmount", e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                  />
+                </div>
+              </div>
+
+              {((formData.paymentMethod === "Cash" || formData.paymentMethod === "Bank") &&
+                Number(formData.paidAmount) < calculations.invoiceTotal &&
+                calculations.invoiceTotal > 0) && (
+                <div className="p-3 bg-amber-50 border-r-4 border-amber-600 rounded-lg text-amber-900 text-xs space-y-1">
+                  <p className="font-bold flex items-center gap-1.5">
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    توافق طريقة الدفع (Payment Compatibility):
+                  </p>
+                  <p className="text-[11px] leading-relaxed">
+                    خدمة المبيعات تجعل الفاتورة النقدية أو البنكية مدفوعة بالكامل (${calculations.invoiceTotal.toFixed(2)}). للتحصيل الجزئي (${Number(formData.paidAmount || 0).toFixed(2)}) يرجى التبديل لنمط دفع آجل (Credit).
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 

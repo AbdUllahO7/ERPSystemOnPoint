@@ -137,13 +137,17 @@ export async function getResourcesStats() {
  */
 export async function getResources(params = {}) {
   try {
+    let isActiveParam = undefined;
+    if (params.IsActive === "active" || params.IsActive === true) isActiveParam = true;
+    else if (params.IsActive === "inactive" || params.IsActive === false) isActiveParam = false;
+
     const queryParams = {
       PageNumber: params.PageNumber || 1,
       PageSize: params.PageSize || 10,
       Search: params.SearchTerm || params.Search || undefined,
       Ownership: params.Ownership && params.Ownership !== "all" ? params.Ownership : undefined,
       Status: params.Status && params.Status !== "all" ? params.Status : undefined,
-      IsActive: params.IsActive !== undefined ? params.IsActive : undefined,
+      IsActive: isActiveParam,
       SortBy: params.SortBy || undefined,
       SortDirection: params.SortDirection || undefined,
     };
@@ -161,10 +165,11 @@ export async function getResources(params = {}) {
 
     const mappedItems = items.map((r, idx) => {
       const capacityVal = r.maxCapacity ?? r.capacity ?? 20;
-      const ownershipLabel = r.ownership === "Leased" ? "Rented" : (r.ownership || "Owned");
+      // Distinction between Ownership (Owned vs Leased) and Operational Status (Active vs Rented)
+      const ownershipLabel = r.ownership === "Leased" ? "Leased" : "Owned";
       const supplierAssetLabel = r.ownership === "Leased"
-        ? (r.supplierName || r.supplier_Name || "Supplier Asset")
-        : (r.fixedAssetName || r.fixedAsset_Name || `Internal Asset #${String(r.id || idx + 1).substring(0, 4)}`);
+        ? (r.supplierName || r.supplier_Name || "External Supplier")
+        : (r.fixedAssetName || r.fixedAsset_Name || `Fixed Asset #${String(r.id || idx + 1).substring(0, 4)}`);
 
       return {
         id: r.id || idx + 1,
@@ -229,10 +234,10 @@ export async function getResourceById(id) {
     const r = res?.data || res || {};
 
     const capacityVal = r.maxCapacity ?? r.capacity ?? 20;
-    const ownershipLabel = r.ownership === "Leased" ? "Rented" : (r.ownership || "Owned");
+    const ownershipLabel = r.ownership === "Leased" ? "Leased" : "Owned";
     const supplierAssetLabel = r.ownership === "Leased"
-      ? (r.supplierName || r.supplier_Name || "Supplier Asset")
-      : (r.fixedAssetName || r.fixedAsset_Name || `Internal Asset #${String(id).substring(0, 4)}`);
+      ? (r.supplierName || r.supplier_Name || "External Supplier")
+      : (r.fixedAssetName || r.fixedAsset_Name || `Fixed Asset #${String(id).substring(0, 4)}`);
 
     return {
       status: 200,
@@ -273,13 +278,14 @@ export async function getResourceById(id) {
  * Endpoint: POST /api/inventory/Resource/Create
  */
 export async function createResource(data) {
-  const isLeased = data.ownership === "Leased" || data.ownership === "Rented";
+  const isLeased = data.ownership === "Leased";
 
   const payload = {
     name: data.name,
     referenceNumber: data.referenceNumber || data.code || `RES-${Date.now().toString().slice(-4)}`,
     maxCapacity: Number(data.capacity || data.maxCapacity) || 20,
     ownership: isLeased ? "Leased" : "Owned",
+    fixedAssetId: !isLeased && data.fixedAssetId ? data.fixedAssetId : null,
     supplierId: isLeased && data.supplierId ? data.supplierId : null,
     contractStartDate: isLeased && data.contractStartDate ? new Date(data.contractStartDate).toISOString() : null,
     contractEndDate: isLeased && data.contractEndDate ? new Date(data.contractEndDate).toISOString() : null,

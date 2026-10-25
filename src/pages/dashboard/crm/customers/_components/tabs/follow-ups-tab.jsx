@@ -11,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 
-export function FollowUpsTab() {
-  const { id } = useParams();
+export function FollowUpsTab({ customerId: propCustomerId }) {
+  const { id: paramId } = useParams();
+  const id = propCustomerId || paramId;
   const [page, setPage] = useState(1);
   const pageSize = 10;
   

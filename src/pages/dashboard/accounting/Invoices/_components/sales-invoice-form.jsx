@@ -2,7 +2,18 @@ import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Info, Trash2, Banknote, CreditCard, Landmark, Wallet } from "lucide-react";
+import {
+  Info,
+  Trash2,
+  Banknote,
+  CreditCard,
+  Landmark,
+  Wallet,
+  AlertTriangle,
+  CheckCircle2,
+  ShieldCheck,
+  HelpCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -13,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "react-hot-toast";
 import {
   createSalesInvoice,
   getWarehouses,
@@ -21,6 +33,7 @@ import {
   getAllInvoicePatterns,
   getAllCurrencies,
   getAllCustomers,
+  getCustomerContracts,
 } from "../../../../../lib/api";
 
 export default function SalesInvoiceForm() {
@@ -41,6 +54,7 @@ export default function SalesInvoiceForm() {
       note: "",
       invoicePattern_Id: "",
       customer_id: "",
+      customerContract_Id: "",
       warehouse_Id: "",
       currency_Id: "",
       costCenter_Id: "",
@@ -63,10 +77,25 @@ export default function SalesInvoiceForm() {
   });
 
   const watchWarehouse = watch("warehouse_Id");
-  const watchDetails = watch("createInvoiceDetailsDto");
+  const watchDetails = watch("createInvoiceDetailsDto") || [];
   const watchInvoicePatternId = watch("invoicePattern_Id");
+  const watchCustomerId = watch("customer_id");
+  const watchContractId = watch("customerContract_Id");
+  const watchPaidAmount = watch("paid_Amount");
   const paymentMethod = watch("payment_Method");
   const payInInstallments = watch("payInInstallments");
+
+  const { data: customerContractsData } = useQuery({
+    queryKey: ["customerContractsForInvoice", watchCustomerId],
+    queryFn: () => getCustomerContracts({ CustomerId: watchCustomerId, PageSize: 50 }),
+    enabled: !!watchCustomerId,
+  });
+  const rawContracts = customerContractsData?.data?.items || customerContractsData?.data || [];
+  const customerContracts = Array.isArray(rawContracts) ? rawContracts : [];
+
+  const selectedContract = useMemo(() => {
+    return customerContracts.find((c) => String(c.id) === String(watchContractId)) || null;
+  }, [watchContractId, customerContracts]);
 
   const { data: warehousesData } = useQuery({
     queryKey: ["getWarehouses"],
@@ -88,7 +117,6 @@ export default function SalesInvoiceForm() {
     queryKey: ["getAllInvoicePatterns", "Sales"],
     queryFn: () => getAllInvoicePatterns({ Type: "Sales", pageNumber: 1, pageSize: 100 }),
   });
-  console.log(invoicePatternsData?.data?.items)
 
   const { data: currenciesData } = useQuery({
     queryKey: ["getAllCurrencies"],
@@ -129,13 +157,69 @@ export default function SalesInvoiceForm() {
     mutationFn: (data) => createSalesInvoice(data),
     onSuccess: () => {
       queryClient.invalidateQueries(["getAllInvoices"]);
+      queryClient.invalidateQueries(["customerContracts"]);
+      toast.success("تم إنشاء فاتورة المبيعات بنجاح!");
       navigate("/dashboard/accounting/invoices");
     },
+    onError: (err) => {
+      toast.error(err?.message || "فشل إنشاء فاتورة المبيعات");
+    },
   });
+
+  const summary = useMemo(() => {
+    let subtotal = 0;
+    let discount = 0;
+    let tax = 0;
+    
+    (watchDetails || []).forEach(item => {
+      const qty = parseFloat(item?.quantity) || 0;
+      const price = parseFloat(item?.unit_Price) || 0;
+      const discPerc = parseFloat(item?.discount_Percentage) || 0;
+      const taxPerc = parseFloat(item?.tax_Percentage) || 0;
+
+      const lineTotal = qty * price;
+      const lineDisc = lineTotal * (discPerc / 100);
+      const lineAfterDisc = lineTotal - lineDisc;
+      const lineTax = lineAfterDisc * (taxPerc / 100);
+
+      subtotal += lineTotal;
+      discount += lineDisc;
+      tax += lineTax;
+    });
+
+    return { subtotal, discount, tax, total: subtotal - discount + tax };
+  }, [watchDetails]);
 
   const onSubmit = (data) => {
     const payload = { ...data };
     payload.invoice_Date = new Date(payload.invoice_Date).toISOString();
+
+    // Payment Method Compatibility Rule (Page 6 from guide)
+    const totalAmount = summary.total;
+    const paid = Number(payload.paid_Amount) || 0;
+    if (
+      (payload.payment_Method === "Cash" || payload.payment_Method === "Bank") &&
+      paid < totalAmount &&
+      totalAmount > 0
+    ) {
+      toast.error(
+        `الدفع النقدي أو البنكي يجعل الفاتورة مدفوعة بالكامل ($${totalAmount.toFixed(2)}). للتحصيل الجزئي ($${paid.toFixed(2)}) يرجى التبديل لنمط دفع آجل (Credit).`
+      );
+      return;
+    }
+
+    // Contract Reference Linkage (Page 6 from guide)
+    if (payload.customerContract_Id) {
+      payload.contractId = payload.customerContract_Id;
+      if (selectedContract?.contractNumber) {
+        payload.contractNumber = selectedContract.contractNumber;
+        const refPrefix = `[عقد رقم: ${selectedContract.contractNumber}]`;
+        if (!payload.note?.includes(refPrefix)) {
+          payload.note = `${refPrefix} ${payload.note || ""}`.trim();
+        }
+      }
+    }
+    delete payload.customerContract_Id;
     
     if (payload.payInInstallments && payload.paymentSchedules?.length > 0) {
       payload.paymentSchedules = payload.paymentSchedules.map(sch => ({
@@ -155,6 +239,35 @@ export default function SalesInvoiceForm() {
     createMutation.mutate(payload);
   };
 
+  const handleImportContractItems = () => {
+    if (!selectedContract) return;
+    const contractItems = selectedContract.items || [];
+    if (contractItems.length === 0) {
+      toast.error("لا توجد بنود تفصيلية في هذا العقد للاستيراد.");
+      return;
+    }
+
+    const unbilledItems = contractItems
+      .map((it) => {
+        const contracted = Number(it.quantity || 1);
+        const billed = Number(it.invoicedQuantity || 0);
+        const remaining = Math.max(0, contracted - billed);
+        return {
+          productVariant_Id: it.productVariantId || null,
+          custom_Item_Name: it.custom_Item_Name || "Contract Item",
+          unitOfMeasurement_Id: it.unitOfMeasurementId || null,
+          quantity: remaining > 0 ? remaining : 1,
+          unit_Price: Number(it.unit_Price || 0),
+          discount_Percentage: 0,
+          tax_Percentage: 0,
+        };
+      })
+      .filter((it) => it.quantity > 0);
+
+    setValue("createInvoiceDetailsDto", unbilledItems, { shouldValidate: true });
+    toast.success(`تم استيراد ${unbilledItems.length} بند من العقد بالكميات المتاحة للفوترة!`);
+  };
+
   const handleProductSelect = (index, productVariantId) => {
     const product = products.find(p => p.productVariantId === productVariantId);
     if (product) {
@@ -166,33 +279,30 @@ export default function SalesInvoiceForm() {
     }
   };
 
-  const summary = useMemo(() => {
-    let subtotal = 0;
-    let discount = 0;
-    let tax = 0;
-    
-    watchDetails.forEach(item => {
-      const qty = parseFloat(item.quantity) || 0;
-      const price = parseFloat(item.unit_Price) || 0;
-      const discPerc = parseFloat(item.discount_Percentage) || 0;
-      const taxPerc = parseFloat(item.tax_Percentage) || 0;
-
-      const lineTotal = qty * price;
-      const lineDisc = lineTotal * (discPerc / 100);
-      const lineAfterDisc = lineTotal - lineDisc;
-      const lineTax = lineAfterDisc * (taxPerc / 100);
-
-      subtotal += lineTotal;
-      discount += lineDisc;
-      tax += lineTax;
-    });
-
-    return { subtotal, discount, tax, total: subtotal - discount + tax };
-  }, [watchDetails]);
-
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
       <div className="xl:col-span-2 space-y-6">
+        {/* Page 6 Guidance Callout */}
+        <div className="p-4 bg-blue-50/90 border-r-4 border-blue-600 rounded-xl text-xs space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
+              <Receipt className="w-4 h-4 text-blue-600" />
+              قواعد إصدار الفاتورة وتوافق الدفع (Invoicing & Payment Rules - وسام):
+            </p>
+            <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
+              ContractItemsDtoInvoices & Installments
+            </span>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-blue-900 leading-relaxed">
+            <div>
+              • <strong>ربط العقود والبنود:</strong> يمكنك ربط الفاتورة بعقد العميل واستيراد البنود غير المفوترة فقط. الكميات يجب أن تكون موجبة ولا تتجاوز المتاح.
+            </div>
+            <div>
+              • <strong>توافق طريقة الدفع:</strong> الفاتورة النقدية أو البنكية يجب أن تكون مدفوعة بالكامل. للتحصيل الجزئي يرجى التبديل لنمط آجل (Credit) لمنع اختلاف مالية العقد عن الفاتورة.
+            </div>
+          </div>
+        </div>
+
         <div className="bg-card p-6 rounded-xl border shadow-sm grid grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold">Invoice Number <span className="text-red-500">*</span></label>
@@ -258,6 +368,61 @@ export default function SalesInvoiceForm() {
               )}
             />
           </div>
+
+          {watchCustomerId && (
+            <div className="col-span-2 p-3 bg-slate-50 border rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  ربط بعقد العميل (Link to Customer Contract - مرجع منظم)
+                </label>
+                {selectedContract && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleImportContractItems}
+                    className="h-7 text-xs bg-white text-blue-700 border-blue-300 hover:bg-blue-50 font-medium"
+                  >
+                    استيراد بنود العقد غير المفوترة ({selectedContract.items?.length || 0})
+                  </Button>
+                )}
+              </div>
+              <Controller
+                name="customerContract_Id"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    key={field.value}
+                    value={field.value ? String(field.value) : undefined}
+                    onValueChange={field.onChange}
+                  >
+                    <SelectTrigger className="w-full h-9 bg-white">
+                      <SelectValue placeholder="اختر عقد العميل لربط الفاتورة به (اختياري)" />
+                    </SelectTrigger>
+                    <SelectContent position="popper">
+                      {customerContracts.map((cc) => (
+                        <SelectItem key={cc.id} value={String(cc.id)}>
+                          {cc.contractNumber || cc.title} - ${Number(cc.totalAmount || cc.total || 0).toLocaleString()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {selectedContract && (
+                <div className="text-[11px] text-slate-600 flex items-center gap-2 pt-0.5">
+                  <span>العقد: <strong>{selectedContract.contractNumber}</strong></span>
+                  <span>•</span>
+                  <span>القيمة: <strong>${Number(selectedContract.totalAmount || selectedContract.total || 0).toLocaleString()}</strong></span>
+                  <span>•</span>
+                  <span className="text-emerald-700 font-semibold">
+                    المتاح للفوترة: {selectedContract.items?.length || 1} بنود
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-semibold">Warehouse <span className="text-red-500">*</span></label>
@@ -469,6 +634,38 @@ export default function SalesInvoiceForm() {
               );
             })}
           </div>
+
+          {/* Paid Amount Field (Actual Collection separation from Page 6) */}
+          <div className="space-y-1.5 pt-2 border-t">
+            <label className="text-xs font-semibold flex items-center justify-between">
+              <span>Paid Amount (التحصيل الفعلي الآن)</span>
+              <span className="text-[11px] text-muted-foreground font-normal">
+                Remaining Debt: ${(Math.max(0, summary.total - (Number(watchPaidAmount) || 0))).toFixed(2)}
+              </span>
+            </label>
+            <Input
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              className="h-9 bg-transparent font-semibold"
+              {...register("paid_Amount")}
+            />
+          </div>
+
+          {/* Payment Compatibility Alert from Page 6 */}
+          {((paymentMethod === "Cash" || paymentMethod === "Bank") &&
+            Number(watchPaidAmount) < summary.total &&
+            summary.total > 0) && (
+            <div className="p-3 bg-amber-50 border-r-4 border-amber-600 rounded-lg text-amber-900 text-xs space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                توافق طريقة الدفع (Payment Compatibility):
+              </p>
+              <p className="text-[11px] leading-relaxed">
+                خدمة المبيعات تجعل الفاتورة النقدية أو البنكية مدفوعة بالكامل (${summary.total.toFixed(2)}). للتحصيل الجزئي (${Number(watchPaidAmount || 0).toFixed(2)}) يرجى التبديل لنمط دفع آجل (Credit) لمنع اختلاف مالية العقد عن الفاتورة.
+              </p>
+            </div>
+          )}
           
           <div className="flex items-center justify-between pt-4 border-t mt-4">
             <div>

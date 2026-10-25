@@ -21,11 +21,11 @@ export default function CustomerDetails() {
 
   const tabs = [
     "Basic Information",
-    "Contacts(3)",
-    "Projects(15)",
-    "Contracts(2)",
-    "Invoices(5)",
-    "Follow-Ups(45)",
+    "Contacts",
+    "Projects",
+    "Contracts",
+    "Invoices",
+    "Follow-Ups",
     "Files",
     "Notes",
     "Timeline"
@@ -107,7 +107,7 @@ export default function CustomerDetails() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              ID • {MOCK_CUSTOMER.type} • {MOCK_CUSTOMER.sector} • E-mail • Phone • Website
+              ID: #{MOCK_CUSTOMER.id?.substring(0, 8)} • {MOCK_CUSTOMER.type} • {MOCK_CUSTOMER.sector || "General"} • {MOCK_CUSTOMER.email} • {MOCK_CUSTOMER.phone}
             </p>
           </div>
         </div>
@@ -151,22 +151,22 @@ export default function CustomerDetails() {
 
         <div className="p-6 bg-white min-h-[300px]">
           {activeTab === "Basic Information" && <BasicInfoTab customer={MOCK_CUSTOMER} />}
-          {activeTab === "Contacts(3)" && <ContactsTab />}
-          {activeTab === "Projects(15)" && <ProjectsTab />}
-          {activeTab === "Contracts(2)" && <ContractsTab />}
-          {activeTab === "Invoices(5)" && <InvoicesTab />}
-          {activeTab === "Follow-Ups(45)" && <FollowUpsTab />}
-          {activeTab === "Files" && <FilesTab />}
-          {activeTab === "Notes" && <NotesTab />}
-          {activeTab === "Timeline" && <TimelineTab  customer ={customer} />}
+          {activeTab === "Contacts" && <ContactsTab customerId={id} />}
+          {activeTab === "Projects" && <ProjectsTab customerId={id} />}
+          {activeTab === "Contracts" && <ContractsTab customerId={id} />}
+          {activeTab === "Invoices" && <InvoicesTab customerId={id} />}
+          {activeTab === "Follow-Ups" && <FollowUpsTab customerId={id} />}
+          {activeTab === "Files" && <FilesTab customerId={id} />}
+          {activeTab === "Notes" && <NotesTab customerId={id} />}
+          {activeTab === "Timeline" && <TimelineTab customer={customer} customerId={id} />}
 
           {![
             "Basic Information",
-            "Contacts(3)",
-            "Projects(15)",
-            "Contracts(2)",
-            "Invoices(5)",
-            "Follow-Ups(45)",
+            "Contacts",
+            "Projects",
+            "Contracts",
+            "Invoices",
+            "Follow-Ups",
             "Files",
             "Notes",
             "Timeline"

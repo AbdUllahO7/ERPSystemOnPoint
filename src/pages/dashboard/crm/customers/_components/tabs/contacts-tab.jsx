@@ -10,8 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import toast from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 
-export function ContactsTab() {
-  const { id } = useParams();
+export function ContactsTab({ customerId: propCustomerId }) {
+  const { id: paramId } = useParams();
+  const id = propCustomerId || paramId;
   const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
