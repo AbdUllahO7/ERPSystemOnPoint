@@ -83,14 +83,24 @@ export default function Offices() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteOffice(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || "Failed to delete office!");
+        setDeleteRowId(null);
+        return;
+      }
       queryClient.invalidateQueries(["getOffices"]);
-      toast.success("Office deleted successfully!");
+      toast.success(res?.message || "Office deleted successfully!");
       setDeleteRowId(null);
     },
     onError: (error) => {
       console.error("Failed to delete office:", error);
-      toast.error("Failed to delete office!");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Failed to delete office!";
+      toast.error(errMsg);
       setDeleteRowId(null);
     },
   });

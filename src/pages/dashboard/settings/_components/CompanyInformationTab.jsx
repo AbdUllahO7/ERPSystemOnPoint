@@ -1,102 +1,227 @@
-import { Building2, UploadCloud } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Building2, UploadCloud, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getTenants, updateTenantSettings } from "@/lib/api";
+import toast from "react-hot-toast";
 
 export default function CompanyInformationTab() {
+  const queryClient = useQueryClient();
+  const [formData, setFormData] = useState({
+    companyName: "",
+    companyNameEn: "",
+    taxIdNumber: "",
+    commercialRegistrationNumber: "",
+    email: "",
+    phoneNumber: "",
+    state: "",
+    city: "",
+    fullAddress: "",
+    logo: "",
+  });
+
+  const { data: tenantsData, isLoading } = useQuery({
+    queryKey: ["getTenants"],
+    queryFn: getTenants,
+  });
+
+  useEffect(() => {
+    const raw = tenantsData?.data || tenantsData;
+    const tenant = Array.isArray(raw) ? raw[0] : (raw?.items ? raw.items[0] : raw);
+    if (tenant && typeof tenant === "object") {
+      setFormData((prev) => ({
+        ...prev,
+        companyName: tenant.companyName || tenant.tenantName || tenant.name || "",
+        companyNameEn: tenant.companyNameEn || "",
+        taxIdNumber: tenant.taxIdNumber || tenant.taxNumber || "",
+        commercialRegistrationNumber: tenant.commercialRegistrationNumber || "",
+        email: tenant.email || "",
+        phoneNumber: tenant.phoneNumber || tenant.phone || "",
+        state: tenant.state || "",
+        city: tenant.city || "",
+        fullAddress: tenant.fullAddress || tenant.address || "",
+        logo: tenant.logo || "",
+      }));
+    }
+  }, [tenantsData]);
+
+  const saveMutation = useMutation({
+    mutationFn: (data) => updateTenantSettings(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["getTenants"]);
+      toast.success("Company information saved successfully!");
+    },
+    onError: (error) => {
+      console.error("Failed to save company information:", error);
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to save company information!"
+      );
+    },
+  });
+
+  const handleChange = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = () => {
+    saveMutation.mutate(formData);
+  };
+
   return (
     <div className="space-y-6 w-full animate-in fade-in duration-300">
-      
       {/* Header Card */}
-      <div className="bg-white rounded-xl shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-6">
-          <div className="w-20 h-20 rounded-xl border-2 border-dashed flex items-center justify-center bg-gray-50 shrink-0">
-            {/* Logo placeholder - using building icon as fallback */}
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-blue-600 shadow-inner">
-              <span className="font-bold text-xl">P</span>
-            </div>
+          <div className="w-20 h-20 rounded-xl border-2 border-dashed border-border flex items-center justify-center bg-muted/40 shrink-0 overflow-hidden">
+            {formData.logo ? (
+              <img src={formData.logo} alt="Company Logo" className="w-full h-full object-contain" />
+            ) : (
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xl">
+                {(formData.companyName || "P")[0]?.toUpperCase()}
+              </div>
+            )}
           </div>
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Company Information</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Name, logo, address, commercial registration
+            <h2 className="text-xl font-bold text-foreground">Company Information</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Name, logo, address, and commercial registration
             </p>
           </div>
         </div>
-        <Button className="bg-[#0070E0] hover:bg-[#0070E0]/90 text-white font-medium px-6 h-11 shrink-0">
+        <Button
+          onClick={handleSave}
+          disabled={saveMutation.isPending || saveMutation.isLoading}
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6 h-11 shrink-0"
+        >
+          {saveMutation.isPending || saveMutation.isLoading ? (
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+          ) : null}
           Save Changes
         </Button>
       </div>
 
       {/* Main Form Card */}
-      <div className="bg-white rounded-xl shadow-sm p-8">
+      <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-8">
         <div className="mb-8">
-          <h3 className="text-lg font-bold text-gray-900">Basic company information</h3>
-          <p className="text-sm text-gray-500 mt-1">This data appears on all documents and invoices</p>
+          <h3 className="text-lg font-bold text-foreground">Basic company information</h3>
+          <p className="text-sm text-muted-foreground mt-1">
+            This data appears on all documents and invoices
+          </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">Company name (Arabic)</label>
-            <Input placeholder="Company name (Arabic)" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">
+              Company name (Arabic)
+            </label>
+            <Input
+              value={formData.companyName}
+              onChange={(e) => handleChange("companyName", e.target.value)}
+              placeholder="اسم الشركة بالعربية"
+              className="h-11"
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">Company name (English)</label>
-            <Input placeholder="Company name (English)" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">
+              Company name (English)
+            </label>
+            <Input
+              value={formData.companyNameEn}
+              onChange={(e) => handleChange("companyNameEn", e.target.value)}
+              placeholder="Company name (English)"
+              className="h-11"
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">Tax ID number</label>
-            <Input placeholder="Expense No" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">
+              Tax ID number
+            </label>
+            <Input
+              value={formData.taxIdNumber}
+              onChange={(e) => handleChange("taxIdNumber", e.target.value)}
+              placeholder="Tax ID number"
+              className="h-11"
+            />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">Commercial Registration Number</label>
-            <Input placeholder="Commercial Registration Number" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">
+              Commercial Registration Number
+            </label>
+            <Input
+              value={formData.commercialRegistrationNumber}
+              onChange={(e) => handleChange("commercialRegistrationNumber", e.target.value)}
+              placeholder="Commercial Registration Number"
+              className="h-11"
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">E-mail</label>
-            <Input type="email" placeholder="e-mail" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">E-mail</label>
+            <Input
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleChange("email", e.target.value)}
+              placeholder="e-mail"
+              className="h-11"
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">Phone Number</label>
-            <Input type="tel" placeholder="phone number" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">
+              Phone Number
+            </label>
+            <Input
+              type="tel"
+              value={formData.phoneNumber}
+              onChange={(e) => handleChange("phoneNumber", e.target.value)}
+              placeholder="phone number"
+              className="h-11"
+            />
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-gray-800">State</label>
-            <select className="flex h-11 w-full rounded-md border border-gray-200 bg-transparent px-3 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0070E0]">
-              <option value="">Select State</option>
-            </select>
+            <label className="text-sm font-semibold text-foreground">State / Region</label>
+            <Input
+              value={formData.state}
+              onChange={(e) => handleChange("state", e.target.value)}
+              placeholder="State / Region"
+              className="h-11"
+            />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="text-sm font-semibold text-gray-800">City</label>
-            <select className="flex h-11 w-full rounded-md border border-gray-200 bg-transparent px-3 text-sm text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#0070E0]">
-              <option value="">Select City</option>
-            </select>
+            <label className="text-sm font-semibold text-foreground">City</label>
+            <Input
+              value={formData.city}
+              onChange={(e) => handleChange("city", e.target.value)}
+              placeholder="City"
+              className="h-11"
+            />
           </div>
 
           <div className="space-y-2 md:col-span-3">
-            <label className="text-sm font-semibold text-gray-800">Full Adress</label>
-            <Input placeholder="Full Adress" className="h-11 bg-transparent border-gray-200" />
+            <label className="text-sm font-semibold text-foreground">Full Address</label>
+            <Input
+              value={formData.fullAddress}
+              onChange={(e) => handleChange("fullAddress", e.target.value)}
+              placeholder="Full Address"
+              className="h-11"
+            />
           </div>
         </div>
 
-        {/* Upload Dropzone */}
-        <div className="mt-10">
-          <button 
-            type="button" 
-            className="w-full flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors group"
-          >
-            <div className="flex items-center gap-3 text-gray-800 font-semibold text-base mb-1">
-              <UploadCloud className="w-6 h-6 text-gray-600 group-hover:text-[#0070E0] transition-colors" />
-              Choose a file or drag & drop it here To Replace Logo
-            </div>
-            <p className="text-sm text-gray-400">
-              JPEG, PNG & PDG formats, up to 50MB
-            </p>
-          </button>
+        {/* Upload Logo URL or file */}
+        <div className="mt-8 space-y-2">
+          <label className="text-sm font-semibold text-foreground">Logo URL</label>
+          <Input
+            value={formData.logo}
+            onChange={(e) => handleChange("logo", e.target.value)}
+            placeholder="https://example.com/logo.png"
+            className="h-11"
+          />
         </div>
       </div>
-
     </div>
   );
 }

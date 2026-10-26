@@ -23,6 +23,8 @@ export const rentalsApi = {
   getStats: async () => legacyRentalService.getRentalsStats(),
   getLookups: async () => legacyRentalService.getRentalLookups(),
   createRental: async (data) => legacyRentalService.createRental(data),
+  createDirectRental: async (data) => legacyRentalService.createDirectRentalContract(data),
+  settleRentalContract: async (data) => legacyRentalService.settleRentalContract(data),
   updateRental: async (id, data) => legacyRentalService.updateRental(id, data),
   deleteRental: async (id) => legacyRentalService.deleteRental(id),
 
@@ -33,6 +35,8 @@ export const rentalsApi = {
     getStats: async () => legacyInvoiceService.getRentalInvoicesStats(),
     getLookups: async () => legacyInvoiceService.getRentalInvoiceLookups(),
     createInvoice: async (data) => legacyInvoiceService.createRentalInvoice(data),
+    createCustomerContractInvoice: async (data) => legacyInvoiceService.createCustomerContractInvoice(data),
+    getAvailableDataForInvoice: async (contractId) => legacyInvoiceService.getAvailableDataForInvoice(contractId),
     deleteInvoice: async (id) => legacyInvoiceService.deleteRentalInvoice(id),
   },
 };
@@ -43,7 +47,12 @@ export const getRentalDetails = rentalsApi.getRentalById;
 export const getRentalsStats = rentalsApi.getStats;
 export const getRentalLookups = rentalsApi.getLookups;
 export const createRental = rentalsApi.createRental;
+export const createDirectRental = rentalsApi.createDirectRental;
+export const settleRentalContract = rentalsApi.settleRentalContract;
 export const updateRental = rentalsApi.updateRental;
 export const deleteRental = rentalsApi.deleteRental;
+export const createCustomerContractInvoice = rentalsApi.invoices.createCustomerContractInvoice;
+export const getAvailableDataForInvoice = rentalsApi.invoices.getAvailableDataForInvoice;
 
 export default rentalsApi;
+

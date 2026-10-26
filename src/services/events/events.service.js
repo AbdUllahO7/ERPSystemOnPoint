@@ -129,7 +129,7 @@ export async function getEventLookups() {
         params: { PageSize: 100, IsActive: true },
       }),
       apiHandler({
-        endPoint: "inventory/ServiceProvider/GetAllServiceProviders",
+        endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
         method: "GET",
         params: { PageSize: 100, IsActive: true },
       }),
@@ -513,4 +513,12 @@ export async function deleteEvent(id) {
 
 export async function changeEventStatus({ id, status }) {
   return toggleEventStatus(id);
+}
+
+export async function getAllServiceProviders(params) {
+  return apiHandler({
+    endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
+    method: "GET",
+    params,
+  });
 }

@@ -17,6 +17,7 @@ import {
   getBranches,
   getAllManagers,
 } from "../../../../lib/api";
+import toast from "react-hot-toast";
 
 export function DepartmentForm({ isOpen, onClose, editId }) {
   const queryClient = useQueryClient();
@@ -74,13 +75,29 @@ export function DepartmentForm({ isOpen, onClose, editId }) {
       isEdit
         ? updateDepartment({ ...data, department_Id: editId })
         : createDepartment(data),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || "Failed to save department");
+        return;
+      }
       queryClient.invalidateQueries(["getDepartments"]);
+      toast.success(
+        res?.message ||
+        (isEdit
+          ? "Department updated successfully!"
+          : "Department added successfully!")
+      );
       onClose();
       reset();
     },
     onError: (error) => {
       console.error("Failed to save department", error);
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Failed to save department";
+      toast.error(errMsg);
     },
   });
 

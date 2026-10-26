@@ -52,14 +52,25 @@ export default function AddEditPosition() {
         : createPosition({
             namePosition: data.position_Name,
           }),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || (isEdit ? "Failed to update position!" : "Failed to add position!"));
+        return;
+      }
       queryClient.invalidateQueries(["getPositions"]);
-      toast.success(isEdit ? "Position updated successfully!" : "Position added successfully!");
+      toast.success(
+        res?.message || (isEdit ? "Position updated successfully!" : "Position added successfully!")
+      );
       navigate("/dashboard/hr/positions");
     },
     onError: (error) => {
       console.error("Failed to save position", error);
-      toast.error(isEdit ? "Failed to update position!" : "Failed to add position!");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        (isEdit ? "Failed to update position!" : "Failed to add position!");
+      toast.error(errMsg);
     },
   });
 

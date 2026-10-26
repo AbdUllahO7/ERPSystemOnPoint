@@ -237,6 +237,7 @@ export const router = createBrowserRouter([
       { path: "/dashboard/hr/positions/add", element: lazyLoad(() => import("../pages/dashboard/Positions/add-edit-position")) },
       { path: "/dashboard/hr/positions/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Positions/add-edit-position")) },
       { path: "/dashboard/hr/positions/:id", element: lazyLoad(() => import("../pages/dashboard/Positions/_components/position-detail")) },
+      { path: "/dashboard/hr/users", element: lazyLoad(() => import("../pages/dashboard/Users/Users")) },
       { path: "/dashboard/hr/employees", element: lazyLoad(() => import("../pages/dashboard/Employees/employees-page")) },
       { path: "/dashboard/hr/employees/add", element: lazyLoad(() => import("../pages/dashboard/Employees/add-edit-employee")) },
       { path: "/dashboard/hr/employees/edit/:id", element: lazyLoad(() => import("../pages/dashboard/Employees/add-edit-employee")) },

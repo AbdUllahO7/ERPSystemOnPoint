@@ -41,20 +41,20 @@ export default function SupplierDetails() {
 
   const supplier = data.data;
 
-  // mapping the supplier to match what basic info tab might expect
+  const supplierName = supplier.supplier_Name || supplier.supplierName || "Supplier";
   const formattedSupplier = {
-    id: supplier.id,
-    name: supplier.supplierName,
-    initials: supplier.supplierName ? supplier.supplierName.substring(0, 2).toUpperCase() : "SP",
-    type: supplier.supplierType,
-    // sector: "N/A", // or based on data if exists
-    email: supplier.email,
-    phone: supplier.phone,
-    website: supplier.website,
-    address: supplier.address,
-    createdAt: new Date(supplier.createdAt).toLocaleDateString(),
-    status: supplier.status,
-    taxNumber: supplier.taxNumber,
+    id: supplier.id || id,
+    name: supplierName,
+    initials: supplierName ? supplierName.substring(0, 2).toUpperCase() : "SP",
+    type: supplier.supplier_Type || supplier.supplierType || "-",
+    email: supplier.email || "-",
+    phone: supplier.phone_Number || supplier.phone || "-",
+    website: supplier.webSite || supplier.website || "-",
+    address: supplier.address || "-",
+    contactPerson: supplier.contact_Person || supplier.contactPerson || "-",
+    createdAt: supplier.createdAt ? new Date(supplier.createdAt).toLocaleDateString() : "-",
+    status: supplier.status || "Active",
+    taxNumber: supplier.tax_Number || supplier.taxNumber || "-",
   };
 
   return (
@@ -92,7 +92,7 @@ export default function SupplierDetails() {
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              ID: {formattedSupplier.id.substring(0,8)} • {formattedSupplier.type} • {formattedSupplier.email} • {formattedSupplier.phone} • {formattedSupplier.website}
+              ID: {formattedSupplier.id?.substring?.(0,8) || formattedSupplier.id} • {formattedSupplier.type} • {formattedSupplier.email} • {formattedSupplier.phone} • {formattedSupplier.website}
             </p>
           </div>
         </div>

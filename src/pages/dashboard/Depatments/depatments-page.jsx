@@ -99,14 +99,25 @@ export default function Depatments() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteDepartment(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || "Failed to delete department");
+        setDeleteRowId(null);
+        return;
+      }
       queryClient.invalidateQueries(["getDepartments"]);
-      toast.success("Department deleted successfully");
+      toast.success(res?.message || "Department deleted successfully");
       setDeleteRowId(null);
     },
     onError: (error) => {
       console.error("Failed to delete department", error);
-      toast.error("Failed to delete department");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Failed to delete department";
+      toast.error(errMsg);
+      setDeleteRowId(null);
     },
   });
 

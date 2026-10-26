@@ -2,6 +2,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 // ✨ إنشاء Axios instance بمواصفات أمان ومهلة زمنية
+// في بيئة التطوير (DEV) يتم استخدام الـ Proxy (/api/) لتجنب منع المتصفح للطلبات بسبب CORS
 const defaultBaseURL = import.meta.env.DEV
   ? "/api/"
   : "https://apierp.onpoint-teasting.com/api/";
@@ -58,9 +59,18 @@ api.interceptors.response.use(
  */
 export const apiHandler = async ({ endPoint, method = "GET", body, params, signal, headers = {} }) => {
   try {
+    let normalizedEndpoint = endPoint || "";
+    if (normalizedEndpoint.startsWith("/api/")) {
+      normalizedEndpoint = normalizedEndpoint.slice(5);
+    } else if (normalizedEndpoint.startsWith("api/")) {
+      normalizedEndpoint = normalizedEndpoint.slice(4);
+    } else if (normalizedEndpoint.startsWith("/")) {
+      normalizedEndpoint = normalizedEndpoint.slice(1);
+    }
+
     const config = {
       method,
-      url: endPoint,
+      url: normalizedEndpoint,
       params,
       signal,
       headers: { ...headers },
@@ -76,6 +86,36 @@ export const apiHandler = async ({ endPoint, method = "GET", body, params, signa
     }
 
     const response = await api.request(config);
+
+    // ✨ التحقق مما إذا كان الخادم أعاد استجابة خطأ منطقي مغلفة حتى لو كان كود الحالة 200
+    if (
+      response.data &&
+      typeof response.data === "object" &&
+      (response.data.success === false || response.data.status >= 400)
+    ) {
+      let errMsg =
+        response.data.message ||
+        response.data.msg ||
+        response.data.Message;
+
+      if (!errMsg && response.data.errors) {
+        if (Array.isArray(response.data.errors)) {
+          errMsg = response.data.errors.join("\n");
+        } else if (typeof response.data.errors === "object") {
+          errMsg = Object.values(response.data.errors).flat().join("\n");
+        }
+      }
+
+      if (!errMsg) {
+        errMsg = "حدث خطأ أثناء تنفيذ العملية";
+      }
+
+      const err = new Error(typeof errMsg === "string" ? errMsg : JSON.stringify(errMsg));
+      err.response = response;
+      err.data = response.data;
+      throw err;
+    }
+
     return response.data;
   } catch (error) {
     if (axios.isCancel(error)) {
@@ -89,9 +129,13 @@ export const apiHandler = async ({ endPoint, method = "GET", body, params, signa
       let message = "حدث خطأ غير متوقع في الاتصال بالخادم";
 
       if (errorData?.errors) {
-        message = Object.values(errorData.errors).flat().join("\n");
-      } else if (errorData?.msg || errorData?.message || errorData?.Message) {
-        message = errorData.msg || errorData.message || errorData.Message;
+        if (Array.isArray(errorData.errors)) {
+          message = errorData.errors.join("\n");
+        } else if (typeof errorData.errors === "object") {
+          message = Object.values(errorData.errors).flat().join("\n");
+        }
+      } else if (errorData?.message || errorData?.msg || errorData?.Message) {
+        message = errorData.message || errorData.msg || errorData.Message;
       } else if (errorData?.title) {
         message = errorData.title;
       } else if (typeof errorData === "string") {
@@ -100,7 +144,10 @@ export const apiHandler = async ({ endPoint, method = "GET", body, params, signa
         message = "انتهت المهلة الزمنية للاتصال بالخادم، يرجى المحاولة لاحقاً";
       }
 
-      throw new Error(typeof message === "string" ? message : JSON.stringify(message));
+      const customErr = new Error(typeof message === "string" ? message : JSON.stringify(message));
+      customErr.response = error.response;
+      customErr.data = errorData;
+      throw customErr;
     }
 
     throw error;

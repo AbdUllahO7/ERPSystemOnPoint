@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { DataView } from "@/components/data-view/DataView";
-import { PlusCircle, DollarSign, Trash2, MinusCircle } from "lucide-react";
+import { PlusCircle, Trash2 } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getEmployeeById, getRewards, deleteReward } from "@/lib/api";
+import { getRewards, deleteReward } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import toast from "react-hot-toast";
 
@@ -45,12 +45,6 @@ export default function EmployeeSalaryBonuses() {
     DateTo: filters.DateTo || undefined,
   }), [id, page, search, filters]);
 
-  const { data: employeeData } = useQuery({
-    queryKey: ["getEmployeeById", id],
-    queryFn: () => getEmployeeById(id),
-    enabled: !!id,
-  });
-
   const { data: rewardsData, isLoading, refetch } = useQuery({
     queryKey: ["getRewards", params],
     queryFn: () => getRewards(params),
@@ -71,7 +65,6 @@ export default function EmployeeSalaryBonuses() {
     },
   });
 
-  const salaryBreakdown = employeeData?.data?.salaryBreakdown || null;
   const displayRows = rewardsData?.data?.items || [];
   const totalPages = rewardsData?.data?.totalPages || 1;
   const currentPage = rewardsData?.data?.pageNumber || page;
@@ -113,48 +106,6 @@ export default function EmployeeSalaryBonuses() {
 
   return (
     <div className="space-y-4">
-      {/* Salary Breakdown Stats */}
-      {salaryBreakdown && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div className="bg-card text-card-foreground p-4 rounded-xl border flex items-center gap-4 shadow-sm">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white bg-blue-500">
-              <DollarSign className="w-7 h-7" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Basic Salary</p>
-              <div className="text-2xl font-bold text-foreground">{salaryBreakdown.basicSalary}</div>
-            </div>
-          </div>
-          <div className="bg-card text-card-foreground p-4 rounded-xl border flex items-center gap-4 shadow-sm">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white bg-green-500">
-              <DollarSign className="w-7 h-7" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Total Bonuses</p>
-              <div className="text-2xl font-bold text-foreground text-green-500">+{salaryBreakdown.totalBonuses}</div>
-            </div>
-          </div>
-          <div className="bg-card text-card-foreground p-4 rounded-xl border flex items-center gap-4 shadow-sm">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white bg-red-500">
-              <MinusCircle className="w-7 h-7" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Total Deductions</p>
-              <div className="text-2xl font-bold text-foreground text-red-500">-{salaryBreakdown.totalDeductions}</div>
-            </div>
-          </div>
-          <div className="bg-card text-card-foreground p-4 rounded-xl border flex items-center gap-4 shadow-sm">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center text-white bg-primary">
-              <DollarSign className="w-7 h-7" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Net Salary</p>
-              <div className="text-2xl font-bold text-foreground">{salaryBreakdown.netSalary}</div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Filter Menu */}
       <div
         className={`grid transition-all duration-300 ease-in-out ${
