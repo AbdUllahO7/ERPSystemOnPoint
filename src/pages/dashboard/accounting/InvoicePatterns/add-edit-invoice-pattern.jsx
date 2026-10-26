@@ -56,22 +56,22 @@ export default function AddEditInvoicePattern() {
 
   const { data: accountsData } = useQuery({
     queryKey: ["getLeafAccounts"],
-    queryFn: () => getLeafAccounts({ pageNumber: 1, pageSize: 100 }),
+    queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 1000 }),
   });
 
   const { data: warehousesData } = useQuery({
     queryKey: ["getWarehouses"],
-    queryFn: () => getWarehouses({ pageNumber: 1, pageSize: 100 }),
+    queryFn: () => getWarehouses({ PageNumber: 1, PageSize: 1000 }),
   });
 
   const { data: costCentersData } = useQuery({
     queryKey: ["getAllCostCenters"],
-    queryFn: () => getAllCostCenters({ pageNumber: 1, pageSize: 100 }),
+    queryFn: () => getAllCostCenters({ PageNumber: 1, PageSize: 1000 }),
   });
 
   const { data: currenciesData } = useQuery({
     queryKey: ["getAllCurrencies"],
-    queryFn: () => getAllCurrencies({ pageNumber: 1, pageSize: 100 }),
+    queryFn: () => getAllCurrencies({ PageNumber: 1, PageSize: 1000 }),
   });
 
   const { data: patternData, isLoading: isLoadingPattern } = useQuery({
@@ -81,24 +81,25 @@ export default function AddEditInvoicePattern() {
   });
 
   useEffect(() => {
-    if (isEdit && patternData?.data) {
-      const data = patternData.data;
-      setValue("pattern_Name", data.pattern_Name || "");
-      setValue("invoiceType", data.invoiceType || "Sales");
-      setValue("material_Account_Id", data.material_Account_Id || "");
-      setValue("cash_Account_Id", data.cash_Account_Id || "");
-      setValue("discount_Account_Id", data.discount_Account_Id || "");
+    if (isEdit && patternData) {
+      const data = patternData?.data?.data || patternData?.data || patternData;
+      if (!data) return;
+      setValue("pattern_Name", data.pattern_Name || data.patternName || data.name || "");
+      setValue("invoiceType", data.invoiceType || data.invoice_Type || "Sales");
+      setValue("material_Account_Id", String(data.material_Account_Id || data.materialAccountId || ""));
+      setValue("cash_Account_Id", String(data.cash_Account_Id || data.cashAccountId || ""));
+      setValue("discount_Account_Id", String(data.discount_Account_Id || data.discountAccountId || ""));
       setValue(
         "start_Date",
         data.start_Date ? data.start_Date.split("T")[0] : "",
       );
       setValue("end_Date", data.end_Date ? data.end_Date.split("T")[0] : "");
-      setValue("wareHouse_Id", data.wareHouse_Id || "");
-      setValue("costCenter_id", data.costCenter_id || "");
-      setValue("currency_id", data.currency_id || "");
-      setValue("service_Account_Id", data.service_Account_Id || "");
-      setValue("paymentPay", data.paymentPay || "Cash");
-      setValue("tax_Percentage", data.tax_Percentage || 0);
+      setValue("wareHouse_Id", String(data.wareHouse_Id || data.warehouse_Id || data.warehouseId || ""));
+      setValue("costCenter_id", String(data.costCenter_id || data.costCenter_Id || data.costCenterId || ""));
+      setValue("currency_id", String(data.currency_id || data.currency_Id || data.currencyId || ""));
+      setValue("service_Account_Id", String(data.service_Accoount_Id || data.service_Account_Id || data.serviceAccountId || ""));
+      setValue("paymentPay", data.paymentPay || data.payment_Pay || "Cash");
+      setValue("tax_Percentage", data.tax_Percentage ?? data.taxPercentage ?? 0);
       setValue("note", data.note || "");
     }
   }, [isEdit, patternData, setValue]);
@@ -251,9 +252,14 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Account" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {accounts.map((acc) => (
                         <SelectItem key={acc.id} value={String(acc.id)}>
-                          {acc.account_Name}
+                          {acc.account_Name || acc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -283,9 +289,14 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Account" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {accounts.map((acc) => (
                         <SelectItem key={acc.id} value={String(acc.id)}>
-                          {acc.account_Name}
+                          {acc.account_Name || acc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -315,9 +326,14 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Account" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {accounts.map((acc) => (
                         <SelectItem key={acc.id} value={String(acc.id)}>
-                          {acc.account_Name}
+                          {acc.account_Name || acc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -347,9 +363,14 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Warehouse" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !warehouses.some((w) => String(w.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Warehouse (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {warehouses.map((w) => (
                         <SelectItem key={w.id} value={String(w.id)}>
-                          {w?.name_Warehouse || " "}
+                          {w?.name_Warehouse || w?.name || "Warehouse"}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -379,9 +400,14 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Cost Center" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !costCenters.some((cc) => String(cc.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Cost Center (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {costCenters.map((cc) => (
                         <SelectItem key={cc.id} value={String(cc.id)}>
-                          {cc.cost_Center_Name}
+                          {cc.cost_Center_Name || cc.costCenter_Name || cc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -439,6 +465,11 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Currency" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !currencies.some((curr) => String(curr.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Currency (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {currencies.map((curr) => (
                         <SelectItem key={curr.id} value={String(curr.id)}>
                           {curr.currency_Name || curr.name || curr.id}
@@ -467,9 +498,14 @@ export default function AddEditInvoicePattern() {
                       <SelectValue placeholder="Select Service Account" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
+                        <SelectItem value={String(field.value)}>
+                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                        </SelectItem>
+                      )}
                       {accounts.map((acc) => (
                         <SelectItem key={acc.id} value={String(acc.id)}>
-                          {acc.account_Name}
+                          {acc.account_Name || acc.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

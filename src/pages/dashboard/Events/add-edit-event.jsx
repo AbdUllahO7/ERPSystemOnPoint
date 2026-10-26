@@ -87,24 +87,58 @@ export default function AddEditEventPage() {
   });
 
   useEffect(() => {
-    if (isEdit && eventData?.data) {
-      const e = eventData.data;
+    if (isEdit && eventData) {
+      const e = eventData?.data?.data || eventData?.data || eventData;
+      if (!e) return;
+
+      const nameToShortDay = {
+        Sunday: "Sun",
+        Monday: "Mon",
+        Tuesday: "Tue",
+        Wednesday: "Wed",
+        Thursday: "Thu",
+        Friday: "Fri",
+        Saturday: "Sat",
+        Sun: "Sun",
+        Mon: "Mon",
+        Tue: "Tue",
+        Wed: "Wed",
+        Thu: "Thu",
+        Fri: "Fri",
+        Sat: "Sat",
+      };
+
+      let parsedDays = [];
+      if (typeof e.recurringDays === "string") {
+        parsedDays = e.recurringDays
+          .split(",")
+          .map((d) => nameToShortDay[d.trim()] || d.trim())
+          .filter(Boolean);
+      } else if (Array.isArray(e.recurringDays)) {
+        parsedDays = e.recurringDays
+          .map((d) => nameToShortDay[d] || d)
+          .filter(Boolean);
+      }
+      if (parsedDays.length === 0) {
+        parsedDays = ["Sun", "Tue"];
+      }
+
       setFormData({
         title: e.title || e.fullTitle || "",
-        service: e.productVariantId || e.service || "",
-        resource: e.resourceId || e.resource || "",
-        provider: e.serviceProviderId || e.provider || "",
-        maxCapacity: String(e.maxCapacity || 20),
-        startDate: e.startDate || "",
-        endDate: e.endDate || "",
-        startTime: e.startTime || "10:00",
-        endTime: e.endTime || "12:00",
-        price: String(e.numericPrice || e.price || 0),
-        deposit: String(e.numericDeposit || e.deposit || 0),
+        service: String(e.productVariantId || e.service || ""),
+        resource: String(e.resourceId || e.resource || ""),
+        provider: String(e.serviceProviderId || e.provider || "none"),
+        maxCapacity: String(e.maxCapacity ?? 20),
+        startDate: e.startDate ? e.startDate.split("T")[0] : "",
+        endDate: e.endDate ? e.endDate.split("T")[0] : "",
+        startTime: e.startTime ? (typeof e.startTime === "string" ? e.startTime.slice(0, 5) : "10:00") : "10:00",
+        endTime: e.endTime ? (typeof e.endTime === "string" ? e.endTime.slice(0, 5) : "12:00") : "12:00",
+        price: String(e.price ?? e.numericPrice ?? 0),
+        deposit: String(e.advancePayment ?? e.numericDeposit ?? e.deposit ?? 0),
         pricingModel: e.notes?.includes("pricingModel:PerBooking") ? "PerBooking" : "PerSeat",
         bookingModel: e.notes?.includes("bookingModel:PerSession") ? "PerSession" : "FullCourse",
         timeZone: "Asia/Riyadh",
-        recurringDays: Array.isArray(e.recurringDays) && e.recurringDays.length > 0 ? e.recurringDays : ["Sun", "Tue"],
+        recurringDays: parsedDays,
         isOvernight: e.startTime && e.endTime && e.endTime < e.startTime,
         notes: (e.notes || "").replace(/\[pricingModel:.*?\]/g, "").replace(/\[bookingModel:.*?\]/g, "").trim(),
       });
@@ -385,6 +419,7 @@ export default function AddEditEventPage() {
               الصنف / الخدمة (ProductVariantId) *
             </Label>
             <Select
+              key={formData.service || "service-select"}
               value={formData.service}
               onValueChange={(val) => {
                 handleInputChange("service", val);
@@ -398,6 +433,11 @@ export default function AddEditEventPage() {
                 <SelectValue placeholder="اختر الخدمة أو الصنف" />
               </SelectTrigger>
               <SelectContent>
+                {formData.service && !lookups.services.some((s) => String(s.id) === String(formData.service)) && (
+                  <SelectItem value={String(formData.service)}>
+                    {eventData?.data?.productName || eventData?.data?.service || `Service #${String(formData.service).substring(0, 8)}`}
+                  </SelectItem>
+                )}
                 {lookups.services.map((svc) => (
                   <SelectItem key={svc.id} value={String(svc.id)}>
                     {svc.name} {svc.price ? `($${svc.price})` : ""}
@@ -412,6 +452,7 @@ export default function AddEditEventPage() {
               المكان أو المورد (ResourceId) *
             </Label>
             <Select
+              key={formData.resource || "resource-select"}
               value={formData.resource}
               onValueChange={(val) => {
                 handleInputChange("resource", val);
@@ -425,6 +466,11 @@ export default function AddEditEventPage() {
                 <SelectValue placeholder="اختر المورد أو القاعة" />
               </SelectTrigger>
               <SelectContent>
+                {formData.resource && !lookups.resources.some((r) => String(r.id) === String(formData.resource)) && (
+                  <SelectItem value={String(formData.resource)}>
+                    {eventData?.data?.resourceName || eventData?.data?.resource || `Resource #${String(formData.resource).substring(0, 8)}`}
+                  </SelectItem>
+                )}
                 {lookups.resources.map((res) => (
                   <SelectItem key={res.id} value={String(res.id)}>
                     {res.name} (السعة: {res.capacity} مقعداً) {res.ownership === "Leased" ? "- مستأجر" : "- مملوك"}
@@ -442,6 +488,7 @@ export default function AddEditEventPage() {
               مقدم الخدمة الاختياري (ServiceProviderId)
             </Label>
             <Select
+              key={formData.provider || "provider-select"}
               value={formData.provider || "none"}
               onValueChange={(val) => handleInputChange("provider", val === "none" ? "" : val)}
             >
@@ -450,6 +497,11 @@ export default function AddEditEventPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">-- بدون مقدم خدمة محدد --</SelectItem>
+                {formData.provider && formData.provider !== "none" && !lookups.providers.some((p) => String(p.id) === String(formData.provider)) && (
+                  <SelectItem value={String(formData.provider)}>
+                    {eventData?.data?.serviceProviderName || eventData?.data?.provider || `Provider #${String(formData.provider).substring(0, 8)}`}
+                  </SelectItem>
+                )}
                 {lookups.providers.map((prov) => (
                   <SelectItem key={prov.id} value={String(prov.id)}>
                     {prov.name}

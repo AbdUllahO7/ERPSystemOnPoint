@@ -46,7 +46,7 @@ export default function BundleForm({ currentStep, onNext }) {
 
   const { data: accountsRes, isLoading: accountsLoading } = useQuery({
     queryKey: ["leaf-accounts"],
-    queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 100 }),
+    queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 1000 }),
   });
 
   const { data: productsRes, isLoading: productsLoading } = useQuery({
@@ -65,11 +65,13 @@ export default function BundleForm({ currentStep, onNext }) {
     queryFn: () => getAllUnitOfMeasurements({ PageNumber: 1, PageSize: 1000 }),
   });
 
-  const categories = categoriesRes?.data?.items || [];
-  const accounts = accountsRes?.data?.items || [];
-  const products = productsRes?.data?.items || [];
-  const measurements = unitsRes?.data?.items || [];
+  const categories = categoriesRes?.data?.items || categoriesRes?.data || [];
+  const accounts = accountsRes?.data?.items || accountsRes?.data || [];
+  const products = productsRes?.data?.items || productsRes?.data || [];
+  const measurements = unitsRes?.data?.items || unitsRes?.data || [];
   const productComponentsWatch = watch("product_Components");
+  const revenueAccountId = watch("revenue_Account_Id");
+  const expenseAccountId = watch("expense_Account_Id");
 
   useEffect(() => { 
     if (isEdit && bundleRes?.data) {
@@ -101,6 +103,17 @@ export default function BundleForm({ currentStep, onNext }) {
       });
     }
   }, [isEdit, bundleRes, reset]);
+
+  useEffect(() => {
+    if (isEdit && bundleRes?.data) {
+      if (bundleRes.data.revenue_Account_Id) {
+        setValue("revenue_Account_Id", bundleRes.data.revenue_Account_Id);
+      }
+      if (bundleRes.data.expense_Account_Id) {
+        setValue("expense_Account_Id", bundleRes.data.expense_Account_Id);
+      }
+    }
+  }, [isEdit, bundleRes, accounts, setValue]);
 
   const createMutation = useMutation({
     mutationFn: (data) => {
@@ -376,12 +389,18 @@ export default function BundleForm({ currentStep, onNext }) {
                 <select
                   id="revenue_Account_Id"
                   className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  {...register("revenue_Account_Id")}
+                  value={revenueAccountId || ""}
+                  onChange={(e) => setValue("revenue_Account_Id", e.target.value)}
                   disabled={accountsLoading}
                 >
-                  <option value="">{accountsLoading ? "Loading..." : "Revenue Account"}</option>
+                  <option value="">{accountsLoading ? "Loading accounts..." : "Select Revenue Account"}</option>
+                  {revenueAccountId && !accounts.some((acc) => String(acc.id) === String(revenueAccountId)) && (
+                    <option value={revenueAccountId}>
+                      {bundleRes?.data?.revenue_Account_Name || `Account (${String(revenueAccountId).substring(0, 8)}...)`}
+                    </option>
+                  )}
                   {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.account_Name}</option>
+                    <option key={acc.id} value={acc.id}>{acc.account_Name || acc.name}</option>
                   ))}
                 </select>
               </div>
@@ -395,12 +414,18 @@ export default function BundleForm({ currentStep, onNext }) {
                 <select
                   id="expense_Account_Id"
                   className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  {...register("expense_Account_Id")}
+                  value={expenseAccountId || ""}
+                  onChange={(e) => setValue("expense_Account_Id", e.target.value)}
                   disabled={accountsLoading}
                 >
-                  <option value="">{accountsLoading ? "Loading..." : "Expense Account"}</option>
+                  <option value="">{accountsLoading ? "Loading accounts..." : "Select Expense Account"}</option>
+                  {expenseAccountId && !accounts.some((acc) => String(acc.id) === String(expenseAccountId)) && (
+                    <option value={expenseAccountId}>
+                      {bundleRes?.data?.expense_Account_Name || `Account (${String(expenseAccountId).substring(0, 8)}...)`}
+                    </option>
+                  )}
                   {accounts.map((acc) => (
-                    <option key={acc.id} value={acc.id}>{acc.account_Name}</option>
+                    <option key={acc.id} value={acc.id}>{acc.account_Name || acc.name}</option>
                   ))}
                 </select>
               </div>

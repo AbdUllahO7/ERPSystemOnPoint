@@ -68,7 +68,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   const { data: accountsRes, isLoading: accountsLoading } = useQuery({
     queryKey: ["leaf-accounts"],
-    queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 100 }),
+    queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 1000 }),
   });
 
   const { data: unitsRes, isLoading: unitsLoading } = useQuery({
@@ -82,10 +82,13 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
     enabled: isEdit,
   });
 
-  const categories = categoriesRes?.data?.items || [];
-  const accounts = accountsRes?.data?.items || [];
-  const measurements = unitsRes?.data?.items || [];
+  const categories = categoriesRes?.data?.items || categoriesRes?.data || [];
+  const accounts = accountsRes?.data?.items || accountsRes?.data || [];
+  const measurements = unitsRes?.data?.items || unitsRes?.data || [];
   const productUnitsWatch = watch("product_Units");
+  const revenueAccountId = watch("revenue_Account_Id");
+  const expenseAccountId = watch("expense_Account_Id");
+  const inventoryAccountId = watch("inventory_Account_Id");
 
   useEffect(() => {
     if (measurements.length > 0 && !isEdit) {
@@ -153,6 +156,14 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       });
     }
   }, [isEdit, productRes, reset, setThereAreUnits]);
+
+  useEffect(() => {
+    if (isEdit && productRes?.data) {
+      if (productRes.data.revenue_Account_Id) setValue("revenue_Account_Id", productRes.data.revenue_Account_Id);
+      if (productRes.data.expense_Account_Id) setValue("expense_Account_Id", productRes.data.expense_Account_Id);
+      if (productRes.data.inventory_Account_Id) setValue("inventory_Account_Id", productRes.data.inventory_Account_Id);
+    }
+  }, [isEdit, productRes, accounts, setValue]);
 
   // Create Product Mutation using POST /api/Inventory/Product/CreateProduct/Create
   const createMutation = useMutation({
@@ -343,23 +354,53 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Revenue Account</label>
-            <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50" {...register("revenue_Account_Id")} disabled={accountsLoading}>
-              <option value="">{accountsLoading ? "Loading..." : "Revenue Account"}</option>
-              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.account_Name}</option>)}
+            <select
+              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
+              value={revenueAccountId || ""}
+              onChange={(e) => setValue("revenue_Account_Id", e.target.value)}
+              disabled={accountsLoading}
+            >
+              <option value="">{accountsLoading ? "Loading accounts..." : "Select Revenue Account"}</option>
+              {revenueAccountId && !accounts.some((acc) => String(acc.id) === String(revenueAccountId)) && (
+                <option value={revenueAccountId}>
+                  {productRes?.data?.revenue_Account_Name || `Account (${String(revenueAccountId).substring(0, 8)}...)`}
+                </option>
+              )}
+              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.account_Name || acc.name}</option>)}
             </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Expense Account</label>
-            <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50" {...register("expense_Account_Id")} disabled={accountsLoading}>
-              <option value="">{accountsLoading ? "Loading..." : "Expense Account"}</option>
-              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.account_Name}</option>)}
+            <select
+              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
+              value={expenseAccountId || ""}
+              onChange={(e) => setValue("expense_Account_Id", e.target.value)}
+              disabled={accountsLoading}
+            >
+              <option value="">{accountsLoading ? "Loading accounts..." : "Select Expense Account"}</option>
+              {expenseAccountId && !accounts.some((acc) => String(acc.id) === String(expenseAccountId)) && (
+                <option value={expenseAccountId}>
+                  {productRes?.data?.expense_Account_Name || `Account (${String(expenseAccountId).substring(0, 8)}...)`}
+                </option>
+              )}
+              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.account_Name || acc.name}</option>)}
             </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Inventory Account</label>
-            <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50" {...register("inventory_Account_Id")} disabled={accountsLoading}>
-              <option value="">{accountsLoading ? "Loading..." : "Inventory Account"}</option>
-              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.account_Name}</option>)}
+            <select
+              className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
+              value={inventoryAccountId || ""}
+              onChange={(e) => setValue("inventory_Account_Id", e.target.value)}
+              disabled={accountsLoading}
+            >
+              <option value="">{accountsLoading ? "Loading accounts..." : "Select Inventory Account"}</option>
+              {inventoryAccountId && !accounts.some((acc) => String(acc.id) === String(inventoryAccountId)) && (
+                <option value={inventoryAccountId}>
+                  {productRes?.data?.inventory_Account_Name || `Account (${String(inventoryAccountId).substring(0, 8)}...)`}
+                </option>
+              )}
+              {accounts.map((acc) => <option key={acc.id} value={acc.id}>{acc.account_Name || acc.name}</option>)}
             </select>
           </div>
         </div>

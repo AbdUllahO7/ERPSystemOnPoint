@@ -33,6 +33,7 @@ export default function AddItemPage() {
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
+      setCurrentStep(2);
       const pData = productRes.data;
       if (pData.product_Type === "Service") {
         setItemType("service");

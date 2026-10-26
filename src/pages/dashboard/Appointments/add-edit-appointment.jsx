@@ -66,12 +66,30 @@ export default function AddEditAppointment() {
     customers: [],
     services: [],
     providers: [],
-    statuses: ["Scheduled", "Confirmed", "In Progress", "Completed", "No Show"],
+    statuses: [
+      "Scheduled",
+      "Confirmed",
+      "CheckedIn",
+      "In Progress",
+      "Completed",
+      "Canceled",
+      "Cancelled",
+      "No Show",
+      "NoShow",
+    ],
     currencies: [],
     paymentMethods: [],
     costCenters: [],
     warehouses: [],
   };
+
+  // Ensure all common statuses are present
+  if (lookups.statuses && !lookups.statuses.includes("Canceled")) {
+    lookups.statuses.push("Canceled");
+  }
+  if (lookups.statuses && !lookups.statuses.includes("Cancelled")) {
+    lookups.statuses.push("Cancelled");
+  }
 
   // Fetch existing appointment if editing
   const { data: existingData } = useQuery({
@@ -81,10 +99,25 @@ export default function AddEditAppointment() {
   });
 
   useEffect(() => {
-    if (isEdit && existingData?.data) {
+    if (isEdit && existingData) {
+      const d = existingData?.data?.data || existingData?.data || existingData;
+      if (!d) return;
       setFormData((prev) => ({
         ...prev,
-        ...existingData.data,
+        ...d,
+        customer: d.customerId || d.customerName || prev.customer,
+        customerId: d.customerId || prev.customerId,
+        customerName: d.customerName || prev.customerName,
+        service: d.productVariantId || d.serviceName || prev.service,
+        productVariantId: d.productVariantId || prev.productVariantId,
+        serviceName: d.serviceName || prev.serviceName,
+        provider: d.serviceProviderId || d.serviceProviderName || prev.provider,
+        serviceProviderId: d.serviceProviderId || prev.serviceProviderId,
+        serviceProviderName: d.serviceProviderName || prev.serviceProviderName,
+        date: d.appointmentDate ? d.appointmentDate.split("T")[0] : prev.date,
+        start: d.startTime ? d.startTime.slice(0, 5) : prev.start,
+        end: d.endTime ? d.endTime.slice(0, 5) : prev.end,
+        status: d.status || prev.status,
       }));
     }
   }, [isEdit, existingData]);
@@ -216,15 +249,29 @@ export default function AddEditAppointment() {
               Customer
             </Label>
             <Select
+              key={formData.customer || "customer-select"}
               value={formData.customer}
-              onValueChange={(val) => handleChange("customer", val)}
+              onValueChange={(val) => {
+                const item = lookups.customers.find((c) => c.value === val || c.id === val);
+                setFormData((prev) => ({
+                  ...prev,
+                  customer: val,
+                  customerId: item?.id || val,
+                  customerName: item?.label || val,
+                }));
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Customer" />
               </SelectTrigger>
               <SelectContent>
+                {formData.customer && !lookups.customers.some((c) => c.value === formData.customer || c.id === formData.customer) && (
+                  <SelectItem value={formData.customer}>
+                    {formData.customerName || formData.customer}
+                  </SelectItem>
+                )}
                 {lookups.customers.map((c) => (
-                  <SelectItem key={c.id} value={c.value}>
+                  <SelectItem key={c.id} value={c.id || c.value}>
                     {c.label}
                   </SelectItem>
                 ))}
@@ -237,15 +284,29 @@ export default function AddEditAppointment() {
               Service
             </Label>
             <Select
+              key={formData.service || "service-select"}
               value={formData.service}
-              onValueChange={(val) => handleChange("service", val)}
+              onValueChange={(val) => {
+                const item = lookups.services.find((s) => s.value === val || s.id === val);
+                setFormData((prev) => ({
+                  ...prev,
+                  service: val,
+                  productVariantId: item?.id || val,
+                  serviceName: item?.label || val,
+                }));
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Service" />
               </SelectTrigger>
               <SelectContent>
+                {formData.service && !lookups.services.some((s) => s.value === formData.service || s.id === formData.service) && (
+                  <SelectItem value={formData.service}>
+                    {formData.serviceName || formData.service}
+                  </SelectItem>
+                )}
                 {lookups.services.map((s) => (
-                  <SelectItem key={s.id} value={s.value}>
+                  <SelectItem key={s.id} value={s.id || s.value}>
                     {s.label}
                   </SelectItem>
                 ))}
@@ -258,15 +319,29 @@ export default function AddEditAppointment() {
               Provider
             </Label>
             <Select
+              key={formData.provider || "provider-select"}
               value={formData.provider}
-              onValueChange={(val) => handleChange("provider", val)}
+              onValueChange={(val) => {
+                const item = lookups.providers.find((p) => p.value === val || p.id === val);
+                setFormData((prev) => ({
+                  ...prev,
+                  provider: val,
+                  serviceProviderId: item?.id || val,
+                  serviceProviderName: item?.label || val,
+                }));
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Select Provider" />
               </SelectTrigger>
               <SelectContent>
+                {formData.provider && !lookups.providers.some((p) => p.value === formData.provider || p.id === formData.provider) && (
+                  <SelectItem value={formData.provider}>
+                    {formData.serviceProviderName || formData.provider}
+                  </SelectItem>
+                )}
                 {lookups.providers.map((p) => (
-                  <SelectItem key={p.id} value={p.value}>
+                  <SelectItem key={p.id} value={p.id || p.value}>
                     {p.label}
                   </SelectItem>
                 ))}
@@ -282,6 +357,7 @@ export default function AddEditAppointment() {
               Status
             </Label>
             <Select
+              key={formData.status || "status-select"}
               value={formData.status}
               onValueChange={(val) => handleChange("status", val)}
             >
@@ -289,6 +365,9 @@ export default function AddEditAppointment() {
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
+                {formData.status && !lookups.statuses.includes(formData.status) && (
+                  <SelectItem value={formData.status}>{formData.status}</SelectItem>
+                )}
                 {lookups.statuses
                   .filter((st) => st !== "All")
                   .map((st) => (
