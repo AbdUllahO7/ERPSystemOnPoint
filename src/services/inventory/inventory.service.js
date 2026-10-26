@@ -145,6 +145,14 @@ export async function getAllProducts(params) {
   });
 }
 
+export async function createProduct(data) {
+  return apiHandler({
+    endPoint: "Inventory/Product/CreateProduct/Create",
+    method: "POST",
+    body: data,
+  });
+}
+
 export async function getProductById(id) {
   return apiHandler({
     endPoint: `Inventory/Product/GetById/GetById/${id}`,

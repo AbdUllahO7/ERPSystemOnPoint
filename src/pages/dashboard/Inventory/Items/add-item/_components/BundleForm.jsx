@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, createBundleWithoutSpecs, updateBundleWithoutSpecs, getProductById } from "@/lib/api";
+import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getAllUnitOfMeasurements, createProduct, createBundleWithoutSpecs, updateBundleWithoutSpecs, getProductById } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -60,9 +60,15 @@ export default function BundleForm({ currentStep, onNext }) {
     enabled: isEdit,
   });
 
+  const { data: unitsRes } = useQuery({
+    queryKey: ["unit-measurements"],
+    queryFn: () => getAllUnitOfMeasurements({ PageNumber: 1, PageSize: 1000 }),
+  });
+
   const categories = categoriesRes?.data?.items || [];
   const accounts = accountsRes?.data?.items || [];
   const products = productsRes?.data?.items || [];
+  const measurements = unitsRes?.data?.items || [];
   const productComponentsWatch = watch("product_Components");
 
   useEffect(() => { 
@@ -97,13 +103,71 @@ export default function BundleForm({ currentStep, onNext }) {
   }, [isEdit, bundleRes, reset]);
 
   const createMutation = useMutation({
-    mutationFn: createBundleWithoutSpecs,
+    mutationFn: (data) => {
+      const validComponents = (data.product_Components || []).filter(c => c.component_Variant_Id && c.unit_Of_Measurement_Id);
+      const defaultUnitId = validComponents[0]?.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id;
+
+      const payload = {
+        name_Product: data.name_Product,
+        product_Number: data.product_Number || String(Math.floor(100000 + Math.random() * 900000)),
+        has_Specifications: false,
+        is_Tracking_Inventory: false,
+        can_Be_Sold: true,
+        can_Be_Purchased: false,
+        requires_Shipping: Boolean(data.requires_Shipping ?? false),
+        requires_Contract: Boolean(data.requires_Contract ?? false),
+        requires_Scheduling: false,
+        has_Variants: false,
+        is_Fixed_Price: true,
+        revenue_Account_Id: data.revenue_Account_Id || null,
+        expense_Account_Id: data.expense_Account_Id || null,
+        inventory_Account_Id: null,
+        product_Type: "Bundle",
+        billing_Method: "FixedPrice",
+        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
+        origin_Id: null,
+        category_Id: data.category_Id || null,
+        productVariantDtos: [
+          {
+            minimum_Alert_Level: 0,
+            maximum_Stock_Level: 0,
+            limit_Unit_Id: null,
+            variantValues: [],
+            product_Units: [
+              {
+                unit_Of_Measurement_Id: defaultUnitId,
+                secondunit_Of_Measurement_Id: null,
+                barcode_Option: "Manual",
+                barcode: null,
+                qr_Code: null,
+                is_Default_Selling: true,
+                is_Default_Purchasing: false,
+                cost_Price: Number(data.cost_Price ?? 0),
+                wholesale_Price: Number(data.consumer_Price ?? 0),
+                consumer_Price: Number(data.consumer_Price ?? 0),
+                last_Purchase_Price: 0,
+                average_Purchase_Price: 0,
+                relative_factor: 1,
+              },
+            ],
+            product_Components: validComponents.map((c) => ({
+              component_Variant_Id: c.component_Variant_Id,
+              quantity: Number(c.quantity) || 1,
+              unit_Of_Measurement_Id: c.unit_Of_Measurement_Id,
+              notes: c.notes || null,
+            })),
+          },
+        ],
+      };
+
+      return createProduct(payload);
+    },
     onSuccess: () => {
       toast.success("Bundle created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to create bundle");
+      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to create bundle");
     }
   });
 
