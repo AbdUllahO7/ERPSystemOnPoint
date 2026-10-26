@@ -2,13 +2,14 @@ import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { Calculator, Play, CheckCircle, AlertTriangle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getMonthStats } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { getMonthStats, calculateAttendance } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
 export default function AttendanceCount() {
   const { year, month } = useParams();
   const navigate = useNavigate();
-  const [isCalculating, setIsCalculating] = useState(false);
+  const queryClient = useQueryClient();
   const [calculationDone, setCalculationDone] = useState(false);
 
   const { data: statsData, isLoading } = useQuery({
@@ -18,13 +19,29 @@ export default function AttendanceCount() {
 
   const stats = statsData?.data || { totalRecords: 0, correctRecords: 0, errorsCount: 0 };
 
-  const handleCalculate = () => {
-    setIsCalculating(true);
-    // Simulate calculation process
-    setTimeout(() => {
-      setIsCalculating(false);
+  const calculateMutation = useMutation({
+    mutationFn: (payload) => calculateAttendance(payload),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries(["getMonthStats", year, month]);
+      toast.success(res?.message || "Attendance calculated successfully!");
       setCalculationDone(true);
-    }, 2000);
+    },
+    onError: (error) => {
+      console.error("Failed to calculate attendance:", error);
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Failed to calculate attendance!"
+      );
+    },
+  });
+
+  const handleCalculate = () => {
+    const formattedMonth = String(month).padStart(2, "0");
+    const targetDate = `${year}-${formattedMonth}-01T00:00:00.000Z`;
+    calculateMutation.mutate({
+      date: targetDate,
+    });
   };
 
   const getMonthName = (monthNumber) => {
@@ -109,11 +126,11 @@ export default function AttendanceCount() {
         ) : (
           <Button 
             onClick={handleCalculate} 
-            disabled={isCalculating || isLoading}
+            disabled={calculateMutation.isPending || isLoading}
             size="lg"
-            className="w-full max-w-sm text-lg h-14 bg-blue-600 hover:bg-blue-700"
+            className="w-full max-w-sm text-lg h-14 bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
           >
-            {isCalculating ? (
+            {calculateMutation.isPending ? (
               <span className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
                 Calculating...
@@ -125,6 +142,7 @@ export default function AttendanceCount() {
               </span>
             )}
           </Button>
+
         )}
       </div>
 

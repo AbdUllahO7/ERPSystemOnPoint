@@ -440,3 +440,79 @@ export async function cancelRentalContract({ id, cancellationReason }) {
   };
 }
 
+/**
+ * Settle Rental Contract (Damage, fuel, late fee, refunds)
+ * Endpoint: POST /api/Inventory/RentalContract/SettleContract/settle-contract
+ */
+export async function settleRentalContract(payload) {
+  const res = await apiHandler({
+    endPoint: "Inventory/RentalContract/SettleContract/settle-contract",
+    method: "POST",
+    body: payload,
+  });
+
+  return {
+    status: 200,
+    data: res?.data || res,
+    message: "Rental contract settled successfully",
+  };
+}
+
+/**
+ * Direct Rental Contract creation
+ * Endpoint: POST /api/Inventory/RentalContract/CreateContract/create-contract
+ */
+export async function createDirectRentalContract(payload) {
+  const res = await apiHandler({
+    endPoint: "Inventory/RentalContract/CreateContract/create-contract",
+    method: "POST",
+    body: payload,
+  });
+
+  return {
+    status: 201,
+    data: res?.data || res,
+    message: "Direct rental contract created successfully",
+  };
+}
+
+/**
+ * Get available items / installments data for invoice creation
+ * Endpoint: GET /api/inventory/CustomerContracts/GetAvailableDataForInvoice/GetAvailable/{contractId}
+ */
+export async function getAvailableDataForInvoice(contractId) {
+  const res = await apiHandler({
+    endPoint: `inventory/CustomerContracts/GetAvailableDataForInvoice/GetAvailable/${contractId}`,
+    method: "GET",
+  });
+
+  return {
+    status: 200,
+    data: res?.data || res,
+  };
+}
+
+/**
+ * Create Customer Contract Invoice
+ * Endpoint: POST /api/inventory/CustomerContracts/CreateInvoiceContract/Create-invoice-Contract
+ */
+export async function createCustomerContractInvoice(payload) {
+  const res = await apiHandler({
+    endPoint: "inventory/CustomerContracts/CreateInvoiceContract/Create-invoice-Contract",
+    method: "POST",
+    body: payload,
+  });
+
+  return {
+    status: 201,
+    data: res?.data || res,
+    message: "Invoice created from contract successfully",
+  };
+}
+
+export async function getRentalPricingLookup() {
+  return apiHandler({
+    endPoint: "HR/Lookups/GetRentalPricing/GetRentalPricing",
+    method: "GET",
+  });
+}

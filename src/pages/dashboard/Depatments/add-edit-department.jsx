@@ -79,20 +79,28 @@ export default function AddEditDepartment() {
       isEdit
         ? updateDepartment({ ...data, department_Id: id })
         : createDepartment(data),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || (isEdit ? "Failed to update department!" : "Failed to add department!"));
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ["getDepartments"] });
       toast.success(
-        isEdit
+        res?.message ||
+        (isEdit
           ? "Department updated successfully!"
-          : "Department added successfully!",
+          : "Department added successfully!")
       );
       navigate("/dashboard/hr/departments");
     },
     onError: (error) => {
       console.error("Failed to save department", error);
-      toast.error(
-        isEdit ? "Failed to update department!" : "Failed to add department!",
-      );
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        (isEdit ? "Failed to update department!" : "Failed to add department!");
+      toast.error(errMsg);
     },
   });
 

@@ -73,6 +73,7 @@ const sidebarLinks = [
         icon: SquareDashedBottom,
       },
       { title: "Positions", href: "/dashboard/hr/positions", icon: Waypoints },
+      { title: "Users", href: "/dashboard/users", icon: UserCheck },
       { title: "Employees", href: "/dashboard/hr/employees", icon: Users  , submenu: [
         { title: "All employees", href: "/dashboard/hr/employees", icon: Users },
         { title: "Leaves", href: "/dashboard/hr/leaves", icon: Users },

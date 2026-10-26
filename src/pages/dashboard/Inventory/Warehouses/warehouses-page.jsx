@@ -9,14 +9,9 @@ import {
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// import {
-//   getWarehouses,
-//   getAllManagers,
-//   getBranches
-// } from "../../../lib/api"; // Note: updateWarehouse or deleteWarehouse if we add it to api
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
-import { getWarehouses } from "../../../../lib/api";
+import { getWarehouses, deleteWarehouse } from "@/lib/api";
 import toast from "react-hot-toast";
 
 const stats = [
@@ -62,23 +57,23 @@ export default function WarehousesPage() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  // Temporary delete mock (since delete API endpoint wasn't provided yet)
+  // Delete warehouse mutation using POST /api/inventory/Warehouses/DeleteWarehouse/Delete/{id}
   const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      // return deleteWarehouse(id);
-      console.log("Delete warehouse", id);
-      return Promise.resolve();
-    },
-    onSuccess: () => {
+    mutationFn: (id) => deleteWarehouse(id),
+    onSuccess: (res) => {
       queryClient.invalidateQueries(["getWarehouses"]);
-      toast.success("Warehouse deleted successfully!");
+      toast.success(res?.message || "Warehouse deleted successfully!");
       setDeleteRowId(null);
     },
     onError: (error) => {
       console.error("Failed to delete warehouse:", error);
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to delete warehouse!");
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to delete warehouse!"
+      );
       setDeleteRowId(null);
-    }
+    },
   });
 
   const params = useMemo(
@@ -90,11 +85,11 @@ export default function WarehousesPage() {
     [page, search],
   );
 
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["getWarehouses", params],
     queryFn: () => getWarehouses(params),
   });
-  console.log(data);
+
   const displayRows = data?.data?.items || [];
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
@@ -168,16 +163,6 @@ export default function WarehousesPage() {
       key: "location",
       label: "Location",
     },
-    {
-      key: "manager_Id", // Assuming we show manager name if populated, or manager_Id
-      label: "Manager",
-      render: (row) => (
-        <span className="text-blue-600 font-medium">
-          {/* Use a static Manager text if Manager name is not returned, or find from lookups */}
-          Manager
-        </span>
-      ),
-    },
   ];
 
   return (
@@ -193,7 +178,6 @@ export default function WarehousesPage() {
           subtitle: (row) => row.warehouse_Code,
           fields: [
             { label: "Location", value: (row) => row.location },
-            { label: "Manager", value: () => "Manager" },
           ],
         }}
         search={{
@@ -201,9 +185,6 @@ export default function WarehousesPage() {
           onChange: handleSearch,
           placeholder: "Search warehouses...",
         }}
-        // filter={{
-        //   onClick: () => console.log("Filter clicked"),
-        // }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/inventory/warehouses/add"),
@@ -227,3 +208,4 @@ export default function WarehousesPage() {
     </div>
   );
 }
+

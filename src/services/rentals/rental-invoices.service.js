@@ -279,4 +279,10 @@ export async function addRentalInvoicePayment(id, payload) {
   };
 }
 
+export {
+  createCustomerContractInvoice,
+  getAvailableDataForInvoice,
+  settleRentalContract,
+} from "./rentals.service";
+
 

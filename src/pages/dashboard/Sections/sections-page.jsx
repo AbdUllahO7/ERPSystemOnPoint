@@ -91,14 +91,24 @@ export default function Sections() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteSection(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || "Failed to delete section!");
+        setDeleteRowId(null);
+        return;
+      }
       queryClient.invalidateQueries(["getSections"]);
-      toast.success("Section deleted successfully!");
+      toast.success(res?.message || "Section deleted successfully!");
       setDeleteRowId(null);
     },
     onError: (error) => {
       console.error("Failed to delete section:", error);
-      toast.error("Failed to delete section!");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Failed to delete section!";
+      toast.error(errMsg);
       setDeleteRowId(null);
     },
   });

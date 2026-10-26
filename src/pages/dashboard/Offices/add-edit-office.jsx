@@ -109,10 +109,16 @@ export default function AddEditOffice() {
             sector_id: data.sector_id,
           })
         : createOffice(data),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || (isEdit ? "Failed to update office!" : "Failed to add office!"));
+        return;
+      }
       queryClient.invalidateQueries({ queryKey: ["getOffices"] });
       queryClient.invalidateQueries({ queryKey: ["getSectionOffices"] });
-      toast.success(isEdit ? "Office updated successfully!" : "Office added successfully!");
+      toast.success(
+        res?.message || (isEdit ? "Office updated successfully!" : "Office added successfully!")
+      );
       if (variables.sector_id) {
         navigate(`/dashboard/hr/sections/${variables.sector_id}?tab=office`);
       } else {
@@ -121,7 +127,12 @@ export default function AddEditOffice() {
     },
     onError: (error) => {
       console.error("Failed to save office", error);
-      toast.error(isEdit ? "Failed to update office!" : "Failed to add office!");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        (isEdit ? "Failed to update office!" : "Failed to add office!");
+      toast.error(errMsg);
     },
   });
 

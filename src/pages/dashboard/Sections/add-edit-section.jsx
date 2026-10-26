@@ -76,10 +76,16 @@ export default function AddEditSection() {
             department_Id: data.department_Id,
           })
         : createSection(data),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || (isEdit ? "Failed to update section!" : "Failed to add section!"));
+        return;
+      }
       queryClient.invalidateQueries(["getSections"]);
       queryClient.invalidateQueries(["getDepartmentSections"]);
-      toast.success(isEdit ? "Section updated successfully!" : "Section added successfully!");
+      toast.success(
+        res?.message || (isEdit ? "Section updated successfully!" : "Section added successfully!")
+      );
       if (variables.department_Id) {
         navigate(`/dashboard/hr/departments/${variables.department_Id}?tab=section`);
       } else {
@@ -88,7 +94,12 @@ export default function AddEditSection() {
     },
     onError: (error) => {
       console.error("Failed to save section", error);
-      toast.error(isEdit ? "Failed to update section!" : "Failed to add section!");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        (isEdit ? "Failed to update section!" : "Failed to add section!");
+      toast.error(errMsg);
     },
   });
 

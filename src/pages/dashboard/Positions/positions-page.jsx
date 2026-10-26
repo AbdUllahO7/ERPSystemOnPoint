@@ -65,14 +65,24 @@ export default function Positions() {
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deletePosition(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || "Failed to delete position!");
+        setDeleteRowId(null);
+        return;
+      }
       queryClient.invalidateQueries(["getPositions"]);
-      toast.success("Position deleted successfully!");
+      toast.success(res?.message || "Position deleted successfully!");
       setDeleteRowId(null);
     },
     onError: (error) => {
       console.error("Failed to delete position:", error);
-      toast.error("Failed to delete position!");
+      const errMsg =
+        error?.response?.data?.message ||
+        error?.data?.message ||
+        error?.message ||
+        "Failed to delete position!";
+      toast.error(errMsg);
       setDeleteRowId(null);
     },
   });

@@ -1,338 +1,438 @@
 import { useMemo, useState } from "react";
 import {
   User,
-  Phone,
-  Package,
   Users as UsersIcon,
-  Eye,
-  GitBranch,
-  Archive,
-  Pencil,
+  UserCheck,
+  UserX,
+  Phone,
+  Mail,
+  Shield,
   Trash2,
-  Store,
-  ShoppingBag,
+  RefreshCw,
+  Power,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { DataView } from "@/components/data-view/DataView";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getAllUsers,
+  toggleUserStatus,
+  deleteUserPermanently,
+} from "@/lib/api";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import toast from "react-hot-toast";
 
 const STATUS_FILTERS = [
-  { key: "all", label: "All" },
-  { key: "review", label: "Under review" },
+  { key: "all", label: "All Users" },
   { key: "active", label: "Active" },
   { key: "inactive", label: "Inactive" },
-  { key: "blocked", label: "Blocked" },
 ];
 
-function StatusCell({ status }) {
-  if (status === "Blocked" || status === "Under review") {
-    return (
-      <span className="inline-flex h-7 items-center rounded-full border px-3 text-xs">
-        {status}
+function StatusCell({ row, onToggle, isToggling }) {
+  const isActive = Boolean(
+    row.isActive ??
+      (typeof row.status === "string"
+        ? row.status.toLowerCase() === "active"
+        : false)
+  );
+
+  return (
+    <div className="flex items-center gap-3">
+      <Switch
+        checked={isActive}
+        disabled={isToggling}
+        onCheckedChange={() => onToggle(row.id)}
+      />
+      <span
+        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+          isActive
+            ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+            : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+        }`}
+      >
+        {isActive ? "Active" : "Inactive"}
       </span>
-    );
-  }
-  if (status === "toggle") return <Switch />;
-  if (status === "toggle-on") return <Switch defaultChecked />;
-  return <span className="text-neutral-600">{status}</span>;
+    </div>
+  );
 }
 
-const STATS_CARDS = [
-  {
-    id: "sellers",
-    title: "Sellers in system",
-    value: 32,
-    trend: "+5%",
-    trendUp: true,
-    icon: Store,
-    color: "blue",
-  },
-  {
-    id: "products",
-    title: "Total products",
-    value: 156,
-    trend: "-1%",
-    trendUp: false,
-    icon: ShoppingBag,
-    color: "green",
-  },
-  {
-    id: "active",
-    title: "Active sellers",
-    value: 24,
-    trend: "+3%",
-    trendUp: true,
-    icon: UsersIcon,
-    color: "indigo",
-  },
-  {
-    id: "review",
-    title: "Under review",
-    value: 8,
-    trend: "+2%",
-    trendUp: true,
-    icon: User,
-    color: "orange",
-  },
-];
-
 export default function Users() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [deleteUserId, setDeleteUserId] = useState(null);
 
-  const rows = useMemo(
-    () => [
-      {
-        id: 1,
-        name: "Abdulrahman Bin",
-        phone: "0595121088",
-        email: "email@gmail.com",
-        products: 350,
-        joinedAt: "16/2/2026",
-        status: "Blocked",
-        statusKey: "blocked",
-      },
-      {
-        id: 2,
-        name: "Ahmed Al-Saeed",
-        phone: "0599001122",
-        email: "ahmed@mail.com",
-        products: 120,
-        joinedAt: "10/1/2026",
-        status: "Under review",
-        statusKey: "review",
-      },
-      {
-        id: 3,
-        name: "Mohammed Al-Ali",
-        phone: "0566332211",
-        email: "mali@mail.com",
-        products: 85,
-        joinedAt: "5/3/2026",
-        status: "toggle",
-        statusKey: "active",
-      },
-      {
-        id: 4,
-        name: "Sara Khalid",
-        phone: "0588776655",
-        email: "sara@mail.com",
-        products: 210,
-        joinedAt: "20/2/2026",
-        status: "toggle-on",
-        statusKey: "active",
-      },
-      {
-        id: 5,
-        name: "Yousef Nasser",
-        phone: "0591112233",
-        email: "yousef@mail.com",
-        products: 64,
-        joinedAt: "1/4/2026",
-        status: "Under review",
-        statusKey: "review",
-      },
-      {
-        id: 6,
-        name: "Layla Mahmoud",
-        phone: "0594445566",
-        email: "layla@mail.com",
-        products: 98,
-        joinedAt: "12/3/2026",
-        status: "Under review",
-        statusKey: "review",
-      },
-    ],
-    [],
-  );
+  const queryParams = useMemo(() => {
+    const p = {
+      PageNumber: page,
+      PageSize: 10,
+    };
+    if (search.trim()) {
+      p.Search = search.trim();
+    }
+    if (statusFilter === "active") {
+      p.IsActive = true;
+    } else if (statusFilter === "inactive") {
+      p.IsActive = false;
+    }
+    return p;
+  }, [page, search, statusFilter]);
+
+  const {
+    data: usersResponse,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["getAllUsers", queryParams],
+    queryFn: () => getAllUsers(queryParams),
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: (userId) => toggleUserStatus(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["getAllUsers"]);
+      toast.success("User status toggled successfully!");
+    },
+    onError: (error) => {
+      console.error("Failed to toggle user status:", error);
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to toggle user status!"
+      );
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (userId) => deleteUserPermanently(userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(["getAllUsers"]);
+      toast.success("User deleted permanently!");
+      setDeleteUserId(null);
+    },
+    onError: (error) => {
+      console.error("Failed to delete user permanently:", error);
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to delete user permanently!"
+      );
+      setDeleteUserId(null);
+    },
+  });
+
+  const rawUsers = useMemo(() => {
+    const raw =
+      usersResponse?.data?.items ||
+      usersResponse?.data ||
+      usersResponse?.items ||
+      [];
+    return Array.isArray(raw) ? raw : [];
+  }, [usersResponse]);
+
+  const totalPages = usersResponse?.data?.totalPages || 1;
+  const currentPage = usersResponse?.data?.pageNumber || page;
+  const totalCount =
+    usersResponse?.data?.totalCount ??
+    usersResponse?.data?.totalRecords ??
+    rawUsers.length;
 
   const displayRows = useMemo(() => {
-    if (statusFilter === "all") return rows;
-    return rows.filter((r) => r.statusKey === statusFilter);
-  }, [rows, statusFilter]);
+    return rawUsers.filter((u) => {
+      const isActive = Boolean(
+        u.isActive ??
+          (typeof u.status === "string"
+            ? u.status.toLowerCase() === "active"
+            : false)
+      );
 
-  function handleSearch(value) {
-    console.log("search:", value);
-    console.log("data:", rows);
-    setSearch(value);
-  }
+      if (statusFilter === "active" && !isActive) return false;
+      if (statusFilter === "inactive" && isActive) return false;
 
-  const rowActionsMenu = useMemo(
+      if (search.trim()) {
+        const query = search.trim().toLowerCase();
+        const name = (u.user_Name || u.userName || u.name || u.fullName || "").toLowerCase();
+        const email = (u.email || "").toLowerCase();
+        const phone = (u.phoneNumber || u.phone || "").toLowerCase();
+        const role = (u.role_Name || u.roleName || u.role || "").toLowerCase();
+        return (
+          name.includes(query) ||
+          email.includes(query) ||
+          phone.includes(query) ||
+          role.includes(query)
+        );
+      }
+      return true;
+    });
+  }, [rawUsers, statusFilter, search]);
+
+  const activeCount = useMemo(() => {
+    return rawUsers.filter((u) =>
+      Boolean(
+        u.isActive ??
+          (typeof u.status === "string"
+            ? u.status.toLowerCase() === "active"
+            : false)
+      )
+    ).length;
+  }, [rawUsers]);
+
+  const inactiveCount = rawUsers.length - activeCount;
+
+  const statsCards = useMemo(
     () => [
       {
-        label: "View",
-        items: [
-          {
-            key: "details",
-            label: "Details",
-            icon: Eye,
-            onClick: (row) => console.log("details", row.id),
-          },
-          {
-            key: "branches",
-            label: "Branches",
-            icon: GitBranch,
-            onClick: (row) => console.log("branches", row.id),
-          },
-          {
-            key: "employee",
-            label: "Employee",
-            icon: User,
-            onClick: (row) => console.log("employee", row.id),
-          },
-          {
-            key: "archive",
-            label: "Archive",
-            icon: Archive,
-            onClick: (row) => console.log("archive", row.id),
-          },
-        ],
+        id: "total",
+        title: "Total Users",
+        value: totalCount,
+        icon: UsersIcon,
+        color: "blue",
       },
       {
-        items: [
-          {
-            key: "edit",
-            label: "Edit",
-            icon: Pencil,
-            onClick: (row) => console.log("edit", row.id),
-          },
-        ],
+        id: "active",
+        title: "Active Users",
+        value: activeCount,
+        icon: UserCheck,
+        color: "green",
       },
       {
-        items: [
-          {
-            key: "delete",
-            label: "Delete",
-            icon: Trash2,
-            destructive: true,
-            onClick: (row) => console.log("delete", row.id),
-          },
-        ],
+        id: "inactive",
+        title: "Inactive Users",
+        value: inactiveCount,
+        icon: UserX,
+        color: "orange",
+      },
+      {
+        id: "roles",
+        title: "Unique Roles",
+        value: new Set(
+          rawUsers
+            .map((u) => u.role_Name || u.roleName || u.role)
+            .filter(Boolean)
+        ).size || 1,
+        icon: Shield,
+        color: "indigo",
       },
     ],
-    [],
+    [totalCount, activeCount, inactiveCount, rawUsers]
   );
 
   const columns = [
     {
       key: "id",
-      label: "ID",
+      label: "User ID",
       sortable: true,
-      link: true,
-      render: (row) => `#${row.id}`,
+      render: (row) => (
+        <span className="text-primary font-medium">
+          #{typeof row.id === "string" ? row.id.slice(0, 8) : row.id}
+        </span>
+      ),
     },
     {
       key: "name",
-      label: "Seller name",
+      label: "User Name",
       sortable: true,
-      link: true,
-    },
-    {
-      key: "phone",
-      label: "Phone",
-      sortable: true,
+      render: (row) => (
+        <div className="flex items-center gap-2">
+          <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-xs uppercase">
+            {(row.user_Name || row.userName || row.name || row.fullName || "U")[0]}
+          </div>
+          <span className="font-medium text-foreground">
+            {row.user_Name || row.userName || row.name || row.fullName || "-"}
+          </span>
+        </div>
+      ),
     },
     {
       key: "email",
       label: "Email",
       sortable: true,
-      link: true,
+      render: (row) => (
+        <span className="text-muted-foreground">{row.email || "-"}</span>
+      ),
+    },
+    {
+      key: "phone",
+      label: "Phone",
+      sortable: true,
+      render: (row) => row.phoneNumber || row.phone || "-",
+    },
+    {
+      key: "role",
+      label: "Role",
+      sortable: true,
+      render: (row) => {
+        const role =
+          row.role_Name ||
+          row.roleName ||
+          row.role ||
+          (Array.isArray(row.roles) ? row.roles.join(", ") : "User");
+        return (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold bg-primary/10 text-primary">
+            {role}
+          </span>
+        );
+      },
     },
     {
       key: "status",
       label: "Status",
-      render: (row) => <StatusCell status={row.status} />,
+      render: (row) => (
+        <StatusCell
+          row={row}
+          onToggle={(id) => toggleMutation.mutate(id)}
+          isToggling={toggleMutation.isPending || toggleMutation.isLoading}
+        />
+      ),
     },
     {
-      key: "products",
-      label: "Products",
+      key: "createdAt",
+      label: "Created Date",
       sortable: true,
-      emphasize: true,
-    },
-    {
-      key: "joinedAt",
-      label: "Joined date",
-      sortable: true,
+      render: (row) => {
+        const date = row.created_At || row.createdAt || row.date;
+        return date ? new Date(date).toLocaleDateString() : "-";
+      },
     },
   ];
 
+  const rowActionsMenu = useMemo(
+    () => [
+      {
+        items: [
+          {
+            key: "toggle",
+            label: "Toggle Status",
+            icon: Power,
+            onClick: (row) => toggleMutation.mutate(row.id),
+          },
+          {
+            key: "delete",
+            label: "Delete Permanently",
+            icon: Trash2,
+            destructive: true,
+            onClick: (row) => setDeleteUserId(row.id),
+          },
+        ],
+      },
+    ],
+    [toggleMutation]
+  );
+
   return (
-    <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-neutral-900">Sellers list</h2>
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight text-foreground">
+            Users Management
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage users, view roles, toggle statuses, and permanently delete accounts.
+          </p>
+        </div>
+      </div>
 
       <DataView
-        stats={STATS_CARDS}
+        stats={statsCards}
         data={displayRows}
+        isLoading={isLoading}
         getRowId={(row) => row.id}
         selectable
         search={{
-          placeholder: "Search by name, phone, or email...",
+          placeholder: "Search by username, email, phone, or role...",
           value: search,
-          onChange: handleSearch,
+          onChange: setSearch,
         }}
         filter={{
-          label: "Filter",
-          onClick: () => console.log("filter"),
+          label: "Filter Status",
+          onClick: () => {
+            const next =
+              statusFilter === "all"
+                ? "active"
+                : statusFilter === "active"
+                ? "inactive"
+                : "all";
+            setStatusFilter(next);
+          },
         }}
-        onRefresh={() => console.log("refresh")}
+        toolbarExtra={
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+            {STATUS_FILTERS.map((f) => (
+              <Button
+                key={f.key}
+                type="button"
+                size="sm"
+                variant={statusFilter === f.key ? "default" : "outline"}
+                className="h-8 rounded-full text-xs font-medium"
+                onClick={() => setStatusFilter(f.key)}
+              >
+                {f.label}
+              </Button>
+            ))}
+          </div>
+        }
+        onRefresh={() => refetch()}
         onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
-        addButton={{
-          label: "Add",
-          onClick: () => console.log("add"),
-        }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{
           icon: User,
-          title: (row) => row.name,
-          subtitle: (row) => `Seller ID: #${row.id}`,
+          title: (row) =>
+            row.user_Name || row.userName || row.name || row.fullName || "User",
+          subtitle: (row) =>
+            `ID: #${typeof row.id === "string" ? row.id.slice(0, 8) : row.id}`,
           fields: [
+            {
+              icon: Mail,
+              label: "Email:",
+              value: (row) => row.email || "-",
+            },
             {
               icon: Phone,
               label: "Phone:",
-              value: (row) => row.phone,
+              value: (row) => row.phoneNumber || row.phone || "-",
             },
             {
-              icon: Package,
-              label: "Products:",
-              value: (row) => `${row.products} products`,
+              icon: Shield,
+              label: "Role:",
+              value: (row) =>
+                row.role_Name || row.roleName || row.role || "User",
             },
           ],
           renderFooter: (row) => (
-            <div className="border-t border-neutral-100 pt-2">
-              <StatusCell status={row.status} />
+            <div className="border-t border-border pt-3">
+              <StatusCell
+                row={row}
+                onToggle={(id) => toggleMutation.mutate(id)}
+                isToggling={toggleMutation.isPending || toggleMutation.isLoading}
+              />
             </div>
           ),
         }}
         pagination={{
-          page,
-          totalPages: 4,
+          page: currentPage,
+          totalPages: totalPages,
           onPageChange: setPage,
           prevLabel: "Pre",
           nextLabel: "Next",
         }}
-        emptyMessage="No sellers found"
-        // toolbarExtra={
-        //   <div className="flex flex-wrap items-center gap-2">
-        //     {STATUS_FILTERS.map((f) => (
-        //       <Button
-        //         key={f.key}
-        //         type="button"
-        //         variant={statusFilter === f.key ? "default" : "outline"}
-        //         className="h-9 rounded-full! px-3"
-        //         onClick={() => setStatusFilter(f.key)}
-        //       >
-        //         {f.label}
-        //       </Button>
-        //     ))}
-        //   </div>
-        // }
+        emptyMessage="No users found"
+      />
+
+      {/* Delete User Permanently Confirmation Dialog */}
+      <DeleteConfirmDialog
+        isOpen={!!deleteUserId}
+        onClose={() => setDeleteUserId(null)}
+        onConfirm={() => {
+          if (deleteUserId) {
+            deleteMutation.mutate(deleteUserId);
+          }
+        }}
+        isLoading={deleteMutation.isPending || deleteMutation.isLoading}
+        title="Delete User Permanently"
+        description="Are you sure you want to permanently delete this user? This action cannot be undone and all data associated with this user will be removed."
       />
     </div>
   );
