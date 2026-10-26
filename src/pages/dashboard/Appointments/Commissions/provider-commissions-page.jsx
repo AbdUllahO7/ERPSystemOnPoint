@@ -341,12 +341,13 @@ export default function ProviderCommissionsPage() {
                 Service
               </Label>
               <Select
+                key={formData.serviceId || "service-select"}
                 value={formData.serviceId}
                 onValueChange={(val) => {
-                  const item = lookups.services.find((s) => s.id === val || s.variantId === val);
+                  const item = lookups.services.find((s) => (s.variantId || s.id) === val);
                   setFormData({
                     ...formData,
-                    serviceId: item?.variantId || val,
+                    serviceId: val,
                     service: item ? item.name : "",
                   });
                 }}
@@ -355,11 +356,14 @@ export default function ProviderCommissionsPage() {
                   <SelectValue placeholder="Select Service" />
                 </SelectTrigger>
                 <SelectContent>
-                  {lookups.services.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
+                  {lookups.services.map((s) => {
+                    const optionVal = s.variantId || s.id;
+                    return (
+                      <SelectItem key={optionVal} value={optionVal}>
+                        {s.name}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>

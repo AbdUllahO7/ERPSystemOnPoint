@@ -101,11 +101,18 @@ export async function getChartOfAccounts(params) {
   });
 }
 
-export async function getLeafAccounts(params) {
+export async function getLeafAccounts(params = {}) {
+  const normalizedParams = {
+    ...params,
+    PageNumber: params.PageNumber || params.pageNumber || 1,
+    PageSize: params.PageSize || params.pageSize || 1000,
+    pageNumber: params.PageNumber || params.pageNumber || 1,
+    pageSize: params.PageSize || params.pageSize || 1000,
+  };
   return apiHandler({
     endPoint: "account/Accounts/GetLeafAccounts/leaf-accounts",
     method: "GET",
-    params,
+    params: normalizedParams,
   });
 }
 

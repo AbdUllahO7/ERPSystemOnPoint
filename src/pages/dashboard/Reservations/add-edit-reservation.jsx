@@ -52,6 +52,7 @@ export default function AddEditReservation() {
     invoicePatternId: "",
     paymentMethod: "Cash",
     costCenterId: "",
+    description: "",
     notes: "",
     amountPaid: "0",
     discountAmount: "0",
@@ -103,6 +104,7 @@ export default function AddEditReservation() {
         invoicePatternId: r.invoicePatternId || "",
         paymentMethod: r.paymentMethod || "Cash",
         costCenterId: r.costCenterId || "",
+        description: r.description || r.notes || "",
         notes: r.notes || "",
         amountPaid: String(r.numericPaid || 0),
         discountAmount: "0",
@@ -227,6 +229,10 @@ export default function AddEditReservation() {
     }
     if (!formData.bookingEventId && !formData.bookingEvent) {
       toast.error("يرجى اختيار الحدث (Booking Event is required)");
+      return;
+    }
+    if (!formData.description?.trim()) {
+      toast.error("يرجى إدخال الوصف (Description is required)");
       return;
     }
 
@@ -517,8 +523,24 @@ export default function AddEditReservation() {
             </div>
           </div>
 
-          {/* Row 3: Notes */}
+          {/* Description Field (Required) */}
           <div className="space-y-2 pt-2 border-t border-slate-50">
+            <Label className="text-xs font-semibold text-slate-800">
+              الوصف (Description) <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              required
+              placeholder="وصف تفصيلي للحجز أو المتدرب / المشترك..."
+              value={formData.description}
+              onChange={(e) =>
+                setFormData({ ...formData, description: e.target.value })
+              }
+              className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+            />
+          </div>
+
+          {/* Row 3: Notes */}
+          <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-800">
               ملاحظات أو شروط خاصة بالحجز (Notes)
             </Label>

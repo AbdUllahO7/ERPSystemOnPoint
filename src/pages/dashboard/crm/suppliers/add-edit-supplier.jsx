@@ -40,19 +40,21 @@ export default function AddEditSupplier() {
   });
 
   useEffect(() => {
-    if (isEdit && supplierData?.data) {
-      const data = supplierData.data;
+    if (isEdit && supplierData) {
+      const data = supplierData?.data?.data || supplierData?.data || supplierData;
+      if (!data) return;
+      const firstContact = Array.isArray(data.contacts) ? data.contacts[0] : null;
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
-        supplier_Name: data.supplierName || "",
-        contact_Person: data.contact_Person || "",
-        phone_Number: data.phone || "",
-        tax_Number: data.taxNumber || "",
+        supplier_Name: data.supplierName || data.supplier_Name || "",
+        contact_Person: data.contact_Person || data.contactPerson || firstContact?.name || firstContact?.contact_Person || "",
+        phone_Number: data.phone || data.phone_Number || firstContact?.phone || firstContact?.phone_Number || "",
+        tax_Number: data.taxNumber || data.tax_Number || "",
         address: data.address || "",
-        webSite: data.website || "",
-        email: data.email || "",
+        webSite: data.website || data.webSite || "",
+        email: data.email || firstContact?.email || "",
         status: data.status || "Active",
-        supplier_Type: data.supplierType || "Local",
+        supplier_Type: data.supplierType || data.supplier_Type || "Local",
       });
     }
   }, [supplierData, isEdit]);

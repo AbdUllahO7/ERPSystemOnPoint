@@ -55,7 +55,7 @@ export default function AddEditOffice() {
 
   const { data: sectionsData, isFetching: isFetchingSections } = useQuery({
     queryKey: ["getDepartmentSections", departmentId],
-    queryFn: () => getDepartmentSections({ department_id: departmentId }),
+    queryFn: () => getDepartmentSections({ department_id: departmentId, PageSize: 1000, pageSize: 1000 }),
     enabled: !!departmentId,
   });
 
@@ -75,14 +75,23 @@ export default function AddEditOffice() {
     if (isEdit && officeData?.data) {
       const office = officeData.data;
       setValue("name_Office", office.office_name || office.name_Office || office.office_Name || "");
-      setValue("department_id", String(office.department_id || office.department_Id || ""));
+      if (office.department_id || office.department_Id) {
+        setValue("department_id", String(office.department_id || office.department_Id));
+      }
+      const sId = office.sector_id || office.sector_Id || office.section_Id || office.section_id;
+      if (sId) {
+        setValue("sector_id", String(sId));
+      }
     }
   }, [isEdit, officeData, setValue]);
 
   useEffect(() => {
-    if (isEdit && officeData?.data && sectionsData) {
+    if (isEdit && officeData?.data) {
       const office = officeData.data;
-      setValue("sector_id", String(office.sector_id || office.section_Id || office.section_id || ""));
+      const sId = office.sector_id || office.sector_Id || office.section_Id || office.section_id;
+      if (sId) {
+        setValue("sector_id", String(sId));
+      }
     }
   }, [isEdit, officeData, sectionsData, setValue]);
 
@@ -269,12 +278,18 @@ export default function AddEditOffice() {
                       />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      {isEdit && officeData?.data && (officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id || officeData.data.section_id) &&
+                        !sections.some((sec) => String(sec.id || sec.section_Id || sec.sector_id || sec.sector_Id) === String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id || officeData.data.section_id)) && (
+                          <SelectItem value={String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id || officeData.data.section_id)}>
+                            {officeData.data.sector_name || officeData.data.sector_Name || officeData.data.section_name || officeData.data.section_Name || `Section #${String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id).substring(0, 8)}`}
+                          </SelectItem>
+                        )}
                       {Array.isArray(sections) &&
                         sections.map((sec) => {
-                          const secId = String(sec.id || sec.section_Id);
+                          const secId = String(sec.id || sec.section_Id || sec.sector_id || sec.sector_Id);
                           return (
                             <SelectItem key={secId} value={secId}>
-                              {sec.name || sec.section_Name || sec.section_name}
+                              {sec.name || sec.section_Name || sec.section_name || sec.sector_name || sec.sector_Name}
                             </SelectItem>
                           );
                         })}

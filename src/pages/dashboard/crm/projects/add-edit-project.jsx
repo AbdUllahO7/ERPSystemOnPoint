@@ -43,10 +43,10 @@ export default function AddEditProject() {
   // Load Customers
   const { data: customersData } = useQuery({
     queryKey: ["allCustomersList"],
-    queryFn: () => getAllCustomers({ PageNumber: 1, PageSize: 100 }),
+    queryFn: () => getAllCustomers({ PageNumber: 1, PageSize: 1000 }),
   });
 
-  const customers = customersData?.data?.items || [];
+  const customers = customersData?.data?.items || customersData?.data || [];
 
   // Load Contracts for selected Customer
   const { data: contractsData } = useQuery({
@@ -55,7 +55,7 @@ export default function AddEditProject() {
     enabled: !!formData.customerId,
   });
 
-  const contracts = contractsData?.data?.items || [];
+  const contracts = contractsData?.data?.items || contractsData?.data || [];
 
   // Load existing project if edit
   const { data: existingProjectData, isLoading: isLoadingProject } = useQuery({
@@ -65,10 +65,12 @@ export default function AddEditProject() {
   });
 
   useEffect(() => {
-    if (existingProjectData?.data) {
-      const p = existingProjectData.data;
+    if (existingProjectData) {
+      const p = existingProjectData?.data?.data || existingProjectData?.data || existingProjectData;
+      if (!p) return;
       setFormData({
         customerId: p.customerId || "",
+        customerName: p.customerName || "",
         contractId: p.contractId || "",
         projectName: p.projectName || "",
         status: p.status || "InProgress",
@@ -209,6 +211,7 @@ export default function AddEditProject() {
                 Customer (العميل) <span className="text-red-500">*</span>
               </Label>
               <Select
+                key={formData.customerId || "customer-select"}
                 value={formData.customerId}
                 onValueChange={(val) => {
                   setFormData((prev) => ({ ...prev, customerId: val, contractId: "" }));
@@ -218,6 +221,11 @@ export default function AddEditProject() {
                   <SelectValue placeholder="Select Customer" />
                 </SelectTrigger>
                 <SelectContent>
+                  {formData.customerId && !customers.some((c) => String(c.id) === String(formData.customerId)) && (
+                    <SelectItem value={String(formData.customerId)}>
+                      {formData.customerName || `Customer #${String(formData.customerId).substring(0, 8)}`}
+                    </SelectItem>
+                  )}
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.customerName || c.customer_Name || `Customer #${c.id.substring(0, 8)}`}
@@ -230,6 +238,7 @@ export default function AddEditProject() {
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Linked Contract (عقد العميل - اختياري)</Label>
               <Select
+                key={formData.contractId || "contract-select"}
                 value={formData.contractId || "none"}
                 onValueChange={(val) =>
                   setFormData((prev) => ({ ...prev, contractId: val === "none" ? "" : val }))
@@ -263,6 +272,7 @@ export default function AddEditProject() {
             <div className="space-y-2">
               <Label className="text-sm font-semibold">Status (الحالة)</Label>
               <Select
+                key={formData.status || "status-select"}
                 value={formData.status}
                 onValueChange={(val) => setFormData((prev) => ({ ...prev, status: val }))}
               >

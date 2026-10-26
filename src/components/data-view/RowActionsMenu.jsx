@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, createElement, isValidElement } from "react";
 import { MoreVertical, ArrowUpCircle, ArrowDownCircle } from "lucide-react";
 import {
   DropdownMenu,
@@ -88,7 +88,18 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
             )}
             {(!group.label || expandedGroups[group.label || gi]) &&
               group.items.map((item) => {
-                const Icon = item.icon;
+                let RawIcon = item.icon;
+                if (typeof RawIcon === "function") {
+                  try {
+                    // Try evaluating as a function of (row, rowIndex)
+                    const evaluated = RawIcon(row, rowIndex);
+                    if (evaluated) {
+                      RawIcon = evaluated;
+                    }
+                  } catch {
+                    // Standard React component
+                  }
+                }
                 const isPrimaryGroup = group.label === "View";
                 const label =
                   typeof item.label === "function"
@@ -118,7 +129,13 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
                       isDisabled && "opacity-50 cursor-not-allowed pointer-events-none"
                     )}
                   >
-                    {Icon && <Icon className="size-4 shrink-0" />}
+                    {RawIcon && (
+                      isValidElement(RawIcon) ? (
+                        RawIcon
+                      ) : typeof RawIcon === "function" || (typeof RawIcon === "object" && RawIcon !== null) ? (
+                        createElement(RawIcon, { className: "size-4 shrink-0" })
+                      ) : null
+                    )}
                     <span>{label}</span>
                   </DropdownMenuItem>
                 );

@@ -365,6 +365,8 @@ export async function createReservation(data) {
     taxAmount: Number(data.taxAmount) || 0,
     tax_Percentage: Number(data.taxPercent ?? data.tax_Percentage) || 0,
     barcode: data.barcode || null,
+    description: data.description || data.notes || null,
+    notes: data.notes || data.description || null,
     paymentSchedules: schedules.length > 0 ? schedules : null,
   };
 
