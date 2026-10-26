@@ -50,6 +50,13 @@ export async function toggleWarehouseStatus(id) {
   });
 }
 
+export async function deleteWarehouse(id) {
+  return apiHandler({
+    endPoint: `inventory/Warehouses/DeleteWarehouse/Delete/${id}`,
+    method: "POST",
+  });
+}
+
 // ==========================================
 // INVENTORY TRANSFERS
 // ==========================================
