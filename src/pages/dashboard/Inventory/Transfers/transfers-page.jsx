@@ -1,15 +1,13 @@
 import { useMemo, useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import {
   Users as UsersIcon,
   Building,
   Info,
   Eye,
-  Trash2
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
-import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import {
   Select,
   SelectContent,
@@ -19,7 +17,6 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { getAllTransfers } from "../../../../lib/api";
-import toast from "react-hot-toast";
 
 const stats = [
   {
@@ -59,11 +56,9 @@ const stats = [
 export default function TransfersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [deleteRowId, setDeleteRowId] = useState(null);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [filters, setFilters] = useState({ Status: "" });
 
-  const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const filterConfigs = [
@@ -77,24 +72,6 @@ export default function TransfersPage() {
       ],
     },
   ];
-
-  // Temporary delete mock
-  const deleteMutation = useMutation({
-    mutationFn: async (id) => {
-      console.log("Delete transfer", id);
-      return Promise.resolve();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["getAllTransfers"]);
-      toast.success("Transfer deleted successfully!");
-      setDeleteRowId(null);
-    },
-    onError: (error) => {
-      console.error("Failed to delete transfer:", error);
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to delete transfer!");
-      setDeleteRowId(null);
-    }
-  });
 
   const params = useMemo(
     () => ({
@@ -128,17 +105,6 @@ export default function TransfersPage() {
             label: "View Details",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/inventory/transfers/${row.id}`),
-          },
-        ],
-      },
-      {
-        items: [
-          {
-            key: "delete",
-            label: "Delete",
-            icon: Trash2,
-            destructive: true,
-            onClick: (row) => setDeleteRowId(row.id),
           },
         ],
       },
@@ -285,16 +251,6 @@ export default function TransfersPage() {
           nextLabel: "Next",
         }}
         emptyMessage="No transfers found"
-      />
-
-      <DeleteConfirmDialog
-        isOpen={!!deleteRowId}
-        onClose={() => setDeleteRowId(null)}
-        onConfirm={() => {
-          deleteMutation.mutate(deleteRowId);
-        }}
-        title="Delete Transfer"
-        description="Are you sure you want to delete this transfer? This action cannot be undone."
       />
     </div>
   );

@@ -475,6 +475,14 @@ export async function manualUpdateAttendance(data) {
   });
 }
 
+export async function calculateAttendance(data) {
+  return apiHandler({
+    endPoint: "HR/Attendance/CalculateDaily/calculate",
+    method: "POST",
+    body: data,
+  });
+}
+
 // ==========================================
 // DISCOUNTS & REWARDS & SALARIES
 // ==========================================
@@ -565,6 +573,13 @@ export async function getPerformance(employeeId, data) {
     endPoint: "HR/Performance/GetAll",
     method: "GET",
     params: { EmployeeId: employeeId, ...data },
+  });
+}
+
+export async function getPerformanceById(employeeId) {
+  return apiHandler({
+    endPoint: `HR/Performance/GetbyId/${employeeId}`,
+    method: "GET",
   });
 }
 
