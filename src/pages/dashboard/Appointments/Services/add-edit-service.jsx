@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Save } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,7 @@ export default function AddEditService() {
   });
 
   // Fetch Lookups
-  const { data: lookupsData } = useQuery({
+  const { data: lookupsData, isLoading: isLoadingLookups } = useQuery({
     queryKey: ["serviceLookups"],
     queryFn: getServiceLookups,
   });
@@ -57,11 +57,13 @@ export default function AddEditService() {
   };
 
   // Fetch existing service if in edit mode
-  const { data: existingData } = useQuery({
+  const { data: existingData, isLoading: isLoadingDetails } = useQuery({
     queryKey: ["serviceDetail", id],
     queryFn: () => getServiceById(id),
     enabled: isEdit,
   });
+
+  const isPageLoading = isLoadingLookups || (isEdit && isLoadingDetails);
 
   useEffect(() => {
     if (isEdit && existingData?.data) {
@@ -75,50 +77,65 @@ export default function AddEditService() {
   // Dynamically ensure Select options have the current value
   const categoryOptions = useMemo(() => {
     const list = [...(lookups.categories || [])];
-    if (formData.category && !list.some((c) => c.value === formData.category || c.id === formData.category || c.label === formData.category)) {
-      list.unshift({
-        id: formData.category,
-        label: formData.category,
-        value: formData.category,
-      });
+    if (formData.category) {
+      const exists = list.some((c) => c.value === formData.category || c.id === formData.category);
+      if (!exists) {
+        list.unshift({
+          id: formData.category,
+          label: formData.categoryName || formData.category,
+          value: formData.category,
+        });
+      }
     }
     return list;
-  }, [lookups.categories, formData.category]);
+  }, [lookups.categories, formData.category, formData.categoryName]);
 
   const billingMethodOptions = useMemo(() => {
     const list = [...(lookups.billingMethods || [])];
-    if (formData.billingMethod && !list.some((bm) => bm.value === formData.billingMethod || bm.label === formData.billingMethod)) {
-      list.unshift({
-        label: formData.billingMethod,
-        value: formData.billingMethod,
-      });
+    if (formData.billingMethod) {
+      const exists = list.some(
+        (bm) => bm.value?.toLowerCase() === formData.billingMethod?.toLowerCase() ||
+                bm.label?.toLowerCase() === formData.billingMethod?.toLowerCase()
+      );
+      if (!exists) {
+        list.unshift({
+          label: formData.billingMethod,
+          value: formData.billingMethod,
+        });
+      }
     }
     return list;
   }, [lookups.billingMethods, formData.billingMethod]);
 
   const revenueAccountOptions = useMemo(() => {
     const list = [...(lookups.revenueAccounts || [])];
-    if (formData.revenueAccount && !list.some((ra) => ra.value === formData.revenueAccount || ra.id === formData.revenueAccount || ra.label === formData.revenueAccount)) {
-      list.unshift({
-        id: formData.revenueAccount,
-        label: formData.revenueAccount,
-        value: formData.revenueAccount,
-      });
+    if (formData.revenueAccount) {
+      const exists = list.some((ra) => ra.value === formData.revenueAccount || ra.id === formData.revenueAccount);
+      if (!exists) {
+        list.unshift({
+          id: formData.revenueAccount,
+          label: formData.revenueAccountName || formData.revenueAccount,
+          value: formData.revenueAccount,
+        });
+      }
     }
     return list;
-  }, [lookups.revenueAccounts, formData.revenueAccount]);
+  }, [lookups.revenueAccounts, formData.revenueAccount, formData.revenueAccountName]);
 
   const expenseAccountOptions = useMemo(() => {
     const list = [...(lookups.expenseAccounts || [])];
-    if (formData.expenseAccount && !list.some((ea) => ea.value === formData.expenseAccount || ea.id === formData.expenseAccount || ea.label === formData.expenseAccount)) {
-      list.unshift({
-        id: formData.expenseAccount,
-        label: formData.expenseAccount,
-        value: formData.expenseAccount,
-      });
+    if (formData.expenseAccount) {
+      const exists = list.some((ea) => ea.value === formData.expenseAccount || ea.id === formData.expenseAccount);
+      if (!exists) {
+        list.unshift({
+          id: formData.expenseAccount,
+          label: formData.expenseAccountName || formData.expenseAccount,
+          value: formData.expenseAccount,
+        });
+      }
     }
     return list;
-  }, [lookups.expenseAccounts, formData.expenseAccount]);
+  }, [lookups.expenseAccounts, formData.expenseAccount, formData.expenseAccountName]);
 
   // Mutations
   const createMutation = useMutation({
@@ -181,7 +198,7 @@ export default function AddEditService() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving} className="gap-2">
+            <Button type="submit" disabled={isSaving || isPageLoading} className="gap-2">
               <Save className="h-4 w-4" />
               {isSaving ? "Saving..." : "Save"}
             </Button>
@@ -189,8 +206,19 @@ export default function AddEditService() {
         }
       />
 
-      {/* Main Form Card (3x3 Grid) */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
+      {isPageLoading ? (
+        <div className="flex flex-col items-center justify-center py-28 gap-3 text-muted-foreground rounded-xl border border-border bg-card p-6 shadow-sm min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm font-medium">
+            {isEdit
+              ? "Loading service details & lookups..."
+              : "Loading form data..."}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Main Form Card (3x3 Grid) */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
         {/* Row 1: Name, Category, Billing Method */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div className="space-y-1.5">
@@ -209,6 +237,7 @@ export default function AddEditService() {
               Category
             </Label>
             <Select
+              key={formData.category || "cat-select"}
               value={formData.category}
               onValueChange={(val) => handleChange("category", val)}
             >
@@ -230,6 +259,7 @@ export default function AddEditService() {
               Billing Method
             </Label>
             <Select
+              key={formData.billingMethod || "bm-select"}
               value={formData.billingMethod}
               onValueChange={(val) => handleChange("billingMethod", val)}
             >
@@ -317,6 +347,7 @@ export default function AddEditService() {
               Revenue Account
             </Label>
             <Select
+              key={formData.revenueAccount || "rev-select"}
               value={formData.revenueAccount}
               onValueChange={(val) => handleChange("revenueAccount", val)}
             >
@@ -338,6 +369,7 @@ export default function AddEditService() {
               Expense Account
             </Label>
             <Select
+              key={formData.expenseAccount || "exp-select"}
               value={formData.expenseAccount}
               onValueChange={(val) => handleChange("expenseAccount", val)}
             >
@@ -429,6 +461,8 @@ export default function AddEditService() {
           </div>
         </div>
       </div>
+      </>
+      )}
     </form>
   );
 }

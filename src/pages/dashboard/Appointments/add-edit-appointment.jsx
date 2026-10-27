@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Info, Plus, Trash2, Save, Wallet } from "lucide-react";
+import { Info, Plus, Trash2, Save, Wallet, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -58,7 +58,7 @@ export default function AddEditAppointment() {
   const [scheduleNotes, setScheduleNotes] = useState("");
 
   // Fetch Lookups
-  const { data: lookupsData } = useQuery({
+  const { data: lookupsData, isLoading: isLoadingLookups } = useQuery({
     queryKey: ["appointmentLookups"],
     queryFn: getAppointmentLookups,
   });
@@ -92,35 +92,97 @@ export default function AddEditAppointment() {
   }
 
   // Fetch existing appointment if editing
-  const { data: existingData } = useQuery({
+  const { data: existingData, isLoading: isLoadingDetails } = useQuery({
     queryKey: ["appointmentDetail", id],
     queryFn: () => getAppointmentById(id),
     enabled: isEdit,
   });
 
+  const isPageLoading = isLoadingLookups || (isEdit && isLoadingDetails);
+
   useEffect(() => {
     if (isEdit && existingData) {
-      const d = existingData?.data?.data || existingData?.data || existingData;
+      const d = existingData?.data?.raw || existingData?.data?.data || existingData?.data || existingData;
       if (!d) return;
+
+      const customerId = d.customerId || d.customer?.id;
+      const customerName = d.customerName || d.customer?.name || d.customer || "";
+      const serviceId = d.productVariantId || d.productVariant?.id || d.serviceId;
+      const serviceName = d.serviceName || d.productVariant?.name || d.service || "";
+      const providerId = d.serviceProviderId || d.serviceProvider?.id || d.providerId;
+      const providerName = d.serviceProviderName || d.serviceProvider?.name || d.provider || "";
+
+      const appointmentDate = d.appointmentDate || d.date;
+      const startTime = d.startTime || d.start;
+      const endTime = d.endTime || d.end;
+
       setFormData((prev) => ({
         ...prev,
         ...d,
-        customer: d.customerId || d.customerName || prev.customer,
-        customerId: d.customerId || prev.customerId,
-        customerName: d.customerName || prev.customerName,
-        service: d.productVariantId || d.serviceName || prev.service,
-        productVariantId: d.productVariantId || prev.productVariantId,
-        serviceName: d.serviceName || prev.serviceName,
-        provider: d.serviceProviderId || d.serviceProviderName || prev.provider,
-        serviceProviderId: d.serviceProviderId || prev.serviceProviderId,
-        serviceProviderName: d.serviceProviderName || prev.serviceProviderName,
-        date: d.appointmentDate ? d.appointmentDate.split("T")[0] : prev.date,
-        start: d.startTime ? d.startTime.slice(0, 5) : prev.start,
-        end: d.endTime ? d.endTime.slice(0, 5) : prev.end,
+        customer: customerId || customerName || prev.customer,
+        customerId: customerId || prev.customerId,
+        customerName: customerName || prev.customerName,
+        service: serviceId || serviceName || prev.service,
+        productVariantId: serviceId || prev.productVariantId,
+        serviceName: serviceName || prev.serviceName,
+        provider: providerId || providerName || prev.provider,
+        serviceProviderId: providerId || prev.serviceProviderId,
+        serviceProviderName: providerName || prev.serviceProviderName,
+        date: appointmentDate ? String(appointmentDate).split("T")[0] : prev.date,
+        start: startTime ? String(startTime).slice(0, 5) : prev.start,
+        end: endTime ? String(endTime).slice(0, 5) : prev.end,
         status: d.status || prev.status,
       }));
     }
   }, [isEdit, existingData]);
+
+  // Dynamically ensure Select options contain the current customer/service/provider/status
+  const customerOptions = useMemo(() => {
+    const list = [...(lookups.customers || [])];
+    const currentVal = formData.customerId || formData.customer;
+    if (currentVal && !list.some((c) => c.id === currentVal || c.value === currentVal)) {
+      list.unshift({
+        id: currentVal,
+        value: currentVal,
+        label: formData.customerName || currentVal,
+      });
+    }
+    return list;
+  }, [lookups.customers, formData.customer, formData.customerId, formData.customerName]);
+
+  const serviceOptions = useMemo(() => {
+    const list = [...(lookups.services || [])];
+    const currentVal = formData.productVariantId || formData.service;
+    if (currentVal && !list.some((s) => s.id === currentVal || s.value === currentVal)) {
+      list.unshift({
+        id: currentVal,
+        value: currentVal,
+        label: formData.serviceName || currentVal,
+      });
+    }
+    return list;
+  }, [lookups.services, formData.service, formData.productVariantId, formData.serviceName]);
+
+  const providerOptions = useMemo(() => {
+    const list = [...(lookups.providers || [])];
+    const currentVal = formData.serviceProviderId || formData.provider;
+    if (currentVal && !list.some((p) => p.id === currentVal || p.value === currentVal)) {
+      list.unshift({
+        id: currentVal,
+        value: currentVal,
+        label: formData.serviceProviderName || currentVal,
+      });
+    }
+    return list;
+  }, [lookups.providers, formData.provider, formData.serviceProviderId, formData.serviceProviderName]);
+
+  const statusOptions = useMemo(() => {
+    const list = [...(lookups.statuses || [])].filter((st) => st !== "All");
+    if (formData.status && !list.some((st) => st.toLowerCase() === formData.status.toLowerCase())) {
+      list.unshift(formData.status);
+    }
+    return list;
+  }, [lookups.statuses, formData.status]);
 
   // Create / Update Mutations
   const createMutation = useMutation({
@@ -200,10 +262,20 @@ export default function AddEditAppointment() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const payload = {
+      ...formData,
+      customerId: formData.customerId || formData.customer,
+      productVariantId: formData.productVariantId || formData.service,
+      serviceProviderId: formData.serviceProviderId || formData.provider,
+      appointmentDate: formData.date ? new Date(formData.date).toISOString() : formData.appointmentDate,
+      startTime: formData.start ? (formData.start.length === 5 ? `${formData.start}:00` : formData.start) : undefined,
+      endTime: formData.end ? (formData.end.length === 5 ? `${formData.end}:00` : formData.end) : undefined,
+    };
+
     if (isEdit) {
-      updateMutation.mutate(formData);
+      updateMutation.mutate(payload);
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(payload);
     }
   };
 
@@ -228,7 +300,7 @@ export default function AddEditAppointment() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving} className="gap-2">
+            <Button type="submit" disabled={isSaving || isPageLoading} className="gap-2">
               <Save className="h-4 w-4" />
               {isSaving ? "Saving..." : "Save"}
             </Button>
@@ -236,11 +308,22 @@ export default function AddEditAppointment() {
         }
       />
 
-      {/* Section 1: Appointment Details */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
-        <h2 className="text-lg font-bold text-foreground">
-          Appointment Details
-        </h2>
+      {isPageLoading ? (
+        <div className="flex flex-col items-center justify-center py-28 gap-3 text-muted-foreground rounded-xl border border-border bg-card p-6 shadow-sm min-h-[400px]">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <p className="text-sm font-medium">
+            {isEdit
+              ? "Loading appointment details & lookups..."
+              : "Loading form data..."}
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Section 1: Appointment Details */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
+            <h2 className="text-lg font-bold text-foreground">
+              Appointment Details
+            </h2>
 
         {/* Row 1: Customer, Service, Provider */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -249,10 +332,10 @@ export default function AddEditAppointment() {
               Customer
             </Label>
             <Select
-              key={formData.customer || "customer-select"}
-              value={formData.customer}
+              key={formData.customerId || formData.customer || "customer-select"}
+              value={formData.customerId || formData.customer}
               onValueChange={(val) => {
-                const item = lookups.customers.find((c) => c.value === val || c.id === val);
+                const item = customerOptions.find((c) => c.id === val || c.value === val);
                 setFormData((prev) => ({
                   ...prev,
                   customer: val,
@@ -265,13 +348,8 @@ export default function AddEditAppointment() {
                 <SelectValue placeholder="Select Customer" />
               </SelectTrigger>
               <SelectContent>
-                {formData.customer && !lookups.customers.some((c) => c.value === formData.customer || c.id === formData.customer) && (
-                  <SelectItem value={formData.customer}>
-                    {formData.customerName || formData.customer}
-                  </SelectItem>
-                )}
-                {lookups.customers.map((c) => (
-                  <SelectItem key={c.id} value={c.id || c.value}>
+                {customerOptions.map((c) => (
+                  <SelectItem key={c.id || c.value} value={c.id || c.value}>
                     {c.label}
                   </SelectItem>
                 ))}
@@ -284,10 +362,10 @@ export default function AddEditAppointment() {
               Service
             </Label>
             <Select
-              key={formData.service || "service-select"}
-              value={formData.service}
+              key={formData.productVariantId || formData.service || "service-select"}
+              value={formData.productVariantId || formData.service}
               onValueChange={(val) => {
-                const item = lookups.services.find((s) => s.value === val || s.id === val);
+                const item = serviceOptions.find((s) => s.id === val || s.value === val);
                 setFormData((prev) => ({
                   ...prev,
                   service: val,
@@ -300,13 +378,8 @@ export default function AddEditAppointment() {
                 <SelectValue placeholder="Select Service" />
               </SelectTrigger>
               <SelectContent>
-                {formData.service && !lookups.services.some((s) => s.value === formData.service || s.id === formData.service) && (
-                  <SelectItem value={formData.service}>
-                    {formData.serviceName || formData.service}
-                  </SelectItem>
-                )}
-                {lookups.services.map((s) => (
-                  <SelectItem key={s.id} value={s.id || s.value}>
+                {serviceOptions.map((s) => (
+                  <SelectItem key={s.id || s.value} value={s.id || s.value}>
                     {s.label}
                   </SelectItem>
                 ))}
@@ -319,10 +392,10 @@ export default function AddEditAppointment() {
               Provider
             </Label>
             <Select
-              key={formData.provider || "provider-select"}
-              value={formData.provider}
+              key={formData.serviceProviderId || formData.provider || "provider-select"}
+              value={formData.serviceProviderId || formData.provider}
               onValueChange={(val) => {
-                const item = lookups.providers.find((p) => p.value === val || p.id === val);
+                const item = providerOptions.find((p) => p.id === val || p.value === val);
                 setFormData((prev) => ({
                   ...prev,
                   provider: val,
@@ -335,13 +408,8 @@ export default function AddEditAppointment() {
                 <SelectValue placeholder="Select Provider" />
               </SelectTrigger>
               <SelectContent>
-                {formData.provider && !lookups.providers.some((p) => p.value === formData.provider || p.id === formData.provider) && (
-                  <SelectItem value={formData.provider}>
-                    {formData.serviceProviderName || formData.provider}
-                  </SelectItem>
-                )}
-                {lookups.providers.map((p) => (
-                  <SelectItem key={p.id} value={p.id || p.value}>
+                {providerOptions.map((p) => (
+                  <SelectItem key={p.id || p.value} value={p.id || p.value}>
                     {p.label}
                   </SelectItem>
                 ))}
@@ -365,16 +433,11 @@ export default function AddEditAppointment() {
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
-                {formData.status && !lookups.statuses.includes(formData.status) && (
-                  <SelectItem value={formData.status}>{formData.status}</SelectItem>
-                )}
-                {lookups.statuses
-                  .filter((st) => st !== "All")
-                  .map((st) => (
-                    <SelectItem key={st} value={st}>
-                      {st}
-                    </SelectItem>
-                  ))}
+                {statusOptions.map((st) => (
+                  <SelectItem key={st} value={st}>
+                    {st}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -638,6 +701,8 @@ export default function AddEditAppointment() {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Dynamic Modal for Adding Schedule in Add/Edit form */}
       <DynamicModal

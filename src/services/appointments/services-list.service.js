@@ -172,21 +172,30 @@ export async function getServiceById(id) {
       method: "GET",
     });
 
-    const s = res?.data || res || {};
+    const s = res?.data?.data || res?.data || res || {};
     
-    // Check variant / prices / units if any
-    const variant = Array.isArray(s.productVariantDtos) && s.productVariantDtos.length > 0 ? s.productVariantDtos[0] : null;
+    // Check variant / prices / units from variants array or productVariantDtos
+    const variantsList = Array.isArray(s.variants) ? s.variants : (Array.isArray(s.productVariantDtos) ? s.productVariantDtos : []);
+    const variant = variantsList.length > 0 ? variantsList[0] : null;
 
-    const consumerPrice = (Array.isArray(s.prices) && s.prices.length > 0)
-      ? s.prices[0]
-      : (s.consumer_Price ?? s.consumerPrice ?? variant?.consumer_Price ?? s.price ?? 0);
+    // Unit DTOs inside variant
+    const unitDtos = Array.isArray(variant?.productUnitDtos) ? variant.productUnitDtos : [];
+    const firstUnit = unitDtos.length > 0 ? unitDtos[0] : null;
 
-    const costPrice = (Array.isArray(s.prices) && s.prices.length > 1)
-      ? s.prices[1]
-      : (s.cost_Price ?? s.costPrice ?? variant?.cost_Price ?? 0);
+    const consumerPrice = firstUnit?.consumer_Price ?? firstUnit?.consumerPrice
+      ?? ((Array.isArray(s.prices) && s.prices.length > 0) ? s.prices[0] : null)
+      ?? s.consumer_Price ?? s.consumerPrice ?? variant?.consumer_Price ?? s.price ?? 0;
 
-    const billingMethod = s.billing_Method || s.billingMethod || (Array.isArray(s.units) && s.units.length > 0 ? s.units[0] : "") || "per-visit";
+    const costPrice = firstUnit?.cost_Price ?? firstUnit?.costPrice
+      ?? ((Array.isArray(s.prices) && s.prices.length > 1) ? s.prices[1] : null)
+      ?? s.cost_Price ?? s.costPrice ?? variant?.cost_Price ?? 0;
+
+    const billingMethod = s.billing_Method || s.billingMethod 
+      || firstUnit?.unit_name || firstUnit?.unitName 
+      || (Array.isArray(s.units) && s.units.length > 0 ? s.units[0] : "") || "per-visit";
+    
     const category = s.category_Id || s.categoryId || s.category_name || s.categoryName || s.category || "";
+    const categoryName = s.category_Name || s.category_name || s.categoryName || "";
 
     return {
       status: 200,
@@ -194,6 +203,7 @@ export async function getServiceById(id) {
         id: s.id || id,
         name: s.name_Product || s.name || "",
         category: category,
+        categoryName: categoryName,
         billingMethod: billingMethod,
         defaultDuration: s.default_Duration_Minutes || s.defaultDuration || 30,
         defaultInsuranceQty: s.default_Deposit_Amount || s.defaultInsuranceQty || 0,
@@ -324,6 +334,7 @@ export async function getServiceLookups() {
       data: {
         categories: categories.length > 0 ? categories : SERVICE_LOOKUPS.categories,
         billingMethods: [
+          { label: "Fixed Price (سعر ثابت)", value: "FixedPrice" },
           { label: "Per Visit (خدمة مقطوعة)", value: "خدمة مقطوعة" },
           { label: "Hourly (ساعة)", value: "ساعة" },
           { label: "Project (مشروع)", value: "مشروع" },
