@@ -1,5 +1,5 @@
 import { apiHandler } from "@/lib/api-handler";
-import { Layers, CheckCircle2, Sparkles, Tag } from "lucide-react";
+import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
 // Static Initial Data for Services
@@ -7,36 +7,36 @@ import { Layers, CheckCircle2, Sparkles, Tag } from "lucide-react";
 
 export const INITIAL_SERVICES_STATS = [
   {
-    title: "Total Services",
-    value: "0",
-    trend: "+0%",
+    title: "Number of system Departments",
+    value: "32",
+    trend: "+5%",
     isUp: true,
     color: "bg-[#0066d1]",
-    icon: Layers,
+    icon: Building2,
   },
   {
-    title: "Active Services",
-    value: "0",
-    trend: "+0%",
-    isUp: true,
+    title: "Total number of employees",
+    value: "32",
+    trend: "-1%",
+    isUp: false,
     color: "bg-[#5ebc93]",
-    icon: CheckCircle2,
+    icon: UsersIcon,
   },
   {
-    title: "Appointment Services",
-    value: "0",
-    trend: "+0%",
-    isUp: true,
-    color: "bg-[#ff9548]",
-    icon: Sparkles,
-  },
-  {
-    title: "Categories",
-    value: "0",
-    trend: "+0%",
+    title: "Number of system Departments",
+    value: "32",
+    trend: "+5%",
     isUp: true,
     color: "bg-[#0b386a]",
-    icon: Tag,
+    icon: Building2,
+  },
+  {
+    title: "Total number of employees",
+    value: "32",
+    trend: "-1%",
+    isUp: false,
+    color: "bg-[#ff9548]",
+    icon: UsersIcon,
   },
 ];
 
