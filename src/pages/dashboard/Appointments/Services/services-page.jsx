@@ -20,6 +20,7 @@ import {
   getServicesStats,
   deleteService,
   getServiceLookups,
+  INITIAL_SERVICES_STATS,
 } from "@/services/appointments";
 
 export default function ServicesPage() {
@@ -44,7 +45,10 @@ export default function ServicesPage() {
     queryKey: ["servicesStats"],
     queryFn: getServicesStats,
   });
-  const stats = statsData?.data || [];
+  const stats =
+    statsData?.data && statsData.data.length > 0
+      ? statsData.data
+      : INITIAL_SERVICES_STATS;
 
   // Params for Services Query
   const params = useMemo(

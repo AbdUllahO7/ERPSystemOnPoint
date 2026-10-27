@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { INITIAL_APPOINTMENT_STATS } from "@/services/appointments";
 import {
   useAppointments,
   useAppointmentLookups,
@@ -80,7 +81,10 @@ export default function AppointmentsPage() {
 
   // Stats Query via Feature Hook
   const { data: statsData } = useAppointmentStats();
-  const stats = statsData?.data || [];
+  const stats =
+    statsData?.data && statsData.data.length > 0
+      ? statsData.data
+      : INITIAL_APPOINTMENT_STATS;
 
   // Params for Appointments Query
   const params = useMemo(
