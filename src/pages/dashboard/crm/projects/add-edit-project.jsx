@@ -10,8 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { FolderKanban, CheckCircle2, ArrowLeft } from "lucide-react";
+import { FolderKanban, CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCustomers,
@@ -41,7 +40,7 @@ export default function AddEditProject() {
   });
 
   // Load Customers
-  const { data: customersData } = useQuery({
+  const { data: customersData, isLoading: isLoadingCustomers } = useQuery({
     queryKey: ["allCustomersList"],
     queryFn: () => getAllCustomers({ PageNumber: 1, PageSize: 1000 }),
   });
@@ -49,7 +48,7 @@ export default function AddEditProject() {
   const customers = customersData?.data?.items || customersData?.data || [];
 
   // Load Contracts for selected Customer
-  const { data: contractsData } = useQuery({
+  const { data: contractsData, isLoading: isLoadingContracts } = useQuery({
     queryKey: ["customerContractsForProject", formData.customerId],
     queryFn: () => getCustomerContracts({ CustomerId: formData.customerId, PageSize: 50 }),
     enabled: !!formData.customerId,
@@ -63,6 +62,8 @@ export default function AddEditProject() {
     queryFn: () => getCustomerProjectById(id),
     enabled: isEdit,
   });
+
+  const isPageLoading = (isEdit && isLoadingProject) || isLoadingCustomers;
 
   useEffect(() => {
     if (existingProjectData) {
@@ -170,7 +171,7 @@ export default function AddEditProject() {
           <Button
             onClick={handleSubmit}
             className="bg-blue-600 hover:bg-blue-700 font-medium"
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || isPageLoading}
           >
             {saveMutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Project"}
           </Button>
@@ -189,8 +190,16 @@ export default function AddEditProject() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6 space-y-6">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6 space-y-6 min-h-[300px]">
+        {isPageLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">
+              {isEdit ? "Loading project details & customers..." : "Loading customers data..."}
+            </p>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label className="text-sm font-semibold">
               Project Name (اسم المشروع) <span className="text-red-500">*</span>
@@ -360,6 +369,7 @@ export default function AddEditProject() {
             />
           </div>
         </form>
+        )}
       </div>
     </div>
   );

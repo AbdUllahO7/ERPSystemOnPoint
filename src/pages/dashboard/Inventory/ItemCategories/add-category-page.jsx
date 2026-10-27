@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
@@ -39,19 +39,19 @@ export default function AddCategoryPage() {
     },
   });
 
-  const { data: categoryRes } = useQuery({
+  const { data: categoryRes, isLoading: isLoadingCategory } = useQuery({
     queryKey: ["category", id],
     queryFn: () => getCategoryById(id),
     enabled: isEdit,
   });
 
-  const { data: categoriesRes } = useQuery({
+  const { data: categoriesRes, isLoading: isLoadingCategories } = useQuery({
     queryKey: ["all-categories"],
     queryFn: () => getAllCategories({ PageNumber: 1, PageSize: 100 }),
   });
   
   const categoriesList = categoriesRes?.data?.items || [];
-  // Only show main categories as parents (or all depending on business logic, assuming all for now)
+  const isPageLoading = (isEdit && isLoadingCategory) || isLoadingCategories;
 
   useEffect(() => {
     if (isEdit && categoryRes?.data) {
@@ -70,7 +70,7 @@ export default function AddCategoryPage() {
       setCategoryType("sub");
       setValue("parentCategoryId", stateParentId);
     }
-  }, [isEdit, categoryRes, reset, stateParentId, setValue]);
+  }, [isEdit, categoryRes, categoriesRes, reset, stateParentId, setValue]);
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateCategory(id, data) : createCategory(data),
@@ -113,31 +113,40 @@ export default function AddCategoryPage() {
           </div>
         </div>
 
-        <Button onClick={handleSubmit(onSubmit)} className="px-8" disabled={mutation.isPending}>
+        <Button onClick={handleSubmit(onSubmit)} className="px-8" disabled={mutation.isPending || isPageLoading}>
           {mutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "+ Add"}
         </Button>
       </div>
 
-      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        <div className="mb-6 space-y-3">
-          <label className="text-base font-semibold text-foreground">
-            Is it a Main or a Sub category?
-          </label>
-          <div className="flex items-center gap-6">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="categoryType"
-                value="main"
-                checked={categoryType === "main"}
-                onChange={() => setCategoryType("main")}
-                disabled={Boolean(stateParentId)}
-                className="w-4 h-4 text-primary focus:ring-primary border-gray-300 disabled:opacity-50"
-              />
-              <span className="text-sm font-medium text-muted-foreground">
-                Main Category
-              </span>
-            </label>
+      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm min-h-[300px]">
+        {isPageLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">
+              {isEdit ? "Loading category details & data..." : "Loading categories data..."}
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="mb-6 space-y-3">
+              <label className="text-base font-semibold text-foreground">
+                Is it a Main or a Sub category?
+              </label>
+              <div className="flex items-center gap-6">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="categoryType"
+                    value="main"
+                    checked={categoryType === "main"}
+                    onChange={() => setCategoryType("main")}
+                    disabled={Boolean(stateParentId)}
+                    className="w-4 h-4 text-primary focus:ring-primary border-gray-300 disabled:opacity-50"
+                  />
+                  <span className="text-sm font-medium text-muted-foreground">
+                    Main Category
+                  </span>
+                </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
@@ -204,26 +213,40 @@ export default function AddCategoryPage() {
                 name="parentCategoryId"
                 control={control}
                 rules={{ required: categoryType === "sub" }}
-                render={({ field }) => (
-                  <Select
-                    key={field.value}
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                    disabled={Boolean(stateParentId)}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Category" />
-                    </SelectTrigger>
+                render={({ field }) => {
+                  const currentValue = field.value ? String(field.value) : "";
+                  const catData = categoryRes?.data;
+                  const currentParentName = catData?.parentCategoryName || catData?.parentCategory?.name;
+                  const hasCurrentInList = categoriesList.some(
+                    (cat) => String(cat.id) === currentValue
+                  );
 
-                    <SelectContent position="popper">
-                      {categoriesList.map(cat => (
-                        <SelectItem key={cat.id} value={String(cat.id)}>
-                          {cat.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                  return (
+                    <Select
+                      key={currentValue}
+                      value={currentValue || undefined}
+                      onValueChange={field.onChange}
+                      disabled={Boolean(stateParentId)}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+
+                      <SelectContent position="popper">
+                        {currentValue && !hasCurrentInList && currentParentName && (
+                          <SelectItem value={currentValue}>
+                            {currentParentName}
+                          </SelectItem>
+                        )}
+                        {categoriesList.map((cat) => (
+                          <SelectItem key={cat.id} value={String(cat.id)}>
+                            {cat.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  );
+                }}
               />
               {errors.parentCategoryId && (
                 <span className="text-red-500 text-xs">Required</span>
@@ -231,6 +254,8 @@ export default function AddCategoryPage() {
             </div>
           )}
         </form>
+          </>
+        )}
       </div>
     </div>
   );

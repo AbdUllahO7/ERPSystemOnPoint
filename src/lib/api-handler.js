@@ -8,7 +8,9 @@ const defaultBaseURL = import.meta.env.DEV
   : "https://apierp.onpoint-teasting.com/api/";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
+  baseURL:"https://apierp.onpoint-teasting.com/api/"
+  //  import.meta.env.VITE_API_URL || defaultBaseURL
+  ,
   timeout: 20000, // 20 ثانية مهلة زمنية للطلب لمنع تعليق المتصفح
   headers: {
     "Accept": "application/json",

@@ -18,7 +18,7 @@ import {
 } from "../../../../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function AddEditWarehouse() {
@@ -37,13 +37,13 @@ export default function AddEditWarehouse() {
     }
   });
 
-  const { data: managersData } = useQuery({
+  const { data: managersData, isLoading: isLoadingManagers } = useQuery({
     queryKey: ["getAllManagers"],
     queryFn: () => getAllManagers({ pageNumber: 1, pageSize: 100 }),
   });
   const managers = managersData?.data?.items || [];
 
-  const { data: branchData } = useQuery({
+  const { data: branchData, isLoading: isLoadingBranches } = useQuery({
     queryKey: ["getBranches"],
     queryFn: () => getBranches({ pageNumber: 1, pageSize: 100 }),
   });
@@ -54,6 +54,9 @@ export default function AddEditWarehouse() {
     queryFn: () => getWarehouseById(id),
     enabled: isEdit,
   });
+
+  const isLoadingLookups = isLoadingManagers || isLoadingBranches;
+  const isPageLoading = (isEdit && isLoadingWarehouse) || isLoadingLookups;
 
   useEffect(() => {
     if (isEdit && warehouseData?.data) {
@@ -69,7 +72,7 @@ export default function AddEditWarehouse() {
         branch_Id: rawBranchId ? String(rawBranchId) : "",
       });
     }
-  }, [isEdit, warehouseData, reset]);
+  }, [isEdit, warehouseData, managersData, branchData, reset]);
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateWarehouse({ id, ...data }) : createWarehouse(data),
@@ -108,7 +111,7 @@ export default function AddEditWarehouse() {
         
         <Button 
           onClick={handleSubmit(onSubmit)} 
-          disabled={mutation.isPending || isLoadingWarehouse}
+          disabled={mutation.isPending || isPageLoading}
           className="px-8"
         >
           {mutation.isPending ? "Saving..." : "Save"}
@@ -116,9 +119,14 @@ export default function AddEditWarehouse() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingWarehouse && isEdit ? (
-          <div className="text-sm text-muted-foreground">Loading details...</div>
+      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm min-h-[300px]">
+        {isPageLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">
+              {isEdit ? "Loading warehouse details & data..." : "Loading form data..."}
+            </p>
+          </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
@@ -171,28 +179,43 @@ export default function AddEditWarehouse() {
                 name="manager_Id"
                 control={control}
                 rules={{ required: true }}
-                render={({ field }) => (
-                  <Select
-                    key={field.value}
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Manager Name" />
-                    </SelectTrigger>
+                render={({ field }) => {
+                  const currentValue = field.value ? String(field.value) : "";
+                  const wData = warehouseData?.data;
+                  const currentManagerName = wData?.manager_Name || wData?.managerName;
+                  const hasCurrentInList = managers.some(
+                    (m) => String(m.managerId || m.id) === currentValue
+                  );
 
-                    <SelectContent position="popper">
-                      {managers.map((manager) => (
-                        <SelectItem
-                          key={manager.managerId}
-                          value={String(manager.managerId)}
-                        >
-                          {manager.managerName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                  return (
+                    <Select
+                      key={currentValue}
+                      value={currentValue || undefined}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-9 bg-transparent">
+                        <SelectValue placeholder="Select Manager Name" />
+                      </SelectTrigger>
+
+                      <SelectContent position="popper">
+                        {currentValue && !hasCurrentInList && currentManagerName && (
+                          <SelectItem value={currentValue}>
+                            {currentManagerName}
+                          </SelectItem>
+                        )}
+                        {managers.map((manager) => {
+                          const val = String(manager.managerId || manager.id);
+                          const name = manager.managerName || manager.name;
+                          return (
+                            <SelectItem key={val} value={val}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  );
+                }}
               />
               {errors.manager_Id && (
                 <span className="text-red-500 text-xs">Required</span>

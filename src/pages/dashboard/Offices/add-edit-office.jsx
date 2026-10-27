@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -48,7 +48,7 @@ export default function AddEditOffice() {
 
   const departmentId = watch("department_id");
 
-  const { data: departmentsData } = useQuery({
+  const { data: departmentsData, isLoading: isLoadingDepartments } = useQuery({
     queryKey: ["getDepartments"],
     queryFn: () => getDepartments({ pageNumber: 1, pageSize: 100 }),
   });
@@ -70,6 +70,8 @@ export default function AddEditOffice() {
     queryFn: () => getOfficeById(id),
     enabled: isEdit,
   });
+
+  const isPageLoading = (isEdit && isLoadingOffice) || isLoadingDepartments;
 
   useEffect(() => {
     if (isEdit && officeData?.data) {
@@ -179,7 +181,7 @@ export default function AddEditOffice() {
         
         <Button 
           onClick={handleSubmit(onSubmit)} 
-          disabled={mutation.isLoading || isLoadingOffice}
+          disabled={mutation.isLoading || isPageLoading}
           className="px-8"
         >
           {mutation.isLoading ? "Saving..." : "Save"}
@@ -187,9 +189,14 @@ export default function AddEditOffice() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {(isLoadingOffice && isEdit) || !departmentsData ? (
-          <div className="text-sm text-muted-foreground">Loading details...</div>
+      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm min-h-[300px]">
+        {isPageLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">
+              {isEdit ? "Loading office details & data..." : "Loading form data..."}
+            </p>
+          </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2 md:col-span-2">

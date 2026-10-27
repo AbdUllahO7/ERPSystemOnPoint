@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Info } from "lucide-react";
+import { Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -54,22 +54,22 @@ export default function AddEditInvoicePattern() {
     },
   });
 
-  const { data: accountsData } = useQuery({
+  const { data: accountsData, isLoading: isLoadingAccounts } = useQuery({
     queryKey: ["getLeafAccounts"],
     queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 1000 }),
   });
 
-  const { data: warehousesData } = useQuery({
+  const { data: warehousesData, isLoading: isLoadingWarehouses } = useQuery({
     queryKey: ["getWarehouses"],
     queryFn: () => getWarehouses({ PageNumber: 1, PageSize: 1000 }),
   });
 
-  const { data: costCentersData } = useQuery({
+  const { data: costCentersData, isLoading: isLoadingCostCenters } = useQuery({
     queryKey: ["getAllCostCenters"],
     queryFn: () => getAllCostCenters({ PageNumber: 1, PageSize: 1000 }),
   });
 
-  const { data: currenciesData } = useQuery({
+  const { data: currenciesData, isLoading: isLoadingCurrencies } = useQuery({
     queryKey: ["getAllCurrencies"],
     queryFn: () => getAllCurrencies({ PageNumber: 1, PageSize: 1000 }),
   });
@@ -79,6 +79,13 @@ export default function AddEditInvoicePattern() {
     queryFn: () => getInvoicePatternById(id),
     enabled: isEdit,
   });
+
+  const isLoadingLookups =
+    isLoadingAccounts ||
+    isLoadingWarehouses ||
+    isLoadingCostCenters ||
+    isLoadingCurrencies;
+  const isPageLoading = (isEdit && isLoadingPattern) || isLoadingLookups;
 
   useEffect(() => {
     if (isEdit && patternData) {
@@ -173,7 +180,7 @@ export default function AddEditInvoicePattern() {
 
         <Button
           onClick={handleSubmit(onSubmit)}
-          disabled={mutation.isLoading || isLoadingPattern}
+          disabled={mutation.isLoading || isPageLoading}
           className="px-8"
         >
           {mutation.isLoading ? "Saving..." : "Save"}
@@ -181,10 +188,13 @@ export default function AddEditInvoicePattern() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {isLoadingPattern && isEdit ? (
-          <div className="text-sm text-muted-foreground">
-            Loading details...
+      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm min-h-[300px]">
+        {isPageLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">
+              {isEdit ? "Loading pattern details & data..." : "Loading form data..."}
+            </p>
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">

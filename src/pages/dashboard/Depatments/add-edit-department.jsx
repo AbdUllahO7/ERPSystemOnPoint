@@ -2,14 +2,8 @@ import React, { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm, Controller } from "react-hook-form";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Info } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "@/components/ui/select";
+import { Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -45,12 +39,12 @@ export default function AddEditDepartment() {
     },
   });
 
-  const { data: managersData } = useQuery({
+  const { data: managersData, isLoading: isLoadingManagers } = useQuery({
     queryKey: ["getAllManagers"],
     queryFn: () => getAllManagers({ pageNumber: 1, pageSize: 100 }),
   });
 
-  const { data: branchData } = useQuery({
+  const { data: branchData, isLoading: isLoadingBranches } = useQuery({
     queryKey: ["getBranches"],
     queryFn: () => getBranches({ pageNumber: 1, pageSize: 100 }),
   });
@@ -61,6 +55,9 @@ export default function AddEditDepartment() {
     enabled: isEdit,
   });
 
+  const isLoadingLookups = isLoadingManagers || isLoadingBranches;
+  const isPageLoading = (isEdit && isLoadingDepartment) || isLoadingLookups;
+
   useEffect(() => {
     if (isEdit && departmentData?.data) {
       const dept = departmentData.data;
@@ -69,10 +66,13 @@ export default function AddEditDepartment() {
         "department_Name",
         dept.department_Name || dept.department_name || "",
       );
-      setValue("manager_id", String(dept.manager_Id || ""));
-      setValue("branch_id", String(dept.branch_Id || ""));
+      const managerId = dept.manager_Id ?? dept.managerId ?? dept.manager_id ?? "";
+      setValue("manager_id", managerId ? String(managerId) : "");
+
+      const branchId = dept.branch_Id ?? dept.branchId ?? dept.branch_id ?? "";
+      setValue("branch_id", branchId ? String(branchId) : "");
     }
-  }, [isEdit, departmentData, setValue]);
+  }, [isEdit, departmentData, managersData, setValue]);
 
   const mutation = useMutation({
     mutationFn: (data) =>
@@ -139,7 +139,7 @@ export default function AddEditDepartment() {
 
         <Button
           onClick={handleSubmit(onSubmit)}
-          disabled={mutation.isLoading || isLoadingDepartment}
+          disabled={mutation.isLoading || isPageLoading}
           className="px-8"
         >
           {mutation.isLoading ? "Saving..." : "Save"}
@@ -147,10 +147,13 @@ export default function AddEditDepartment() {
       </div>
 
       {/* Form Card */}
-      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {(isLoadingDepartment && isEdit) || !managersData || !branchData ? (
-          <div className="text-sm text-muted-foreground">
-            Loading details...
+      <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm min-h-[300px]">
+        {isPageLoading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            <p className="text-sm font-medium">
+              {isEdit ? "Loading department details & data..." : "Loading form data..."}
+            </p>
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -183,23 +186,43 @@ export default function AddEditDepartment() {
                 name="manager_id"
                 control={control}
                 rules={{ required: true }}
-                render={({ field }) => (
-                  <Select
-                    value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-11 bg-transparent">
-                      <SelectValue placeholder="Select Manager Name" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {managers.map((manager) => (
-                        <SelectItem key={manager.managerId} value={String(manager.managerId)}>
-                          {manager.managerName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                render={({ field }) => {
+                  const currentValue = field.value ? String(field.value) : "";
+                  const dept = departmentData?.data;
+                  const currentManagerName = dept?.manager_Name || dept?.managerName;
+                  const hasCurrentInList = managers.some(
+                    (m) => String(m.managerId || m.id) === currentValue
+                  );
+
+                  return (
+                    <Select
+                      key={currentValue}
+                      value={currentValue || undefined}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger className="w-full h-11 bg-transparent">
+                        <SelectValue placeholder="Select Manager Name" />
+                      </SelectTrigger>
+                      <SelectContent position="popper">
+                        {/* If current manager is not in the paginated managers list, render it as fallback */}
+                        {currentValue && !hasCurrentInList && currentManagerName && (
+                          <SelectItem value={currentValue}>
+                            {currentManagerName}
+                          </SelectItem>
+                        )}
+                        {managers.map((manager) => {
+                          const val = String(manager.managerId || manager.id);
+                          const name = manager.managerName || manager.name || manager.employee_Name;
+                          return (
+                            <SelectItem key={val} value={val}>
+                              {name}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  );
+                }}
               />
               {errors.manager_id && (
                 <span className="text-red-500 text-xs">Required</span>
