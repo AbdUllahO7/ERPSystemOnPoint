@@ -1,5 +1,5 @@
 import { apiHandler } from "@/lib/api-handler";
-import { Building2, Users as UsersIcon } from "lucide-react";
+import { Layers, CheckCircle2, Sparkles, Tag } from "lucide-react";
 
 // ==========================================
 // Static Initial Data for Services
@@ -7,36 +7,36 @@ import { Building2, Users as UsersIcon } from "lucide-react";
 
 export const INITIAL_SERVICES_STATS = [
   {
-    title: "Number of system Departments",
-    value: "32",
-    trend: "+5%",
+    title: "Total Services",
+    value: "0",
+    trend: "+0%",
     isUp: true,
     color: "bg-[#0066d1]",
-    icon: Building2,
+    icon: Layers,
   },
   {
-    title: "Total number of employees",
-    value: "32",
-    trend: "-1%",
-    isUp: false,
+    title: "Active Services",
+    value: "0",
+    trend: "+0%",
+    isUp: true,
     color: "bg-[#5ebc93]",
-    icon: UsersIcon,
+    icon: CheckCircle2,
   },
   {
-    title: "Number of system Departments",
-    value: "32",
-    trend: "+5%",
+    title: "Appointment Services",
+    value: "0",
+    trend: "+0%",
+    isUp: true,
+    color: "bg-[#ff9548]",
+    icon: Sparkles,
+  },
+  {
+    title: "Categories",
+    value: "0",
+    trend: "+0%",
     isUp: true,
     color: "bg-[#0b386a]",
-    icon: Building2,
-  },
-  {
-    title: "Total number of employees",
-    value: "32",
-    trend: "-1%",
-    isUp: false,
-    color: "bg-[#ff9548]",
-    icon: UsersIcon,
+    icon: Tag,
   },
 ];
 
@@ -149,14 +149,11 @@ export async function getServices(params = {}) {
       endPoint: "Inventory/Product/GetAll/GetAll",
       method: "GET",
       params: {
+        ProductType: "Appointment",
         PageNumber: params.PageNumber || params.page || 1,
         PageSize: params.PageSize || params.pageSize || 10,
         SearchTerm: params.SearchTerm || params.search || undefined,
         Category: params.Category !== "all" ? params.Category : undefined,
-        BillingMethod: params.BillingMethod !== "all" ? params.BillingMethod : undefined,
-        RequiresContract: params.RequiresContract !== "all"
-          ? params.RequiresContract === "yes"
-          : undefined,
         Status: params.Status !== "all" ? params.Status : undefined,
       },
     });
@@ -171,37 +168,33 @@ export async function getServices(params = {}) {
         ? s.prices[0]
         : (s.consumer_Price ?? s.cost_Price ?? s.consumerPrice ?? s.price ?? 0);
 
-      const displayPrice = typeof primaryPrice === "number" 
-        ? `$${primaryPrice}` 
-        : (String(primaryPrice).startsWith("$") ? primaryPrice : `$${primaryPrice}`);
-
-      const primaryUnit = (Array.isArray(s.units) && s.units.length > 0)
+      const unitName = (Array.isArray(s.units) && s.units.length > 0)
         ? s.units[0]
-        : (s.billing_Method || s.billingMethod || "per-visit");
+        : "—";
 
-      const categoryName = s.category_name || s.categoryName || s.category?.name || s.category || "General Service";
+      const categoryName = s.category_name || s.categoryName || s.category?.name || s.category || "—";
+      const createdDate = s.created_At ? s.created_At.split("T")[0] : "—";
 
       return {
         id: s.id || idx + 1,
+        name_Product: s.name_Product || s.name || `Service ${idx + 1}`,
         name: s.name_Product || s.name || `Service ${idx + 1}`,
-        productNumber: s.product_Number || s.productNumber || "-",
-        productType: s.product_Type || s.productType || "Service",
+        product_Number: s.product_Number || s.productNumber || "—",
+        productNumber: s.product_Number || s.productNumber || "—",
+        product_Type: s.product_Type || s.productType || "Appointment",
+        productType: s.product_Type || s.productType || "Appointment",
+        is_Active: Boolean(s.is_Active ?? s.isActive ?? true),
+        isActive: Boolean(s.is_Active ?? s.isActive ?? true),
+        category_name: categoryName,
         category: categoryName,
-        billingMethod: primaryUnit,
-        units: s.units || [primaryUnit],
-        prices: s.prices || [primaryPrice],
-        duration: s.default_Duration_Minutes ? `${s.default_Duration_Minutes} min` : "30 min",
-        defaultDuration: s.default_Duration_Minutes || 30,
-        cost: s.cost_Price !== undefined ? `$${s.cost_Price}` : (s.prices && s.prices[1] !== undefined ? `$${s.prices[1]}` : "-"),
-        costPrice: s.cost_Price ?? (s.prices && s.prices[1]) ?? 0,
-        price: displayPrice,
-        consumerPrice: primaryPrice,
-        contract: s.requires_Contract || s.requiresContract ? "Required" : "-",
-        requiresContract: Boolean(s.requires_Contract || s.requiresContract),
-        canBeSold: Boolean(s.can_Be_Sold ?? s.canBeSold ?? true),
-        isActive: s.is_Active ?? s.isActive ?? true,
-        revenueAccount: s.revenueAccount || "-",
-        expenseAccount: s.expenseAccount || "-",
+        units: s.units || (unitName !== "—" ? [unitName] : []),
+        unit: unitName,
+        prices: s.prices || (primaryPrice !== undefined ? [primaryPrice] : []),
+        price: primaryPrice !== undefined ? `$${primaryPrice}` : "—",
+        priceValue: primaryPrice,
+        created_At: s.created_At,
+        createdDate: createdDate,
+        variant_Ids: s.variant_Ids || [],
         raw: s,
       };
     });
