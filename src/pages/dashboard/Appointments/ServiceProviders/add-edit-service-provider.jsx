@@ -94,12 +94,19 @@ export default function AddEditServiceProvider() {
   });
 
   const handleSelectEmployee = (empId) => {
+    if (!empId || empId === "none") {
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: "",
+      }));
+      return;
+    }
     const selected = employees.find((e) => e.id === empId);
     if (selected) {
       setFormData((prev) => ({
         ...prev,
         employeeId: selected.id,
-        name: selected.label,
+        name: selected.fullName || selected.label || prev.name,
         phone: selected.phone || prev.phone,
       }));
     } else {
@@ -160,16 +167,17 @@ export default function AddEditServiceProvider() {
             </Label>
             {employees.length > 0 ? (
               <Select
-                value={formData.employeeId}
+                value={formData.employeeId || "none"}
                 onValueChange={handleSelectEmployee}
               >
                 <SelectTrigger className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]">
                   <SelectValue placeholder="Choose employee..." />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">None (Independent Provider)</SelectItem>
                   {employees.map((emp) => (
                     <SelectItem key={emp.id} value={emp.id}>
-                      {emp.label} {emp.code ? `(${emp.code})` : ""}
+                      {emp.label} {emp.code ? `(#${emp.code})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>

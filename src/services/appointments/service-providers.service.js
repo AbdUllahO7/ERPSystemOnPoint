@@ -332,21 +332,37 @@ export async function getServiceProviderLookups() {
     const res = await apiHandler({
       endPoint: "HR/Employees/GetAll",
       method: "GET",
-      params: { PageSize: 100 },
+      params: { PageSize: 1000 },
     });
     const raw = res?.data || res || {};
     const items = raw?.items || (Array.isArray(raw) ? raw : []);
-    const employees = items.map((e) => ({
-      id: e.id,
-      value: e.id,
-      label:
+    const employees = items.map((e) => {
+      const fullName =
+        e.fullName ||
         `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
         e.name ||
-        e.employee_Code ||
-        "Employee",
-      phone: e.phone_Number || e.phoneNumber || e.phone || "",
-      code: e.employee_Code || e.employeeCode || "",
-    }));
+        e.employeeName ||
+        e.user_Name ||
+        e.userName ||
+        (e.jobNumber ? `Employee #${e.jobNumber}` : null) ||
+        (e.id ? `Employee (${String(e.id).slice(0, 8)})` : "Employee");
+
+      const code = e.jobNumber || e.employee_Code || e.employeeCode || "";
+      const phone = e.phone || e.phoneNumber || e.phone_Number || e.mobileNumber || "";
+      const email = e.email || "";
+
+      return {
+        id: e.id,
+        value: e.id,
+        label: fullName,
+        fullName,
+        phone,
+        code,
+        jobNumber: code,
+        email,
+        raw: e,
+      };
+    });
     return {
       status: 200,
       data: {
