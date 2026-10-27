@@ -61,13 +61,6 @@ export default function ResourcesPage() {
     statuses: [],
   };
 
-  // Stats Query
-  const { data: statsData } = useQuery({
-    queryKey: ["resourcesStats"],
-    queryFn: getResourcesStats,
-  });
-  const stats = statsData?.data || [];
-
   // Params for Query
   const params = useMemo(
     () => ({
@@ -94,6 +87,49 @@ export default function ResourcesPage() {
   const displayRows = resourcesData?.data?.items || [];
   const totalPages = resourcesData?.data?.totalPages || 1;
 
+  // Dynamic live stats cards derived from actual resources data
+  const stats = useMemo(() => {
+    const total = resourcesData?.data?.totalCount || displayRows.length;
+    const owned = displayRows.filter((r) => r.ownership === "Owned").length;
+    const leased = displayRows.filter((r) => r.ownership === "Leased").length;
+    const active = displayRows.filter((r) => r.isActive).length;
+
+    return [
+      {
+        title: "إجمالي الموارد (Total Resources)",
+        value: String(total),
+        trend: "Total",
+        isUp: true,
+        color: "bg-[#0066d1]",
+        icon: Building2,
+      },
+      {
+        title: "الموارد المملوكة (Owned Assets)",
+        value: String(owned),
+        trend: "Owned",
+        isUp: true,
+        color: "bg-[#5ebc93]",
+        icon: ShieldCheck,
+      },
+      {
+        title: "الموارد المستأجرة (Leased Venues)",
+        value: String(leased),
+        trend: "Leased",
+        isUp: true,
+        color: "bg-[#8b5cf6]",
+        icon: Calendar,
+      },
+      {
+        title: "الموارد المفعلة (Active Records)",
+        value: String(active),
+        trend: "Active",
+        isUp: true,
+        color: "bg-[#f39223]",
+        icon: Power,
+      },
+    ];
+  }, [resourcesData, displayRows]);
+
   // Toggle Active Mutation
   const toggleActiveMutation = useMutation({
     mutationFn: (id) => toggleResourceActive(id),
@@ -101,8 +137,9 @@ export default function ResourcesPage() {
       queryClient.invalidateQueries(["resources"]);
       toast.success("تم تحديث حالة تفعيل المورد في النظام (Resource activation updated)");
     },
-    onError: () => {
-      toast.error("فشل تحديث حالة تفعيل المورد");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || err?.data?.message || err?.message || "فشل تحديث حالة تفعيل المورد";
+      toast.error(msg);
     },
   });
 
@@ -114,8 +151,9 @@ export default function ResourcesPage() {
       toast.success("Resource updated successfully!");
       setDeleteRowId(null);
     },
-    onError: () => {
-      toast.error("Failed to update resource!");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || err?.data?.message || err?.message || "Failed to update resource!";
+      toast.error(msg);
       setDeleteRowId(null);
     },
   });
@@ -176,7 +214,7 @@ export default function ResourcesPage() {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "code",
+        accessorKey: "referenceNumber",
         header: "Ref / Code",
         cell: ({ row }) => (
           <Link
@@ -184,7 +222,7 @@ export default function ResourcesPage() {
             className="font-semibold text-[#0066d1] hover:underline text-xs flex items-center gap-1.5"
           >
             <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-            {row.original.code || row.original.referenceNumber || `#${row.original.id}`}
+            {row.original.referenceNumber || row.original.code || `#${row.original.id}`}
           </Link>
         ),
       },
@@ -203,12 +241,12 @@ export default function ResourcesPage() {
         ),
       },
       {
-        accessorKey: "capacity",
+        accessorKey: "maxCapacity",
         header: "Max Capacity",
         cell: ({ row }) => (
           <div className="flex items-center gap-1.5">
             <span className="text-xs font-medium text-slate-700">
-              {row.original.capacity || row.original.numericCapacity || 0}
+              {row.original.maxCapacity ?? row.original.capacity ?? 0}
             </span>
             <span className="text-[11px] text-slate-400">مقعد / سعة</span>
           </div>
@@ -231,7 +269,9 @@ export default function ResourcesPage() {
                 {isLeased ? "Leased (مستأجر)" : "Owned (مملوك)"}
               </span>
               <p className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[150px]">
-                {row.original.supplierAsset || (isLeased ? "External Lessor" : "Company Asset")}
+                {isLeased
+                  ? (row.original.supplierName || row.original.supplierAsset || "External Lessor")
+                  : (row.original.fixedAssetName || row.original.supplierAsset || "Company Asset")}
               </p>
             </div>
           );
@@ -309,7 +349,6 @@ export default function ResourcesPage() {
       {/* Page Title with Info Badge */}
       <PageTitle
         title="Resources & Physical Assets"
-        infoTooltip="إدارة الموارد المادية كالقاعات، السيارات، والأجهزة وتتبع ملكيتها وتكلفتها وحالتها التشغيلية وجدول الحجوزات المرتبطة بها."
       />
 
     

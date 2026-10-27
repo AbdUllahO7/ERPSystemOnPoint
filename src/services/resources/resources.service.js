@@ -132,6 +132,83 @@ export async function getResourcesStats() {
 }
 
 /**
+ * Utility to convert values to GUID or null
+ */
+export function toGuidOrNull(val) {
+  if (!val || val === "none" || val === "null" || val === "undefined") return null;
+  const str = String(val).trim();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str) ? str : str || null;
+}
+
+/**
+ * Build clean CreateResourceDto (Strictly 9 fields matching Swagger schema)
+ * Schema:
+ * {
+ *   "name": "string",
+ *   "referenceNumber": "string",
+ *   "maxCapacity": 0,
+ *   "ownership": "Owned" | "Leased",
+ *   "fixedAssetId": "uuid | null",
+ *   "supplierId": "uuid | null",
+ *   "contractStartDate": "date-time | null",
+ *   "contractEndDate": "date-time | null",
+ *   "dailyRentalCost": 0
+ * }
+ */
+export function buildCreateResourceDto(data = {}) {
+  const isLeased = data.ownership === "Leased";
+
+  const startDateIso = isLeased && data.contractStartDate
+    ? (typeof data.contractStartDate === "string" && data.contractStartDate.includes("T")
+        ? data.contractStartDate
+        : new Date(data.contractStartDate).toISOString())
+    : null;
+
+  const endDateIso = isLeased && data.contractEndDate
+    ? (typeof data.contractEndDate === "string" && data.contractEndDate.includes("T")
+        ? data.contractEndDate
+        : new Date(data.contractEndDate).toISOString())
+    : null;
+
+  return {
+    name: (data.name || "").trim(),
+    referenceNumber: (data.referenceNumber || data.code || "").trim(),
+    maxCapacity: Number(data.maxCapacity ?? data.capacity) || 0,
+    ownership: isLeased ? "Leased" : "Owned",
+    fixedAssetId: !isLeased ? toGuidOrNull(data.fixedAssetId) : null,
+    supplierId: isLeased ? toGuidOrNull(data.supplierId) : null,
+    contractStartDate: startDateIso,
+    contractEndDate: endDateIso,
+    dailyRentalCost: Number(data.dailyRentalCost) || 0,
+  };
+}
+
+/**
+ * Build clean UpdateResourceDto (Strictly 10 fields matching Swagger schema)
+ * Schema:
+ * {
+ *   "id": "uuid",
+ *   "name": "string",
+ *   "referenceNumber": "string",
+ *   "maxCapacity": 0,
+ *   "ownership": "Owned" | "Leased",
+ *   "fixedAssetId": "uuid | null",
+ *   "supplierId": "uuid | null",
+ *   "contractStartDate": "date-time | null",
+ *   "contractEndDate": "date-time | null",
+ *   "dailyRentalCost": 0
+ * }
+ */
+export function buildUpdateResourceDto(id, data = {}) {
+  const baseDto = buildCreateResourceDto(data);
+  return {
+    id: toGuidOrNull(id || data.id),
+    ...baseDto,
+  };
+}
+
+/**
  * Get Paginated & Filtered Resources List
  * Endpoint: GET /api/inventory/Resource/GetAll
  */
@@ -164,35 +241,49 @@ export async function getResources(params = {}) {
     const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
     const mappedItems = items.map((r, idx) => {
-      const capacityVal = r.maxCapacity ?? r.capacity ?? 20;
-      // Distinction between Ownership (Owned vs Leased) and Operational Status (Active vs Rented)
-      const ownershipLabel = r.ownership === "Leased" ? "Leased" : "Owned";
-      const supplierAssetLabel = r.ownership === "Leased"
+      const maxCapacity = Number(r.maxCapacity ?? r.capacity ?? 0);
+      const isLeased = r.ownership === "Leased";
+      const supplierAssetLabel = isLeased
         ? (r.supplierName || r.supplier_Name || "External Supplier")
-        : (r.fixedAssetName || r.fixedAsset_Name || `Fixed Asset #${String(r.id || idx + 1).substring(0, 4)}`);
+        : (r.fixedAssetName || r.fixedAsset_Name || (r.fixedAssetId ? `Fixed Asset #${String(r.fixedAssetId).substring(0, 8)}` : "None"));
+
+      const startDateStr = r.contractStartDate
+        ? (typeof r.contractStartDate === "string" && r.contractStartDate.includes("T")
+            ? r.contractStartDate.split("T")[0]
+            : new Date(r.contractStartDate).toISOString().split("T")[0])
+        : "";
+      const endDateStr = r.contractEndDate
+        ? (typeof r.contractEndDate === "string" && r.contractEndDate.includes("T")
+            ? r.contractEndDate.split("T")[0]
+            : new Date(r.contractEndDate).toISOString().split("T")[0])
+        : "";
 
       return {
         id: r.id || idx + 1,
-        code: r.referenceNumber || r.code || `RES-${String(r.id || idx + 1).substring(0, 6)}`,
         name: r.name || r.resource_Name || "Unnamed Resource",
         fullName: r.name || r.resource_Name || "Unnamed Resource",
-        address: r.address || r.location || "Main Facility",
-        fullAddress: r.address || r.location || "Main Facility",
-        capacity: String(capacityVal),
-        numericCapacity: capacityVal,
-        ownership: ownershipLabel,
-        fullOwnership: ownershipLabel,
+        referenceNumber: r.referenceNumber || r.code || `RES-${String(r.id || idx + 1).substring(0, 6)}`,
+        code: r.referenceNumber || r.code || `RES-${String(r.id || idx + 1).substring(0, 6)}`,
+        maxCapacity: maxCapacity,
+        capacity: maxCapacity,
+        numericCapacity: maxCapacity,
+        status: r.status || (r.isActive ? "Active" : "OutOfService"),
+        ownership: isLeased ? "Leased" : "Owned",
+        fullOwnership: isLeased ? "Leased" : "Owned",
         rawOwnership: r.ownership || "Owned",
+        fixedAssetId: r.fixedAssetId || null,
+        fixedAssetName: r.fixedAssetName || "",
+        supplierId: r.supplierId || null,
+        supplierName: r.supplierName || "",
         supplierAsset: supplierAssetLabel,
         supplierAssetName: supplierAssetLabel,
-        supplierId: r.supplierId,
-        fixedAssetId: r.fixedAssetId,
-        status: r.status || (r.isActive ? "Active" : "OutOfService"),
+        contractStartDate: startDateStr,
+        contractEndDate: endDateStr,
+        dailyRentalCost: Number(r.dailyRentalCost) || 0,
         isActive: r.isActive ?? true,
-        dailyRentalCost: r.dailyRentalCost ?? 0,
-        contractStartDate: r.contractStartDate ? new Date(r.contractStartDate).toISOString().split("T")[0] : "",
-        contractEndDate: r.contractEndDate ? new Date(r.contractEndDate).toISOString().split("T")[0] : "",
-        notes: r.notes || "",
+        address: r.address || r.location || "Main Facility",
+        fullAddress: r.address || r.location || "Main Facility",
+        raw: r,
       };
     });
 
@@ -233,38 +324,51 @@ export async function getResourceById(id) {
     });
     const r = res?.data || res || {};
 
-    const capacityVal = r.maxCapacity ?? r.capacity ?? 20;
-    const ownershipLabel = r.ownership === "Leased" ? "Leased" : "Owned";
-    const supplierAssetLabel = r.ownership === "Leased"
+    const maxCapacity = Number(r.maxCapacity ?? r.capacity ?? 0);
+    const isLeased = r.ownership === "Leased";
+    const supplierAssetLabel = isLeased
       ? (r.supplierName || r.supplier_Name || "External Supplier")
-      : (r.fixedAssetName || r.fixedAsset_Name || `Fixed Asset #${String(id).substring(0, 4)}`);
+      : (r.fixedAssetName || r.fixedAsset_Name || (r.fixedAssetId ? `Fixed Asset #${String(id).substring(0, 8)}` : "None"));
+
+    const startDateStr = r.contractStartDate
+      ? (typeof r.contractStartDate === "string" && r.contractStartDate.includes("T")
+          ? r.contractStartDate.split("T")[0]
+          : new Date(r.contractStartDate).toISOString().split("T")[0])
+      : "";
+    const endDateStr = r.contractEndDate
+      ? (typeof r.contractEndDate === "string" && r.contractEndDate.includes("T")
+          ? r.contractEndDate.split("T")[0]
+          : new Date(r.contractEndDate).toISOString().split("T")[0])
+      : "";
 
     return {
       status: 200,
       data: {
         id: r.id || id,
-        code: r.referenceNumber || r.code || `RES-${String(id).substring(0, 8)}`,
         name: r.name || r.resource_Name || "Resource",
         fullName: r.name || r.resource_Name || "Resource",
-        address: r.address || r.location || "Main Facility",
-        fullAddress: r.address || r.location || "Main Facility",
-        capacity: String(capacityVal),
-        numericCapacity: capacityVal,
-        ownership: ownershipLabel,
-        fullOwnership: ownershipLabel,
+        referenceNumber: r.referenceNumber || r.code || `RES-${String(id).substring(0, 8)}`,
+        code: r.referenceNumber || r.code || `RES-${String(id).substring(0, 8)}`,
+        maxCapacity: maxCapacity,
+        capacity: maxCapacity,
+        numericCapacity: maxCapacity,
+        status: r.status || (r.isActive ? "Active" : "OutOfService"),
+        ownership: isLeased ? "Leased" : "Owned",
+        fullOwnership: isLeased ? "Leased" : "Owned",
         rawOwnership: r.ownership || "Owned",
-        supplierAsset: supplierAssetLabel,
-        supplierAssetName: supplierAssetLabel,
-        supplierId: r.supplierId || "",
-        supplierName: r.supplierName || "",
         fixedAssetId: r.fixedAssetId || "",
         fixedAssetName: r.fixedAssetName || "",
-        status: r.status || (r.isActive ? "Active" : "OutOfService"),
+        supplierId: r.supplierId || "",
+        supplierName: r.supplierName || "",
+        supplierAsset: supplierAssetLabel,
+        supplierAssetName: supplierAssetLabel,
+        contractStartDate: startDateStr,
+        contractEndDate: endDateStr,
+        dailyRentalCost: Number(r.dailyRentalCost) || 0,
         isActive: r.isActive ?? true,
-        dailyRentalCost: r.dailyRentalCost ?? 0,
-        contractStartDate: r.contractStartDate ? new Date(r.contractStartDate).toISOString().split("T")[0] : "",
-        contractEndDate: r.contractEndDate ? new Date(r.contractEndDate).toISOString().split("T")[0] : "",
-        notes: r.notes || "Primary facility venue for clinical symposiums and operations.",
+        address: r.address || r.location || "Main Facility",
+        fullAddress: r.address || r.location || "Main Facility",
+        raw: r,
       },
     };
   } catch (error) {
@@ -278,19 +382,7 @@ export async function getResourceById(id) {
  * Endpoint: POST /api/inventory/Resource/Create
  */
 export async function createResource(data) {
-  const isLeased = data.ownership === "Leased";
-
-  const payload = {
-    name: data.name,
-    referenceNumber: data.referenceNumber || data.code || `RES-${Date.now().toString().slice(-4)}`,
-    maxCapacity: Number(data.capacity || data.maxCapacity) || 20,
-    ownership: isLeased ? "Leased" : "Owned",
-    fixedAssetId: !isLeased && data.fixedAssetId ? data.fixedAssetId : null,
-    supplierId: isLeased && data.supplierId ? data.supplierId : null,
-    contractStartDate: isLeased && data.contractStartDate ? new Date(data.contractStartDate).toISOString() : null,
-    contractEndDate: isLeased && data.contractEndDate ? new Date(data.contractEndDate).toISOString() : null,
-    dailyRentalCost: isLeased && data.dailyRentalCost ? Number(data.dailyRentalCost) : null,
-  };
+  const payload = buildCreateResourceDto(data);
 
   const res = await apiHandler({
     endPoint: "inventory/Resource/Create",
@@ -301,7 +393,7 @@ export async function createResource(data) {
   return {
     status: 201,
     data: res?.data || res,
-    message: "Resource created successfully",
+    message: res?.message || "Resource created successfully",
   };
 }
 
@@ -310,20 +402,7 @@ export async function createResource(data) {
  * Endpoint: POST /api/inventory/Resource/Update
  */
 export async function updateResource(id, data) {
-  const isLeased = data.ownership === "Leased" || data.ownership === "Rented";
-
-  const payload = {
-    id: id,
-    name: data.name,
-    referenceNumber: data.referenceNumber || data.code || `RES-${String(id).slice(0, 6)}`,
-    maxCapacity: Number(data.capacity || data.maxCapacity) || 20,
-    ownership: isLeased ? "Leased" : "Owned",
-    fixedAssetId: !isLeased && data.fixedAssetId ? data.fixedAssetId : null,
-    supplierId: isLeased && data.supplierId ? data.supplierId : null,
-    contractStartDate: isLeased && data.contractStartDate ? new Date(data.contractStartDate).toISOString() : null,
-    contractEndDate: isLeased && data.contractEndDate ? new Date(data.contractEndDate).toISOString() : null,
-    dailyRentalCost: isLeased && data.dailyRentalCost ? Number(data.dailyRentalCost) : null,
-  };
+  const payload = buildUpdateResourceDto(id, data);
 
   const res = await apiHandler({
     endPoint: "inventory/Resource/Update",
@@ -334,7 +413,7 @@ export async function updateResource(id, data) {
   return {
     status: 200,
     data: res?.data || res,
-    message: "Resource updated successfully",
+    message: res?.message || "Resource updated successfully",
   };
 }
 
