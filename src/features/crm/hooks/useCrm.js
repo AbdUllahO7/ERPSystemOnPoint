@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { crmApi } from "../api/crm.api";
+import { crmApi } from "@/services/crm";
 import { queryKeys } from "@/lib/query-keys";
 import toast from "react-hot-toast";
 

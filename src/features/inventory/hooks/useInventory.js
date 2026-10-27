@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { inventoryApi } from "../api/inventory.api";
+import { inventoryApi } from "@/services/inventory";
 
 export function useItems(params = {}) {
   return useQuery({

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { hrApi } from "../api/hr.api";
+import { hrApi } from "@/services/hr";
 
 export function useEmployees(params = {}) {
   return useQuery({

@@ -20,6 +20,7 @@ import {
   getServicesStats,
   deleteService,
   getServiceLookups,
+  INITIAL_SERVICES_STATS,
 } from "@/services/appointments";
 
 export default function ServicesPage() {
@@ -44,7 +45,10 @@ export default function ServicesPage() {
     queryKey: ["servicesStats"],
     queryFn: getServicesStats,
   });
-  const stats = statsData?.data || [];
+  const stats =
+    statsData?.data && statsData.data.length > 0
+      ? statsData.data
+      : INITIAL_SERVICES_STATS;
 
   // Params for Services Query
   const params = useMemo(
@@ -112,84 +116,107 @@ export default function ServicesPage() {
   const columns = useMemo(
     () => [
       {
-        key: "id",
-        label: "ID",
+        key: "product_Number",
+        label: "Code",
         sortable: true,
-        render: (row) => (
-          <Link
-            to={`/dashboard/appointments/services/edit/${row.id}`}
-            className="font-semibold text-primary hover:underline truncate max-w-[130px] inline-block"
-            title={row.productNumber || row.id}
-          >
-            {row.productNumber && row.productNumber !== "-" 
-              ? row.productNumber 
-              : (String(row.id).length > 8 ? `${String(row.id).slice(0, 8)}...` : row.id)}
-          </Link>
-        ),
+        render: (row) => {
+          const code = row.product_Number || row.productNumber;
+          const displayVal =
+            code && code !== "—" && code !== "-"
+              ? code
+              : typeof row.id === "string" && row.id.length > 8
+              ? `${row.id.slice(0, 8)}...`
+              : row.id;
+
+          return (
+            <Link
+              to={`/dashboard/appointments/services/edit/${row.id}`}
+              className="font-semibold text-primary hover:underline font-mono text-xs truncate max-w-[130px] inline-block"
+              title={code || row.id}
+            >
+              {displayVal}
+            </Link>
+          );
+        },
       },
       {
-        key: "name",
-        label: "Name",
+        key: "name_Product",
+        label: "Service Name",
         sortable: true,
         render: (row) => (
-          <span className="font-medium text-foreground">{row.name}</span>
-        ),
-      },
-      {
-        key: "category",
-        label: "Category",
-        sortable: true,
-        render: (row) => (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-600 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800">
-            {row.category}
+          <span className="font-medium text-foreground">
+            {row.name_Product || row.name || "—"}
           </span>
         ),
       },
       {
-        key: "billingMethod",
-        label: "Billing",
+        key: "category_name",
+        label: "Category",
         sortable: true,
         render: (row) => (
-          <span className="text-muted-foreground">{row.billingMethod}</span>
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-sky-50 text-sky-600 border border-sky-200 dark:bg-sky-950/40 dark:text-sky-400 dark:border-sky-800">
+            {row.category_name || row.category || "—"}
+          </span>
         ),
       },
       {
-        key: "duration",
-        label: "Duration",
+        key: "units",
+        label: "Unit",
         sortable: true,
-        render: (row) => (
-          <span className="text-muted-foreground">{row.duration}</span>
-        ),
+        render: (row) => {
+          const unitStr =
+            Array.isArray(row.units) && row.units.length > 0
+              ? row.units.join(", ")
+              : row.unit || "—";
+          return (
+            <span className="text-muted-foreground text-xs font-medium">
+              {unitStr}
+            </span>
+          );
+        },
       },
       {
-        key: "cost",
-        label: "Cost",
-        sortable: true,
-        render: (row) => (
-          <span className="text-muted-foreground">{row.cost}</span>
-        ),
-      },
-      {
-        key: "price",
+        key: "prices",
         label: "Price",
         sortable: true,
-        render: (row) => (
-          <span className="font-semibold text-primary">{row.price}</span>
-        ),
+        render: (row) => {
+          const priceVal =
+            Array.isArray(row.prices) && row.prices.length > 0
+              ? `$${row.prices[0]}`
+              : row.price || "$0";
+          return (
+            <span className="font-semibold text-primary">
+              {priceVal}
+            </span>
+          );
+        },
       },
       {
-        key: "contract",
-        label: "Contract",
+        key: "is_Active",
+        label: "Status",
+        sortable: true,
+        render: (row) => {
+          const active = row.is_Active ?? row.isActive ?? true;
+          return (
+            <span
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                active
+                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
+                  : "bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
+              }`}
+            >
+              {active ? "Active" : "Inactive"}
+            </span>
+          );
+        },
+      },
+      {
+        key: "created_At",
+        label: "Created Date",
         sortable: true,
         render: (row) => (
-          <span
-            className={
-              row.contract === "Required"
-                ? "text-primary font-medium"
-                : "text-muted-foreground"
-            }
-          >
-            {row.contract}
+          <span className="text-muted-foreground text-xs font-mono">
+            {row.createdDate || (row.created_At ? row.created_At.split("T")[0] : "—")}
           </span>
         ),
       },
@@ -302,7 +329,7 @@ export default function ServicesPage() {
           getRowId={(row) => row.id}
           selectable
           search={{
-            placeholder: "Search by id or employee name...",
+            placeholder: "Search services by name or code...",
             value: search,
             onChange: (val) => {
               setSearch(val);

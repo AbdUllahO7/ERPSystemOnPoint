@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { rentalsApi } from "../api/rentals.api";
+import { rentalsApi } from "@/services/rentals";
 import { queryKeys } from "@/lib/query-keys";
 import toast from "react-hot-toast";
 

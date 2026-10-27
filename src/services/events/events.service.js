@@ -334,18 +334,18 @@ export async function getEventById(id) {
     });
     const e = res?.data || res || {};
 
-    const startDateStr = e.startDate ? new Date(e.startDate).toISOString().split("T")[0] : "";
-    const endDateStr = e.endDate ? new Date(e.endDate).toISOString().split("T")[0] : "";
-    const startTimeStr = e.startTime ? (typeof e.startTime === "string" ? e.startTime.substring(0, 5) : String(e.startTime)) : "09:00";
-    const endTimeStr = e.endTime ? (typeof e.endTime === "string" ? e.endTime.substring(0, 5) : String(e.endTime)) : "12:00";
+    const startDateStr = e.startDate ? (typeof e.startDate === "string" && e.startDate.includes("T") ? e.startDate.split("T")[0] : new Date(e.startDate).toISOString().split("T")[0]) : "";
+    const endDateStr = e.endDate ? (typeof e.endDate === "string" && e.endDate.includes("T") ? e.endDate.split("T")[0] : new Date(e.endDate).toISOString().split("T")[0]) : "";
+    const startTimeStr = formatTimeSpan(e.startTime).substring(0, 5);
+    const endTimeStr = formatTimeSpan(e.endTime).substring(0, 5);
 
     // Fetch linked attendee reservations if available
     let linkedReservations = [];
     try {
       const attendeesRes = await apiHandler({
         endPoint: "inventory/CustomerReseveration/GetAllReservations/GetAll",
-        method: "POST",
-        body: {
+        method: "GET",
+        params: {
           bookingEventId: id,
           pageNumber: 1,
           pageSize: 50,
@@ -353,13 +353,28 @@ export async function getEventById(id) {
       });
       const rawAttendees = attendeesRes?.data || attendeesRes || {};
       const attendeesList = rawAttendees?.items || (Array.isArray(rawAttendees) ? rawAttendees : []);
-      linkedReservations = attendeesList.map((att, idx) => ({
-        id: att.id || `#${idx + 1}`,
-        customer: att.customerName || "Customer",
-        customerName: att.customerName || "Customer",
-        qty: att.quantity || 1,
-        status: att.status || "Booked",
-      }));
+      linkedReservations = attendeesList.map((att, idx) => {
+        const quantity = Number(att.quantity) || 1;
+        const canceledQuantity = Number(att.canceledQuantity) || 0;
+        const activeQuantity = Math.max(0, quantity - canceledQuantity);
+        return {
+          id: att.id || `#${idx + 1}`,
+          customerId: att.customerId || "",
+          customerName: att.customerName || "Customer",
+          customer: att.customerName || "Customer",
+          bookingEventId: att.bookingEventId || id,
+          bookingEventTitle: att.bookingEventTitle || e.title || "Event",
+          eventStartDate: att.eventStartDate || e.startDate,
+          eventEndDate: att.eventEndDate || e.endDate,
+          quantity,
+          canceledQuantity,
+          activeQuantity,
+          qty: quantity,
+          status: att.status || "Booked",
+          invoiceId: att.invoiceId || null,
+          raw: att,
+        };
+      });
     } catch {
       // Ignored if no attendees found
     }
@@ -407,32 +422,130 @@ export async function getEventById(id) {
 
 /**
  * Create New Event (Booking)
+/**
+ * Utility to convert values to GUID or null
+ */
+export function toGuidOrNull(val) {
+  if (!val || val === "none" || val === "null" || val === "undefined") return null;
+  const str = String(val).trim();
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str) ? str : str || null;
+}
+
+/**
+ * Format TimeSpan to standard .NET "hh:mm:ss"
+ * Supports conversion from "10:00", "10:00:00", { ticks: ... }, or Date object
+ */
+export function formatTimeSpan(val) {
+  if (!val) return "00:00:00";
+  if (typeof val === "object" && val !== null && "ticks" in val) {
+    const totalSeconds = Math.floor(Number(val.ticks) / 10000000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  }
+  const str = String(val).trim();
+  const parts = str.split(":");
+  if (parts.length === 2) {
+    const h = String(parseInt(parts[0], 10) || 0).padStart(2, "0");
+    const m = String(parseInt(parts[1], 10) || 0).padStart(2, "0");
+    return `${h}:${m}:00`;
+  }
+  if (parts.length >= 3) {
+    const h = String(parseInt(parts[0], 10) || 0).padStart(2, "0");
+    const m = String(parseInt(parts[1], 10) || 0).padStart(2, "0");
+    const s = String(parseInt(parts[2], 10) || 0).padStart(2, "0");
+    return `${h}:${m}:${s}`;
+  }
+  return "00:00:00";
+}
+
+/**
+ * Build clean CreateBookingEventDto (Strictly 12 fields matching Swagger schema)
+ * Schema:
+ * {
+ *   "title": "string",
+ *   "productVariantId": "uuid",
+ *   "resourceId": "uuid",
+ *   "serviceProviderId": "uuid | null",
+ *   "startDate": "date-time",
+ *   "endDate": "date-time",
+ *   "startTime": "hh:mm:ss",
+ *   "endTime": "hh:mm:ss",
+ *   "recurringDays": "string | null",
+ *   "maxCapacity": number,
+ *   "price": number,
+ *   "advancePayment": number
+ * }
+ */
+export function buildCreateBookingEventDto(data = {}) {
+  let recurring = null;
+  if (Array.isArray(data.recurringDays)) {
+    recurring = data.recurringDays.length > 0 ? data.recurringDays.join(",") : null;
+  } else if (typeof data.recurringDays === "string" && data.recurringDays.trim()) {
+    recurring = data.recurringDays.trim();
+  }
+
+  const startDateIso = data.startDate
+    ? (typeof data.startDate === "string" && data.startDate.includes("T") ? data.startDate : new Date(data.startDate).toISOString())
+    : new Date().toISOString();
+
+  const endDateIso = data.endDate
+    ? (typeof data.endDate === "string" && data.endDate.includes("T") ? data.endDate : new Date(data.endDate).toISOString())
+    : new Date().toISOString();
+
+  return {
+    title: (data.title || "").trim(),
+    productVariantId: toGuidOrNull(data.productVariantId || data.service),
+    resourceId: toGuidOrNull(data.resourceId || data.resource),
+    serviceProviderId: toGuidOrNull(data.serviceProviderId || data.provider),
+    startDate: startDateIso,
+    endDate: endDateIso,
+    startTime: formatTimeSpan(data.startTime),
+    endTime: formatTimeSpan(data.endTime),
+    recurringDays: recurring,
+    maxCapacity: Number(data.maxCapacity) || 0,
+    price: Number(data.price) || 0,
+    advancePayment: data.advancePayment !== undefined
+      ? (Number(data.advancePayment) || 0)
+      : (Number(data.deposit) || 0),
+  };
+}
+
+/**
+ * Build clean UpdateBookingEventDto (Strictly 13 fields matching Swagger schema)
+ * Schema:
+ * {
+ *   "id": "uuid",
+ *   "title": "string",
+ *   "productVariantId": "uuid",
+ *   "resourceId": "uuid",
+ *   "serviceProviderId": "uuid | null",
+ *   "startDate": "date-time",
+ *   "endDate": "date-time",
+ *   "startTime": "hh:mm:ss",
+ *   "endTime": "hh:mm:ss",
+ *   "recurringDays": "string | null",
+ *   "maxCapacity": number,
+ *   "price": number,
+ *   "advancePayment": number
+ * }
+ */
+export function buildUpdateBookingEventDto(id, data = {}) {
+  const baseDto = buildCreateBookingEventDto(data);
+  return {
+    id: toGuidOrNull(id || data.id),
+    ...baseDto,
+  };
+}
+
+/**
+ * Create New Event (Booking)
  * Endpoint: POST /api/inventory/Booking/Create
  */
 export async function createEvent(data) {
-  const formatTimeSpan = (t) => {
-    if (!t) return "00:00:00";
-    const parts = String(t).split(":");
-    if (parts.length === 2) return `${parts[0]}:${parts[1]}:00`;
-    if (parts.length === 3) return t;
-    return "00:00:00";
-  };
-
-  const payload = {
-    title: data.title,
-    productVariantId: data.productVariantId || data.service,
-    resourceId: data.resourceId || data.resource,
-    serviceProviderId: (data.serviceProviderId || data.provider) === "none" ? null : (data.serviceProviderId || data.provider || null),
-    startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
-    endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
-    startTime: formatTimeSpan(data.startTime),
-    endTime: formatTimeSpan(data.endTime),
-    recurringDays: Array.isArray(data.recurringDays) ? data.recurringDays.join(",") : (data.recurringDays || null),
-    price: Number(data.price) || 0,
-    advancePayment: data.deposit !== undefined ? Number(data.deposit) : (Number(data.advancePayment) || 0),
-    maxCapacity: Number(data.maxCapacity) || 20,
-    notes: data.notes || null,
-  };
+  const payload = buildCreateBookingEventDto(data);
 
   const res = await apiHandler({
     endPoint: "inventory/Booking/Create",
@@ -443,7 +556,7 @@ export async function createEvent(data) {
   return {
     status: 201,
     data: res?.data || res,
-    message: "Event created successfully",
+    message: res?.message || "Event created successfully",
   };
 }
 
@@ -452,30 +565,7 @@ export async function createEvent(data) {
  * Endpoint: POST /api/inventory/Booking/Update
  */
 export async function updateEvent(id, data) {
-  const formatTimeSpan = (t) => {
-    if (!t) return "00:00:00";
-    const parts = String(t).split(":");
-    if (parts.length === 2) return `${parts[0]}:${parts[1]}:00`;
-    if (parts.length === 3) return t;
-    return "00:00:00";
-  };
-
-  const payload = {
-    id: id,
-    title: data.title,
-    productVariantId: data.productVariantId || data.service,
-    resourceId: data.resourceId || data.resource,
-    serviceProviderId: (data.serviceProviderId || data.provider) === "none" ? null : (data.serviceProviderId || data.provider || null),
-    startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
-    endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date().toISOString(),
-    startTime: formatTimeSpan(data.startTime),
-    endTime: formatTimeSpan(data.endTime),
-    recurringDays: Array.isArray(data.recurringDays) ? data.recurringDays.join(",") : (data.recurringDays || null),
-    price: Number(data.price) || 0,
-    advancePayment: data.deposit !== undefined ? Number(data.deposit) : (Number(data.advancePayment) || 0),
-    maxCapacity: Number(data.maxCapacity) || 20,
-    notes: data.notes || null,
-  };
+  const payload = buildUpdateBookingEventDto(id, data);
 
   const res = await apiHandler({
     endPoint: "inventory/Booking/Update",
@@ -486,7 +576,7 @@ export async function updateEvent(id, data) {
   return {
     status: 200,
     data: res?.data || res,
-    message: "Event updated successfully",
+    message: res?.message || "Event updated successfully",
   };
 }
 

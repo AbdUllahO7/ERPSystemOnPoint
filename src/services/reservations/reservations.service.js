@@ -60,11 +60,11 @@ export const PAYMENT_METHODS = [
 // ==========================================
 
 /**
- * Fetch Lookups for Reservation (Customers, Events, Invoice Patterns, Cost Centers)
+ * Fetch Lookups for Reservation (Customers, Events, Invoice Patterns, Cost Centers, Currencies)
  */
 export async function getReservationLookups() {
   try {
-    const [customersRes, eventsRes, patternsRes, costCentersRes] = await Promise.allSettled([
+    const [customersRes, eventsRes, patternsRes, costCentersRes, currenciesRes] = await Promise.allSettled([
       apiHandler({
         endPoint: "inventory/Customer/GetAllCustomers/all-customers",
         method: "GET",
@@ -82,6 +82,11 @@ export async function getReservationLookups() {
       }),
       apiHandler({
         endPoint: "accounting/CostCenters/GetAllCostCenters/all",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "accounting/Currencies/GetAllCurrencies/all",
         method: "GET",
         params: { PageSize: 100, IsActive: true },
       }),
@@ -141,6 +146,18 @@ export async function getReservationLookups() {
       }));
     }
 
+    // Parse Currencies
+    let currencies = [];
+    if (currenciesRes.status === "fulfilled") {
+      const raw = currenciesRes.value?.data || currenciesRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      currencies = list.map((c) => ({
+        id: c.id,
+        name: c.currency_Name || c.currencyName || c.name || "USD",
+        code: c.currency_Code || c.currencyCode || c.code || "",
+      }));
+    }
+
     return {
       status: 200,
       data: {
@@ -148,6 +165,7 @@ export async function getReservationLookups() {
         events,
         invoicePatterns,
         costCenters,
+        currencies,
         paymentMethods: PAYMENT_METHODS,
       },
     };
@@ -160,6 +178,7 @@ export async function getReservationLookups() {
         events: [],
         invoicePatterns: [],
         costCenters: [],
+        currencies: [],
         paymentMethods: PAYMENT_METHODS,
       },
     };
@@ -178,7 +197,7 @@ export async function getReservationsStats() {
 
 /**
  * Get Paginated & Filtered Reservations List
- * Endpoint: POST /api/inventory/CustomerReseveration/GetAllReservations/GetAll
+ * Endpoint: GET /api/inventory/CustomerReseveration/GetAllReservations/GetAll
  */
 export async function getReservations(params = {}) {
   try {
@@ -206,8 +225,8 @@ export async function getReservations(params = {}) {
 
     const res = await apiHandler({
       endPoint: "inventory/CustomerReseveration/GetAllReservations/GetAll",
-      method: "POST",
-      body: payload,
+      method: "GET",
+      params: payload,
     });
 
     const raw = res?.data || res || {};
@@ -216,33 +235,26 @@ export async function getReservations(params = {}) {
     const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
     const mappedItems = items.map((r, idx) => {
-      const qty = r.quantity || 1;
-      const canceled = r.canceledQuantity || r.canceled || 0;
-      const paidNum = r.paidAmount ?? r.amountPaid ?? 0;
-      const totalNum = r.totalAmount ?? r.total ?? (paidNum || 100);
-
-      const displayPaid = typeof paidNum === "number" ? `$${paidNum}` : `$${paidNum}`;
-      const displayTotal = typeof totalNum === "number" ? `$${totalNum}` : `$${totalNum}`;
+      const quantity = Number(r.quantity) || 1;
+      const canceledQuantity = Number(r.canceledQuantity) || 0;
+      const activeQuantity = Math.max(0, quantity - canceledQuantity);
 
       return {
         id: r.id || idx + 1,
-        customer: r.customerName || r.customer_Name || "Customer",
         customerId: r.customerId,
-        customerName: r.customerName || r.customer_Name || "Customer",
-        event: r.bookingEventTitle || r.eventName || "Event",
+        customerName: r.customerName || "Customer",
+        customer: r.customerName || "Customer",
         bookingEventId: r.bookingEventId,
-        eventName: r.bookingEventTitle || r.eventName || "Event",
-        qty,
-        canceled,
-        activeQty: Math.max(0, qty - canceled),
-        payment: r.paymentMethod || "Cash",
-        paid: displayPaid,
-        numericPaid: paidNum,
-        total: displayTotal,
-        numericTotal: totalNum,
+        bookingEventTitle: r.bookingEventTitle || "Event",
+        event: r.bookingEventTitle || "Event",
+        eventStartDate: r.eventStartDate,
+        eventEndDate: r.eventEndDate,
+        quantity,
+        canceledQuantity,
+        activeQuantity,
         status: r.status || "Booked",
-        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "N/A",
-        barcode: r.barcode || "",
+        invoiceId: r.invoiceId || null,
+        raw: r,
       };
     });
 
@@ -283,50 +295,46 @@ export async function getReservationById(id) {
     });
     const r = res?.data || res || {};
 
-    const qty = r.quantity || 1;
-    const canceled = r.canceledQuantity || r.canceled || 0;
-    const activeQty = Math.max(0, qty - canceled);
-    const paidNum = r.paidAmount ?? 0;
-    const totalNum = r.totalAmount ?? (paidNum || 100);
-    const dueNum = Math.max(0, totalNum - paidNum);
+    const quantity = Number(r.quantity) || 1;
+    const canceledQuantity = Number(r.canceledQuantity) || 0;
+    const activeQuantity = Math.max(0, quantity - canceledQuantity);
 
-    const paymentSchedules = (r.paymentSchedules || r.paymentSchedule || []).map((sch, idx) => ({
-      id: sch.id || idx + 1,
-      amount: sch.amount ?? 0,
-      dueDate: sch.dueDate ? new Date(sch.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
-      notes: sch.notes || "",
+    const schedules = (r.paymentSchedules || r.paymentSchedule || []).map((sch, i) => ({
+      id: sch.id || i + 1,
+      description: sch.description || "",
+      amountDue: Number(sch.amountDue ?? sch.amount) || 0,
+      dueDate: sch.dueDate ? String(sch.dueDate).split("T")[0] : new Date().toISOString().split("T")[0],
     }));
 
     return {
       status: 200,
       data: {
         id: r.id || id,
-        customerId: r.customerId,
-        customer: r.customerName || "Customer",
+        customerId: r.customerId || "",
         customerName: r.customerName || "Customer",
-        bookingEventId: r.bookingEventId,
-        bookingEvent: r.bookingEventTitle || "Booking Event",
+        customer: r.customerName || "Customer",
+        bookingEventId: r.bookingEventId || "",
+        bookingEventTitle: r.bookingEventTitle || "Event",
         eventName: r.bookingEventTitle || "Event",
-        invoicePatternId: r.invoicePatternId,
-        costCenterId: r.costCenterId,
-        quantity: qty,
-        canceledQuantity: canceled,
-        activeQuantity: activeQty,
+        eventStartDate: r.eventStartDate,
+        eventEndDate: r.eventEndDate,
+        quantity,
+        canceledQuantity,
+        activeQuantity,
+        invoicePatternId: r.invoicePatternId || "",
+        currencyId: r.currencyId || "",
         paymentMethod: r.paymentMethod || "Cash",
-        currency: r.currencyName || "USD",
-        discountAmount: `USD ${r.discountAmount || 0} (${r.discountPercentage || 0}%)`,
-        taxAmount: `USD ${r.taxAmount || 0} (${r.tax_Percentage || 0}%)`,
-        total: `USD ${totalNum.toFixed(2)}`,
-        numericTotal: totalNum,
-        paid: `USD ${paidNum.toFixed(2)}`,
-        numericPaid: paidNum,
-        due: `USD ${dueNum.toFixed(2)}`,
-        numericDue: dueNum,
-        status: r.status || "Booked",
-        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "N/A",
+        paidAmount: Number(r.paidAmount ?? r.amountPaid ?? 0),
+        discountAmount: Number(r.discountAmount ?? 0),
+        discountPercentage: Number(r.discountPercentage ?? r.discountPercent ?? 0),
+        tax_Percentage: Number(r.tax_Percentage ?? r.taxPercent ?? 0),
+        taxAmount: Number(r.taxAmount ?? 0),
         barcode: r.barcode || "",
-        notes: r.notes || "Reservation booking notes and requirements.",
-        paymentSchedule: paymentSchedules,
+        costCenterId: r.costCenterId || "",
+        paymentSchedules: schedules,
+        status: r.status || "Booked",
+        invoiceId: r.invoiceId || null,
+        raw: r,
       },
     };
   } catch (error) {
@@ -338,6 +346,7 @@ export async function getReservationById(id) {
 /**
  * Create Reservation
  * Endpoint: POST /api/inventory/CustomerReseveration/CreateReservation/create
+ * Schema: CreateCustomerReservationDto (Strict 14 properties with additionalProperties: false)
  */
 export async function createReservation(data) {
   let pm = "Cash";
@@ -345,29 +354,28 @@ export async function createReservation(data) {
   if (pStr.includes("card") || pStr.includes("credit")) pm = "Credit";
   else if (pStr.includes("bank")) pm = "Bank";
 
-  const schedules = (data.paymentSchedule || []).map((sch) => ({
+  const rawSchedules = data.paymentSchedules || data.paymentSchedule || [];
+  const formattedSchedules = rawSchedules.map((sch) => ({
+    description: sch.description || null,
+    amountDue: Number(sch.amountDue ?? sch.amount) || 0,
     dueDate: sch.dueDate ? new Date(sch.dueDate).toISOString() : new Date().toISOString(),
-    amount: Number(sch.amount) || 0,
-    notes: sch.notes || null,
   }));
 
   const payload = {
-    customerId: data.customerId || data.customer,
-    bookingEventId: data.bookingEventId || data.bookingEvent,
+    customerId: data.customerId || null,
+    bookingEventId: data.bookingEventId || null,
     quantity: Number(data.quantity) || 1,
-    invoicePatternId: data.invoicePatternId || "00000000-0000-0000-0000-000000000000",
-    costCenterId: data.costCenterId || null,
+    invoicePatternId: data.invoicePatternId || null,
     currencyId: data.currencyId || null,
     paymentMethod: pm,
-    paidAmount: Number(data.amountPaid ?? data.paidAmount) || 0,
+    paidAmount: Number(data.paidAmount ?? data.amountPaid) || 0,
     discountAmount: Number(data.discountAmount) || 0,
-    discountPercentage: Number(data.discountPercent ?? data.discountPercentage) || 0,
+    discountPercentage: Number(data.discountPercentage ?? data.discountPercent) || 0,
+    tax_Percentage: Number(data.tax_Percentage ?? data.taxPercent) || 0,
     taxAmount: Number(data.taxAmount) || 0,
-    tax_Percentage: Number(data.taxPercent ?? data.tax_Percentage) || 0,
-    barcode: data.barcode || null,
-    description: data.description || data.notes || null,
-    notes: data.notes || data.description || null,
-    paymentSchedules: schedules.length > 0 ? schedules : null,
+    barcode: data.barcode ? String(data.barcode).trim() : null,
+    costCenterId: data.costCenterId || null,
+    paymentSchedules: formattedSchedules.length > 0 ? formattedSchedules : null,
   };
 
   const res = await apiHandler({
@@ -416,10 +424,17 @@ export async function cancelReservationTickets(id, quantityToCancel, options = "
     body: payload,
   });
 
+  if (res && (res.success === false || (res.status && res.status >= 400))) {
+    const error = new Error(res.message || "Failed to cancel reservation tickets");
+    error.data = res;
+    error.response = { data: res };
+    throw error;
+  }
+
   return {
     status: 200,
     data: res?.data || res,
-    message: "Tickets canceled and seats released successfully",
+    message: res?.message || "Tickets canceled and seats released successfully",
   };
 }
 
@@ -442,10 +457,17 @@ export async function updateReservationStatus(id, newStatus) {
     params: { newStatus: statusVal },
   });
 
+  if (res && (res.success === false || (res.status && res.status >= 400))) {
+    const error = new Error(res.message || `Failed to update status to ${statusVal}`);
+    error.data = res;
+    error.response = { data: res };
+    throw error;
+  }
+
   return {
     status: 200,
     data: res?.data || res,
-    message: `Status updated to ${statusVal}`,
+    message: res?.message || `Status updated to ${statusVal}`,
   };
 }
 

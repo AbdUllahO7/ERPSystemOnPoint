@@ -1,4 +1,10 @@
 import { apiHandler } from "@/lib/api-handler";
+import {
+  updateSimpleProductWithoutSpecs,
+  updateAssemblyWithoutSpecs,
+  updateBundleWithoutSpecs,
+  updateSimpleProductWithSpecs,
+} from "@/services/inventory/inventory.service";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
@@ -42,6 +48,67 @@ export const INITIAL_SERVICES_STATS = [
 
 export const INITIAL_SERVICES_LIST = [];
 
+// ==========================================
+// Billing Methods & Helper Utilities
+// ==========================================
+
+export const VALID_BILLING_METHODS = [
+  "FixedPrice",
+  "Hourly",
+  "Daily",
+  "Monthly",
+  "QuantityBased",
+];
+
+export const BILLING_METHODS = [
+  { label: "Fixed Price (سعر ثابت)", value: "FixedPrice" },
+  { label: "Hourly (بالساعة)", value: "Hourly" },
+  { label: "Daily (باليوم)", value: "Daily" },
+  { label: "Monthly (شهري)", value: "Monthly" },
+  { label: "Quantity Based (حسب الكمية)", value: "QuantityBased" },
+];
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+export function toGuidOrNull(val) {
+  if (!val || typeof val !== "string") return null;
+  const trimmed = val.trim();
+  return UUID_REGEX.test(trimmed) ? trimmed : null;
+}
+
+export function normalizeBillingMethod(val) {
+  if (!val) return "FixedPrice";
+  const str = String(val).trim();
+  const lower = str.toLowerCase();
+
+  if (
+    lower === "fixedprice" ||
+    lower === "fixed" ||
+    lower === "per-visit" ||
+    lower === "package" ||
+    lower === "project" ||
+    lower.includes("مقطوع") ||
+    lower.includes("ثابت")
+  ) {
+    return "FixedPrice";
+  }
+  if (lower === "hourly" || lower === "hour" || lower.includes("ساعة")) {
+    return "Hourly";
+  }
+  if (lower === "daily" || lower === "day" || lower.includes("يوم")) {
+    return "Daily";
+  }
+  if (lower === "monthly" || lower === "month" || lower.includes("شهر")) {
+    return "Monthly";
+  }
+  if (lower === "quantitybased" || lower === "quantity" || lower.includes("كمية")) {
+    return "QuantityBased";
+  }
+
+  const matched = VALID_BILLING_METHODS.find((m) => m.toLowerCase() === lower);
+  return matched || "FixedPrice";
+}
+
 export const SERVICE_LOOKUPS = {
   categories: [
     { label: "Dental", value: "Dental" },
@@ -52,11 +119,7 @@ export const SERVICE_LOOKUPS = {
     { label: "Laboratory", value: "Laboratory" },
     { label: "Cardiology", value: "Cardiology" },
   ],
-  billingMethods: [
-    { label: "Per Visit", value: "per-visit" },
-    { label: "Hourly", value: "hourly" },
-    { label: "Package", value: "package" },
-  ],
+  billingMethods: BILLING_METHODS,
   revenueAccounts: [
     { label: "Dental Services Revenue", value: "Dental Services Revenue" },
     { label: "General Medical Revenue", value: "General Medical Revenue" },
@@ -92,14 +155,11 @@ export async function getServices(params = {}) {
       endPoint: "Inventory/Product/GetAll/GetAll",
       method: "GET",
       params: {
+        ProductType: "Appointment",
         PageNumber: params.PageNumber || params.page || 1,
         PageSize: params.PageSize || params.pageSize || 10,
         SearchTerm: params.SearchTerm || params.search || undefined,
         Category: params.Category !== "all" ? params.Category : undefined,
-        BillingMethod: params.BillingMethod !== "all" ? params.BillingMethod : undefined,
-        RequiresContract: params.RequiresContract !== "all"
-          ? params.RequiresContract === "yes"
-          : undefined,
         Status: params.Status !== "all" ? params.Status : undefined,
       },
     });
@@ -114,37 +174,33 @@ export async function getServices(params = {}) {
         ? s.prices[0]
         : (s.consumer_Price ?? s.cost_Price ?? s.consumerPrice ?? s.price ?? 0);
 
-      const displayPrice = typeof primaryPrice === "number" 
-        ? `$${primaryPrice}` 
-        : (String(primaryPrice).startsWith("$") ? primaryPrice : `$${primaryPrice}`);
-
-      const primaryUnit = (Array.isArray(s.units) && s.units.length > 0)
+      const unitName = (Array.isArray(s.units) && s.units.length > 0)
         ? s.units[0]
-        : (s.billing_Method || s.billingMethod || "per-visit");
+        : "—";
 
-      const categoryName = s.category_name || s.categoryName || s.category?.name || s.category || "General Service";
+      const categoryName = s.category_name || s.categoryName || s.category?.name || s.category || "—";
+      const createdDate = s.created_At ? s.created_At.split("T")[0] : "—";
 
       return {
         id: s.id || idx + 1,
+        name_Product: s.name_Product || s.name || `Service ${idx + 1}`,
         name: s.name_Product || s.name || `Service ${idx + 1}`,
-        productNumber: s.product_Number || s.productNumber || "-",
-        productType: s.product_Type || s.productType || "Service",
+        product_Number: s.product_Number || s.productNumber || "—",
+        productNumber: s.product_Number || s.productNumber || "—",
+        product_Type: s.product_Type || s.productType || "Appointment",
+        productType: s.product_Type || s.productType || "Appointment",
+        is_Active: Boolean(s.is_Active ?? s.isActive ?? true),
+        isActive: Boolean(s.is_Active ?? s.isActive ?? true),
+        category_name: categoryName,
         category: categoryName,
-        billingMethod: primaryUnit,
-        units: s.units || [primaryUnit],
-        prices: s.prices || [primaryPrice],
-        duration: s.default_Duration_Minutes ? `${s.default_Duration_Minutes} min` : "30 min",
-        defaultDuration: s.default_Duration_Minutes || 30,
-        cost: s.cost_Price !== undefined ? `$${s.cost_Price}` : (s.prices && s.prices[1] !== undefined ? `$${s.prices[1]}` : "-"),
-        costPrice: s.cost_Price ?? (s.prices && s.prices[1]) ?? 0,
-        price: displayPrice,
-        consumerPrice: primaryPrice,
-        contract: s.requires_Contract || s.requiresContract ? "Required" : "-",
-        requiresContract: Boolean(s.requires_Contract || s.requiresContract),
-        canBeSold: Boolean(s.can_Be_Sold ?? s.canBeSold ?? true),
-        isActive: s.is_Active ?? s.isActive ?? true,
-        revenueAccount: s.revenueAccount || "-",
-        expenseAccount: s.expenseAccount || "-",
+        units: s.units || (unitName !== "—" ? [unitName] : []),
+        unit: unitName,
+        prices: s.prices || (primaryPrice !== undefined ? [primaryPrice] : []),
+        price: primaryPrice !== undefined ? `$${primaryPrice}` : "—",
+        priceValue: primaryPrice,
+        created_At: s.created_At,
+        createdDate: createdDate,
+        variant_Ids: s.variant_Ids || [],
         raw: s,
       };
     });
@@ -190,9 +246,11 @@ export async function getServiceById(id) {
       ?? ((Array.isArray(s.prices) && s.prices.length > 1) ? s.prices[1] : null)
       ?? s.cost_Price ?? s.costPrice ?? variant?.cost_Price ?? 0;
 
-    const billingMethod = s.billing_Method || s.billingMethod 
+    const billingMethod = normalizeBillingMethod(
+      s.billing_Method || s.billingMethod 
       || firstUnit?.unit_name || firstUnit?.unitName 
-      || (Array.isArray(s.units) && s.units.length > 0 ? s.units[0] : "") || "per-visit";
+      || (Array.isArray(s.units) && s.units.length > 0 ? s.units[0] : "") || "FixedPrice"
+    );
     
     const category = s.category_Id || s.categoryId || s.category_name || s.categoryName || s.category || "";
     const categoryName = s.category_Name || s.category_name || s.categoryName || "";
@@ -202,15 +260,18 @@ export async function getServiceById(id) {
       data: {
         id: s.id || id,
         name: s.name_Product || s.name || "",
+        productNumber: s.product_Number || s.productNumber || "",
         category: category,
         categoryName: categoryName,
         billingMethod: billingMethod,
-        defaultDuration: s.default_Duration_Minutes || s.defaultDuration || 30,
-        defaultInsuranceQty: s.default_Deposit_Amount || s.defaultInsuranceQty || 0,
+        defaultDuration: s.default_Duration_Minutes ?? s.defaultDuration ?? 30,
+        defaultInsuranceQty: s.default_Deposit_Amount ?? s.defaultInsuranceQty ?? 0,
         costPrice: Number(costPrice) || 0,
         consumerPrice: Number(consumerPrice) || 0,
         requiresContract: Boolean(s.requires_Contract ?? s.requiresContract ?? false),
         canBeSold: Boolean(s.can_Be_Sold ?? s.canBeSold ?? true),
+        hasExpiryDate: Boolean(s.has_Expiry_Date ?? s.hasExpiryDate ?? false),
+        hasVariants: Boolean(s.has_Variants ?? s.hasVariants ?? false),
         isActive: Boolean(s.is_Active ?? s.isActive ?? true),
         revenueAccount: s.revenue_Account_Id || s.revenueAccount || "",
         expenseAccount: s.expense_Account_Id || s.expenseAccount || "",
@@ -223,27 +284,61 @@ export async function getServiceById(id) {
   }
 }
 
+/**
+ * بناء كائن CreateProductAppoitmnetDto متوافق تماماً مع Swagger (14 حقل حصرياً وبدون أي حقول إضافية)
+ * POST /api/Inventory/Product/CreateAppointmentService/appointment-service
+ */
+export function buildCreateAppointmentServiceDto(payload = {}) {
+  const generatedNum = `SRV-${Date.now().toString().slice(-6)}`;
+  return {
+    name_Product: (payload.name_Product || payload.name || "").trim(),
+    product_Number: (payload.product_Number || payload.productNumber || generatedNum).trim(),
+    has_Expiry_Date: Boolean(payload.has_Expiry_Date ?? payload.hasExpiryDate ?? false),
+    category_Id: toGuidOrNull(payload.category_Id || payload.categoryId || payload.category),
+    can_Be_Sold: Boolean(payload.can_Be_Sold ?? payload.canBeSold ?? true),
+    requires_Contract: Boolean(payload.requires_Contract ?? payload.requiresContract ?? false),
+    default_Deposit_Amount: Number(payload.default_Deposit_Amount ?? payload.defaultInsuranceQty ?? payload.deposit ?? 0) || 0,
+    default_Duration_Minutes: Math.round(Number(payload.default_Duration_Minutes ?? payload.defaultDuration ?? 0)) || 0,
+    has_Variants: Boolean(payload.has_Variants ?? payload.hasVariants ?? false),
+    revenue_Account_Id: toGuidOrNull(payload.revenue_Account_Id || payload.revenueAccount),
+    expense_Account_Id: toGuidOrNull(payload.expense_Account_Id || payload.expenseAccount),
+    billing_Method: normalizeBillingMethod(payload.billing_Method || payload.billingMethod),
+    cost_Price: Number(payload.cost_Price ?? payload.costPrice ?? 0) || 0,
+    consumer_Price: Number(payload.consumer_Price ?? payload.consumerPrice ?? 0) || 0,
+  };
+}
+
+/**
+ * بناء كائن UpdateProductServiceDto متوافق مع Swagger
+ * POST /api/Inventory/Product/UpdateProductService/service
+ */
+export function buildUpdateProductServiceDto(id, payload = {}) {
+  const serviceId = toGuidOrNull(id) || toGuidOrNull(payload?.id) || id;
+  const generatedNum = `SRV-${Date.now().toString().slice(-6)}`;
+  return {
+    id: serviceId,
+    name_Product: (payload?.name_Product || payload?.name || "").trim(),
+    product_Number: (payload?.product_Number || payload?.productNumber || generatedNum).trim(),
+    has_Expiry_Date: Boolean(payload?.has_Expiry_Date ?? payload?.hasExpiryDate ?? false),
+    billing_Method: normalizeBillingMethod(payload?.billing_Method || payload?.billingMethod),
+    can_Be_Sold: Boolean(payload?.can_Be_Sold ?? payload?.canBeSold ?? true),
+    requires_Contract: Boolean(payload?.requires_Contract ?? payload?.requiresContract ?? false),
+    requires_Scheduling: Boolean(payload?.requires_Scheduling ?? payload?.requiresScheduling ?? true),
+    category_Id: toGuidOrNull(payload?.category_Id || payload?.categoryId || payload?.category),
+    revenue_Account_Id: toGuidOrNull(payload?.revenue_Account_Id || payload?.revenueAccount),
+    expense_Account_Id: toGuidOrNull(payload?.expense_Account_Id || payload?.expenseAccount),
+    cost_Price: Number(payload?.cost_Price ?? payload?.costPrice ?? 0) || 0,
+    consumer_Price: Number(payload?.consumer_Price ?? payload?.consumerPrice ?? 0) || 0,
+  };
+}
+
 export async function createService(payload) {
   try {
+    const cleanDto = buildCreateAppointmentServiceDto(payload);
     const res = await apiHandler({
       endPoint: "Inventory/Product/CreateAppointmentService/appointment-service",
       method: "POST",
-      body: {
-        name_Product: payload.name,
-        product_Number: payload.productNumber || `SRV-${Date.now()}`,
-        has_Expiry_Date: false,
-        category_Id: payload.category || undefined,
-        can_Be_Sold: payload.canBeSold ?? true,
-        requires_Contract: payload.requiresContract ?? false,
-        default_Deposit_Amount: Number(payload.defaultInsuranceQty || 0),
-        default_Duration_Minutes: Number(payload.defaultDuration || 30),
-        has_Variants: false,
-        revenue_Account_Id: payload.revenueAccount || undefined,
-        expense_Account_Id: payload.expenseAccount || undefined,
-        billing_Method: payload.billingMethod || "per-visit",
-        cost_Price: Number(payload.costPrice || 0),
-        consumer_Price: Number(payload.consumerPrice || 0),
-      },
+      body: cleanDto,
     });
 
     return {
@@ -257,32 +352,24 @@ export async function createService(payload) {
   }
 }
 
-export async function updateService(id, payload) {
+export async function updateService(id, payload = {}) {
   try {
-    const res = await apiHandler({
-      endPoint: "Inventory/Product/UpdateProductService/service",
-      method: "POST",
-      body: {
-        id,
-        name_Product: payload.name,
-        category_Id: payload.category || undefined,
-        can_Be_Sold: payload.canBeSold ?? true,
-        requires_Contract: payload.requiresContract ?? false,
-        default_Deposit_Amount: Number(payload.defaultInsuranceQty || 0),
-        default_Duration_Minutes: Number(payload.defaultDuration || 30),
-        revenue_Account_Id: payload.revenueAccount || undefined,
-        expense_Account_Id: payload.expenseAccount || undefined,
-        billing_Method: payload.billingMethod || "per-visit",
-        cost_Price: Number(payload.costPrice || 0),
-        consumer_Price: Number(payload.consumerPrice || 0),
-      },
-    });
+    const pType = payload.product_Type || payload.productType;
+    const hasSpecs = Boolean(payload.has_Specifications ?? payload.hasSpecifications ?? payload.hasVariants);
 
-    return {
-      status: 200,
-      data: res?.data || res,
-      message: "Service updated successfully",
-    };
+    if (pType === "Assembly") {
+      return updateAssemblyWithoutSpecs({ id, ...payload });
+    }
+    if (pType === "Bundle") {
+      return updateBundleWithoutSpecs({ id, ...payload });
+    }
+    if (pType === "InventoryWithSpecs" || (pType === "Inventory" && hasSpecs)) {
+      return updateSimpleProductWithSpecs({ id, ...payload });
+    }
+
+    // Default for Service & items without specs:
+    // POST /api/Inventory/Product/UpdateProductInventoryWithoutSpecifications/inventory-without-specifications
+    return updateSimpleProductWithoutSpecs({ id, ...payload });
   } catch (err) {
     console.error(`Failed to update service ${id}:`, err);
     throw err;
@@ -333,15 +420,7 @@ export async function getServiceLookups() {
       status: 200,
       data: {
         categories: categories.length > 0 ? categories : SERVICE_LOOKUPS.categories,
-        billingMethods: [
-          { label: "Fixed Price (سعر ثابت)", value: "FixedPrice" },
-          { label: "Per Visit (خدمة مقطوعة)", value: "خدمة مقطوعة" },
-          { label: "Hourly (ساعة)", value: "ساعة" },
-          { label: "Project (مشروع)", value: "مشروع" },
-          { label: "Per Visit", value: "per-visit" },
-          { label: "Hourly", value: "hourly" },
-          { label: "Package", value: "package" },
-        ],
+        billingMethods: BILLING_METHODS,
         revenueAccounts: accounts.length > 0 ? accounts : SERVICE_LOOKUPS.revenueAccounts,
         expenseAccounts: accounts.length > 0 ? accounts : SERVICE_LOOKUPS.expenseAccounts,
       },

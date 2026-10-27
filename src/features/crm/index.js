@@ -1,2 +1,2 @@
-export * from "./api/crm.api";
+export * from "@/services/crm";
 export * from "./hooks/useCrm";

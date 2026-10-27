@@ -1,2 +1,2 @@
-export * from "./api/events.api";
+export * from "@/services/events";
 export * from "./hooks/useEvents";

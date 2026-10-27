@@ -77,7 +77,7 @@ export default function ResourceDetailsPage() {
       setIsStatusModalOpen(false);
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || "Failed to update status";
+      const msg = err?.response?.data?.message || err?.data?.message || err?.message || "Failed to update status";
       toast.error(msg);
     },
   });
@@ -90,8 +90,9 @@ export default function ResourceDetailsPage() {
       queryClient.invalidateQueries(["resources"]);
       toast.success("تم تحديث حالة تفعيل المورد بنجاح!");
     },
-    onError: () => {
-      toast.error("فشل تغيير حالة تفعيل المورد");
+    onError: (err) => {
+      const msg = err?.response?.data?.message || err?.data?.message || err?.message || "فشل تغيير حالة تفعيل المورد";
+      toast.error(msg);
     },
   });
 
@@ -193,33 +194,7 @@ export default function ResourceDetailsPage() {
         </div>
       </div>
 
-      {/* Page 6 Guidance Alert Banner */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                06 / فهم النظام: الموارد (المكان أو الأصل)
-              </span>
-              <span className="text-xs text-slate-500">قواعد إدارة الموارد والتوافر التشغيلي</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>قاعدة الملكية vs الحالة:</strong> كون المورد <code>Leased</code> يعني استئجاره من مالك خارجي، بينما <code>Rented</code> يعني أنه مؤجر لعميل. لا يعني الاستئجار التجاري انشغال المورد دائماً. كما أن <code>DailyRentalCost</code> هي تكلفة على الشركة ولا ترتبط بحجم أو سعر الحدث <code>BookingEvent.Price</code>.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="bg-white/90 p-3 rounded-xl border border-slate-200/60 shadow-2xs text-center">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">حالة النظام</p>
-              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold mt-0.5 ${
-                resource.isActive ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"
-              }`}>
-                {resource.isActive ? "مفعل (Active)" : "معطل (Inactive)"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+      
 
       {/* Details Grid (Left 8 cols, Right 4 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -247,7 +222,7 @@ export default function ResourceDetailsPage() {
               <p className="text-xs font-semibold text-slate-800">Max Capacity (السعة القصوى)</p>
               <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-slate-400" />
-                <span className="font-semibold">{resource.capacity || resource.numericCapacity || 20}</span> مقعد / وحدة
+                <span className="font-semibold">{resource.maxCapacity ?? resource.capacity ?? 0}</span> مقعد / وحدة
               </p>
             </div>
 
@@ -271,7 +246,9 @@ export default function ResourceDetailsPage() {
                 {resource.ownership === "Leased" ? "Lessor / Supplier (المورد المؤجر)" : "Fixed Asset (الأصل الثابت)"}
               </p>
               <p className="text-xs text-slate-600 mt-1">
-                {resource.supplierAsset || resource.supplierAssetName || resource.supplierName || resource.fixedAssetName || "None / General Asset"}
+                {resource.ownership === "Leased"
+                  ? (resource.supplierName || resource.supplierAsset || "External Supplier")
+                  : (resource.fixedAssetName || (resource.fixedAssetId ? `Fixed Asset #${String(resource.fixedAssetId).substring(0, 8)}` : "None / General Asset"))}
               </p>
             </div>
 
@@ -285,9 +262,9 @@ export default function ResourceDetailsPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Facility Location (الموقع)</p>
-              <p className="text-xs text-slate-600 mt-1">
-                {resource.address || resource.location || "Main Facility"}
+              <p className="text-xs font-semibold text-slate-800">Reference Number (الرقم المرجعي)</p>
+              <p className="text-xs font-mono text-slate-600 mt-1 font-medium">
+                {resource.referenceNumber || resource.code || "N/A"}
               </p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { websiteBuilderApi } from "../api/website-builder.api";
+import { websiteBuilderApi } from "@/services/website-builder";
 import toast from "react-hot-toast";
 
 export function useWebsitesList() {

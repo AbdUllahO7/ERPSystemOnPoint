@@ -121,6 +121,12 @@ export default function EventsPage() {
             onClick: (row) => navigate(`/dashboard/events/${row.id}`),
           },
           {
+            key: "reservations",
+            label: "View Reservations (عرض سجل الحجوزات)",
+            icon: Users,
+            onClick: (row) => navigate(`/dashboard/reservations?bookingEventId=${row.id}`),
+          },
+          {
             key: "edit",
             label: "Edit Event (تعديل الحدث)",
             icon: Pencil,
@@ -316,34 +322,7 @@ export default function EventsPage() {
         infoTooltip="طرح الخدمات في موارد ومواعيد محددة مع ضبط الأيام المتكررة، السعة المحجوزة، وأسعار التذاكر."
       />
 
-      {/* Page 7 System Guidance Banner */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                07 / فهم النظام: الأحداث والأيام المتكررة
-              </span>
-              <span className="text-xs text-slate-500">طرح خدمة في مورد وموعد محددين، ثم فتحه للحجز</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>مثال:</strong> خدمة «دورة إنكليزي»، داخل «قاعة A»، من 1 إلى 30 نوفمبر، يومي الأحد والثلاثاء من 10 إلى 12. هذا <code>BookingEvent</code>؛ أما تسجيل عميل فيه فهو حجز منفصل <code>Reservation</code>. الحجز للدورة كاملة يمثل سعة مشتركة، بينما الحجز لكل جلسة مستقلة يتطلب مواعيد فرعية.
-            </p>
-          </div>
-          <div className="flex flex-wrap lg:flex-col gap-2 shrink-0 text-[11px] text-slate-600">
-            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>دورة كاملة: سعة مشتركة لجميع الجلسات</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
-              <Layers className="w-3.5 h-3.5 text-amber-600" />
-              <span>جلسات مستقلة: مواعيد فرعية لكل يوم</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    
       {/* Top 4 Stats Cards matching mockup */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((card, idx) => {

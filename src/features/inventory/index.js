@@ -1,2 +1,2 @@
-export * from "./api/inventory.api";
+export * from "@/services/inventory";
 export * from "./hooks/useInventory";

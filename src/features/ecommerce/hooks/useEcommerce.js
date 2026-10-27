@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ecommerceApi } from "../api/ecommerce.api";
+import { ecommerceApi } from "@/services/ecommerce";
 import { queryKeys } from "@/lib/query-keys";
 import toast from "react-hot-toast";
 

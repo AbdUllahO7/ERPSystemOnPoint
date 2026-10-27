@@ -23,6 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import toast from "react-hot-toast";
+import { INITIAL_APPOINTMENT_STATS } from "@/services/appointments";
 import {
   useAppointments,
   useAppointmentLookups,
@@ -31,16 +33,24 @@ import {
 } from "@/features/appointments";
 
 const statusStyles = {
-  Completed:
-    "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800",
-  Scheduled:
-    "bg-blue-50 text-blue-600 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-800",
+  Pending:
+    "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800",
   Confirmed:
     "bg-cyan-50 text-cyan-600 border border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-400 dark:border-cyan-800",
-  "In Progress":
-    "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800",
-  "No Show":
+  CheckedIn:
+    "bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800",
+  Completed:
+    "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800",
+  Canceled:
     "bg-rose-50 text-rose-600 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-400 dark:border-rose-800",
+  NoShow:
+    "bg-gray-100 text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+  Scheduled:
+    "bg-amber-50 text-amber-600 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800",
+  "In Progress":
+    "bg-purple-50 text-purple-600 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-400 dark:border-purple-800",
+  "No Show":
+    "bg-gray-100 text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
 };
 
 export default function AppointmentsPage() {
@@ -64,14 +74,17 @@ export default function AppointmentsPage() {
   // Lookups Query via Feature Hook
   const { data: lookupsData } = useAppointmentLookups();
   const lookups = lookupsData?.data || {
-    statuses: ["All", "Scheduled", "Confirmed", "In Progress", "Completed", "No Show"],
+    statuses: ["All", "Pending", "Confirmed", "CheckedIn", "Completed", "Canceled", "NoShow"],
     providers: [],
     services: [],
   };
 
   // Stats Query via Feature Hook
   const { data: statsData } = useAppointmentStats();
-  const stats = statsData?.data || [];
+  const stats =
+    statsData?.data && statsData.data.length > 0
+      ? statsData.data
+      : INITIAL_APPOINTMENT_STATS;
 
   // Params for Appointments Query
   const params = useMemo(
@@ -159,21 +172,30 @@ export default function AppointmentsPage() {
         key: "id",
         label: "ID",
         sortable: true,
-        render: (row) => (
-          <Link
-            to={`/dashboard/appointments/${row.id}`}
-            className="font-semibold text-primary hover:underline"
-          >
-            {row.id}
-          </Link>
-        ),
+        render: (row) => {
+          const shortId =
+            typeof row.id === "string" && row.id.length > 8
+              ? `${row.id.slice(0, 8)}...`
+              : row.id;
+          return (
+            <Link
+              to={`/dashboard/appointments/${row.id}`}
+              className="font-semibold text-primary hover:underline font-mono text-xs"
+              title={row.id}
+            >
+              {shortId}
+            </Link>
+          );
+        },
       },
       {
         key: "customer",
         label: "Customer",
         sortable: true,
         render: (row) => (
-          <span className="font-medium text-foreground">{row.customer}</span>
+          <span className="font-medium text-foreground">
+            {row.customerName || row.customer || "—"}
+          </span>
         ),
       },
       {
@@ -181,7 +203,9 @@ export default function AppointmentsPage() {
         label: "Service",
         sortable: true,
         render: (row) => (
-          <span className="text-muted-foreground">{row.service}</span>
+          <span className="text-muted-foreground">
+            {row.serviceName || row.service || "—"}
+          </span>
         ),
       },
       {
@@ -189,7 +213,9 @@ export default function AppointmentsPage() {
         label: "Provider",
         sortable: true,
         render: (row) => (
-          <span className="text-muted-foreground">{row.provider}</span>
+          <span className="text-muted-foreground">
+            {row.serviceProviderName || row.provider || "—"}
+          </span>
         ),
       },
       {
@@ -197,7 +223,7 @@ export default function AppointmentsPage() {
         label: "Date",
         sortable: true,
         render: (row) => (
-          <span className="text-muted-foreground">{row.date}</span>
+          <span className="text-muted-foreground">{row.date || "—"}</span>
         ),
       },
       {
@@ -205,15 +231,7 @@ export default function AppointmentsPage() {
         label: "Time",
         sortable: true,
         render: (row) => (
-          <span className="text-muted-foreground">{row.time}</span>
-        ),
-      },
-      {
-        key: "total",
-        label: "Total",
-        sortable: true,
-        render: (row) => (
-          <span className="font-semibold text-primary">{row.total}</span>
+          <span className="text-muted-foreground">{row.time || "—"}</span>
         ),
       },
       {
@@ -232,6 +250,22 @@ export default function AppointmentsPage() {
             </span>
           );
         },
+      },
+      {
+        key: "invoiceId",
+        label: "Invoice",
+        sortable: true,
+        render: (row) =>
+          row.invoiceId ? (
+            <span
+              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300"
+              title={row.invoiceId}
+            >
+              #{row.invoiceId.slice(0, 8)}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground/60">—</span>
+          ),
       },
     ],
     []
