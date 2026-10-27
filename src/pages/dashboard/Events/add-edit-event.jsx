@@ -304,76 +304,7 @@ export default function AddEditEventPage() {
         </div>
       </div>
 
-      {/* Page 7 System Guidance Card */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                07 / فهم النظام: الأحداث والأيام المتكررة (Events & Recurring Days)
-              </span>
-              <span className="text-xs text-slate-500">طرح خدمة في مورد وموعد محددين، ثم فتحه للحجز</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>مثال معتمد:</strong> خدمة «دورة إنكليزي»، داخل «قاعة A»، من 1 إلى 30 نوفمبر، يومي الأحد والثلاثاء من 10 إلى 12. هذا هو <code>BookingEvent</code>؛ أما تسجيل عميل فيه فهو حجز منفصل.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-medium text-slate-600 bg-white/80 px-3 py-1.5 rounded-xl border border-slate-200/60 shadow-2xs">
-            <Globe className="w-4 h-4 text-[#0066d1]" />
-            <span>المنطقة الزمنية: {formData.timeZone} (توقيت مكة)</span>
-          </div>
-        </div>
-
-        {/* The Two Booking Models (Green & Yellow Cards from Page 7) */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
-          {/* Green Card: Full Course Booking */}
-          <div
-            onClick={() => handleInputChange("bookingModel", "FullCourse")}
-            className={`p-4 rounded-xl border transition-all cursor-pointer ${
-              formData.bookingModel === "FullCourse"
-                ? "bg-emerald-50/90 border-emerald-300 ring-2 ring-emerald-400/30 shadow-xs"
-                : "bg-emerald-50/40 border-emerald-100 hover:bg-emerald-50/70"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                الحجز للدورة كاملة (Full Course Booking)
-              </span>
-              <span className="text-[10px] uppercase font-bold text-emerald-700 bg-white px-2 py-0.5 rounded">
-                الافتراضي
-              </span>
-            </div>
-            <p className="text-[11px] text-emerald-800 mt-2 leading-relaxed">
-              إذا كانت المجموعة نفسها تحضر كل جلسات الدورة، يمثل الحدث مجموعة واحدة بسعة مشتركة. حجز مقعدين يعني تسجيل شخصين في الدورة كاملة.
-            </p>
-          </div>
-
-          {/* Yellow Card: Per-Session Booking */}
-          <div
-            onClick={() => handleInputChange("bookingModel", "PerSession")}
-            className={`p-4 rounded-xl border transition-all cursor-pointer ${
-              formData.bookingModel === "PerSession"
-                ? "bg-amber-50/90 border-amber-300 ring-2 ring-amber-400/30 shadow-xs"
-                : "bg-amber-50/40 border-amber-100 hover:bg-amber-50/70"
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-amber-600" />
-                الحجز لكل جلسة مستقلة (Per-Session / Occurrences)
-              </span>
-              <span className="text-[10px] font-semibold text-amber-700 bg-white px-2 py-0.5 rounded">
-                مواعيد فرعية
-              </span>
-            </div>
-            <p className="text-[11px] text-amber-800 mt-2 leading-relaxed">
-              إذا كان العميل يحجز الأحد أو الثلاثاء كلاً على حدة، يحتاج النظام أحداثاً منفصلة أو جدول مواعيد فرعي مثل <code>BookingOccurrence</code> مع سعة وحجوزات لكل موعد مستقل.
-            </p>
-          </div>
-        </div>
-      </div>
+     
 
       {/* Warnings & Compatibility Alerts */}
       {(capacityWarning || leaseContractWarning) && (

@@ -353,13 +353,28 @@ export async function getEventById(id) {
       });
       const rawAttendees = attendeesRes?.data || attendeesRes || {};
       const attendeesList = rawAttendees?.items || (Array.isArray(rawAttendees) ? rawAttendees : []);
-      linkedReservations = attendeesList.map((att, idx) => ({
-        id: att.id || `#${idx + 1}`,
-        customer: att.customerName || "Customer",
-        customerName: att.customerName || "Customer",
-        qty: att.quantity || 1,
-        status: att.status || "Booked",
-      }));
+      linkedReservations = attendeesList.map((att, idx) => {
+        const quantity = Number(att.quantity) || 1;
+        const canceledQuantity = Number(att.canceledQuantity) || 0;
+        const activeQuantity = Math.max(0, quantity - canceledQuantity);
+        return {
+          id: att.id || `#${idx + 1}`,
+          customerId: att.customerId || "",
+          customerName: att.customerName || "Customer",
+          customer: att.customerName || "Customer",
+          bookingEventId: att.bookingEventId || id,
+          bookingEventTitle: att.bookingEventTitle || e.title || "Event",
+          eventStartDate: att.eventStartDate || e.startDate,
+          eventEndDate: att.eventEndDate || e.endDate,
+          quantity,
+          canceledQuantity,
+          activeQuantity,
+          qty: quantity,
+          status: att.status || "Booked",
+          invoiceId: att.invoiceId || null,
+          raw: att,
+        };
+      });
     } catch {
       // Ignored if no attendees found
     }

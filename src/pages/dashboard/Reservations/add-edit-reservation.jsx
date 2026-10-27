@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus,
@@ -40,14 +40,17 @@ import {
 
 export default function AddEditReservation() {
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const eventIdFromQuery = searchParams.get("bookingEventId") || searchParams.get("eventId") || "";
+
   // Strict 14 fields matching CreateCustomerReservationDto
   const [formData, setFormData] = useState({
     customerId: "",
-    bookingEventId: "",
+    bookingEventId: eventIdFromQuery || "",
     quantity: "1",
     invoicePatternId: "",
     currencyId: "",
@@ -130,6 +133,20 @@ export default function AddEditReservation() {
       setFormData((prev) => ({ ...prev, currencyId: lookups.currencies[0].id }));
     }
   }, [lookups]);
+
+  // If bookingEventId was passed via query, sync default advance price
+  useEffect(() => {
+    if (eventIdFromQuery && lookups.events?.length > 0 && !isEdit && !formData.paidAmount) {
+      const ev = lookups.events.find((e) => String(e.id) === String(eventIdFromQuery));
+      if (ev) {
+        setFormData((prev) => ({
+          ...prev,
+          bookingEventId: eventIdFromQuery,
+          paidAmount: String(ev.advancePayment || ev.price || 0),
+        }));
+      }
+    }
+  }, [eventIdFromQuery, lookups.events, isEdit]);
 
   // Selected Event metadata for capacity checks & pricing
   const selectedEvent = useMemo(() => {
@@ -347,7 +364,6 @@ export default function AddEditReservation() {
           { label: "Reservations", href: "/dashboard/reservations" },
           { label: isEdit ? "Edit Reservation" : "New Reservation" },
         ]}
-        infoTooltip="ربط العميل بالكمية المطلوبة في الحدث، إصدار الفاتورة آلياً، والتحقق التلقائي من توافر المقاعد."
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -372,36 +388,7 @@ export default function AddEditReservation() {
         }
       />
 
-      {/* Guidance Card: System Cycle */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                دورة حجز العميل والمقاعد المعتمدة
-              </span>
-              <span className="text-xs text-slate-500">
-                التحقق التلقائي من توافر المقاعد: المحجوز الحالي + الطلب &le; سعة الحدث
-              </span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              يتم إنشاء الفاتورة الآلية وفق نمط الفاتورة المعتمد، وتحديث المقاعد المتاحة في الحدث فور إتمام الحجز لضمان عدم تجاوز السعة وتطابق الحركات المحاسبية.
-            </p>
-          </div>
-        </div>
-
-        {/* Example Box */}
-        <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/80 text-emerald-900 space-y-1 shadow-2xs">
-          <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-900">
-            <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-            <span>مثال عملي:</span>
-          </div>
-          <p className="text-[11px] text-emerald-800 leading-relaxed">
-            حدث سعته 20 مقعداً، سعر المقعد $25. حجز العميل 3 مقاعد: قيمة الحجز $75، والمحجوز يصبح 3 مقاعد، والمتبقي الشاغر 17 مقعداً.
-          </p>
-        </div>
-      </div>
+     
 
       {/* Seat Availability Warning Alert */}
       {capacityCheck.isExceeded && (
