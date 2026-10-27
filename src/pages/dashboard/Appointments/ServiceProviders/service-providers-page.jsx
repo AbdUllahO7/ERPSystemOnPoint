@@ -20,6 +20,7 @@ import {
   getServiceProvidersStats,
   deleteServiceProvider,
   DAYS_OF_WEEK,
+  INITIAL_SERVICE_PROVIDERS_STATS,
 } from "@/services/appointments";
 
 export default function ServiceProvidersPage() {
@@ -38,7 +39,10 @@ export default function ServiceProvidersPage() {
     queryKey: ["serviceProvidersStats"],
     queryFn: getServiceProvidersStats,
   });
-  const stats = statsData?.data || [];
+  const stats =
+    statsData?.data && statsData.data.length > 0
+      ? statsData.data
+      : INITIAL_SERVICE_PROVIDERS_STATS;
 
   // Params for Providers Query
   const params = useMemo(
@@ -118,59 +122,80 @@ export default function ServiceProvidersPage() {
   const columns = useMemo(
     () => [
       {
-        accessorKey: "employeeId",
-        header: "Employee ID",
-        cell: ({ row }) => (
-          <span className="font-normal text-[#1e293b] text-sm">
-            {row.original.employeeId}
-          </span>
-        ),
+        accessorKey: "id",
+        header: "Provider ID",
+        cell: ({ row }) => {
+          const id = row.original.id;
+          const shortId =
+            typeof id === "string" && id.length > 8
+              ? `${id.slice(0, 8)}...`
+              : id;
+          return (
+            <Link
+              to={`/dashboard/appointments/service-providers/${id}`}
+              className="font-semibold text-primary hover:underline font-mono text-xs"
+              title={id}
+            >
+              {shortId}
+            </Link>
+          );
+        },
       },
       {
-        accessorKey: "name",
-        header: "Name",
-        cell: ({ row }) => (
-          <Link
-            to={`/dashboard/appointments/service-providers/${row.original.id}`}
-            className="text-sm font-normal text-slate-800 hover:text-blue-600 transition-colors"
-          >
-            {row.original.name}
-          </Link>
-        ),
-      },
-      {
-        accessorKey: "phone",
-        header: "Phone",
-        cell: ({ row }) => (
-          <span className="text-sm font-normal text-slate-700">
-            {row.original.phone}
-          </span>
-        ),
+        accessorKey: "hrEmployeeId",
+        header: "HR Employee ID",
+        cell: ({ row }) => {
+          const empId = row.original.hrEmployeeId;
+          return empId ? (
+            <span
+              className="font-mono text-xs text-foreground bg-muted px-2 py-0.5 rounded"
+              title={empId}
+            >
+              {empId.length > 8 ? `${empId.slice(0, 8)}...` : empId}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground/60">— (Unassigned)</span>
+          );
+        },
       },
       {
         accessorKey: "workingDays",
         header: "Working Days",
         cell: ({ row }) => {
           const days = row.original.workingDays;
-          const text = Array.isArray(days) ? days.join("-") : days || "-";
-          return <span className="text-sm font-normal text-slate-700">{text}</span>;
+          const daysList = Array.isArray(days) ? days : [];
+          return (
+            <div className="flex flex-wrap gap-1">
+              {daysList.length > 0 ? (
+                daysList.map((d) => (
+                  <span
+                    key={d}
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                  >
+                    {d}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-muted-foreground">All Days Off</span>
+              )}
+            </div>
+          );
         },
       },
       {
         accessorKey: "status",
         header: "Status",
         cell: ({ row }) => {
-          const status = row.original.status || "Active";
-          const isActive = status.toLowerCase() === "active";
+          const isActive = Boolean(row.original.isActive);
           return (
             <span
-              className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-normal ${
+              className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                 isActive
-                  ? "bg-[#eaf8f1] text-[#22c55e]"
-                  : "bg-slate-100 text-slate-500"
+                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
+                  : "bg-gray-100 text-gray-600 border border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700"
               }`}
             >
-              {status}
+              {isActive ? "Active" : "Inactive"}
             </span>
           );
         },
@@ -239,7 +264,7 @@ export default function ServiceProvidersPage() {
         columns={columns}
         isLoading={isLoading}
         rowActionsMenu={rowActionsMenu}
-        searchPlaceholder="Search by id or employee name..."
+        searchPlaceholder="Search by provider ID or HR employee ID..."
         searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);

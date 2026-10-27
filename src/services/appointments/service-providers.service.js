@@ -115,17 +115,30 @@ export async function getServiceProviders(params = {}) {
     const totalCount = raw?.totalCount || items.length;
     const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-    const mappedItems = items.map((p, idx) => ({
-      id: p.id || idx + 1,
-      employeeId: p.employeeId || p.hrEmployeeId || `#${idx + 101}`,
-      name: p.name || p.employeeName || p.hrEmployee?.name || `Provider ${idx + 1}`,
-      phone: p.phone || p.phoneNumber || p.hrEmployee?.phone || "-",
-      workingDays: Array.isArray(p.workingDays) && p.workingDays.length > 0 
-        ? p.workingDays 
-        : ["Sun", "Mon", "Tue", "Wed", "Thu"],
-      status: p.isActive === false || p.status === "Inactive" ? "Inactive" : "Active",
-      raw: p,
-    }));
+    const mappedItems = items.map((p, idx) => {
+      const schedule = Array.isArray(p.weeklySchedule) ? p.weeklySchedule : [];
+      const activeWorkingDays = schedule
+        .filter((w) => !w.isDayOff)
+        .map((w) => w.dayOfWeek);
+
+      const workingDaysShort = activeWorkingDays.map((day) => {
+        const d = DAYS_OF_WEEK.find(
+          (item) => item.full.toLowerCase() === (day || "").toLowerCase()
+        );
+        return d ? d.id : day;
+      });
+
+      return {
+        id: p.id || idx + 1,
+        hrEmployeeId: p.hrEmployeeId || null,
+        isActive: Boolean(p.isActive ?? true),
+        status: p.isActive === false ? "Inactive" : "Active",
+        weeklySchedule: schedule,
+        workingDays: workingDaysShort,
+        workingDaysCount: activeWorkingDays.length,
+        raw: p,
+      };
+    });
 
     return {
       status: 200,
@@ -151,43 +164,21 @@ export async function getServiceProviderById(id) {
     });
 
     const p = res?.data || res || {};
-
-    // Extract working days from weeklySchedule if present
-    let workingDays = ["Sun", "Mon", "Tue", "Wed", "Thu"];
-    if (Array.isArray(p.weeklySchedule) && p.weeklySchedule.length > 0) {
-      workingDays = p.weeklySchedule
-        .filter((w) => !w.isDayOff)
-        .map((w) => {
-          const matched = DAYS_OF_WEEK.find(
-            (d) => d.full.toLowerCase() === (w.dayOfWeek || "").toLowerCase()
-          );
-          return matched ? matched.id : w.dayOfWeek;
-        });
-    } else if (Array.isArray(p.workingDays)) {
-      workingDays = p.workingDays;
-    }
+    const schedule = Array.isArray(p.weeklySchedule) ? p.weeklySchedule : [];
+    const activeWorkingDays = schedule
+      .filter((w) => !w.isDayOff)
+      .map((w) => w.dayOfWeek);
 
     return {
       status: 200,
       data: {
         id: p.id || id,
-        hrEmployeeId: p.hrEmployeeId || p.employeeId || "",
-        employeeId: p.hrEmployeeId || p.employeeId || `#${id}`,
-        name:
-          p.name ||
-          p.employeeName ||
-          p.hrEmployee?.name ||
-          `${p.hrEmployee?.first_Name || ""} ${p.hrEmployee?.last_Name || ""}`.trim() ||
-          "Service Provider",
-        phone:
-          p.phone ||
-          p.phoneNumber ||
-          p.hrEmployee?.phone_Number ||
-          p.hrEmployee?.phone ||
-          "-",
-        workingDays,
-        weeklySchedule: p.weeklySchedule || [],
-        status: p.isActive === false || p.status === "Inactive" ? "Inactive" : "Active",
+        hrEmployeeId: p.hrEmployeeId || null,
+        isActive: Boolean(p.isActive ?? true),
+        status: p.isActive === false ? "Inactive" : "Active",
+        weeklySchedule: schedule,
+        workingDays: activeWorkingDays,
+        workingDaysCount: activeWorkingDays.length,
         raw: p,
       },
     };
