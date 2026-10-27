@@ -7,12 +7,10 @@ import {
   Trash2,
   ArrowUp,
   ArrowDown,
-  Sparkles,
-  Users,
   Calendar,
-  CheckCircle2,
-  DollarSign,
-  XCircle,
+  FileText,
+  Building2,
+  Users,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -33,7 +31,23 @@ import {
   deleteReservation,
   RESERVATION_STATUS_TABS,
   getReservationLookups,
+  INITIAL_RESERVATIONS_STATS,
 } from "@/services/reservations";
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function ReservationsPage() {
   const [search, setSearch] = useState("");
@@ -41,7 +55,6 @@ export default function ReservationsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [deleteRowId, setDeleteRowId] = useState(null);
-  const [selectedPayment, setSelectedPayment] = useState("all");
   const [selectedCustomer, setSelectedCustomer] = useState("all");
   const [selectedEvent, setSelectedEvent] = useState("all");
 
@@ -53,14 +66,17 @@ export default function ReservationsPage() {
     queryKey: ["reservationLookups"],
     queryFn: getReservationLookups,
   });
-  const lookups = lookupsData?.data || { paymentMethods: [], customers: [], events: [] };
+  const lookups = lookupsData?.data || { customers: [], events: [] };
 
-  // Stats Query
+  // Stats Query with Fallback
   const { data: statsData } = useQuery({
     queryKey: ["reservationsStats"],
     queryFn: getReservationsStats,
   });
-  const stats = statsData?.data || [];
+  const stats =
+    statsData?.data && statsData.data.length > 0
+      ? statsData.data
+      : INITIAL_RESERVATIONS_STATS;
 
   // Params for Reservations Query
   const params = useMemo(
@@ -69,11 +85,10 @@ export default function ReservationsPage() {
       PageSize: 10,
       SearchTerm: search || undefined,
       Status: activeTab !== "all" ? activeTab : undefined,
-      Payment: selectedPayment !== "all" ? selectedPayment : undefined,
       CustomerId: selectedCustomer !== "all" ? selectedCustomer : undefined,
       BookingEventId: selectedEvent !== "all" ? selectedEvent : undefined,
     }),
-    [page, search, activeTab, selectedPayment, selectedCustomer, selectedEvent]
+    [page, search, activeTab, selectedCustomer, selectedEvent]
   );
 
   // Reservations Query
@@ -95,7 +110,7 @@ export default function ReservationsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries(["reservations"]);
       queryClient.invalidateQueries(["events"]);
-      toast.success("Reservation canceled and released successfully!");
+      toast.success("Reservation canceled successfully!");
       setDeleteRowId(null);
     },
     onError: () => {
@@ -116,14 +131,8 @@ export default function ReservationsPage() {
             onClick: (row) => navigate(`/dashboard/reservations/${row.id}`),
           },
           {
-            key: "edit",
-            label: "Edit Reservation (تعديل الحجز)",
-            icon: Pencil,
-            onClick: (row) => navigate(`/dashboard/reservations/edit/${row.id}`),
-          },
-          {
             key: "delete",
-            label: "Cancel / Refund (إلغاء واسترداد)",
+            label: "Cancel Reservation (إلغاء الحجز)",
             icon: Trash2,
             variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
@@ -157,39 +166,74 @@ export default function ReservationsPage() {
       {
         accessorKey: "id",
         header: "Ref / ID",
-        cell: ({ row }) => (
-          <Link
-            to={`/dashboard/reservations/${row.original.id}`}
-            className="text-xs font-semibold text-[#0066d1] hover:underline font-mono"
-          >
-            #{row.original.id}
-          </Link>
-        ),
+        cell: ({ row }) => {
+          const id = row.original.id;
+          const shortId =
+            typeof id === "string" && id.length > 8
+              ? `${id.slice(0, 8)}...`
+              : id;
+          return (
+            <Link
+              to={`/dashboard/reservations/${id}`}
+              className="text-xs font-semibold text-[#0066d1] hover:underline font-mono"
+              title={id}
+            >
+              #{shortId}
+            </Link>
+          );
+        },
       },
       {
-        accessorKey: "customer",
+        accessorKey: "customerName",
         header: "Customer",
         cell: ({ row }) => (
           <span className="text-xs font-semibold text-slate-800 block">
-            {row.original.customer}
+            {row.original.customerName || row.original.customer || "—"}
           </span>
         ),
       },
       {
-        accessorKey: "event",
+        accessorKey: "bookingEventTitle",
         header: "Event",
-        cell: ({ row }) => (
-          <span className="text-xs font-medium text-slate-700 block">
-            {row.original.event}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const eventTitle = row.original.bookingEventTitle || row.original.event || "—";
+          const eventId = row.original.bookingEventId;
+          return eventId ? (
+            <Link
+              to={`/dashboard/events/${eventId}`}
+              className="text-xs font-medium text-slate-700 hover:text-blue-600 transition-colors block"
+            >
+              {eventTitle}
+            </Link>
+          ) : (
+            <span className="text-xs font-medium text-slate-700 block">
+              {eventTitle}
+            </span>
+          );
+        },
       },
       {
-        accessorKey: "qty",
+        accessorKey: "eventPeriod",
+        header: "Event Dates",
+        cell: ({ row }) => {
+          const start = formatDate(row.original.eventStartDate);
+          const end = formatDate(row.original.eventEndDate);
+          return (
+            <div className="flex items-center gap-1.5 text-xs text-slate-600">
+              <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span>
+                {start} – {end}
+              </span>
+            </div>
+          );
+        },
+      },
+      {
+        accessorKey: "seats",
         header: "Seats (Active / Total)",
         cell: ({ row }) => {
-          const total = row.original.qty || 1;
-          const canceled = row.original.canceled || 0;
+          const total = Number(row.original.quantity) || 1;
+          const canceled = Number(row.original.canceledQuantity) || 0;
           const active = Math.max(0, total - canceled);
           return (
             <div>
@@ -204,31 +248,28 @@ export default function ReservationsPage() {
         },
       },
       {
-        accessorKey: "payment",
-        header: "Payment Method",
-        cell: ({ row }) => (
-          <span className="text-xs font-normal text-slate-600">
-            {row.original.payment}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "paid",
-        header: "Paid (المستلم)",
-        cell: ({ row }) => (
-          <span className="text-xs font-bold text-[#0066d1]">
-            {row.original.paid}
-          </span>
-        ),
-      },
-      {
-        accessorKey: "total",
-        header: "Total (الإجمالي)",
-        cell: ({ row }) => (
-          <span className="text-xs font-bold text-slate-800">
-            {row.original.total}
-          </span>
-        ),
+        accessorKey: "invoiceId",
+        header: "Invoice",
+        cell: ({ row }) => {
+          const invoiceId = row.original.invoiceId;
+          if (!invoiceId) {
+            return <span className="text-xs text-slate-400">—</span>;
+          }
+          const shortInvoice =
+            typeof invoiceId === "string" && invoiceId.length > 8
+              ? `${invoiceId.slice(0, 8)}...`
+              : invoiceId;
+          return (
+            <Link
+              to={`/dashboard/accounting/invoices/${invoiceId}`}
+              className="inline-flex items-center gap-1 text-xs font-mono text-[#0066d1] hover:underline"
+              title={invoiceId}
+            >
+              <FileText className="w-3 h-3 text-slate-400" />
+              <span>#{shortInvoice}</span>
+            </Link>
+          );
+        },
       },
       {
         accessorKey: "status",
@@ -254,39 +295,11 @@ export default function ReservationsPage() {
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Reservations & Bookings (حجز العميل والإلغاء الجزئي)"
-        infoTooltip="إدارة حجوزات العملاء في الفعاليات، متابعة المقاعد النشطة والملغاة، وتسوية المستحقات المالية."
+        title="Reservations & Bookings (حجوزات الفعاليات)"
+        infoTooltip="إدارة حجوزات العملاء في الفعاليات، متابعة المقاعد، وتفاصيل الفواتير."
       />
 
-      {/* Page 8 System Guidance Banner */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                08 / فهم النظام: حجز العميل والإلغاء الجزئي
-              </span>
-              <span className="text-xs text-slate-500">الحدث يحدد العرض المتاح، والحجز يربط العميل بالكمية التي اختارها</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>قواعد الحجز والإلغاء المعتمدة:</strong> التحقق من توفر المقاعد (المحجوز الحالي + الطلب &le; سعة الحدث). عند الإلغاء الجزئي أو الكامل، يتم تحرير المقاعد للحدث آلياً، والتحقق من التسوية المالية: <em>المرتجع ليس دائماً استرداداً نقدياً</em>؛ فالفواتير الآجلة أو المدفوعة جزئياً يقل الدين على العميل أولاً قبل دفع أي مبالغ نقدية.
-            </p>
-          </div>
-          <div className="flex flex-wrap lg:flex-col gap-2 shrink-0 text-[11px] text-slate-600">
-            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>تحقق السعة: المحجوز + الطلب &le; السعة</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
-              <XCircle className="w-3.5 h-3.5 text-rose-600" />
-              <span>إلغاء جزئي: تحرير المقاعد وتسوية الدين</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Top 4 Stats Cards matching mockup */}
+      {/* Top 4 Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((card, idx) => {
           const Icon = card.icon;
@@ -411,37 +424,11 @@ export default function ReservationsPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Payment Method (طريقة الدفع)
-              </Label>
-              <Select
-                value={selectedPayment}
-                onValueChange={(val) => {
-                  setSelectedPayment(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Payment" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Payment Methods</SelectItem>
-                  {lookups.paymentMethods.map((pm) => (
-                    <SelectItem key={pm.id} value={pm.id}>
-                      {pm.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="pt-2 flex justify-end gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setSelectedPayment("all");
                   setSelectedCustomer("all");
                   setSelectedEvent("all");
                   setPage(1);
@@ -468,8 +455,8 @@ export default function ReservationsPage() {
       <DeleteConfirmDialog
         open={!!deleteRowId}
         onOpenChange={(open) => !open && setDeleteRowId(null)}
-        title="Cancel Reservation & Release Seats"
-        description="Are you sure you want to cancel this reservation? All remaining seats will be released back to the event capacity."
+        title="Cancel Reservation"
+        description="Are you sure you want to cancel this reservation?"
         onConfirm={() => deleteMutation.mutate(deleteRowId)}
         isLoading={deleteMutation.isPending}
       />

@@ -1,30 +1,28 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  RotateCw,
-  Wallet,
   Calendar as CalendarIcon,
   CheckCircle2,
-  Banknote,
-  AlertTriangle,
-  Sparkles,
   Users,
-  DollarSign,
   Building2,
   FileText,
-  ShieldAlert,
   ArrowRight,
-  Info,
-  Loader2,
+  ArrowLeft,
   XCircle,
+  Copy,
+  Check,
+  RotateCw,
+  Ticket,
+  Clock,
+  Sparkles,
+  RefreshCw,
 } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { DynamicModal } from "@/components/common/dynamic-modal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -37,160 +35,111 @@ import {
   getReservationById,
   cancelReservationTickets,
   updateReservationStatus,
-  updateReservation,
-  getReservationLookups,
 } from "@/services/reservations";
+
+function formatDate(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return dateStr;
+  }
+}
 
 export default function ReservationDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const [copiedKey, setCopiedKey] = useState(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const [cancelQty, setCancelQty] = useState("1");
   const [cancelPaymentMethod, setCancelPaymentMethod] = useState("Cash");
-  const [cancelNotes, setCancelNotes] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("Completed");
-
-  const [paymentForm, setPaymentForm] = useState({
-    amount: "",
-    dueDate: new Date().toISOString().split("T")[0],
-    notes: "",
-  });
-
-  // Lookups Query (for invoice patterns & payment methods)
-  const { data: lookupsData } = useQuery({
-    queryKey: ["reservationLookups"],
-    queryFn: getReservationLookups,
-  });
-  const lookups = lookupsData?.data || { invoicePatterns: [] };
+  const [selectedStatus, setSelectedStatus] = useState("Booked");
 
   // Reservation Query
-  const { data: reservationData, isLoading } = useQuery({
+  const { data: reservationData, isLoading, refetch } = useQuery({
     queryKey: ["reservation", id],
     queryFn: () => getReservationById(id),
+    enabled: Boolean(id),
   });
+
   const reservation = reservationData?.data || {};
 
   const totalSeats = Number(reservation.quantity) || 1;
   const canceledSeats = Number(reservation.canceledQuantity) || 0;
   const activeSeats = Math.max(0, totalSeats - canceledSeats);
 
-  const numericTotal = Number(reservation.numericTotal) || 0;
-  const numericPaid = Number(reservation.numericPaid) || 0;
-  const numericDue = Number(reservation.numericDue) || 0;
-  const unitPrice = totalSeats > 0 ? numericTotal / totalSeats : 0;
+  const handleCopy = (text, key) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    toast.success("Copied to clipboard!");
+    setTimeout(() => setCopiedKey(null), 2000);
+  };
 
-  // Partial / Full Cancellation Financial Calculator (Page 8: المرتجع ليس دائماً استرداداً نقدياً)
-  const cancellationMath = useMemo(() => {
-    const qtyToCancel = Math.min(activeSeats, Math.max(1, Number(cancelQty) || 1));
-    const cancellationValue = qtyToCancel * unitPrice;
-
-    // Debt reduction vs Cash refund logic:
-    // If client owes money (numericDue > 0), reduce due balance first!
-    const debtReduction = Math.min(numericDue, cancellationValue);
-    const cashRefund = Math.max(0, cancellationValue - debtReduction);
-
-    const isFullCancellation = qtyToCancel === activeSeats;
-    const remainingAfterCancel = Math.max(0, activeSeats - qtyToCancel);
-
-    return {
-      qtyToCancel,
-      cancellationValue,
-      debtReduction,
-      cashRefund,
-      isFullCancellation,
-      remainingAfterCancel,
-    };
-  }, [cancelQty, activeSeats, unitPrice, numericDue]);
-
-  // Cancel Tickets Mutation (Dedicated financial & seat release function)
+  // Cancel Tickets Mutation
   const cancelTicketsMutation = useMutation({
     mutationFn: () =>
-      cancelReservationTickets(id, cancellationMath.qtyToCancel, {
+      cancelReservationTickets(id, Math.min(activeSeats, Math.max(1, Number(cancelQty) || 1)), {
         paymentMethod: cancelPaymentMethod,
-        notes: cancelNotes,
       }),
-    onSuccess: (res) => {
+    onSuccess: () => {
       queryClient.invalidateQueries(["reservation", id]);
       queryClient.invalidateQueries(["reservations"]);
       queryClient.invalidateQueries(["events"]);
-      toast.success(res?.message || "تم إلغاء التذاكر وتحرير المقاعد بنجاح!");
+      toast.success("Tickets canceled and seats released successfully!");
       setIsCancelModalOpen(false);
       setCancelQty("1");
-      setCancelNotes("");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || "فشل إلغاء التذاكر";
-      toast.error(msg);
+      console.error("Failed to cancel tickets:", err);
+      toast.error("Failed to cancel tickets!");
     },
   });
 
-  // Change Operational Status Mutation (With rule: prevent CheckedIn -> NoShow)
+  // Change Status Mutation
   const changeStatusMutation = useMutation({
-    mutationFn: (status) => updateReservationStatus(id, status),
-    onSuccess: (res) => {
+    mutationFn: (newStatus) => updateReservationStatus(id, newStatus),
+    onSuccess: () => {
       queryClient.invalidateQueries(["reservation", id]);
       queryClient.invalidateQueries(["reservations"]);
-      toast.success(res?.message || "تم تحديث الحالة التشغيلية للحجز بنجاح!");
+      toast.success("Reservation status updated successfully!");
       setIsStatusModalOpen(false);
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || "فشل تحديث الحالة";
-      toast.error(msg);
+      console.error("Failed to update status:", err);
+      toast.error("Failed to update status!");
     },
   });
-
-  // Add Installment Mutation
-  const addInstallmentMutation = useMutation({
-    mutationFn: (newSchedule) =>
-      updateReservation(id, { paymentSchedule: newSchedule }),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["reservation", id]);
-      toast.success("تمت إضافة القسط المجدول بنجاح!");
-      setIsPaymentModalOpen(false);
-      setPaymentForm({ amount: "", dueDate: new Date().toISOString().split("T")[0], notes: "" });
-    },
-  });
-
-  const handleAddPayment = (e) => {
-    e?.preventDefault();
-    if (!paymentForm.amount || Number(paymentForm.amount) <= 0) {
-      toast.error("يرجى إدخال مبلغ صحيح للقسط");
-      return;
-    }
-
-    const currentSchedule = reservation.paymentSchedule || [];
-    const newInstallment = {
-      id: Date.now(),
-      amount: Number(paymentForm.amount),
-      dueDate: paymentForm.dueDate,
-      notes: paymentForm.notes,
-    };
-
-    addInstallmentMutation.mutate([...currentSchedule, newInstallment]);
-  };
 
   const handleStatusSubmit = (e) => {
     e?.preventDefault();
-
-    // Page 8 Rule: منع اعتبار من سجل حضوره «لم يحضر»
-    const currentStatusNormalized = String(reservation.status || "").toLowerCase().replace("-", "");
-    const targetStatusNormalized = String(selectedStatus || "").toLowerCase().replace("-", "");
-
-    if (currentStatusNormalized === "checkedin" && targetStatusNormalized === "noshow") {
-      toast.error("مخالفة لقواعد النظام: لا يمكن تحويل حالة العميل إلى «لم يحضر» بعد أن تم تسجيل حضوره بالفعل (Checked-In).");
-      return;
-    }
-
-    if (targetStatusNormalized === "canceled") {
-      toast.error("الإلغاء المالي وتحرير المقاعد يتم حصراً عبر زر «إلغاء التذاكر» لضمان تسوية المرتجع والسعة.");
-      return;
-    }
-
     changeStatusMutation.mutate(selectedStatus);
   };
 
@@ -214,373 +163,304 @@ export default function ReservationDetails() {
 
   if (isLoading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-[#0066d1]" />
+      <div className="space-y-6">
+        <PageTitle
+          title="Reservation Details"
+          breadcrumbs={[
+            { label: "Reservations", href: "/dashboard/reservations" },
+            { label: "Details" },
+          ]}
+        />
+        <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
+          <div className="inline-block animate-spin text-primary mb-3">
+            <RefreshCw className="w-8 h-8" />
+          </div>
+          <p className="text-slate-500 text-sm">Loading reservation details...</p>
+        </div>
       </div>
     );
   }
 
-  const isCheckedIn = String(reservation.status || "").toLowerCase().replace("-", "") === "checkedin";
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <PageTitle
-        title={`Reservation Details (#${reservation.id})`}
-        breadcrumbLinks={[
-          { label: "Reservations", href: "/dashboard/reservations" },
-          { label: `Reservation #${reservation.id}` },
-        ]}
-        infoTooltip="تفاصيل حجز العميل، المبالغ المسددة، التذاكر النشطة والملغاة، وتسوية المرتجعات."
-        actions={
-          <div className="flex items-center gap-2">
-            {/* Dedicated Cancel Tickets Button */}
-            {activeSeats > 0 && (
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setCancelQty("1");
-                  setIsCancelModalOpen(true);
-                }}
-                className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-semibold h-10 gap-1.5 cursor-pointer"
-              >
-                <XCircle className="w-3.5 h-3.5 text-rose-600" />
-                Cancel Tickets (إلغاء التذاكر)
-              </Button>
-            )}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <PageTitle
+          title={`Reservation Details (#${reservation.id ? reservation.id.slice(0, 8) : id})`}
+          breadcrumbs={[
+            { label: "Reservations", href: "/dashboard/reservations" },
+            { label: "Reservation Details" },
+          ]}
+          infoTooltip="View customer event reservation details, seats allocation, and invoice linkage."
+        />
 
-            {/* Change Operational Status Button */}
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/dashboard/reservations")}
+            className="border-slate-200 hover:bg-slate-50 text-slate-700"
+          >
+            <ArrowLeft className="w-4 h-4 mr-1.5" />
+            Back to List
+          </Button>
+
+          {/* Change Status Button */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectedStatus(reservation.status || "Booked");
+              setIsStatusModalOpen(true);
+            }}
+            className="border-slate-200 hover:bg-slate-50 text-slate-700"
+          >
+            <RotateCw className="w-4 h-4 mr-1.5 text-[#0066d1]" />
+            Change Status
+          </Button>
+
+          {/* Cancel Tickets Button */}
+          {activeSeats > 0 && (
             <Button
-              variant="outline"
+              type="button"
+              size="sm"
               onClick={() => {
-                setSelectedStatus(reservation.status || "Booked");
-                setIsStatusModalOpen(true);
+                setCancelQty("1");
+                setIsCancelModalOpen(true);
               }}
-              className="rounded-xl border-slate-200/90 bg-white text-slate-700 hover:bg-slate-50 text-xs font-semibold h-10 gap-2 cursor-pointer"
+              className="bg-rose-600 hover:bg-rose-700 text-white"
             >
-              <RotateCw className="w-3.5 h-3.5 text-[#0066d1]" />
-              Change Status (الحالة التشغيلية)
+              <XCircle className="w-4 h-4 mr-1.5" />
+              Cancel Tickets
             </Button>
-          </div>
-        }
-      />
-
-      {/* Page 8 System Guidance Card */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm space-y-3">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                08 / فهم النظام: حجز العميل والإلغاء الجزئي
-              </span>
-              <span className="text-xs text-slate-500">قواعد الإلغاء، تسوية المرتجع، والانتقالات المسموحة</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>قاعدة المرتجع والتسوية:</strong> المرتجع ليس دائماً استرداداً نقدياً! إذا كانت الفاتورة آجلة أو مدفوعة جزئياً، يقل الدين على العميل أولاً. كما أن تغيير الحالة التشغيلية مخصص للحضور والإكمال، بينما يمر الإلغاء المالي وتحرير المقاعد حصراً عبر دالة الإلغاء المخصصة.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="bg-white/90 p-3 rounded-xl border border-slate-200/60 shadow-2xs text-center">
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider font-medium">المقاعد النشطة</p>
-              <span className="text-base font-bold text-[#0066d1] block mt-0.5">
-                {activeSeats} / {totalSeats} مقعد
-              </span>
-            </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* Main 2-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left Column (8 cols) */}
-        <div className="lg:col-span-8 space-y-6">
-          {/* Card 1: Customer & Event */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#0066d1]" />
-                Customer & Event Details
-              </h2>
-              {reservation.bookingEventId && (
-                <Link
-                  to={`/dashboard/events/${reservation.bookingEventId}`}
-                  className="text-xs text-[#0066d1] font-semibold hover:underline flex items-center gap-1"
-                >
-                  View Event <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              )}
+      {/* Main Reservation Overview Card */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0066d1] to-[#0d3963] text-white flex items-center justify-center shadow-md shadow-blue-500/10 shrink-0">
+              <Ticket className="w-8 h-8 stroke-[1.8]" />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Customer (العميل)</p>
-                <p className="text-xs text-slate-600 mt-1 font-medium">
-                  {reservation.customer || reservation.customerName || "Customer"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Booking Event (الحدث)</p>
-                <p className="text-xs text-slate-600 mt-1 font-medium">
-                  {reservation.bookingEvent || reservation.eventName || "Event"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Resource / Venue (المكان)</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  {reservation.resource || "Main Hall"}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 border-t border-slate-50">
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Service Provider (مقدم الخدمة)</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  {reservation.provider || "General"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Period (الفترة)</p>
-                <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
-                  <CalendarIcon className="w-3.5 h-3.5 text-slate-400" />
-                  {reservation.period || "N/A"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Time (التوقيت)</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  {reservation.time || "09:00 - 12:00"}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 2: Financials & Ticket Breakdown */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
-            <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-[#0066d1]" />
-              Amounts & Seat Allocation (المبالغ والمقاعد)
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              <div>
-                <p className="text-xs font-semibold text-slate-800">حالة المقاعد (Seats)</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="text-xs font-bold text-slate-800">
-                    {totalSeats} إجمالي
-                  </span>
-                  <span className="text-xs text-slate-400">•</span>
-                  <span className="text-xs text-emerald-600 font-semibold">
-                    {activeSeats} نشط
-                  </span>
-                  {canceledSeats > 0 && (
-                    <>
-                      <span className="text-xs text-slate-400">•</span>
-                      <span className="text-xs text-rose-600 font-semibold">
-                        {canceledSeats} ملغى
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Payment Method</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  {reservation.paymentMethod || "Cash"}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Currency</p>
-                <p className="text-xs text-slate-600 mt-1">
-                  {reservation.currency || "USD"}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 border-t border-slate-50">
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Total Amount (الإجمالي)</p>
-                <p className="text-sm font-bold text-slate-800 mt-1">
-                  {reservation.total || `$${numericTotal.toFixed(2)}`}
-                </p>
-                <span className="text-[10px] text-slate-400">
-                  (${unitPrice.toFixed(2)} / مقعد)
-                </span>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Paid Amount (المدفوع)</p>
-                <p className="text-sm font-bold text-[#0066d1] mt-1">
-                  {reservation.paid || `$${numericPaid.toFixed(2)}`}
-                </p>
-                <span className="text-[10px] text-slate-400">المبلغ المستلم فعلياً</span>
-              </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">Due Debt (المتبقي كدين)</p>
-                <p className="text-sm font-bold text-amber-600 mt-1">
-                  {reservation.due || `$${numericDue.toFixed(2)}`}
-                </p>
-                <span className="text-[10px] text-slate-400">
-                  {numericDue > 0 ? "ذمة مستحقة على العميل" : "مسدد بالكامل"}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: Payment Schedule */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-base font-bold text-slate-800">
-                  جدول الأقساط والدفعات (Payment Installment Schedule)
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold text-slate-800">
+                  {reservation.customerName || "Customer Reservation"}
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  الدفعات المجدولة لتسوية المبلغ المستحق على الحجز.
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={() => setIsPaymentModalOpen(true)}
-                className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 rounded-xl font-medium text-xs h-10 gap-1.5 shadow-xs cursor-pointer"
-              >
-                <Plus className="w-4 h-4 stroke-[2.5]" />
-                Add Installment
-              </Button>
-            </div>
-
-            {(!reservation.paymentSchedule || reservation.paymentSchedule.length === 0) ? (
-              <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
-                لا توجد أقساط مجدولة مسجلة لهذا الحجز.
-              </div>
-            ) : (
-              <div className="space-y-3 pt-2">
-                {reservation.paymentSchedule.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border border-slate-200/90 rounded-2xl p-4 bg-white flex items-center justify-between"
-                  >
-                    <div className="flex items-center gap-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#0066d1] flex items-center justify-center shrink-0">
-                        <Banknote className="w-5 h-5 stroke-[2]" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800">
-                          ${item.amount}
-                        </p>
-                        <p className="text-xs text-slate-400 font-normal">
-                          استحقاق: {item.dueDate}
-                        </p>
-                      </div>
-                    </div>
-
-                    {item.notes && (
-                      <p className="text-xs text-slate-500 max-w-xs truncate">
-                        {item.notes}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Column (4 cols) */}
-        <div className="lg:col-span-4 space-y-6">
-          {/* Card 1: Operational Status */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-            <h2 className="text-base font-bold text-slate-800">
-              Operational Status
-            </h2>
-
-            <div className="space-y-3">
-              <div>
-                <p className="text-xs font-semibold text-slate-800 mb-1.5">
-                  الحالة التشغيلية الحالية
-                </p>
                 <span
-                  className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${getStatusBadgeClass(
                     reservation.status
                   )}`}
                 >
                   {reservation.status || "Booked"}
                 </span>
-                <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                  تستخدم دالة الحالة لتسجيل الحضور (Checked-In) والإكمال وعدم الحضور.
-                </p>
               </div>
-
-              <div>
-                <p className="text-xs font-semibold text-slate-800">تاريخ الحجز</p>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {reservation.createdAt || "N/A"}
-                </p>
-              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                Booked for event: <strong className="text-slate-700">{reservation.bookingEventTitle || "—"}</strong>
+              </p>
             </div>
           </div>
 
-          {/* Card 2: Ticket Cancellation Card */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-800">
-                إلغاء التذاكر وتحرير المقاعد
-              </h2>
-              <span className="text-[11px] font-semibold text-[#0066d1]">
-                {activeSeats} مقاعد نشطة
-              </span>
+          {/* Quick Seat Metrics */}
+          <div className="flex items-center gap-3">
+            <div className="px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 text-center min-w-[110px]">
+              <p className="text-xs text-slate-400 font-medium">Total Seats</p>
+              <p className="text-lg font-bold text-slate-800 mt-0.5">
+                {totalSeats}
+              </p>
             </div>
-
-            {activeSeats <= 0 ? (
-              <div className="p-3 bg-slate-50 rounded-xl text-center text-xs text-slate-500">
-                جميع تذاكر هذا الحجز ملغاة بالفعل.
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-slate-700">
-                    الكمية المراد إلغاؤها (بحد أقصى {activeSeats})
-                  </Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max={activeSeats}
-                    placeholder="1"
-                    value={cancelQty}
-                    onChange={(e) => setCancelQty(e.target.value)}
-                    className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-rose-500"
-                  />
-                </div>
-
-                <Button
-                  type="button"
-                  onClick={() => setIsCancelModalOpen(true)}
-                  className="w-full bg-rose-600 hover:bg-rose-700 active:bg-rose-800 text-white py-3 h-11 rounded-xl font-semibold text-xs shadow-xs cursor-pointer transition-colors"
-                >
-                  إجراء الإلغاء وتسوية المرتجع
-                </Button>
-
-                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                  يتم تحرير المقاعد الملغاة فورياً لتصبح متاحة في الحدث، وتسوية المرتجع المالي.
+            <div className="px-4 py-2.5 rounded-xl bg-blue-50/60 border border-blue-100 text-center min-w-[110px]">
+              <p className="text-xs text-blue-500 font-medium">Active Seats</p>
+              <p className="text-lg font-bold text-[#0066d1] mt-0.5">
+                {activeSeats}
+              </p>
+            </div>
+            {canceledSeats > 0 && (
+              <div className="px-4 py-2.5 rounded-xl bg-rose-50/60 border border-rose-100 text-center min-w-[110px]">
+                <p className="text-xs text-rose-500 font-medium">Canceled</p>
+                <p className="text-lg font-bold text-rose-600 mt-0.5">
+                  {canceledSeats}
                 </p>
               </div>
             )}
           </div>
         </div>
+
+        {/* Identifiers & Details Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 pt-6">
+          {/* Reservation ID */}
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-slate-500">Reservation ID</span>
+              <button
+                type="button"
+                onClick={() => handleCopy(reservation.id, "resId")}
+                className="text-xs text-primary hover:text-blue-700 flex items-center gap-1"
+                title="Copy ID"
+              >
+                {copiedKey === "resId" ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-emerald-600">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <p className="font-mono text-xs font-semibold text-slate-800 break-all select-all">
+              {reservation.id || id}
+            </p>
+          </div>
+
+          {/* Customer */}
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-slate-500">Customer</span>
+              {reservation.customerId && (
+                <Link
+                  to={`/dashboard/crm/customers/${reservation.customerId}`}
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
+                  View Profile <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+            <p className="text-sm font-bold text-slate-800">
+              {reservation.customerName || "—"}
+            </p>
+            {reservation.customerId && (
+              <p className="font-mono text-[11px] text-slate-400 mt-0.5 truncate">
+                {reservation.customerId}
+              </p>
+            )}
+          </div>
+
+          {/* Booking Event */}
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-slate-500">Event</span>
+              {reservation.bookingEventId && (
+                <Link
+                  to={`/dashboard/events/${reservation.bookingEventId}`}
+                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
+                >
+                  View Event <ArrowRight className="w-3 h-3" />
+                </Link>
+              )}
+            </div>
+            <p className="text-sm font-bold text-slate-800 truncate" title={reservation.bookingEventTitle}>
+              {reservation.bookingEventTitle || "—"}
+            </p>
+            {reservation.bookingEventId && (
+              <p className="font-mono text-[11px] text-slate-400 mt-0.5 truncate">
+                {reservation.bookingEventId}
+              </p>
+            )}
+          </div>
+
+          {/* Invoice */}
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-xs font-medium text-slate-500">Linked Invoice</span>
+              {reservation.invoiceId && (
+                <button
+                  type="button"
+                  onClick={() => handleCopy(reservation.invoiceId, "invId")}
+                  className="text-xs text-primary hover:text-blue-700 flex items-center gap-1"
+                  title="Copy Invoice ID"
+                >
+                  {copiedKey === "invId" ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-600">Copied</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copy</span>
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+            {reservation.invoiceId ? (
+              <Link
+                to={`/dashboard/accounting/invoices/${reservation.invoiceId}`}
+                className="font-mono text-xs font-semibold text-[#0066d1] hover:underline flex items-center gap-1 mt-1 break-all"
+              >
+                <FileText className="w-3.5 h-3.5 shrink-0" />
+                <span>{reservation.invoiceId}</span>
+              </Link>
+            ) : (
+              <p className="text-xs text-slate-400 italic mt-1">
+                No invoice associated
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Partial & Full Cancellation Settlement Modal (Page 8: ماذا يفعله الإلغاء؟ + المرتجع ليس دائماً استرداداً نقدياً) */}
+      {/* Event Schedule & Dates Card */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm">
+        <div className="flex items-center gap-3 pb-4 border-b border-slate-100 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 text-primary flex items-center justify-center">
+            <CalendarIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-base font-semibold text-slate-800">
+              Event Schedule Period (فترة وتواريخ الحدث)
+            </h3>
+            <p className="text-xs text-slate-500">
+              Operational schedule window for this booked event.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <span className="text-xs text-slate-400 font-medium block">
+              Event Start Date
+            </span>
+            <p className="text-sm font-semibold text-slate-800 mt-1 flex items-center gap-1.5">
+              <CalendarIcon className="w-4 h-4 text-[#0066d1]" />
+              {formatDateTime(reservation.eventStartDate)}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <span className="text-xs text-slate-400 font-medium block">
+              Event End Date
+            </span>
+            <p className="text-sm font-semibold text-slate-800 mt-1 flex items-center gap-1.5">
+              <CalendarIcon className="w-4 h-4 text-[#0066d1]" />
+              {formatDateTime(reservation.eventEndDate)}
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
+            <span className="text-xs text-slate-400 font-medium block">
+              Seat Status
+            </span>
+            <p className="text-sm font-semibold text-slate-800 mt-1">
+              {activeSeats} Active / {totalSeats} Total Booked
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Cancel Tickets Modal */}
       <DynamicModal
         open={isCancelModalOpen}
         onOpenChange={setIsCancelModalOpen}
-        title="إلغاء التذاكر وتسوية المرتجع المالي (Ticket Cancellation & Refund)"
+        title="Cancel Reservation Tickets (إلغاء المقاعد)"
         icon={XCircle}
         showDefaultFooter={false}
         size="md"
@@ -593,60 +473,52 @@ export default function ReservationDetails() {
           }}
           className="space-y-4 pt-1"
         >
-          {/* Summary Box */}
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
             <div className="flex justify-between text-slate-700">
-              <span>المقاعد المراد إلغاؤها:</span>
-              <strong className="text-slate-900">{cancellationMath.qtyToCancel} من أصل {activeSeats} مقعد نشط</strong>
+              <span>Total Active Seats:</span>
+              <strong className="text-slate-900">{activeSeats} Seats</strong>
             </div>
             <div className="flex justify-between text-slate-700">
-              <span>القيمة الإجمالية للجزء الملغي:</span>
-              <strong className="text-slate-900">${cancellationMath.cancellationValue.toFixed(2)}</strong>
+              <span>Quantity to Cancel:</span>
+              <strong className="text-rose-600">{cancelQty} Seats</strong>
             </div>
-            <div className="border-t border-slate-200/80 pt-2 flex justify-between text-slate-700">
-              <span>تخفيض الدين المستحق على العميل:</span>
-              <strong className="text-amber-700">-${cancellationMath.debtReduction.toFixed(2)}</strong>
+            <div className="flex justify-between text-slate-700 border-t border-slate-200/80 pt-2">
+              <span>Remaining Active Seats:</span>
+              <strong className="text-emerald-700">
+                {Math.max(0, activeSeats - (Number(cancelQty) || 1))} Seats
+              </strong>
             </div>
-            <div className="flex justify-between font-bold text-emerald-800">
-              <span>المبلغ المسترد نقداً للعميل:</span>
-              <span className="text-sm font-extrabold text-emerald-700">${cancellationMath.cashRefund.toFixed(2)}</span>
-            </div>
-          </div>
-
-          {/* Notice explaining Page 8 rule */}
-          <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-[11px] text-amber-800 space-y-1">
-            <strong>قاعدة التسوية: المرتجع ليس دائماً استرداداً نقدياً!</strong>
-            <p className="leading-relaxed">
-              إذا كانت الفاتورة آجلة أو مدفوعة جزئياً، يقل الدين على العميل أولاً. لا يُدفع له كامل قيمة الجزء الملغي نقداً دون تسوية ما دفعه فعلاً.
-            </p>
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              طريقة تسوية الاسترداد (Refund Method)
+              Quantity to Cancel (بحد أقصى {activeSeats})
+            </Label>
+            <Input
+              type="number"
+              min="1"
+              max={activeSeats}
+              value={cancelQty}
+              onChange={(e) => setCancelQty(e.target.value)}
+              className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-rose-500"
+              required
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold text-slate-700">
+              Refund Method (طريقة الاسترداد)
             </Label>
             <Select value={cancelPaymentMethod} onValueChange={setCancelPaymentMethod}>
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white">
-                <SelectValue placeholder="اختر طريقة التسوية" />
+                <SelectValue placeholder="Select refund method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Cash">نقداً (Cash Refund)</SelectItem>
-                <SelectItem value="Credit">رصيد بالبطاقة / الحساب (Card/Credit)</SelectItem>
-                <SelectItem value="Bank">تحويل بنكي (Bank Transfer)</SelectItem>
+                <SelectItem value="Cash">Cash (نقداً)</SelectItem>
+                <SelectItem value="Credit">Credit / Card (بطاقة)</SelectItem>
+                <SelectItem value="Bank">Bank Transfer (تحويل بنكي)</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">
-              سبب الإلغاء أو ملاحظات المرتجع (Reason / Notes)
-            </Label>
-            <Textarea
-              placeholder="سبب طلب العميل للإلغاء..."
-              value={cancelNotes}
-              onChange={(e) => setCancelNotes(e.target.value)}
-              className="min-h-[75px] rounded-xl border-slate-200 bg-white resize-none"
-            />
           </div>
 
           <div className="pt-2 flex justify-end gap-2.5">
@@ -656,62 +528,45 @@ export default function ReservationDetails() {
               onClick={() => setIsCancelModalOpen(false)}
               className="h-11 px-5 rounded-xl border-slate-200"
             >
-              تراجع
+              Back
             </Button>
             <Button
               type="submit"
               disabled={cancelTicketsMutation.isPending}
               className="h-11 px-6 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs"
             >
-              {cancelTicketsMutation.isPending && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
-              )}
-              تأكيد الإلغاء وتحرير المقاعد
+              {cancelTicketsMutation.isPending ? "Canceling..." : "Confirm Cancellation"}
             </Button>
           </div>
         </form>
       </DynamicModal>
 
-      {/* Change Operational Status Modal (With Transition Validation) */}
+      {/* Change Status Modal */}
       <DynamicModal
         open={isStatusModalOpen}
         onOpenChange={setIsStatusModalOpen}
-        title="تعديل الحالة التشغيلية للحجز (Change Operational Status)"
+        title="Change Operational Status (تعديل الحالة التشغيلية)"
         icon={CheckCircle2}
         showDefaultFooter={false}
         size="sm"
         className="rounded-[28px] p-7"
       >
         <form onSubmit={handleStatusSubmit} className="space-y-4 pt-1">
-          {isCheckedIn && (
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-[11px] flex items-start gap-2">
-              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
-              <span>
-                <strong>تنبيه انتقالات الحالة:</strong> تم تسجيل حضور العميل (Checked-In). يمنع النظام تحويل حالته إلى «لم يحضر (No-Show)».
-              </span>
-            </div>
-          )}
-
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              اختر الحالة التشغيلية
+              Select Status
             </Label>
             <Select value={selectedStatus} onValueChange={setSelectedStatus}>
               <SelectTrigger className="w-full h-11 border-slate-200 bg-white">
-                <SelectValue placeholder="اختر الحالة" />
+                <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Booked">Booked (محجوز)</SelectItem>
-                <SelectItem value="Checked-In">Checked-In (حاضر / تم تسجيل الحضور)</SelectItem>
+                <SelectItem value="CheckedIn">Checked-In (حاضر / تم تسجيل الحضور)</SelectItem>
                 <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
-                <SelectItem value="No-Show" disabled={isCheckedIn}>
-                  No-Show (لم يحضر) {isCheckedIn ? "- غير مسموح بعد الحضور" : ""}
-                </SelectItem>
+                <SelectItem value="NoShow">No-Show (لم يحضر)</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[10px] text-slate-400">
-              ملاحظة: الإلغاء المالي وتحرير المقاعد يتم عبر زر «إلغاء التذاكر» المخصص.
-            </p>
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -728,87 +583,7 @@ export default function ReservationDetails() {
               disabled={changeStatusMutation.isPending}
               className="bg-[#0066d1] hover:bg-[#0052a8] text-white h-10 px-5 rounded-xl text-xs font-semibold"
             >
-              {changeStatusMutation.isPending && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
-              )}
-              Update Status
-            </Button>
-          </div>
-        </form>
-      </DynamicModal>
-
-      {/* Add Payment Installment Modal */}
-      <DynamicModal
-        open={isPaymentModalOpen}
-        onOpenChange={setIsPaymentModalOpen}
-        title="Add Payment Installment"
-        icon={Wallet}
-        showDefaultFooter={false}
-        size="md"
-        className="rounded-[28px] p-7"
-      >
-        <form onSubmit={handleAddPayment} className="space-y-4 pt-1">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">
-              Amount
-            </Label>
-            <Input
-              type="number"
-              placeholder="Amount"
-              value={paymentForm.amount}
-              onChange={(e) =>
-                setPaymentForm({ ...paymentForm, amount: e.target.value })
-              }
-              className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">
-              Due Date
-            </Label>
-            <div className="relative">
-              <Input
-                type="date"
-                value={paymentForm.dueDate}
-                onChange={(e) =>
-                  setPaymentForm({ ...paymentForm, dueDate: e.target.value })
-                }
-                className="h-11 rounded-xl border-slate-200 bg-white pr-10 focus-visible:ring-[#0066d1]"
-              />
-              <CalendarIcon className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-semibold text-slate-700">
-              Notes
-            </Label>
-            <Textarea
-              placeholder="Notes"
-              value={paymentForm.notes}
-              onChange={(e) =>
-                setPaymentForm({ ...paymentForm, notes: e.target.value })
-              }
-              className="min-h-[90px] rounded-xl border-slate-200 bg-white resize-none"
-            />
-          </div>
-
-          <div className="pt-2 flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsPaymentModalOpen(false)}
-              className="h-11 px-5 rounded-xl border-slate-200"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={addInstallmentMutation.isPending}
-              className="h-11 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white"
-            >
-              Add Installment
+              {changeStatusMutation.isPending ? "Updating..." : "Update Status"}
             </Button>
           </div>
         </form>

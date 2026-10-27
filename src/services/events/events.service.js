@@ -344,8 +344,8 @@ export async function getEventById(id) {
     try {
       const attendeesRes = await apiHandler({
         endPoint: "inventory/CustomerReseveration/GetAllReservations/GetAll",
-        method: "POST",
-        body: {
+        method: "GET",
+        params: {
           bookingEventId: id,
           pageNumber: 1,
           pageSize: 50,

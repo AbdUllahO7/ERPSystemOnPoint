@@ -178,7 +178,7 @@ export async function getReservationsStats() {
 
 /**
  * Get Paginated & Filtered Reservations List
- * Endpoint: POST /api/inventory/CustomerReseveration/GetAllReservations/GetAll
+ * Endpoint: GET /api/inventory/CustomerReseveration/GetAllReservations/GetAll
  */
 export async function getReservations(params = {}) {
   try {
@@ -206,8 +206,8 @@ export async function getReservations(params = {}) {
 
     const res = await apiHandler({
       endPoint: "inventory/CustomerReseveration/GetAllReservations/GetAll",
-      method: "POST",
-      body: payload,
+      method: "GET",
+      params: payload,
     });
 
     const raw = res?.data || res || {};
@@ -216,33 +216,26 @@ export async function getReservations(params = {}) {
     const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
     const mappedItems = items.map((r, idx) => {
-      const qty = r.quantity || 1;
-      const canceled = r.canceledQuantity || r.canceled || 0;
-      const paidNum = r.paidAmount ?? r.amountPaid ?? 0;
-      const totalNum = r.totalAmount ?? r.total ?? (paidNum || 100);
-
-      const displayPaid = typeof paidNum === "number" ? `$${paidNum}` : `$${paidNum}`;
-      const displayTotal = typeof totalNum === "number" ? `$${totalNum}` : `$${totalNum}`;
+      const quantity = Number(r.quantity) || 1;
+      const canceledQuantity = Number(r.canceledQuantity) || 0;
+      const activeQuantity = Math.max(0, quantity - canceledQuantity);
 
       return {
         id: r.id || idx + 1,
-        customer: r.customerName || r.customer_Name || "Customer",
         customerId: r.customerId,
-        customerName: r.customerName || r.customer_Name || "Customer",
-        event: r.bookingEventTitle || r.eventName || "Event",
+        customerName: r.customerName || "Customer",
+        customer: r.customerName || "Customer",
         bookingEventId: r.bookingEventId,
-        eventName: r.bookingEventTitle || r.eventName || "Event",
-        qty,
-        canceled,
-        activeQty: Math.max(0, qty - canceled),
-        payment: r.paymentMethod || "Cash",
-        paid: displayPaid,
-        numericPaid: paidNum,
-        total: displayTotal,
-        numericTotal: totalNum,
+        bookingEventTitle: r.bookingEventTitle || "Event",
+        event: r.bookingEventTitle || "Event",
+        eventStartDate: r.eventStartDate,
+        eventEndDate: r.eventEndDate,
+        quantity,
+        canceledQuantity,
+        activeQuantity,
         status: r.status || "Booked",
-        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "N/A",
-        barcode: r.barcode || "",
+        invoiceId: r.invoiceId || null,
+        raw: r,
       };
     });
 
@@ -283,50 +276,28 @@ export async function getReservationById(id) {
     });
     const r = res?.data || res || {};
 
-    const qty = r.quantity || 1;
-    const canceled = r.canceledQuantity || r.canceled || 0;
-    const activeQty = Math.max(0, qty - canceled);
-    const paidNum = r.paidAmount ?? 0;
-    const totalNum = r.totalAmount ?? (paidNum || 100);
-    const dueNum = Math.max(0, totalNum - paidNum);
-
-    const paymentSchedules = (r.paymentSchedules || r.paymentSchedule || []).map((sch, idx) => ({
-      id: sch.id || idx + 1,
-      amount: sch.amount ?? 0,
-      dueDate: sch.dueDate ? new Date(sch.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "N/A",
-      notes: sch.notes || "",
-    }));
+    const quantity = Number(r.quantity) || 1;
+    const canceledQuantity = Number(r.canceledQuantity) || 0;
+    const activeQuantity = Math.max(0, quantity - canceledQuantity);
 
     return {
       status: 200,
       data: {
         id: r.id || id,
         customerId: r.customerId,
-        customer: r.customerName || "Customer",
         customerName: r.customerName || "Customer",
+        customer: r.customerName || "Customer",
         bookingEventId: r.bookingEventId,
-        bookingEvent: r.bookingEventTitle || "Booking Event",
+        bookingEventTitle: r.bookingEventTitle || "Event",
         eventName: r.bookingEventTitle || "Event",
-        invoicePatternId: r.invoicePatternId,
-        costCenterId: r.costCenterId,
-        quantity: qty,
-        canceledQuantity: canceled,
-        activeQuantity: activeQty,
-        paymentMethod: r.paymentMethod || "Cash",
-        currency: r.currencyName || "USD",
-        discountAmount: `USD ${r.discountAmount || 0} (${r.discountPercentage || 0}%)`,
-        taxAmount: `USD ${r.taxAmount || 0} (${r.tax_Percentage || 0}%)`,
-        total: `USD ${totalNum.toFixed(2)}`,
-        numericTotal: totalNum,
-        paid: `USD ${paidNum.toFixed(2)}`,
-        numericPaid: paidNum,
-        due: `USD ${dueNum.toFixed(2)}`,
-        numericDue: dueNum,
+        eventStartDate: r.eventStartDate,
+        eventEndDate: r.eventEndDate,
+        quantity,
+        canceledQuantity,
+        activeQuantity,
         status: r.status || "Booked",
-        createdAt: r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "N/A",
-        barcode: r.barcode || "",
-        notes: r.notes || "Reservation booking notes and requirements.",
-        paymentSchedule: paymentSchedules,
+        invoiceId: r.invoiceId || null,
+        raw: r,
       },
     };
   } catch (error) {
