@@ -169,6 +169,15 @@ export async function getServiceProviderById(id) {
       .filter((w) => !w.isDayOff)
       .map((w) => w.dayOfWeek);
 
+    const workingDaysShort = activeWorkingDays.map((day) => {
+      const d = DAYS_OF_WEEK.find(
+        (item) => item.full.toLowerCase() === (day || "").toLowerCase()
+      );
+      return d ? d.id : (day ? day.slice(0, 3) : "");
+    });
+
+    const firstWorking = schedule.find((w) => !w.isDayOff);
+
     return {
       status: 200,
       data: {
@@ -177,8 +186,11 @@ export async function getServiceProviderById(id) {
         isActive: Boolean(p.isActive ?? true),
         status: p.isActive === false ? "Inactive" : "Active",
         weeklySchedule: schedule,
-        workingDays: activeWorkingDays,
+        workingDays: workingDaysShort,
+        workingDaysFull: activeWorkingDays,
         workingDaysCount: activeWorkingDays.length,
+        startTime: firstWorking?.startTime ? firstWorking.startTime.slice(0, 5) : "08:00",
+        endTime: firstWorking?.endTime ? firstWorking.endTime.slice(0, 5) : "17:00",
         raw: p,
       },
     };
