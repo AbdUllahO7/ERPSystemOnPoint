@@ -6,21 +6,14 @@ import {
   Clock,
   Loader2,
   Building2,
-  Sparkles,
   AlertTriangle,
-  Info,
-  CheckCircle2,
   Users,
   DollarSign,
-  Globe,
-  Layers,
-  HelpCircle,
 } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -37,6 +30,7 @@ import {
   DAYS_OF_WEEK,
   DAYS_OF_WEEK_CONFIG,
   calculateEventOccurrences,
+  formatTimeSpan,
 } from "@/services/events";
 
 export default function AddEditEventPage() {
@@ -45,25 +39,20 @@ export default function AddEditEventPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Form State
+  // Form State strictly aligned with CreateBookingEventDto / UpdateBookingEventDto schemas
   const [formData, setFormData] = useState({
     title: "",
-    service: "",
-    resource: "",
-    provider: "",
-    maxCapacity: "20",
+    productVariantId: "",
+    resourceId: "",
+    serviceProviderId: "",
     startDate: "",
     endDate: "",
     startTime: "10:00",
     endTime: "12:00",
-    price: "0",
-    deposit: "0",
-    pricingModel: "PerSeat", // "PerSeat" | "PerBooking"
-    bookingModel: "FullCourse", // "FullCourse" | "PerSession"
-    timeZone: "Asia/Riyadh",
     recurringDays: ["Sun", "Tue"],
-    isOvernight: false,
-    notes: "",
+    maxCapacity: "20",
+    price: "0",
+    advancePayment: "0",
   });
 
   // Lookups Query
@@ -123,33 +112,35 @@ export default function AddEditEventPage() {
         parsedDays = ["Sun", "Tue"];
       }
 
+      const formattedStartTime = e.startTime
+        ? (typeof e.startTime === "string" ? e.startTime.slice(0, 5) : formatTimeSpan(e.startTime).slice(0, 5))
+        : "10:00";
+      const formattedEndTime = e.endTime
+        ? (typeof e.endTime === "string" ? e.endTime.slice(0, 5) : formatTimeSpan(e.endTime).slice(0, 5))
+        : "12:00";
+
       setFormData({
         title: e.title || e.fullTitle || "",
-        service: String(e.productVariantId || e.service || ""),
-        resource: String(e.resourceId || e.resource || ""),
-        provider: String(e.serviceProviderId || e.provider || "none"),
-        maxCapacity: String(e.maxCapacity ?? 20),
-        startDate: e.startDate ? e.startDate.split("T")[0] : "",
-        endDate: e.endDate ? e.endDate.split("T")[0] : "",
-        startTime: e.startTime ? (typeof e.startTime === "string" ? e.startTime.slice(0, 5) : "10:00") : "10:00",
-        endTime: e.endTime ? (typeof e.endTime === "string" ? e.endTime.slice(0, 5) : "12:00") : "12:00",
-        price: String(e.price ?? e.numericPrice ?? 0),
-        deposit: String(e.advancePayment ?? e.numericDeposit ?? e.deposit ?? 0),
-        pricingModel: e.notes?.includes("pricingModel:PerBooking") ? "PerBooking" : "PerSeat",
-        bookingModel: e.notes?.includes("bookingModel:PerSession") ? "PerSession" : "FullCourse",
-        timeZone: "Asia/Riyadh",
+        productVariantId: String(e.productVariantId || e.service || ""),
+        resourceId: String(e.resourceId || e.resource || ""),
+        serviceProviderId: e.serviceProviderId ? String(e.serviceProviderId) : "",
+        startDate: e.startDate ? (e.startDate.includes("T") ? e.startDate.split("T")[0] : e.startDate) : "",
+        endDate: e.endDate ? (e.endDate.includes("T") ? e.endDate.split("T")[0] : e.endDate) : "",
+        startTime: formattedStartTime,
+        endTime: formattedEndTime,
         recurringDays: parsedDays,
-        isOvernight: e.startTime && e.endTime && e.endTime < e.startTime,
-        notes: (e.notes || "").replace(/\[pricingModel:.*?\]/g, "").replace(/\[bookingModel:.*?\]/g, "").trim(),
+        maxCapacity: String(e.maxCapacity ?? 20),
+        price: String(e.price ?? e.numericPrice ?? 0),
+        advancePayment: String(e.advancePayment ?? e.numericDeposit ?? e.deposit ?? 0),
       });
     }
   }, [isEdit, eventData]);
 
   // Selected Resource metadata for capacity & lease contract compatibility checks
   const selectedResource = useMemo(() => {
-    if (!formData.resource || !lookups.resources) return null;
-    return lookups.resources.find((r) => String(r.id) === String(formData.resource));
-  }, [formData.resource, lookups.resources]);
+    if (!formData.resourceId || !lookups.resources) return null;
+    return lookups.resources.find((r) => String(r.id) === String(formData.resourceId));
+  }, [formData.resourceId, lookups.resources]);
 
   // Capacity Compatibility Check
   const capacityWarning = useMemo(() => {
@@ -182,7 +173,7 @@ export default function AddEditEventPage() {
     return formData.endTime <= formData.startTime;
   }, [formData.startTime, formData.endTime]);
 
-  // Occurrence Calculation (Page 7: تفسير وتطبيق RecurringDays وحساب عدد الجلسات الإجمالية داخل الفترة)
+  // Occurrence Calculation: recurringDays inside the event period
   const sessionOccurrences = useMemo(() => {
     return calculateEventOccurrences(
       formData.startDate,
@@ -194,13 +185,7 @@ export default function AddEditEventPage() {
   // Mutation for saving
   const saveMutation = useMutation({
     mutationFn: (data) => {
-      // Embed metadata into notes for backend persistence
-      const metaTag = `[pricingModel:${data.pricingModel}][bookingModel:${data.bookingModel}]`;
-      const enrichedPayload = {
-        ...data,
-        notes: `${metaTag} ${data.notes || ""}`.trim(),
-      };
-      return isEdit ? updateEvent(id, enrichedPayload) : createEvent(enrichedPayload);
+      return isEdit ? updateEvent(id, data) : createEvent(data);
     },
     onSuccess: (res) => {
       queryClient.invalidateQueries(["events"]);
@@ -208,7 +193,11 @@ export default function AddEditEventPage() {
       navigate("/dashboard/events");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || (isEdit ? "Failed to update event" : "Failed to create event");
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        (isEdit ? "Failed to update event" : "Failed to create event");
       toast.error(msg);
     },
   });
@@ -235,12 +224,12 @@ export default function AddEditEventPage() {
       toast.error("يرجى إدخال عنوان أو اسم الحدث (Event title is required)");
       return;
     }
-    if (!formData.service) {
-      toast.error("يرجى اختيار الصنف أو الخدمة التي يمثلها الحدث (Service/Product is required)");
+    if (!formData.productVariantId) {
+      toast.error("يرجى اختيار الصنف أو الخدمة التي يمثلها الحدث (ProductVariantId is required)");
       return;
     }
-    if (!formData.resource) {
-      toast.error("يرجى اختيار المكان أو المورد (Resource is required)");
+    if (!formData.resourceId) {
+      toast.error("يرجى اختيار المكان أو المورد (ResourceId is required)");
       return;
     }
     if (!formData.startDate || !formData.endDate) {
@@ -254,7 +243,24 @@ export default function AddEditEventPage() {
 
     const cap = Number(formData.maxCapacity);
     if (!cap || cap <= 0) {
-      toast.error("السعة القصوى للحدث يجب أن تكون أكبر من صفر");
+      toast.error("السعة القصوى للحدث يجب أن تكون أكبر من صفر (MaxCapacity must be > 0)");
+      return;
+    }
+
+    const price = Number(formData.price);
+    if (isNaN(price) || price < 0) {
+      toast.error("يرجى إدخال سعر صحيح للحدث (Price must be >= 0)");
+      return;
+    }
+
+    const advance = Number(formData.advancePayment);
+    if (isNaN(advance) || advance < 0) {
+      toast.error("يرجى إدخال عربون / دفعة مقدمة صحيحة (AdvancePayment must be >= 0)");
+      return;
+    }
+
+    if (price > 0 && advance > price) {
+      toast.error("العربون / الدفعة المقدمة لا يمكن أن تتجاوز السعر الإجمالي للحدث");
       return;
     }
 
@@ -279,7 +285,7 @@ export default function AddEditEventPage() {
             { label: "Events", href: "/dashboard/events" },
             { label: isEdit ? "Edit Event" : "Add Event" },
           ]}
-          infoTooltip="طرح خدمة في مورد وموعد محددين مع ضبط الأيام المتكررة، السعة، والتسعير."
+          infoTooltip="طرح خدمة في مورد وموعد محددين مع ضبط الأيام المتكررة، السعة، والتسعير متوافقاً مع API الحجوزات."
         />
 
         <div className="flex items-center gap-2">
@@ -303,8 +309,6 @@ export default function AddEditEventPage() {
           </Button>
         </div>
       </div>
-
-     
 
       {/* Warnings & Compatibility Alerts */}
       {(capacityWarning || leaseContractWarning) && (
@@ -331,11 +335,11 @@ export default function AddEditEventPage() {
           بيانات وتخصيص الحدث (Event Specifications)
         </h2>
 
-        {/* Row 1: Title, Service (ProductVariantId), Resource (ResourceId) */}
+        {/* Row 1: Title & ProductVariantId */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-          <div className="space-y-2">
+          <div className="sm:col-span-2 space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              عنوان الحدث / الدورة (Event Title) *
+              عنوان الحدث / الدورة (title) *
             </Label>
             <Input
               placeholder="مثال: دورة إنكليزي مكثفة - المستوى الأول"
@@ -347,13 +351,13 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              الصنف / الخدمة (ProductVariantId) *
+              الصنف / الخدمة (productVariantId) *
             </Label>
             <Select
-              key={formData.service || "service-select"}
-              value={formData.service}
+              key={formData.productVariantId || "service-select"}
+              value={formData.productVariantId}
               onValueChange={(val) => {
-                handleInputChange("service", val);
+                handleInputChange("productVariantId", val);
                 const selectedSvc = lookups.services.find((s) => String(s.id) === String(val));
                 if (selectedSvc && selectedSvc.price && Number(formData.price) === 0) {
                   handleInputChange("price", String(selectedSvc.price));
@@ -364,9 +368,9 @@ export default function AddEditEventPage() {
                 <SelectValue placeholder="اختر الخدمة أو الصنف" />
               </SelectTrigger>
               <SelectContent>
-                {formData.service && !lookups.services.some((s) => String(s.id) === String(formData.service)) && (
-                  <SelectItem value={String(formData.service)}>
-                    {eventData?.data?.productName || eventData?.data?.service || `Service #${String(formData.service).substring(0, 8)}`}
+                {formData.productVariantId && !lookups.services.some((s) => String(s.id) === String(formData.productVariantId)) && (
+                  <SelectItem value={String(formData.productVariantId)}>
+                    {eventData?.data?.serviceName || eventData?.data?.productName || `Service #${String(formData.productVariantId).substring(0, 8)}`}
                   </SelectItem>
                 )}
                 {lookups.services.map((svc) => (
@@ -377,16 +381,19 @@ export default function AddEditEventPage() {
               </SelectContent>
             </Select>
           </div>
+        </div>
 
+        {/* Row 2: ResourceId, ServiceProviderId, MaxCapacity */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              المكان أو المورد (ResourceId) *
+              المكان أو المورد (resourceId) *
             </Label>
             <Select
-              key={formData.resource || "resource-select"}
-              value={formData.resource}
+              key={formData.resourceId || "resource-select"}
+              value={formData.resourceId}
               onValueChange={(val) => {
-                handleInputChange("resource", val);
+                handleInputChange("resourceId", val);
                 const selectedRes = lookups.resources.find((r) => String(r.id) === String(val));
                 if (selectedRes && selectedRes.capacity && (Number(formData.maxCapacity) === 0 || Number(formData.maxCapacity) === 20)) {
                   handleInputChange("maxCapacity", String(selectedRes.capacity));
@@ -397,9 +404,9 @@ export default function AddEditEventPage() {
                 <SelectValue placeholder="اختر المورد أو القاعة" />
               </SelectTrigger>
               <SelectContent>
-                {formData.resource && !lookups.resources.some((r) => String(r.id) === String(formData.resource)) && (
-                  <SelectItem value={String(formData.resource)}>
-                    {eventData?.data?.resourceName || eventData?.data?.resource || `Resource #${String(formData.resource).substring(0, 8)}`}
+                {formData.resourceId && !lookups.resources.some((r) => String(r.id) === String(formData.resourceId)) && (
+                  <SelectItem value={String(formData.resourceId)}>
+                    {eventData?.data?.resourceName || `Resource #${String(formData.resourceId).substring(0, 8)}`}
                   </SelectItem>
                 )}
                 {lookups.resources.map((res) => (
@@ -410,27 +417,24 @@ export default function AddEditEventPage() {
               </SelectContent>
             </Select>
           </div>
-        </div>
 
-        {/* Row 2: Provider (ServiceProviderId), Max Capacity (MaxCapacity), Start Date */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              مقدم الخدمة الاختياري (ServiceProviderId)
+              مقدم الخدمة (serviceProviderId)
             </Label>
             <Select
-              key={formData.provider || "provider-select"}
-              value={formData.provider || "none"}
-              onValueChange={(val) => handleInputChange("provider", val === "none" ? "" : val)}
+              key={formData.serviceProviderId || "provider-select"}
+              value={formData.serviceProviderId || "none"}
+              onValueChange={(val) => handleInputChange("serviceProviderId", val === "none" ? "" : val)}
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
                 <SelectValue placeholder="اختر مقدم الخدمة (اختياري)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="none">-- بدون مقدم خدمة محدد --</SelectItem>
-                {formData.provider && formData.provider !== "none" && !lookups.providers.some((p) => String(p.id) === String(formData.provider)) && (
-                  <SelectItem value={String(formData.provider)}>
-                    {eventData?.data?.serviceProviderName || eventData?.data?.provider || `Provider #${String(formData.provider).substring(0, 8)}`}
+                {formData.serviceProviderId && formData.serviceProviderId !== "none" && !lookups.providers.some((p) => String(p.id) === String(formData.serviceProviderId)) && (
+                  <SelectItem value={String(formData.serviceProviderId)}>
+                    {eventData?.data?.providerName || eventData?.data?.serviceProviderName || `Provider #${String(formData.serviceProviderId).substring(0, 8)}`}
                   </SelectItem>
                 )}
                 {lookups.providers.map((prov) => (
@@ -444,7 +448,7 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              سعة الحدث القصوى (MaxCapacity) *
+              سعة الحدث القصوى (maxCapacity) *
             </Label>
             <div className="relative">
               <Input
@@ -462,10 +466,13 @@ export default function AddEditEventPage() {
               </p>
             )}
           </div>
+        </div>
 
+        {/* Row 3: Start Date, End Date, Start Time, End Time */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              بداية الفترة (StartDate) *
+              بداية الفترة (startDate) *
             </Label>
             <div className="relative">
               <Input
@@ -477,13 +484,10 @@ export default function AddEditEventPage() {
               <Calendar className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
           </div>
-        </div>
 
-        {/* Row 3: End Date, Start Time, End Time, Overnight Indicator */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              نهاية الفترة (EndDate) *
+              نهاية الفترة (endDate) *
             </Label>
             <div className="relative">
               <Input
@@ -498,12 +502,11 @@ export default function AddEditEventPage() {
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              توقيت بدء الجلسة (StartTime)
+              توقيت بدء الجلسة (startTime) *
             </Label>
             <div className="relative">
               <Input
-                type="text"
-                placeholder="10:00"
+                type="time"
                 value={formData.startTime}
                 onChange={(e) => handleInputChange("startTime", e.target.value)}
                 className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9 font-mono text-xs"
@@ -515,18 +518,17 @@ export default function AddEditEventPage() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-slate-700">
-                توقيت انتهاء الجلسة (EndTime)
+                توقيت انتهاء الجلسة (endTime) *
               </Label>
               {isOvernightDetected && (
                 <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
-                  تمتد لليوم التالي (Overnight)
+                  اليوم التالي
                 </span>
               )}
             </div>
             <div className="relative">
               <Input
-                type="text"
-                placeholder="12:00"
+                type="time"
                 value={formData.endTime}
                 onChange={(e) => handleInputChange("endTime", e.target.value)}
                 className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9 font-mono text-xs"
@@ -536,32 +538,11 @@ export default function AddEditEventPage() {
           </div>
         </div>
 
-        {/* Row 4: Pricing Model, Price (Price), Advance Payment / Deposit (AdvancePayment) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-2 border-t border-slate-50">
+        {/* Row 4: Price & Advance Payment */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-2 border-t border-slate-50">
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              قاعدة التسعير (Pricing Basis)
-            </Label>
-            <Select
-              value={formData.pricingModel}
-              onValueChange={(val) => handleInputChange("pricingModel", val)}
-            >
-              <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                <SelectValue placeholder="حدد قاعدة التسعير" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="PerSeat">سعر لكل مقعد / مشارك (Per Seat)</SelectItem>
-                <SelectItem value="PerBooking">سعر لكامل الحجز / المجموعة (Per Booking)</SelectItem>
-              </SelectContent>
-            </Select>
-            <p className="text-[10px] text-slate-400">
-              حدد إن كان السعر والعربون للمقعد الواحد أو للحجز الإجمالي.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold text-slate-700">
-              سعر الحدث (Price / BookingEvent.Price)
+              سعر الحدث (price) *
             </Label>
             <div className="relative">
               <Input
@@ -574,24 +555,27 @@ export default function AddEditEventPage() {
               <DollarSign className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
             <p className="text-[10px] text-slate-400">
-              سعر البيع للعميل (لا يلزم تساويه مع تكلفة المورد DailyRentalCost).
+              سعر الحجز الإجمالي للحدث المعروض للعملاء.
             </p>
           </div>
 
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
-              العربون / الدفعة المقدمة (AdvancePayment)
+              العربون / الدفعة المقدمة (advancePayment)
             </Label>
             <div className="relative">
               <Input
                 type="number"
                 placeholder="0"
-                value={formData.deposit}
-                onChange={(e) => handleInputChange("deposit", e.target.value)}
+                value={formData.advancePayment}
+                onChange={(e) => handleInputChange("advancePayment", e.target.value)}
                 className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] pe-9 font-semibold"
               />
               <DollarSign className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             </div>
+            <p className="text-[10px] text-slate-400">
+              قيمة الدفعة المقدمة المطلوبة عند تأكيد حجز العميل للحدث.
+            </p>
           </div>
         </div>
 
@@ -600,7 +584,7 @@ export default function AddEditEventPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div>
               <Label className="text-xs font-bold text-slate-800">
-                أيام التكرار داخل الفترة (RecurringDays)
+                أيام التكرار داخل الفترة (recurringDays)
               </Label>
               <p className="text-[11px] text-slate-500 mt-0.5">
                 تحديد أيام الأسبوع التي تنعقد فيها جلسات الحدث داخل الفترة المحددة.
@@ -646,20 +630,6 @@ export default function AddEditEventPage() {
               </span>
             </div>
           )}
-        </div>
-
-        {/* Row 6: Notes */}
-        <div className="space-y-2 pt-2 border-t border-slate-50">
-          <Label className="text-xs font-semibold text-slate-700">
-            ملاحظات وشروط إضافية (Notes)
-          </Label>
-          <Textarea
-            rows={3}
-            placeholder="تعليمات القاعة، تجهيزات البروجكتر، مستلزمات الضيافة أو شروط الحضور..."
-            value={formData.notes}
-            onChange={(e) => handleInputChange("notes", e.target.value)}
-            className="rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] resize-none"
-          />
         </div>
       </div>
     </form>

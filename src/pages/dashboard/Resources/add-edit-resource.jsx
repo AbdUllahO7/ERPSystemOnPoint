@@ -184,7 +184,6 @@ export default function AddEditResourcePage() {
             { label: "Resources", href: "/dashboard/resources" },
             { label: isEdit ? "Edit Resource" : "Add Resource" },
           ]}
-          infoTooltip="Add facility or equipment resource, define capacity, address location, and ownership."
         />
 
         <Button
@@ -199,28 +198,7 @@ export default function AddEditResourcePage() {
         </Button>
       </div>
 
-      {/* Page 6 Guidance Alert (فهم النظام: الموارد) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-blue-50/90 border-r-4 border-blue-600 rounded-xl text-xs space-y-1.5">
-          <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
-            <Building2 className="w-4 h-4 text-blue-600" />
-            الموارد: المكان أو الأصل (Resources & Assets):
-          </p>
-          <p className="text-blue-900 leading-relaxed">
-            قاعة، سيارة، جهاز أو مساحة تستخدمها عند تقديم خدمة أو تنظيم حدث. المورد المملوك يتطلب ربطه بأصل ثابت (FixedAssetId)، بينما المورد المستأجر يتطلب مورداً (SupplierId) وفترة عقد استئجار.
-          </p>
-        </div>
-
-        <div className="p-4 bg-teal-50/90 border-r-4 border-teal-600 rounded-xl text-xs space-y-1.5">
-          <p className="font-bold text-teal-950 flex items-center gap-1.5 text-sm">
-            <DollarSign className="w-4 h-4 text-teal-600" />
-            تكلفة المورد وسعر بيعه (Cost vs Price):
-          </p>
-          <p className="text-teal-900 leading-relaxed">
-            الحقل DailyRentalCost يمثل تكلفة استئجار المورد على شركتك. أما BookingEvent.Price فيمثل سعر الحدث وفق قاعدة التسعير التي تحددها، وليس مطلوباً أن يتساويا.
-          </p>
-        </div>
-      </div>
+   
 
       {/* Impact Analysis Alerts on Edit (Page 6) */}
       {isCapacityDecreased && (

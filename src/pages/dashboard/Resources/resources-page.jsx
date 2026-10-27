@@ -312,33 +312,7 @@ export default function ResourcesPage() {
         infoTooltip="إدارة الموارد المادية كالقاعات، السيارات، والأجهزة وتتبع ملكيتها وتكلفتها وحالتها التشغيلية وجدول الحجوزات المرتبطة بها."
       />
 
-      {/* Page 6 System Guidance Banner */}
-      <div className="rounded-2xl border border-sky-100 bg-gradient-to-r from-sky-50/70 via-blue-50/40 to-indigo-50/30 p-5 shadow-sm">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-3xl">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#0066d1] text-white">
-                <Sparkles className="w-3.5 h-3.5" />
-                06 / فهم النظام: الموارد (المكان أو الأصل)
-              </span>
-              <span className="text-xs text-slate-500">قاعة، سيارة، جهاز أو مساحة تُستخدم عند تقديم خدمة أو حدث</span>
-            </div>
-            <p className="text-xs text-slate-700 leading-relaxed">
-              <strong>الفرق الجوهري بين الملكية والحالة:</strong> الملكية <code>Leased</code> تعني أن شركتك تستأجر المورد من مالكه الخارجي، بينما <code>Rented</code> هو وصف تشغيلي لتأجير المورد إلى عميل في حدث معين. كما أن <code>DailyRentalCost</code> يمثل تكلفة استئجار المورد على شركتك، بينما <code>BookingEvent.Price</code> يمثل سعر الحدث المحجوز.
-            </p>
-          </div>
-          <div className="flex flex-wrap lg:flex-col gap-2 shrink-0 text-[11px] text-slate-600">
-            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
-              <span>مملوك: يرتبط بأصل ثابت <code>FixedAssetId</code></span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1 rounded-lg border border-slate-200/60 shadow-2xs">
-              <Calendar className="w-3.5 h-3.5 text-purple-600" />
-              <span>مستأجر: يتطلب <code>SupplierId</code> وتواريخ عقد</span>
-            </div>
-          </div>
-        </div>
-      </div>
+    
 
       {/* Top 4 Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
