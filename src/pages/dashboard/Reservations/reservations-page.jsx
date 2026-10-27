@@ -113,8 +113,13 @@ export default function ReservationsPage() {
       toast.success("Reservation canceled successfully!");
       setDeleteRowId(null);
     },
-    onError: () => {
-      toast.error("Failed to cancel reservation!");
+    onError: (err) => {
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to cancel reservation!";
+      toast.error(errMsg);
       setDeleteRowId(null);
     },
   });

@@ -424,10 +424,17 @@ export async function cancelReservationTickets(id, quantityToCancel, options = "
     body: payload,
   });
 
+  if (res && (res.success === false || (res.status && res.status >= 400))) {
+    const error = new Error(res.message || "Failed to cancel reservation tickets");
+    error.data = res;
+    error.response = { data: res };
+    throw error;
+  }
+
   return {
     status: 200,
     data: res?.data || res,
-    message: "Tickets canceled and seats released successfully",
+    message: res?.message || "Tickets canceled and seats released successfully",
   };
 }
 
@@ -450,10 +457,17 @@ export async function updateReservationStatus(id, newStatus) {
     params: { newStatus: statusVal },
   });
 
+  if (res && (res.success === false || (res.status && res.status >= 400))) {
+    const error = new Error(res.message || `Failed to update status to ${statusVal}`);
+    error.data = res;
+    error.response = { data: res };
+    throw error;
+  }
+
   return {
     status: 200,
     data: res?.data || res,
-    message: `Status updated to ${statusVal}`,
+    message: res?.message || `Status updated to ${statusVal}`,
   };
 }
 

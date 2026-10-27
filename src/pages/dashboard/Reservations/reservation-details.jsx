@@ -17,6 +17,7 @@ import {
   Clock,
   Sparkles,
   RefreshCw,
+  AlertTriangle,
 } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { DynamicModal } from "@/components/common/dynamic-modal";
@@ -77,6 +78,8 @@ export default function ReservationDetails() {
   const [copiedKey, setCopiedKey] = useState(null);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
+  const [statusError, setStatusError] = useState(null);
 
   const [cancelQty, setCancelQty] = useState("1");
   const [cancelPaymentMethod, setCancelPaymentMethod] = useState("Cash");
@@ -109,32 +112,46 @@ export default function ReservationDetails() {
       cancelReservationTickets(id, Math.min(activeSeats, Math.max(1, Number(cancelQty) || 1)), {
         paymentMethod: cancelPaymentMethod,
       }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries(["reservation", id]);
       queryClient.invalidateQueries(["reservations"]);
       queryClient.invalidateQueries(["events"]);
-      toast.success("Tickets canceled and seats released successfully!");
+      toast.success(res?.message || "Tickets canceled and seats released successfully!");
       setIsCancelModalOpen(false);
       setCancelQty("1");
+      setCancelError(null);
     },
     onError: (err) => {
       console.error("Failed to cancel tickets:", err);
-      toast.error("Failed to cancel tickets!");
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to cancel tickets!";
+      toast.error(errMsg);
+      setCancelError(errMsg);
     },
   });
 
   // Change Status Mutation
   const changeStatusMutation = useMutation({
     mutationFn: (newStatus) => updateReservationStatus(id, newStatus),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries(["reservation", id]);
       queryClient.invalidateQueries(["reservations"]);
-      toast.success("Reservation status updated successfully!");
+      toast.success(res?.message || "Reservation status updated successfully!");
       setIsStatusModalOpen(false);
+      setStatusError(null);
     },
     onError: (err) => {
       console.error("Failed to update status:", err);
-      toast.error("Failed to update status!");
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to update status!";
+      toast.error(errMsg);
+      setStatusError(errMsg);
     },
   });
 
@@ -212,6 +229,7 @@ export default function ReservationDetails() {
             variant="outline"
             size="sm"
             onClick={() => {
+              setStatusError(null);
               setSelectedStatus(reservation.status || "Booked");
               setIsStatusModalOpen(true);
             }}
@@ -227,6 +245,7 @@ export default function ReservationDetails() {
               type="button"
               size="sm"
               onClick={() => {
+                setCancelError(null);
                 setCancelQty("1");
                 setIsCancelModalOpen(true);
               }}
@@ -452,7 +471,10 @@ export default function ReservationDetails() {
       {/* Cancel Tickets Modal */}
       <DynamicModal
         open={isCancelModalOpen}
-        onOpenChange={setIsCancelModalOpen}
+        onOpenChange={(open) => {
+          setIsCancelModalOpen(open);
+          if (!open) setCancelError(null);
+        }}
         title="Cancel Reservation Tickets (إلغاء المقاعد)"
         icon={XCircle}
         showDefaultFooter={false}
@@ -462,10 +484,30 @@ export default function ReservationDetails() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
+            setCancelError(null);
             cancelTicketsMutation.mutate();
           }}
           className="space-y-4 pt-1"
         >
+          {/* Error Message Display */}
+          {cancelError && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start gap-2.5 shadow-2xs">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-semibold block">تعذر إتمام الإلغاء (Cancellation Failed):</span>
+                <span>{cancelError}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Warning if status is Completed */}
+          {reservation.status === "Completed" && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <span>ملاحظة: وفقاً لسياسة النظام، لا يمكن استرجاع أو إلغاء تذاكر حجز مكتمل (Completed).</span>
+            </div>
+          )}
+
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
             <div className="flex justify-between text-slate-700">
               <span>Total Active Seats:</span>
@@ -537,7 +579,10 @@ export default function ReservationDetails() {
       {/* Change Status Modal */}
       <DynamicModal
         open={isStatusModalOpen}
-        onOpenChange={setIsStatusModalOpen}
+        onOpenChange={(open) => {
+          setIsStatusModalOpen(open);
+          if (!open) setStatusError(null);
+        }}
         title="Change Operational Status (تعديل الحالة التشغيلية)"
         icon={CheckCircle2}
         showDefaultFooter={false}
@@ -545,6 +590,17 @@ export default function ReservationDetails() {
         className="rounded-[28px] p-7"
       >
         <form onSubmit={handleStatusSubmit} className="space-y-4 pt-1">
+          {/* Error Message Display */}
+          {statusError && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start gap-2.5 shadow-2xs">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div className="space-y-0.5">
+                <span className="font-semibold block">تعذر تعديل الحالة:</span>
+                <span>{statusError}</span>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label className="text-xs font-semibold text-slate-700">
               Select Status
