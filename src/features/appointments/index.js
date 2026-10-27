@@ -1,2 +1,2 @@
-export * from "./api/appointments.api";
+export * from "@/services/appointments";
 export * from "./hooks/useAppointments";

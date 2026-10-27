@@ -1,4 +1,4 @@
 export * from "./ecommerce-content.constants";
-export * from "./api/ecommerce-content.api";
+export * from "@/services/ecommerce-content";
 export * from "./hooks";
 export { default } from "./hooks/useEcommerceContent";

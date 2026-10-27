@@ -1,2 +1,2 @@
-export * from "./api/resources.api";
+export * from "@/services/resources";
 export * from "./hooks/useResources";

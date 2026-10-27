@@ -7,7 +7,7 @@ import {
   MOCK_INVENTORY_CATEGORIES,
   MOCK_INVENTORY_ITEMS,
 } from "../website-builder.constants";
-import { websiteBuilderApi } from "../api/website-builder.api";
+import { websiteBuilderApi } from "@/services/website-builder";
 import toast from "react-hot-toast";
 
 export function useWebsiteBuilder({

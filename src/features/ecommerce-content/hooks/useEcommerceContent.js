@@ -6,7 +6,7 @@ import {
   MOCK_CATEGORY_PRODUCTS_ITEMS,
   DEFAULT_ECOMMERCE_PAYMENT_METHODS,
 } from "../ecommerce-content.constants";
-import { ecommerceContentApi } from "../api/ecommerce-content.api";
+import { ecommerceContentApi } from "@/services/ecommerce-content";
 import toast from "react-hot-toast";
 
 export function useEcommerceContent({ websiteId = "site-2" } = {}) {

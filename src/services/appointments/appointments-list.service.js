@@ -1,5 +1,5 @@
 import { apiHandler } from "@/lib/api-handler";
-import { Building2, Users as UsersIcon } from "lucide-react";
+import { Calendar, CheckCircle2, Clock, XCircle } from "lucide-react";
 
 // ==========================================
 // Static Initial Data for Appointments List
@@ -7,36 +7,36 @@ import { Building2, Users as UsersIcon } from "lucide-react";
 
 export const INITIAL_APPOINTMENT_STATS = [
   {
-    title: "Number of system Departments",
-    value: "32",
-    trend: "+5%",
+    title: "Total Appointments",
+    value: "0",
+    trend: "+0%",
     isUp: true,
     color: "bg-[#0066d1]",
-    icon: Building2,
+    icon: Calendar,
   },
   {
-    title: "Total number of employees",
-    value: "32",
-    trend: "-1%",
-    isUp: false,
-    color: "bg-[#5ebc93]",
-    icon: UsersIcon,
-  },
-  {
-    title: "Number of system Departments",
-    value: "32",
-    trend: "+5%",
+    title: "Confirmed",
+    value: "0",
+    trend: "+0%",
     isUp: true,
-    color: "bg-[#0b386a]",
-    icon: Building2,
+    color: "bg-[#5ebc93]",
+    icon: CheckCircle2,
   },
   {
-    title: "Total number of employees",
-    value: "32",
-    trend: "-1%",
-    isUp: false,
+    title: "Pending",
+    value: "0",
+    trend: "+0%",
+    isUp: true,
     color: "bg-[#ff9548]",
-    icon: UsersIcon,
+    icon: Clock,
+  },
+  {
+    title: "Canceled",
+    value: "0",
+    trend: "-0%",
+    isUp: false,
+    color: "bg-rose-500",
+    icon: XCircle,
   },
 ];
 
@@ -70,28 +70,34 @@ export async function getAppointments(params = {}) {
     const totalCount = raw?.totalCount || items.length;
     const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
 
-    const mappedItems = items.map((a, idx) => ({
-      id: a.id || idx + 1,
-      customer: a.customerName || a.customer?.name || "Customer",
-      service: a.serviceName || a.productVariant?.name || "Service",
-      provider: a.serviceProviderName || a.serviceProvider?.name || "Dr. Provider",
-      date: a.appointmentDate ? a.appointmentDate.split("T")[0] : new Date().toISOString().split("T")[0],
-      time: a.startTime && a.endTime ? `${a.startTime} – ${a.endTime}` : (a.time || "09:00 – 09:30"),
-      total: `$${a.totalAmount || a.deposit || 60}`,
-      price: String(a.totalAmount || a.deposit || "60"),
-      currency: a.currency || "USD",
-      status: a.status || "Scheduled",
-      isInvoiced: Boolean(a.isInvoiced || a.invoiceId),
-      notes: a.notes || "",
-      billingMethod: a.billingMethod || "per-visit",
-      paymentMethod: a.paymentMethod || "Cash",
-      costCenter: a.costCenter || "Main Clinic",
-      warehouse: a.warehouse || "Central Warehouse",
-      amountPaidNow: String(a.deposit || a.amountPaidNow || "0"),
-      materialDetails: a.materialDetails || "",
-      paymentSchedules: a.paymentSchedules || [],
-      raw: a,
-    }));
+    const mappedItems = items.map((a) => {
+      const dateStr = a.appointmentDate ? a.appointmentDate.split("T")[0] : "";
+      const timeStr =
+        a.startTime && a.endTime
+          ? `${formatTimeSpan(a.startTime)} – ${formatTimeSpan(a.endTime)}`
+          : "";
+
+      return {
+        id: a.id,
+        customerId: a.customerId,
+        customerName: a.customerName || "—",
+        customer: a.customerName || "—",
+        productVariantId: a.productVariantId,
+        serviceName: a.serviceName || "—",
+        service: a.serviceName || "—",
+        serviceProviderId: a.serviceProviderId,
+        serviceProviderName: a.serviceProviderName || "—",
+        provider: a.serviceProviderName || "—",
+        appointmentDate: a.appointmentDate,
+        date: dateStr,
+        startTime: a.startTime,
+        endTime: a.endTime,
+        time: timeStr,
+        status: a.status || "Pending",
+        invoiceId: a.invoiceId || null,
+        raw: a,
+      };
+    });
 
     return {
       status: 200,
@@ -108,6 +114,44 @@ export async function getAppointments(params = {}) {
     console.error("Failed to fetch appointments from API:", err);
     throw err;
   }
+}
+
+export const VALID_APPOINTMENT_STATUSES = [
+  "Pending",
+  "Confirmed",
+  "CheckedIn",
+  "Completed",
+  "Canceled",
+  "NoShow",
+];
+
+export function formatTimeSpan(val) {
+  if (!val) return "";
+  if (typeof val === "string") return val.slice(0, 5);
+  if (typeof val === "object" && val !== null) {
+    if (val.ticks !== undefined) {
+      const totalSec = Math.floor(Number(val.ticks) / 10000000);
+      const h = Math.floor(totalSec / 3600);
+      const m = Math.floor((totalSec % 3600) / 60);
+      return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    }
+    if (val.hours !== undefined && val.minutes !== undefined) {
+      return `${String(val.hours).padStart(2, "0")}:${String(val.minutes).padStart(2, "0")}`;
+    }
+  }
+  return "";
+}
+
+export function normalizeAppointmentStatus(status) {
+  if (!status) return "Pending";
+  const s = String(status).trim();
+  const lower = s.toLowerCase();
+  if (lower === "scheduled") return "Pending";
+  if (lower === "in progress" || lower === "inprogress") return "CheckedIn";
+  if (lower === "cancelled") return "Canceled";
+  if (lower === "no show" || lower === "no-show") return "NoShow";
+  const match = VALID_APPOINTMENT_STATUSES.find((v) => v.toLowerCase() === lower);
+  return match || s;
 }
 
 export async function deleteAppointment(id) {
@@ -128,12 +172,18 @@ export async function deleteAppointment(id) {
   }
 }
 
-export async function changeAppointmentStatus({ id, status }) {
+export async function changeAppointmentStatus({ id, appointmentId, status, newStatus }) {
+  const targetId = appointmentId || id;
+  const targetStatus = normalizeAppointmentStatus(newStatus || status);
+
   try {
     const res = await apiHandler({
       endPoint: "inventory/ServiceAppointment/ChangeAppointmentStatus",
       method: "POST",
-      params: { appointmentId: id, newStatus: status },
+      params: {
+        appointmentId: targetId,
+        newStatus: targetStatus,
+      },
     });
     return {
       status: 200,

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { ecommerceOrdersApi } from "../api/ecommerce-orders.api";
+import { ecommerceOrdersApi } from "@/services/ecommerce-orders";
 import toast from "react-hot-toast";
 
 export function useOrderDetails(orderId) {

@@ -1,5 +1,6 @@
 import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
+import { timeToTicks, formatTimeSpan } from "./appointment-form.service";
 
 // ==========================================
 // Initial Data & Constants for Service Providers
@@ -40,15 +41,46 @@ export const INITIAL_SERVICE_PROVIDERS_STATS = [
   },
 ];
 
-export const DAYS_OF_WEEK = [
-  { id: "Sat", label: "Sat", full: "Saturday" },
-  { id: "Sun", label: "Sun", full: "Sunday" },
-  { id: "Mon", label: "Mon", full: "Monday" },
-  { id: "Tue", label: "Tue", full: "Tuesday" },
-  { id: "Wed", label: "Wed", full: "Wednesday" },
-  { id: "Thu", label: "Thu", full: "Thursday" },
-  { id: "Fri", label: "Fri", full: "Friday" },
+export const FULL_DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
 ];
+
+export const DAYS_OF_WEEK = [
+  { id: "Sun", label: "Sun (الأحد)", full: "Sunday" },
+  { id: "Mon", label: "Mon (الإثنين)", full: "Monday" },
+  { id: "Tue", label: "Tue (الثلاثاء)", full: "Tuesday" },
+  { id: "Wed", label: "Wed (الأربعاء)", full: "Wednesday" },
+  { id: "Thu", label: "Thu (الخميس)", full: "Thursday" },
+  { id: "Fri", label: "Fri (الجمعة)", full: "Friday" },
+  { id: "Sat", label: "Sat (السبت)", full: "Saturday" },
+];
+
+const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+export function toGuidOrNull(val) {
+  if (!val || typeof val !== "string") return null;
+  const trimmed = val.trim();
+  return UUID_REGEX.test(trimmed) ? trimmed : null;
+}
+
+export function normalizeDayOfWeek(day) {
+  if (!day) return "Sunday";
+  const str = String(day).trim().toLowerCase();
+  if (str.startsWith("sun") || str.includes("أحد") || str.includes("احد")) return "Sunday";
+  if (str.startsWith("mon") || str.includes("اثنين") || str.includes("إثنين")) return "Monday";
+  if (str.startsWith("tue") || str.includes("ثلاثاء")) return "Tuesday";
+  if (str.startsWith("wed") || str.includes("أربعاء") || str.includes("اربعاء")) return "Wednesday";
+  if (str.startsWith("thu") || str.includes("خميس")) return "Thursday";
+  if (str.startsWith("fri") || str.includes("جمعة")) return "Friday";
+  if (str.startsWith("sat") || str.includes("سبت")) return "Saturday";
+  return "Sunday";
+}
 
 export const INITIAL_SERVICE_PROVIDERS_LIST = [];
 
@@ -119,16 +151,42 @@ export async function getServiceProviderById(id) {
     });
 
     const p = res?.data || res || {};
+
+    // Extract working days from weeklySchedule if present
+    let workingDays = ["Sun", "Mon", "Tue", "Wed", "Thu"];
+    if (Array.isArray(p.weeklySchedule) && p.weeklySchedule.length > 0) {
+      workingDays = p.weeklySchedule
+        .filter((w) => !w.isDayOff)
+        .map((w) => {
+          const matched = DAYS_OF_WEEK.find(
+            (d) => d.full.toLowerCase() === (w.dayOfWeek || "").toLowerCase()
+          );
+          return matched ? matched.id : w.dayOfWeek;
+        });
+    } else if (Array.isArray(p.workingDays)) {
+      workingDays = p.workingDays;
+    }
+
     return {
       status: 200,
       data: {
         id: p.id || id,
-        employeeId: p.employeeId || p.hrEmployeeId || `#${id}`,
-        name: p.name || p.employeeName || p.hrEmployee?.name || "Service Provider",
-        phone: p.phone || p.phoneNumber || p.hrEmployee?.phone || "-",
-        workingDays: Array.isArray(p.workingDays) && p.workingDays.length > 0
-          ? p.workingDays
-          : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+        hrEmployeeId: p.hrEmployeeId || p.employeeId || "",
+        employeeId: p.hrEmployeeId || p.employeeId || `#${id}`,
+        name:
+          p.name ||
+          p.employeeName ||
+          p.hrEmployee?.name ||
+          `${p.hrEmployee?.first_Name || ""} ${p.hrEmployee?.last_Name || ""}`.trim() ||
+          "Service Provider",
+        phone:
+          p.phone ||
+          p.phoneNumber ||
+          p.hrEmployee?.phone_Number ||
+          p.hrEmployee?.phone ||
+          "-",
+        workingDays,
+        weeklySchedule: p.weeklySchedule || [],
         status: p.isActive === false || p.status === "Inactive" ? "Inactive" : "Active",
         raw: p,
       },
@@ -139,16 +197,97 @@ export async function getServiceProviderById(id) {
   }
 }
 
+export const getProviderById = getServiceProviderById;
+
+/**
+ * بناء كائن CreateServiceProviderDto متوافق تماماً مع Swagger (حقلان حصرياً وبدون أي حقول إضافية)
+ * POST /api/inventory/ServiceProvider/CreateServiceProvider
+ * Schema:
+ * {
+ *   "hrEmployeeId": "uuid | null",
+ *   "weeklySchedule": [
+ *     {
+ *       "dayOfWeek": "Sunday",
+ *       "startTime": { "ticks": 0 },
+ *       "endTime": { "ticks": 0 },
+ *       "isDayOff": true
+ *     }
+ *   ]
+ * }
+ */
+export function buildCreateServiceProviderDto(payload = {}) {
+  const hrEmployeeId = toGuidOrNull(payload.hrEmployeeId || payload.employeeId);
+
+  let weeklySchedule = [];
+
+  if (Array.isArray(payload.weeklySchedule) && payload.weeklySchedule.length > 0) {
+    weeklySchedule = payload.weeklySchedule.map((item) => {
+      const isDayOff = Boolean(item.isDayOff ?? item.is_day_off ?? false);
+      return {
+        dayOfWeek: normalizeDayOfWeek(item.dayOfWeek || item.day),
+        startTime: isDayOff ? "00:00:00" : formatTimeSpan(item.startTime ?? item.start ?? "09:00:00"),
+        endTime: isDayOff ? "00:00:00" : formatTimeSpan(item.endTime ?? item.end ?? "17:00:00"),
+        isDayOff,
+      };
+    });
+  } else if (Array.isArray(payload.workingDays)) {
+    const workingSet = new Set(payload.workingDays.map((d) => normalizeDayOfWeek(d)));
+    const defaultStart = payload.startTime || "09:00:00";
+    const defaultEnd = payload.endTime || "17:00:00";
+
+    weeklySchedule = FULL_DAYS_OF_WEEK.map((day) => {
+      const isWorking = workingSet.has(day);
+      return {
+        dayOfWeek: day,
+        startTime: isWorking ? formatTimeSpan(defaultStart) : "00:00:00",
+        endTime: isWorking ? formatTimeSpan(defaultEnd) : "00:00:00",
+        isDayOff: !isWorking,
+      };
+    });
+  } else {
+    weeklySchedule = FULL_DAYS_OF_WEEK.map((day) => {
+      const isOff = day === "Friday" || day === "Saturday";
+      return {
+        dayOfWeek: day,
+        startTime: isOff ? "00:00:00" : formatTimeSpan("09:00:00"),
+        endTime: isOff ? "00:00:00" : formatTimeSpan("17:00:00"),
+        isDayOff: isOff,
+      };
+    });
+  }
+
+  return {
+    hrEmployeeId,
+    weeklySchedule,
+  };
+}
+
+/**
+ * بناء كائن UpdateServiceProviderDto متوافق مع Swagger
+ * POST /api/inventory/ServiceProvider/UpdateServiceProvider
+ * Schema:
+ * {
+ *   "id": "uuid",
+ *   "hrEmployeeId": "uuid | null"
+ * }
+ */
+export function buildUpdateServiceProviderDto(id, payload = {}) {
+  const providerId = toGuidOrNull(id) || toGuidOrNull(payload?.id) || id;
+  const hrEmployeeId = toGuidOrNull(payload?.hrEmployeeId || payload?.employeeId);
+
+  return {
+    id: providerId,
+    hrEmployeeId,
+  };
+}
+
 export async function createServiceProvider(data) {
   try {
+    const cleanDto = buildCreateServiceProviderDto(data);
     const res = await apiHandler({
       endPoint: "inventory/ServiceProvider/CreateServiceProvider",
       method: "POST",
-      body: {
-        hrEmployeeId: data.hrEmployeeId || data.employeeId || undefined,
-        weeklySchedule: data.weeklySchedule || [],
-        ...data,
-      },
+      body: cleanDto,
     });
     return {
       status: 201,
@@ -163,14 +302,11 @@ export async function createServiceProvider(data) {
 
 export async function updateServiceProvider(id, data) {
   try {
+    const cleanDto = buildUpdateServiceProviderDto(id, data);
     const res = await apiHandler({
       endPoint: "inventory/ServiceProvider/UpdateServiceProvider",
       method: "POST",
-      body: {
-        id: id,
-        hrEmployeeId: data.hrEmployeeId || data.employeeId || undefined,
-        ...data,
-      },
+      body: cleanDto,
     });
     return {
       status: 200,
@@ -197,6 +333,43 @@ export async function deleteServiceProvider(id) {
   } catch (err) {
     console.error(`Failed to delete service provider ${id}:`, err);
     throw err;
+  }
+}
+
+export async function getServiceProviderLookups() {
+  try {
+    const res = await apiHandler({
+      endPoint: "HR/Employees/GetAll",
+      method: "GET",
+      params: { PageSize: 100 },
+    });
+    const raw = res?.data || res || {};
+    const items = raw?.items || (Array.isArray(raw) ? raw : []);
+    const employees = items.map((e) => ({
+      id: e.id,
+      value: e.id,
+      label:
+        `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
+        e.name ||
+        e.employee_Code ||
+        "Employee",
+      phone: e.phone_Number || e.phoneNumber || e.phone || "",
+      code: e.employee_Code || e.employeeCode || "",
+    }));
+    return {
+      status: 200,
+      data: {
+        employees,
+      },
+    };
+  } catch (err) {
+    console.warn("Could not load employees for provider lookups:", err);
+    return {
+      status: 200,
+      data: {
+        employees: [],
+      },
+    };
   }
 }
 

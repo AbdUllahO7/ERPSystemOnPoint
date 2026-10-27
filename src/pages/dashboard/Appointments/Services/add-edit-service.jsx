@@ -31,16 +31,19 @@ export default function AddEditService() {
 
   const [formData, setFormData] = useState({
     name: "",
+    productNumber: "",
     category: "",
-    billingMethod: "",
-    defaultDuration: 0,
+    billingMethod: "FixedPrice",
+    defaultDuration: 30,
     defaultInsuranceQty: 0,
     costPrice: 0,
     consumerPrice: 0,
     revenueAccount: "",
     expenseAccount: "",
     canBeSold: true,
-    requiresContract: true,
+    requiresContract: false,
+    hasExpiryDate: false,
+    hasVariants: false,
     isActive: true,
   });
 
@@ -70,6 +73,15 @@ export default function AddEditService() {
       setFormData((prev) => ({
         ...prev,
         ...existingData.data,
+        name: existingData.data.name || existingData.data.name_Product || "",
+        productNumber: existingData.data.productNumber || existingData.data.product_Number || "",
+        billingMethod: existingData.data.billingMethod || "FixedPrice",
+        defaultDuration: existingData.data.defaultDuration ?? existingData.data.default_Duration_Minutes ?? 30,
+        defaultInsuranceQty: existingData.data.defaultInsuranceQty ?? existingData.data.default_Deposit_Amount ?? 0,
+        hasExpiryDate: Boolean(existingData.data.hasExpiryDate ?? existingData.data.has_Expiry_Date ?? false),
+        hasVariants: Boolean(existingData.data.hasVariants ?? existingData.data.has_Variants ?? false),
+        canBeSold: Boolean(existingData.data.canBeSold ?? existingData.data.can_Be_Sold ?? true),
+        requiresContract: Boolean(existingData.data.requiresContract ?? existingData.data.requires_Contract ?? false),
       }));
     }
   }, [isEdit, existingData]);
@@ -217,251 +229,294 @@ export default function AddEditService() {
         </div>
       ) : (
         <>
-          {/* Main Form Card (3x3 Grid) */}
+          {/* Main Form Card */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
-        {/* Row 1: Name, Category, Billing Method */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">Name</Label>
-            <Input
-              value={formData.name}
-              onChange={(e) => handleChange("name", e.target.value)}
-              placeholder="Name"
-              className="w-full"
-              required
-            />
+            {/* Row 1: Name, Product Number, Category */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">Service Name *</Label>
+                <Input
+                  value={formData.name}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                  placeholder="e.g. Dental Consultation"
+                  className="w-full"
+                  required
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">Product Number</Label>
+                <Input
+                  value={formData.productNumber}
+                  onChange={(e) => handleChange("productNumber", e.target.value)}
+                  placeholder="e.g. SRV-1001 (auto if empty)"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Category
+                </Label>
+                <Select
+                  key={formData.category || "cat-select"}
+                  value={formData.category}
+                  onValueChange={(val) => handleChange("category", val)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoryOptions.map((c) => (
+                      <SelectItem key={c.id || c.value} value={c.value}>
+                        {c.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Row 2: Billing Method, Default Duration, Default Deposit Amount */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Billing Method
+                </Label>
+                <Select
+                  key={formData.billingMethod || "bm-select"}
+                  value={formData.billingMethod}
+                  onValueChange={(val) => handleChange("billingMethod", val)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Billing Method" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {billingMethodOptions.map((bm) => (
+                      <SelectItem key={bm.value} value={bm.value}>
+                        {bm.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Default Duration (min)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={formData.defaultDuration}
+                  onChange={(e) =>
+                    handleChange("defaultDuration", Number(e.target.value))
+                  }
+                  placeholder="30"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Default Deposit Amount
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={formData.defaultInsuranceQty}
+                  onChange={(e) =>
+                    handleChange("defaultInsuranceQty", Number(e.target.value))
+                  }
+                  placeholder="0"
+                  className="w-full"
+                />
+              </div>
+            </div>
+
+            {/* Row 3: Cost Price, Consumer Price, Revenue Account */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Cost Price ($)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={formData.costPrice}
+                  onChange={(e) =>
+                    handleChange("costPrice", Number(e.target.value))
+                  }
+                  placeholder="0"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Consumer Price ($)
+                </Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="any"
+                  value={formData.consumerPrice}
+                  onChange={(e) =>
+                    handleChange("consumerPrice", Number(e.target.value))
+                  }
+                  placeholder="0"
+                  className="w-full"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Revenue Account
+                </Label>
+                <Select
+                  key={formData.revenueAccount || "rev-select"}
+                  value={formData.revenueAccount}
+                  onValueChange={(val) => handleChange("revenueAccount", val)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Revenue Account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {revenueAccountOptions.map((ra) => (
+                      <SelectItem key={ra.id || ra.value} value={ra.value}>
+                        {ra.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Row 4: Expense Account */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Expense Account
+                </Label>
+                <Select
+                  key={formData.expenseAccount || "exp-select"}
+                  value={formData.expenseAccount}
+                  onValueChange={(val) => handleChange("expenseAccount", val)}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Expense Account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {expenseAccountOptions.map((ea) => (
+                      <SelectItem key={ea.id || ea.value} value={ea.value}>
+                        {ea.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Category
-            </Label>
-            <Select
-              key={formData.category || "cat-select"}
-              value={formData.category}
-              onValueChange={(val) => handleChange("category", val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Category" />
-              </SelectTrigger>
-              <SelectContent>
-                {categoryOptions.map((c) => (
-                  <SelectItem key={c.id || c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Bottom Toggles / Switches Card */}
+          <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {/* Toggle 1: Can Be Sold */}
+              <div
+                className={cn(
+                  "flex items-center justify-between rounded-xl border p-4 transition-all",
+                  formData.canBeSold
+                    ? "border-primary/50 bg-primary/5 dark:bg-primary/10"
+                    : "border-border bg-card"
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    formData.canBeSold ? "text-primary" : "text-foreground"
+                  )}
+                >
+                  Can Be Sold
+                </span>
+                <Switch
+                  checked={formData.canBeSold}
+                  onCheckedChange={(val) => handleChange("canBeSold", val)}
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Billing Method
-            </Label>
-            <Select
-              key={formData.billingMethod || "bm-select"}
-              value={formData.billingMethod}
-              onValueChange={(val) => handleChange("billingMethod", val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Billing Method" />
-              </SelectTrigger>
-              <SelectContent>
-                {billingMethodOptions.map((bm) => (
-                  <SelectItem key={bm.value} value={bm.value}>
-                    {bm.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+              {/* Toggle 2: Requires contract */}
+              <div
+                className={cn(
+                  "flex items-center justify-between rounded-xl border p-4 transition-all",
+                  formData.requiresContract
+                    ? "border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary/20"
+                    : "border-border bg-card"
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    formData.requiresContract ? "text-primary font-semibold" : "text-foreground"
+                  )}
+                >
+                  Requires contract
+                </span>
+                <Switch
+                  checked={formData.requiresContract}
+                  onCheckedChange={(val) => handleChange("requiresContract", val)}
+                />
+              </div>
 
-        {/* Row 2: Default Duration, Default Insurance Qty, Cost Price */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Default Duration (min)
-            </Label>
-            <Input
-              type="number"
-              value={formData.defaultDuration}
-              onChange={(e) =>
-                handleChange("defaultDuration", Number(e.target.value))
-              }
-              placeholder="0"
-              className="w-full"
-            />
-          </div>
+              {/* Toggle 3: Has Expiry Date */}
+              <div
+                className={cn(
+                  "flex items-center justify-between rounded-xl border p-4 transition-all",
+                  formData.hasExpiryDate
+                    ? "border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary/20"
+                    : "border-border bg-card"
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    formData.hasExpiryDate ? "text-primary font-semibold" : "text-foreground"
+                  )}
+                >
+                  Has Expiry Date
+                </span>
+                <Switch
+                  checked={formData.hasExpiryDate}
+                  onCheckedChange={(val) => handleChange("hasExpiryDate", val)}
+                />
+              </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Default Insurance Qty
-            </Label>
-            <Input
-              type="number"
-              value={formData.defaultInsuranceQty}
-              onChange={(e) =>
-                handleChange("defaultInsuranceQty", Number(e.target.value))
-              }
-              placeholder="0"
-              className="w-full"
-            />
+              {/* Toggle 4: Active */}
+              <div
+                className={cn(
+                  "flex items-center justify-between rounded-xl border p-4 transition-all",
+                  formData.isActive
+                    ? "border-primary/50 bg-primary/5 dark:bg-primary/10"
+                    : "border-border bg-card"
+                )}
+              >
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    formData.isActive ? "text-primary" : "text-foreground"
+                  )}
+                >
+                  Active
+                </span>
+                <Switch
+                  checked={formData.isActive}
+                  onCheckedChange={(val) => handleChange("isActive", val)}
+                />
+              </div>
+            </div>
           </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Cost Price
-            </Label>
-            <Input
-              type="number"
-              value={formData.costPrice}
-              onChange={(e) =>
-                handleChange("costPrice", Number(e.target.value))
-              }
-              placeholder="0"
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        {/* Row 3: Consumer Price, Revenue Account, Expense Account */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Consumer Price
-            </Label>
-            <Input
-              type="number"
-              value={formData.consumerPrice}
-              onChange={(e) =>
-                handleChange("consumerPrice", Number(e.target.value))
-              }
-              placeholder="0"
-              className="w-full"
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Revenue Account
-            </Label>
-            <Select
-              key={formData.revenueAccount || "rev-select"}
-              value={formData.revenueAccount}
-              onValueChange={(val) => handleChange("revenueAccount", val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Revenue Account" />
-              </SelectTrigger>
-              <SelectContent>
-                {revenueAccountOptions.map((ra) => (
-                  <SelectItem key={ra.id || ra.value} value={ra.value}>
-                    {ra.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium text-foreground">
-              Expense Account
-            </Label>
-            <Select
-              key={formData.expenseAccount || "exp-select"}
-              value={formData.expenseAccount}
-              onValueChange={(val) => handleChange("expenseAccount", val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select Expense Account" />
-              </SelectTrigger>
-              <SelectContent>
-                {expenseAccountOptions.map((ea) => (
-                  <SelectItem key={ea.id || ea.value} value={ea.value}>
-                    {ea.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Toggles / Switches Card */}
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          {/* Toggle 1: Can Be Sold */}
-          <div
-            className={cn(
-              "flex items-center justify-between rounded-xl border p-4 transition-all",
-              formData.canBeSold
-                ? "border-primary/50 bg-primary/5 dark:bg-primary/10"
-                : "border-border bg-card"
-            )}
-          >
-            <span
-              className={cn(
-                "text-sm font-medium",
-                formData.canBeSold ? "text-primary" : "text-foreground"
-              )}
-            >
-              Can Be Sold
-            </span>
-            <Switch
-              checked={formData.canBeSold}
-              onCheckedChange={(val) => handleChange("canBeSold", val)}
-            />
-          </div>
-
-          {/* Toggle 2: Requires contract */}
-          <div
-            className={cn(
-              "flex items-center justify-between rounded-xl border p-4 transition-all",
-              formData.requiresContract
-                ? "border-primary bg-primary/5 dark:bg-primary/10 ring-1 ring-primary/20"
-                : "border-border bg-card"
-            )}
-          >
-            <span
-              className={cn(
-                "text-sm font-medium",
-                formData.requiresContract ? "text-primary font-semibold" : "text-foreground"
-              )}
-            >
-              Requires contract
-            </span>
-            <Switch
-              checked={formData.requiresContract}
-              onCheckedChange={(val) => handleChange("requiresContract", val)}
-            />
-          </div>
-
-          {/* Toggle 3: Active */}
-          <div
-            className={cn(
-              "flex items-center justify-between rounded-xl border p-4 transition-all",
-              formData.isActive
-                ? "border-primary/50 bg-primary/5 dark:bg-primary/10"
-                : "border-border bg-card"
-            )}
-          >
-            <span
-              className={cn(
-                "text-sm font-medium",
-                formData.isActive ? "text-primary" : "text-foreground"
-              )}
-            >
-              Active
-            </span>
-            <Switch
-              checked={formData.isActive}
-              onCheckedChange={(val) => handleChange("isActive", val)}
-            />
-          </div>
-        </div>
-      </div>
-      </>
+        </>
       )}
     </form>
   );

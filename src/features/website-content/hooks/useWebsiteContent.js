@@ -10,7 +10,7 @@ import {
   INITIAL_CONTACT_CONTENT,
   INITIAL_FOOTER_CONTENT,
 } from "../website-content.constants";
-import { websiteContentApi } from "../api/website-content.api";
+import { websiteContentApi } from "@/services/website-content";
 import toast from "react-hot-toast";
 
 export function useWebsiteContent({ websiteId = "site-1" } = {}) {

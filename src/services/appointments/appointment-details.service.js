@@ -1,5 +1,7 @@
 import { apiHandler } from "@/lib/api-handler";
 
+import { formatTimeSpan } from "./appointments-list.service";
+
 // ==========================================
 // Service Methods: Appointment Details Page
 // ==========================================
@@ -12,37 +14,32 @@ export async function getAppointmentById(id) {
     });
 
     const a = res?.data || res || {};
+    const dateStr = a.appointmentDate ? a.appointmentDate.split("T")[0] : "";
+    const timeStr =
+      a.startTime && a.endTime
+        ? `${formatTimeSpan(a.startTime)} – ${formatTimeSpan(a.endTime)}`
+        : "";
+
     return {
       status: 200,
       data: {
         id: a.id || id,
-        customerId: a.customerId || a.customer?.id,
-        customerName: a.customerName || a.customer?.name || "Customer",
-        customer: a.customerName || a.customer?.name || "Customer",
-        productVariantId: a.productVariantId || a.productVariant?.id,
-        serviceName: a.serviceName || a.productVariant?.name || "Service",
-        service: a.serviceName || a.productVariant?.name || "Service",
-        serviceProviderId: a.serviceProviderId || a.serviceProvider?.id,
-        serviceProviderName: a.serviceProviderName || a.serviceProvider?.name || "Service Provider",
-        provider: a.serviceProviderName || a.serviceProvider?.name || "Service Provider",
+        customerId: a.customerId,
+        customerName: a.customerName || "—",
+        customer: a.customerName || "—",
+        productVariantId: a.productVariantId,
+        serviceName: a.serviceName || "—",
+        service: a.serviceName || "—",
+        serviceProviderId: a.serviceProviderId,
+        serviceProviderName: a.serviceProviderName || "—",
+        provider: a.serviceProviderName || "—",
         appointmentDate: a.appointmentDate,
         startTime: a.startTime,
         endTime: a.endTime,
-        date: a.appointmentDate ? a.appointmentDate.split("T")[0] : new Date().toISOString().split("T")[0],
-        time: a.startTime && a.endTime ? `${a.startTime} – ${a.endTime}` : (a.time || "09:00 – 09:30"),
-        total: `$${a.totalAmount || a.deposit || 60}`,
-        price: String(a.totalAmount || a.deposit || "60"),
-        currency: a.currency || "USD",
-        status: a.status || "Scheduled",
-        isInvoiced: Boolean(a.isInvoiced || a.invoiceId),
-        notes: a.notes || "",
-        billingMethod: a.billingMethod || "per-visit",
-        paymentMethod: a.paymentMethod || "Cash",
-        costCenter: a.costCenter || "Main Clinic",
-        warehouse: a.warehouse || "Central Warehouse",
-        amountPaidNow: String(a.deposit || a.amountPaidNow || "0"),
-        materialDetails: a.materialDetails || "",
-        paymentSchedules: a.paymentSchedules || [],
+        date: dateStr,
+        time: timeStr,
+        status: a.status || "Pending",
+        invoiceId: a.invoiceId || null,
         raw: a,
       },
       message: "Appointment retrieved successfully",

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { eventsApi } from "../api/events.api";
+import { eventsApi } from "@/services/events";
 import { queryKeys } from "@/lib/query-keys";
 import toast from "react-hot-toast";
 

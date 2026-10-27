@@ -6,12 +6,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import {
   getServiceProviderById,
   createServiceProvider,
   updateServiceProvider,
+  getServiceProviderLookups,
   DAYS_OF_WEEK,
 } from "@/services/appointments";
 
@@ -25,9 +33,18 @@ export default function AddEditServiceProvider() {
     employeeId: "",
     name: "",
     phone: "",
+    startTime: "09:00",
+    endTime: "17:00",
     active: true,
-    workingDays: ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"],
+    workingDays: ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu"],
   });
+
+  // Lookups Query for HR Employees
+  const { data: lookupsData } = useQuery({
+    queryKey: ["serviceProviderLookups"],
+    queryFn: getServiceProviderLookups,
+  });
+  const employees = lookupsData?.data?.employees || [];
 
   // Fetch provider data if in edit mode
   const { data: providerData, isLoading } = useQuery({
@@ -40,13 +57,15 @@ export default function AddEditServiceProvider() {
     if (providerData?.data) {
       const p = providerData.data;
       setFormData({
-        employeeId: p.employeeId || "",
+        employeeId: p.hrEmployeeId || p.employeeId || "",
         name: p.name || "",
         phone: p.phone || "",
+        startTime: "09:00",
+        endTime: "17:00",
         active: p.status ? p.status.toLowerCase() === "active" : true,
-        workingDays: Array.isArray(p.workingDays)
+        workingDays: Array.isArray(p.workingDays) && p.workingDays.length > 0
           ? p.workingDays
-          : ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"],
+          : ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu"],
       });
     }
   }, [providerData]);
@@ -74,6 +93,20 @@ export default function AddEditServiceProvider() {
     },
   });
 
+  const handleSelectEmployee = (empId) => {
+    const selected = employees.find((e) => e.id === empId);
+    if (selected) {
+      setFormData((prev) => ({
+        ...prev,
+        employeeId: selected.id,
+        name: selected.label,
+        phone: selected.phone || prev.phone,
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, employeeId: empId }));
+    }
+  };
+
   const handleToggleDay = (dayId) => {
     setFormData((prev) => {
       const current = prev.workingDays || [];
@@ -88,7 +121,7 @@ export default function AddEditServiceProvider() {
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!formData.name?.trim()) {
-      toast.error("Please enter provider name");
+      toast.error("Please enter provider name or select an employee");
       return;
     }
     saveMutation.mutate(formData);
@@ -105,7 +138,7 @@ export default function AddEditServiceProvider() {
             label: isEdit ? "Edit Service Provider" : "Add Service Provider",
           },
         ]}
-        infoTooltip="Define provider basic information, working days, and availability."
+        infoTooltip="Define provider basic information, weekly schedule, and working hours."
         actions={
           <Button
             onClick={handleSubmit}
@@ -119,42 +152,61 @@ export default function AddEditServiceProvider() {
 
       {/* Main Form Card */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
-        {/* Row 1: 3 Columns (Employee ID, Name, Phone) */}
+        {/* Row 1: Select Employee, Name, Phone */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-slate-800">
-              Employee ID
+              Select HR Employee
             </Label>
-            <Input
-              placeholder="Emp-101"
-              value={formData.employeeId}
-              onChange={(e) =>
-                setFormData({ ...formData, employeeId: e.target.value })
-              }
-              className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-            />
+            {employees.length > 0 ? (
+              <Select
+                value={formData.employeeId}
+                onValueChange={handleSelectEmployee}
+              >
+                <SelectTrigger className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]">
+                  <SelectValue placeholder="Choose employee..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((emp) => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.label} {emp.code ? `(${emp.code})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                placeholder="Employee UUID / ID"
+                value={formData.employeeId}
+                onChange={(e) =>
+                  setFormData({ ...formData, employeeId: e.target.value })
+                }
+                className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+              />
+            )}
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-slate-800">
-              Name <span className="text-rose-500">*</span>
+              Provider Name <span className="text-rose-500">*</span>
             </Label>
             <Input
-              placeholder="Name"
+              placeholder="e.g. Dr. Ahmed"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
               className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+              required
             />
           </div>
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-slate-800">
-              Phone
+              Phone Number
             </Label>
             <Input
-              placeholder="Phone"
+              placeholder="e.g. +966 50 123 4567"
               value={formData.phone}
               onChange={(e) =>
                 setFormData({ ...formData, phone: e.target.value })
@@ -164,28 +216,58 @@ export default function AddEditServiceProvider() {
           </div>
         </div>
 
-        {/* Row 2: Active toggle card */}
-        <div
-          className={cn(
-            "rounded-xl border p-4 flex items-center justify-between max-w-sm transition-all",
-            formData.active
-              ? "border-[#0066d1]/40 bg-blue-50/10"
-              : "border-slate-200/80 bg-white"
-          )}
-        >
-          <span className="text-sm font-medium text-slate-700">Active</span>
-          <Switch
-            checked={formData.active}
-            onCheckedChange={(checked) =>
-              setFormData({ ...formData, active: checked })
-            }
-          />
+        {/* Row 2: Working Hours & Active Status */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-slate-800">
+              Work Start Time
+            </Label>
+            <Input
+              type="time"
+              value={formData.startTime}
+              onChange={(e) =>
+                setFormData({ ...formData, startTime: e.target.value })
+              }
+              className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold text-slate-800">
+              Work End Time
+            </Label>
+            <Input
+              type="time"
+              value={formData.endTime}
+              onChange={(e) =>
+                setFormData({ ...formData, endTime: e.target.value })
+              }
+              className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+            />
+          </div>
+
+          <div
+            className={cn(
+              "rounded-xl border p-3 flex items-center justify-between h-11 transition-all",
+              formData.active
+                ? "border-[#0066d1]/40 bg-blue-50/10"
+                : "border-slate-200/80 bg-white"
+            )}
+          >
+            <span className="text-sm font-medium text-slate-700">Active</span>
+            <Switch
+              checked={formData.active}
+              onCheckedChange={(checked) =>
+                setFormData({ ...formData, active: checked })
+              }
+            />
+          </div>
         </div>
 
         {/* Row 3: Working Days */}
         <div className="space-y-3 pt-2">
           <Label className="text-sm font-semibold text-slate-800">
-            Working Days
+            Working Days (أيام العمل)
           </Label>
           <div className="flex flex-wrap gap-2.5">
             {DAYS_OF_WEEK.map((day) => {
@@ -197,7 +279,7 @@ export default function AddEditServiceProvider() {
                   onClick={() => handleToggleDay(day.id)}
                   className={`min-w-[80px] py-2.5 px-4 rounded-xl text-sm font-medium transition-all text-center border ${
                     isSelected
-                      ? "border-[#0066d1] text-[#0066d1] bg-blue-50/50 shadow-xs"
+                      ? "border-[#0066d1] text-[#0066d1] bg-blue-50/50 shadow-xs font-semibold"
                       : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/50"
                   }`}
                 >

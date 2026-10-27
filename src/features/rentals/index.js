@@ -1,2 +1,2 @@
-export * from "./api/rentals.api";
+export * from "@/services/rentals";
 export * from "./hooks/useRentals";
