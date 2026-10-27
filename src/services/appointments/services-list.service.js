@@ -1,4 +1,10 @@
 import { apiHandler } from "@/lib/api-handler";
+import {
+  updateSimpleProductWithoutSpecs,
+  updateAssemblyWithoutSpecs,
+  updateBundleWithoutSpecs,
+  updateSimpleProductWithSpecs,
+} from "@/services/inventory/inventory.service";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
 // ==========================================
@@ -346,20 +352,24 @@ export async function createService(payload) {
   }
 }
 
-export async function updateService(id, payload) {
+export async function updateService(id, payload = {}) {
   try {
-    const cleanDto = buildUpdateProductServiceDto(id, payload);
-    const res = await apiHandler({
-      endPoint: "Inventory/Product/UpdateProductService/service",
-      method: "POST",
-      body: cleanDto,
-    });
+    const pType = payload.product_Type || payload.productType;
+    const hasSpecs = Boolean(payload.has_Specifications ?? payload.hasSpecifications ?? payload.hasVariants);
 
-    return {
-      status: 200,
-      data: res?.data || res,
-      message: "Service updated successfully",
-    };
+    if (pType === "Assembly") {
+      return updateAssemblyWithoutSpecs({ id, ...payload });
+    }
+    if (pType === "Bundle") {
+      return updateBundleWithoutSpecs({ id, ...payload });
+    }
+    if (pType === "InventoryWithSpecs" || (pType === "Inventory" && hasSpecs)) {
+      return updateSimpleProductWithSpecs({ id, ...payload });
+    }
+
+    // Default for Service & items without specs:
+    // POST /api/Inventory/Product/UpdateProductInventoryWithoutSpecifications/inventory-without-specifications
+    return updateSimpleProductWithoutSpecs({ id, ...payload });
   } catch (err) {
     console.error(`Failed to update service ${id}:`, err);
     throw err;

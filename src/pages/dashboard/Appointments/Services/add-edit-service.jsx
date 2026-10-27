@@ -19,9 +19,14 @@ import toast from "react-hot-toast";
 import {
   getServiceById,
   createService,
-  updateService,
   getServiceLookups,
 } from "@/services/appointments";
+import {
+  updateSimpleProductWithoutSpecs,
+  updateAssemblyWithoutSpecs,
+  updateBundleWithoutSpecs,
+  updateSimpleProductWithSpecs,
+} from "@/services/inventory/inventory.service";
 
 export default function AddEditService() {
   const { id } = useParams();
@@ -32,6 +37,8 @@ export default function AddEditService() {
   const [formData, setFormData] = useState({
     name: "",
     productNumber: "",
+    productType: "Service", // "Service" | "Inventory" | "InventoryWithSpecs" | "Assembly" | "Bundle"
+    hasSpecifications: false,
     category: "",
     billingMethod: "FixedPrice",
     defaultDuration: 30,
@@ -70,16 +77,21 @@ export default function AddEditService() {
 
   useEffect(() => {
     if (isEdit && existingData?.data) {
+      const raw = existingData.data.raw || {};
+      const hasSpecs = Boolean(raw.has_Specifications ?? existingData.data.hasVariants ?? false);
+
       setFormData((prev) => ({
         ...prev,
         ...existingData.data,
         name: existingData.data.name || existingData.data.name_Product || "",
         productNumber: existingData.data.productNumber || existingData.data.product_Number || "",
+        productType: prev.productType && prev.productType !== "Service" ? prev.productType : "Service",
+        hasSpecifications: hasSpecs,
         billingMethod: existingData.data.billingMethod || "FixedPrice",
         defaultDuration: existingData.data.defaultDuration ?? existingData.data.default_Duration_Minutes ?? 30,
         defaultInsuranceQty: existingData.data.defaultInsuranceQty ?? existingData.data.default_Deposit_Amount ?? 0,
         hasExpiryDate: Boolean(existingData.data.hasExpiryDate ?? existingData.data.has_Expiry_Date ?? false),
-        hasVariants: Boolean(existingData.data.hasVariants ?? existingData.data.has_Variants ?? false),
+        hasVariants: hasSpecs,
         canBeSold: Boolean(existingData.data.canBeSold ?? existingData.data.can_Be_Sold ?? true),
         requiresContract: Boolean(existingData.data.requiresContract ?? existingData.data.requires_Contract ?? false),
       }));
@@ -161,14 +173,83 @@ export default function AddEditService() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data) => updateService(id, data),
+    mutationFn: (data) => {
+      const raw = existingData?.data?.raw || {};
+
+      const rawUnits =
+        Array.isArray(raw.product_Units) && raw.product_Units.length > 0
+          ? raw.product_Units
+          : Array.isArray(raw.variants?.[0]?.productUnitDtos) && raw.variants[0].productUnitDtos.length > 0
+          ? raw.variants[0].productUnitDtos
+          : Array.isArray(raw.productVariantDtos?.[0]?.productUnitDtos) && raw.productVariantDtos[0].productUnitDtos.length > 0
+          ? raw.productVariantDtos[0].productUnitDtos
+          : [];
+
+      const preparedUnits =
+        rawUnits.length > 0
+          ? rawUnits.map((u, idx) => ({
+              ...u,
+              cost_Price: idx === 0 ? Number(data.costPrice ?? u.cost_Price ?? 0) : Number(u.cost_Price ?? 0),
+              consumer_Price: idx === 0 ? Number(data.consumerPrice ?? u.consumer_Price ?? 0) : Number(u.consumer_Price ?? 0),
+            }))
+          : [
+              {
+                id: raw.variants?.[0]?.productUnitDtos?.[0]?.id || null,
+                unit_Of_Measurement_Id: raw.unit_Of_Measurement_Id || "33333333-3333-3333-3333-333333333333",
+                secondunit_Of_Measurement_Id: null,
+                barcode_Option: "Manual",
+                barcode: null,
+                qr_Code: null,
+                is_Default_Selling: true,
+                is_Default_Purchasing: true,
+                cost_Price: Number(data.costPrice || 0),
+                wholesale_Price: 0,
+                consumer_Price: Number(data.consumerPrice || 0),
+                last_Purchase_Price: 0,
+                average_Purchase_Price: 0,
+                relative_factor: 1,
+              },
+            ];
+
+      const merged = {
+        ...raw,
+        ...data,
+        id,
+        name_Product: data.name,
+        product_Number: data.productNumber,
+        category_Id: data.category,
+        revenue_Account_Id: data.revenueAccount,
+        expense_Account_Id: data.expenseAccount,
+        cost_Price: Number(data.costPrice ?? 0),
+        consumer_Price: Number(data.consumerPrice ?? 0),
+        product_Units: preparedUnits,
+      };
+
+      // Dedicated endpoint routing according to product type
+      if (data.productType === "Assembly") {
+        return updateAssemblyWithoutSpecs(merged);
+      }
+      if (data.productType === "Bundle") {
+        return updateBundleWithoutSpecs(merged);
+      }
+      if (data.productType === "InventoryWithSpecs") {
+        return updateSimpleProductWithSpecs(merged);
+      }
+
+      // Default (Service / Inventory without specifications):
+      // POST /api/Inventory/Product/UpdateProductInventoryWithoutSpecifications/inventory-without-specifications
+      return updateSimpleProductWithoutSpecs(merged);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(["services"]);
       queryClient.invalidateQueries(["serviceDetail", id]);
-      toast.success("Service updated successfully!");
+      toast.success("Updated successfully!");
       navigate("/dashboard/appointments/services");
     },
-    onError: () => toast.error("Failed to update service"),
+    onError: (err) => {
+      const msg = err?.response?.data?.message || err?.message || "Failed to update";
+      toast.error(msg);
+    },
   });
 
   const handleChange = (field, value) => {
@@ -231,8 +312,38 @@ export default function AddEditService() {
         <>
           {/* Main Form Card */}
           <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
-            {/* Row 1: Name, Product Number, Category */}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* Row 1: Item Type, Name, Product Number, Category */}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-foreground">
+                  Item Type (نوع الصنف / الخدمة)
+                </Label>
+                <Select
+                  value={formData.productType}
+                  onValueChange={(val) => {
+                    handleChange("productType", val);
+                    if (val === "InventoryWithSpecs") {
+                      handleChange("hasSpecifications", true);
+                      handleChange("hasVariants", true);
+                    } else {
+                      handleChange("hasSpecifications", false);
+                      handleChange("hasVariants", false);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Service">Service (خدمة مواعيد)</SelectItem>
+                    <SelectItem value="Inventory">Inventory without specs (منتج مخزني بدون مواصفات)</SelectItem>
+                    <SelectItem value="InventoryWithSpecs">Inventory with specs (منتج مخزني بمواصفات)</SelectItem>
+                    <SelectItem value="Assembly">Assembly (منتج مجمع بدون مواصفات)</SelectItem>
+                    <SelectItem value="Bundle">Bundle (حزمة بدون مواصفات)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">Service Name *</Label>
                 <Input

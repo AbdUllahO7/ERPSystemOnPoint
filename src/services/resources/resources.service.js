@@ -70,7 +70,7 @@ export async function getResourceLookups() {
       apiHandler({
         endPoint: "accounting/FixedAssets/GetAllFixedAssets/all",
         method: "GET",
-        params: { PageSize: 100, IsActive: true },
+        params: { PageSize: 200 },
       }),
     ]);
 
@@ -78,7 +78,7 @@ export async function getResourceLookups() {
     let suppliers = [];
     if (suppliersRes.status === "fulfilled") {
       const raw = suppliersRes.value?.data || suppliersRes.value || {};
-      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      const list = raw?.items || (Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []));
       suppliers = list.map((s) => ({
         id: s.id,
         name: s.supplier_Name || s.name || "Supplier",
@@ -90,10 +90,10 @@ export async function getResourceLookups() {
     let fixedAssets = [];
     if (assetsRes.status === "fulfilled") {
       const raw = assetsRes.value?.data || assetsRes.value || {};
-      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      const list = raw?.items || (Array.isArray(raw?.data) ? raw.data : (Array.isArray(raw) ? raw : []));
       fixedAssets = list.map((a) => ({
-        id: a.id,
-        name: a.asset_Name || a.name || `Asset #${a.asset_Code || a.code || a.id}`,
+        id: a.id || a.asset_Id || a.assetId,
+        name: a.asset_Name || a.name || a.assetName || `Asset #${a.asset_Code || a.code || a.id}`,
         code: a.asset_Code || a.code || "",
       }));
     }

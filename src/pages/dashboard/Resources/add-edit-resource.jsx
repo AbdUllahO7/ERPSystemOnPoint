@@ -64,6 +64,23 @@ export default function AddEditResourcePage() {
     ],
   };
 
+  const [manualAssetIdMode, setManualAssetIdMode] = useState(false);
+
+  // Dynamic options ensuring current fixedAssetId is always present
+  const fixedAssetOptions = useMemo(() => {
+    const list = [...(lookups.fixedAssets || [])];
+    if (formData.fixedAssetId && formData.fixedAssetId !== "none") {
+      const exists = list.some((fa) => String(fa.id) === String(formData.fixedAssetId));
+      if (!exists) {
+        list.unshift({
+          id: formData.fixedAssetId,
+          name: `الأصل المحدد (${formData.fixedAssetId})`,
+        });
+      }
+    }
+    return list;
+  }, [lookups.fixedAssets, formData.fixedAssetId]);
+
   // Fetch resource if in edit mode
   const { data: resourceData, isLoading: isFetching } = useQuery({
     queryKey: ["resource", id],
@@ -315,28 +332,58 @@ export default function AddEditResourcePage() {
 
           {!isLeased ? (
             <div className="space-y-2 sm:col-span-2">
-              <Label className="text-xs font-semibold text-slate-700">
-                الأصل الثابت المرتبط (fixedAssetId)
-              </Label>
-              <Select
-                value={formData.fixedAssetId || "none"}
-                onValueChange={(val) => handleInputChange("fixedAssetId", val === "none" ? "" : val)}
-              >
-                <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                  <SelectValue placeholder="اختر الأصل الثابت (اختياري)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">-- غير مرتبط بأصل دفتري محدد --</SelectItem>
-                  {lookups.fixedAssets.map((fa) => (
-                    <SelectItem key={fa.id} value={String(fa.id)}>
-                      {fa.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-slate-400">
-                المورد المملوك يمكن ربطه بأصل ثابت دفتري (Fixed Asset)، أو تركه فارغاً.
-              </p>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-semibold text-slate-700">
+                  الأصل الثابت المرتبط (fixedAssetId)
+                </Label>
+                {lookups.fixedAssets.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setManualAssetIdMode((prev) => !prev)}
+                    className="text-[11px] font-medium text-[#0066d1] hover:underline cursor-pointer"
+                  >
+                    {manualAssetIdMode ? "اختيار من القائمة (Select from list)" : "إدخال المعرف يدوياً (Enter GUID)"}
+                  </button>
+                )}
+              </div>
+
+              {manualAssetIdMode || lookups.fixedAssets.length === 0 ? (
+                <div className="space-y-1.5">
+                  <Input
+                    placeholder="مثال: 3fa85f64-5717-4562-b3fc-2c963f66afa6 (Fixed Asset GUID)"
+                    value={formData.fixedAssetId}
+                    onChange={(e) => handleInputChange("fixedAssetId", e.target.value)}
+                    className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1] font-mono text-xs"
+                  />
+                  <p className="text-[11px] text-slate-500">
+                    {lookups.fixedAssets.length === 0
+                      ? "لا توجد أصول ثابتة مسجلة في القائمة حالياً. تم تفعيل الإدخال المباشر لتتمكن من كتابة معرف الأصل (GUID) ليتم إرساله مع الطلب."
+                      : "يمكنك إدخال معرف الأصل الثابت (GUID) مباشرة أو الضغط أعلاه للاختيار من القائمة."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5">
+                  <Select
+                    value={formData.fixedAssetId || "none"}
+                    onValueChange={(val) => handleInputChange("fixedAssetId", val === "none" ? "" : val)}
+                  >
+                    <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                      <SelectValue placeholder="اختر الأصل الثابت" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">-- غير مرتبط بأصل دفتري محدد --</SelectItem>
+                      {fixedAssetOptions.map((fa) => (
+                        <SelectItem key={fa.id} value={String(fa.id)}>
+                          {fa.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-slate-400">
+                    المورد المملوك يمكن ربطه بأصل ثابت دفتري (Fixed Asset)، أو تركه فارغاً.
+                  </p>
+                </div>
+              )}
             </div>
           ) : (
             <>
