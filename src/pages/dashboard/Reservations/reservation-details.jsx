@@ -324,14 +324,7 @@ export default function ReservationDetails() {
           <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100">
             <div className="flex items-center justify-between mb-1.5">
               <span className="text-xs font-medium text-slate-500">Customer</span>
-              {reservation.customerId && (
-                <Link
-                  to={`/dashboard/crm/customers/${reservation.customerId}`}
-                  className="text-xs text-primary hover:underline flex items-center gap-0.5"
-                >
-                  View Profile <ArrowRight className="w-3 h-3" />
-                </Link>
-              )}
+           
             </div>
             <p className="text-sm font-bold text-slate-800">
               {reservation.customerName || "—"}

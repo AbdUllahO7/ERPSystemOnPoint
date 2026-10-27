@@ -60,11 +60,11 @@ export const PAYMENT_METHODS = [
 // ==========================================
 
 /**
- * Fetch Lookups for Reservation (Customers, Events, Invoice Patterns, Cost Centers)
+ * Fetch Lookups for Reservation (Customers, Events, Invoice Patterns, Cost Centers, Currencies)
  */
 export async function getReservationLookups() {
   try {
-    const [customersRes, eventsRes, patternsRes, costCentersRes] = await Promise.allSettled([
+    const [customersRes, eventsRes, patternsRes, costCentersRes, currenciesRes] = await Promise.allSettled([
       apiHandler({
         endPoint: "inventory/Customer/GetAllCustomers/all-customers",
         method: "GET",
@@ -82,6 +82,11 @@ export async function getReservationLookups() {
       }),
       apiHandler({
         endPoint: "accounting/CostCenters/GetAllCostCenters/all",
+        method: "GET",
+        params: { PageSize: 100, IsActive: true },
+      }),
+      apiHandler({
+        endPoint: "accounting/Currencies/GetAllCurrencies/all",
         method: "GET",
         params: { PageSize: 100, IsActive: true },
       }),
@@ -141,6 +146,18 @@ export async function getReservationLookups() {
       }));
     }
 
+    // Parse Currencies
+    let currencies = [];
+    if (currenciesRes.status === "fulfilled") {
+      const raw = currenciesRes.value?.data || currenciesRes.value || {};
+      const list = raw?.items || (Array.isArray(raw) ? raw : []);
+      currencies = list.map((c) => ({
+        id: c.id,
+        name: c.currency_Name || c.currencyName || c.name || "USD",
+        code: c.currency_Code || c.currencyCode || c.code || "",
+      }));
+    }
+
     return {
       status: 200,
       data: {
@@ -148,6 +165,7 @@ export async function getReservationLookups() {
         events,
         invoicePatterns,
         costCenters,
+        currencies,
         paymentMethods: PAYMENT_METHODS,
       },
     };
@@ -160,6 +178,7 @@ export async function getReservationLookups() {
         events: [],
         invoicePatterns: [],
         costCenters: [],
+        currencies: [],
         paymentMethods: PAYMENT_METHODS,
       },
     };
@@ -280,14 +299,21 @@ export async function getReservationById(id) {
     const canceledQuantity = Number(r.canceledQuantity) || 0;
     const activeQuantity = Math.max(0, quantity - canceledQuantity);
 
+    const schedules = (r.paymentSchedules || r.paymentSchedule || []).map((sch, i) => ({
+      id: sch.id || i + 1,
+      description: sch.description || "",
+      amountDue: Number(sch.amountDue ?? sch.amount) || 0,
+      dueDate: sch.dueDate ? String(sch.dueDate).split("T")[0] : new Date().toISOString().split("T")[0],
+    }));
+
     return {
       status: 200,
       data: {
         id: r.id || id,
-        customerId: r.customerId,
+        customerId: r.customerId || "",
         customerName: r.customerName || "Customer",
         customer: r.customerName || "Customer",
-        bookingEventId: r.bookingEventId,
+        bookingEventId: r.bookingEventId || "",
         bookingEventTitle: r.bookingEventTitle || "Event",
         eventName: r.bookingEventTitle || "Event",
         eventStartDate: r.eventStartDate,
@@ -295,6 +321,17 @@ export async function getReservationById(id) {
         quantity,
         canceledQuantity,
         activeQuantity,
+        invoicePatternId: r.invoicePatternId || "",
+        currencyId: r.currencyId || "",
+        paymentMethod: r.paymentMethod || "Cash",
+        paidAmount: Number(r.paidAmount ?? r.amountPaid ?? 0),
+        discountAmount: Number(r.discountAmount ?? 0),
+        discountPercentage: Number(r.discountPercentage ?? r.discountPercent ?? 0),
+        tax_Percentage: Number(r.tax_Percentage ?? r.taxPercent ?? 0),
+        taxAmount: Number(r.taxAmount ?? 0),
+        barcode: r.barcode || "",
+        costCenterId: r.costCenterId || "",
+        paymentSchedules: schedules,
         status: r.status || "Booked",
         invoiceId: r.invoiceId || null,
         raw: r,
@@ -309,6 +346,7 @@ export async function getReservationById(id) {
 /**
  * Create Reservation
  * Endpoint: POST /api/inventory/CustomerReseveration/CreateReservation/create
+ * Schema: CreateCustomerReservationDto (Strict 14 properties with additionalProperties: false)
  */
 export async function createReservation(data) {
   let pm = "Cash";
@@ -316,29 +354,28 @@ export async function createReservation(data) {
   if (pStr.includes("card") || pStr.includes("credit")) pm = "Credit";
   else if (pStr.includes("bank")) pm = "Bank";
 
-  const schedules = (data.paymentSchedule || []).map((sch) => ({
+  const rawSchedules = data.paymentSchedules || data.paymentSchedule || [];
+  const formattedSchedules = rawSchedules.map((sch) => ({
+    description: sch.description || null,
+    amountDue: Number(sch.amountDue ?? sch.amount) || 0,
     dueDate: sch.dueDate ? new Date(sch.dueDate).toISOString() : new Date().toISOString(),
-    amount: Number(sch.amount) || 0,
-    notes: sch.notes || null,
   }));
 
   const payload = {
-    customerId: data.customerId || data.customer,
-    bookingEventId: data.bookingEventId || data.bookingEvent,
+    customerId: data.customerId || null,
+    bookingEventId: data.bookingEventId || null,
     quantity: Number(data.quantity) || 1,
-    invoicePatternId: data.invoicePatternId || "00000000-0000-0000-0000-000000000000",
-    costCenterId: data.costCenterId || null,
+    invoicePatternId: data.invoicePatternId || null,
     currencyId: data.currencyId || null,
     paymentMethod: pm,
-    paidAmount: Number(data.amountPaid ?? data.paidAmount) || 0,
+    paidAmount: Number(data.paidAmount ?? data.amountPaid) || 0,
     discountAmount: Number(data.discountAmount) || 0,
-    discountPercentage: Number(data.discountPercent ?? data.discountPercentage) || 0,
+    discountPercentage: Number(data.discountPercentage ?? data.discountPercent) || 0,
+    tax_Percentage: Number(data.tax_Percentage ?? data.taxPercent) || 0,
     taxAmount: Number(data.taxAmount) || 0,
-    tax_Percentage: Number(data.taxPercent ?? data.tax_Percentage) || 0,
-    barcode: data.barcode || null,
-    description: data.description || data.notes || null,
-    notes: data.notes || data.description || null,
-    paymentSchedules: schedules.length > 0 ? schedules : null,
+    barcode: data.barcode ? String(data.barcode).trim() : null,
+    costCenterId: data.costCenterId || null,
+    paymentSchedules: formattedSchedules.length > 0 ? formattedSchedules : null,
   };
 
   const res = await apiHandler({
