@@ -212,22 +212,34 @@ export function buildUpdateProductComponentDto(c = {}) {
 }
 
 export function buildUpdateFlatProductVariantCardDto(v = {}) {
+  const uDto = Array.isArray(v.productUnitDtos) && v.productUnitDtos.length > 0 ? v.productUnitDtos[0] : {};
   return {
     variant_id: toGuidOrNull(v.variant_id || v.variantId || v.id),
-    unit_id: toGuidOrNull(v.unit_id || v.unitId),
-    minimum_Alert_Level: Number(v.minimum_Alert_Level ?? v.minimumAlertLevel ?? 0) || 0,
-    maximum_Stock_Level: Number(v.maximum_Stock_Level ?? v.maximumStockLevel ?? 0) || 0,
-    barcode_Option: v.barcode_Option || v.barcodeOption || "Manual",
-    barcode: v.barcode || null,
-    qr_Code: v.qr_Code || v.qrCode || null,
-    cost_Price: Number(v.cost_Price ?? v.costPrice ?? 0) || 0,
-    consumer_Price: Number(v.consumer_Price ?? v.consumerPrice ?? 0) || 0,
-    wholesale_Price: Number(v.wholesale_Price ?? v.wholesalePrice ?? 0) || 0,
-    last_Purchase_Price: Number(v.last_Purchase_Price ?? v.lastPurchasePrice ?? 0) || 0,
-    average_Purchase_Price: Number(v.average_Purchase_Price ?? v.averagePurchasePrice ?? 0) || 0,
-    unit_Of_Measurement_Id: toGuidOrNull(v.unit_Of_Measurement_Id || v.unitOfMeasurementId),
-    secondunit_Of_Measurement_Id: toGuidOrNull(v.secondunit_Of_Measurement_Id || v.secondunitId || v.secondUnitOfMeasurementId),
-    relative_factor: Number(v.relative_factor ?? v.relativeFactor ?? 0) || 0,
+    unit_id: toGuidOrNull(v.unit_id || v.unitId || uDto.id),
+    minimum_Alert_Level: Number(v.minimum_Alert_Level ?? v.minimumAlertLevel ?? uDto.minimum_Alert_Level ?? 0) || 0,
+    maximum_Stock_Level: Number(v.maximum_Stock_Level ?? v.maximumStockLevel ?? uDto.maximum_Stock_Level ?? 0) || 0,
+    barcode_Option: v.barcode_Option || v.barcodeOption || uDto.barcode_Option || "Manual",
+    barcode: v.barcode || uDto.barcode || null,
+    qr_Code: v.qr_Code || v.qrCode || uDto.qr_Code || uDto.qr_code || null,
+    cost_Price: Number(v.cost_Price ?? v.costPrice ?? uDto.cost_Price ?? 0) || 0,
+    consumer_Price: Number(v.consumer_Price ?? v.consumerPrice ?? uDto.consumer_Price ?? 0) || 0,
+    wholesale_Price: Number(v.wholesale_Price ?? v.wholesalePrice ?? uDto.wholesale_Price ?? 0) || 0,
+    last_Purchase_Price: Number(v.last_Purchase_Price ?? v.lastPurchasePrice ?? uDto.last_Purchase_Price ?? 0) || 0,
+    average_Purchase_Price: Number(v.average_Purchase_Price ?? v.averagePurchasePrice ?? uDto.average_Purchase_Price ?? 0) || 0,
+    unit_Of_Measurement_Id: toGuidOrNull(
+      v.unit_Of_Measurement_Id ||
+      v.unitOfMeasurementId ||
+      uDto.unit_Of_Measurement_Id ||
+      uDto.unitOfMeasurementId ||
+      "33333333-3333-3333-3333-333333333333"
+    ),
+    secondunit_Of_Measurement_Id: toGuidOrNull(
+      v.secondunit_Of_Measurement_Id ||
+      v.secondunitId ||
+      v.secondUnitOfMeasurementId ||
+      uDto.secondunit_Of_Measurement_Id
+    ),
+    relative_factor: Number(v.relative_factor ?? v.relativeFactor ?? uDto.relative_factor ?? uDto.conversion_Factor ?? 0) || 0,
     variant_Values: Array.isArray(v.variant_Values || v.variantValues)
       ? (v.variant_Values || v.variantValues)
           .map((val) => ({
@@ -431,7 +443,7 @@ export function buildUpdateProductInventoryWithSpecsDto(data = {}) {
 }
 
 export async function updateService(data) {
-  return updateSimpleProductWithoutSpecs(data);
+  return updateSimpleProductWithSpecs(data);
 }
 
 export async function createBundleWithoutSpecs(data) {

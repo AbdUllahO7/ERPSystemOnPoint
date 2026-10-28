@@ -52,13 +52,13 @@ export const FULL_DAYS_OF_WEEK = [
 ];
 
 export const DAYS_OF_WEEK = [
-  { id: "Sun", label: "Sun (الأحد)", full: "Sunday" },
-  { id: "Mon", label: "Mon (الإثنين)", full: "Monday" },
-  { id: "Tue", label: "Tue (الثلاثاء)", full: "Tuesday" },
-  { id: "Wed", label: "Wed (الأربعاء)", full: "Wednesday" },
-  { id: "Thu", label: "Thu (الخميس)", full: "Thursday" },
-  { id: "Fri", label: "Fri (الجمعة)", full: "Friday" },
-  { id: "Sat", label: "Sat (السبت)", full: "Saturday" },
+  { id: "Sun", label: "Sun", labelAr: "الأحد", full: "Sunday" },
+  { id: "Mon", label: "Mon", labelAr: "الإثنين", full: "Monday" },
+  { id: "Tue", label: "Tue", labelAr: "الثلاثاء", full: "Tuesday" },
+  { id: "Wed", label: "Wed", labelAr: "الأربعاء", full: "Wednesday" },
+  { id: "Thu", label: "Thu", labelAr: "الخميس", full: "Thursday" },
+  { id: "Fri", label: "Fri", labelAr: "الجمعة", full: "Friday" },
+  { id: "Sat", label: "Sat", labelAr: "السبت", full: "Saturday" },
 ];
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;

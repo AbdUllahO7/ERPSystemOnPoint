@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getServiceProviderById,
   createServiceProvider,
@@ -64,6 +65,7 @@ export default function AddEditServiceProvider() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { locale } = useI18n();
 
   const [copiedId, setCopiedId] = useState(false);
   const [formData, setFormData] = useState({
@@ -335,7 +337,7 @@ export default function AddEditServiceProvider() {
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-semibold text-slate-800">
-              Select HR Employee (موظف الموارد البشرية)
+              {locale === "ar" ? "اختيار موظف الموارد البشرية" : "Select HR Employee"}
             </Label>
             <p className="text-xs text-slate-500 mt-0.5">
               Assign or reassign an employee from the HR system to this service provider.
@@ -474,7 +476,7 @@ export default function AddEditServiceProvider() {
             {/* Working Days Selector */}
             <div className="space-y-3 pt-2">
               <Label className="text-sm font-semibold text-slate-800">
-                Working Days (أيام العمل)
+                {locale === "ar" ? "أيام العمل" : "Working Days"}
               </Label>
               <div className="flex flex-wrap gap-2.5">
                 {DAYS_OF_WEEK.map((day) => {
@@ -490,7 +492,7 @@ export default function AddEditServiceProvider() {
                           : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/50"
                       }`}
                     >
-                      {day.label}
+                      {locale === "ar" ? (day.labelAr || day.label) : (day.label || day.id)}
                     </button>
                   );
                 })}
@@ -504,7 +506,7 @@ export default function AddEditServiceProvider() {
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                   <CalendarClock className="w-4 h-4 text-primary" />
-                  Active Weekly Schedule (الجدول الأسبوعي الحالي)
+                  {locale === "ar" ? "الجدول الأسبوعي الحالي" : "Active Weekly Schedule"}
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Operating schedule loaded from the service provider's backend record.
@@ -530,7 +532,7 @@ export default function AddEditServiceProvider() {
                 <tbody className="divide-y divide-slate-100">
                   {weeklyScheduleList.map((day, idx) => {
                     const isOff = day.isDayOff;
-                    const arabicDay = DAY_TRANSLATIONS[day.dayOfWeek] || "";
+                    const dayLabel = locale === "ar" ? (DAY_TRANSLATIONS[day.dayOfWeek] || day.dayOfWeek) : day.dayOfWeek;
                     return (
                       <tr
                         key={idx}
@@ -543,12 +545,7 @@ export default function AddEditServiceProvider() {
                                 isOff ? "text-slate-400" : "text-primary"
                               }`}
                             />
-                            <span>{day.dayOfWeek}</span>
-                            {arabicDay && (
-                              <span className="text-slate-400 text-[11px]">
-                                ({arabicDay})
-                              </span>
-                            )}
+                            <span>{dayLabel}</span>
                           </div>
                         </td>
                         <td className="py-2.5 px-4">
@@ -559,7 +556,7 @@ export default function AddEditServiceProvider() {
                                 : "bg-emerald-50 text-emerald-600 border border-emerald-200"
                             }`}
                           >
-                            {isOff ? "Day Off (عطلة)" : "Working Day"}
+                            {isOff ? (locale === "ar" ? "عطلة" : "Day Off") : (locale === "ar" ? "يوم عمل" : "Working Day")}
                           </span>
                         </td>
                         <td className="py-2.5 px-4 font-mono text-slate-600">
