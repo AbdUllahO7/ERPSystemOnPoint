@@ -110,8 +110,19 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   useEffect(() => {
     if (isEdit && productRes?.data) {
       const bData = productRes.data?.data || productRes.data;
-      const firstVariant = bData.variants?.[0] || {};
-      const unitData = firstVariant.productUnitDtos || firstVariant.productUnits || bData.productUnitDtos || bData.productUnits || [];
+      if (!bData) return;
+
+      const variantList = Array.isArray(bData.variants) ? bData.variants : [];
+      const primaryVariant = variantList[0] || {};
+      const unitData = (Array.isArray(primaryVariant.productUnitDtos) && primaryVariant.productUnitDtos.length > 0)
+        ? primaryVariant.productUnitDtos
+        : (Array.isArray(primaryVariant.productUnits) && primaryVariant.productUnits.length > 0)
+        ? primaryVariant.productUnits
+        : (Array.isArray(bData.productUnitDtos) && bData.productUnitDtos.length > 0)
+        ? bData.productUnitDtos
+        : (Array.isArray(bData.productUnits) && bData.productUnits.length > 0)
+        ? bData.productUnits
+        : [];
       const firstUnit = unitData[0] || {};
 
       const hasUnits = Boolean(bData.has_Multiple_Units ?? bData.hasMultipleUnits);
@@ -119,7 +130,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
       const units = unitData.map((u, i) => ({
         id: u.id,
-        variant_id: firstVariant.id || "",
+        variant_id: primaryVariant.id || "",
         unit_id: u.id || "",
         unitName: u.unitName || u.unit_Name || u.unit_name || `Unit ${i + 1}`,
         unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || u.unitOfMeasurementId || "",
@@ -148,19 +159,19 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         requires_Contract: bData.requires_Contract ?? bData.requiresContract ?? false,
         requires_Scheduling: bData.requires_Scheduling ?? bData.requiresScheduling ?? false,
         there_Are_Units: hasUnits,
-        minimum_Alert_Level: firstVariant.minimum_Alert_Level ?? firstVariant.minimumAlertLevel ?? bData.minimum_Alert_Level ?? bData.minimumAlertLevel ?? 0,
-        maximum_Stock_Level: firstVariant.maximum_Stock_Level ?? firstVariant.maximumStockLevel ?? bData.maximum_Stock_Level ?? bData.maximumStockLevel ?? 0,
+        minimum_Alert_Level: primaryVariant.minimum_Alert_Level ?? primaryVariant.minimumAlertLevel ?? bData.minimum_Alert_Level ?? bData.minimumAlertLevel ?? 0,
+        maximum_Stock_Level: primaryVariant.maximum_Stock_Level ?? primaryVariant.maximumStockLevel ?? bData.maximum_Stock_Level ?? bData.maximumStockLevel ?? 0,
         revenue_Account_Id: bData.revenue_Account_Id || bData.revenueAccountId || "",
         expense_Account_Id: bData.expense_Account_Id || bData.expenseAccountId || "",
         inventory_Account_Id: bData.inventory_Account_Id || bData.inventoryAccountId || "",
-        barcode_Option: firstUnit.barcode_Option || firstVariant.barcode_Option || "Manual",
-        barcode: firstUnit.barcode || firstVariant.barcode || bData.barcode || "",
-        qr_Code: firstUnit.qr_code || firstUnit.qrCode || firstVariant.qr_code || firstVariant.qrCode || bData.qr_code || bData.qr_Code || "",
-        cost_Price: firstUnit.cost_Price ?? firstVariant.cost_Price ?? bData.cost_Price ?? 0,
-        consumer_Price: firstUnit.consumer_Price ?? firstVariant.consumer_Price ?? bData.consumer_Price ?? 0,
-        wholesale_Price: firstUnit.wholesale_Price ?? firstVariant.wholesalePrice ?? bData.wholesale_Price ?? 0,
-        last_Purchase_Price: firstUnit.last_Purchase_Price ?? firstVariant.last_Purchase_Price ?? bData.last_Purchase_Price ?? 0,
-        average_Purchase_Price: firstUnit.average_Purchase_Price ?? firstVariant.average_Purchase_Price ?? bData.average_Purchase_Price ?? 0,
+        barcode_Option: firstUnit.barcode_Option || primaryVariant.barcode_Option || "Manual",
+        barcode: firstUnit.barcode || primaryVariant.barcode || bData.barcode || "",
+        qr_Code: firstUnit.qr_code || firstUnit.qrCode || primaryVariant.qr_code || primaryVariant.qrCode || bData.qr_code || bData.qr_Code || "",
+        cost_Price: firstUnit.cost_Price ?? primaryVariant.cost_Price ?? bData.cost_Price ?? 0,
+        consumer_Price: firstUnit.consumer_Price ?? primaryVariant.consumer_Price ?? bData.consumer_Price ?? 0,
+        wholesale_Price: firstUnit.wholesale_Price ?? primaryVariant.wholesale_Price ?? bData.wholesale_Price ?? 0,
+        last_Purchase_Price: firstUnit.last_Purchase_Price ?? primaryVariant.last_Purchase_Price ?? bData.last_Purchase_Price ?? 0,
+        average_Purchase_Price: firstUnit.average_Purchase_Price ?? primaryVariant.average_Purchase_Price ?? bData.average_Purchase_Price ?? 0,
         product_Units: units.length > 0 ? units : [
           { unitName: "قطعة", relative_factor: 1, is_Default_Selling: true, is_Default_Purchasing: true }
         ],
