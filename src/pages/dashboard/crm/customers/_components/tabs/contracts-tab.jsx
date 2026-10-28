@@ -388,7 +388,11 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
     enabled: !!customerId && open,
   });
 
-  const customerName = customerData?.data?.customerName || "Customer";
+  const customerName =
+    customerData?.data?.customerName ||
+    customerData?.customerName ||
+    customerData?.name ||
+    "Customer";
   const projects = customerProjectsData?.data?.items || [];
 
   const [formData, setFormData] = useState({

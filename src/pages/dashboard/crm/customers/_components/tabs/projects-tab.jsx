@@ -285,7 +285,11 @@ function AddProjectDialog({ open, onOpenChange, customerId }) {
     enabled: !!customerId && open,
   });
 
-  const customerName = customerData?.data?.customerName || "Customer";
+  const customerName =
+    customerData?.data?.customerName ||
+    customerData?.customerName ||
+    customerData?.name ||
+    "Customer";
   const contracts = contractsData?.data?.items || [];
 
   const createMutation = useMutation({
