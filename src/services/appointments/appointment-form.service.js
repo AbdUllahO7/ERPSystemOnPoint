@@ -54,10 +54,11 @@ export async function getAppointmentPricingLookup(params) {
 
 export async function getAppointmentLookups() {
   try {
-    const [customersRes, pricingRes, providersRes] = await Promise.allSettled([
+    const [customersRes, pricingRes, providersRes, employeesRes] = await Promise.allSettled([
       apiHandler({ endPoint: "inventory/Customer/GetAllCustomers/all-customers", method: "GET", params: { PageSize: 100 } }),
       getAppointmentPricingLookup(),
       apiHandler({ endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers", method: "GET", params: { PageSize: 100 } }),
+      apiHandler({ endPoint: "HR/Employees/GetAll", method: "GET", params: { PageSize: 1000 } }),
     ]);
 
     const customersRaw = customersRes.status === "fulfilled" ? (customersRes.value?.data?.items || customersRes.value?.data || []) : [];
@@ -67,6 +68,28 @@ export async function getAppointmentLookups() {
       ? (Array.isArray(pricingRes.value?.data) ? pricingRes.value.data : (pricingRes.value?.data?.items || []))
       : [];
     const providersRaw = providersRes.status === "fulfilled" ? (providersRes.value?.data?.items || providersRes.value?.data || []) : [];
+    const employeesRaw = employeesRes.status === "fulfilled" ? (employeesRes.value?.data?.items || employeesRes.value?.data || []) : [];
+
+    // Map employees by ID to resolve provider names from hrEmployeeId
+    const employeeMap = new Map();
+    employeesRaw.forEach((e) => {
+      const fullName =
+        e.fullName ||
+        `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
+        e.name ||
+        e.employeeName ||
+        e.user_Name ||
+        e.userName ||
+        (e.jobNumber ? `Employee #${e.jobNumber}` : "");
+
+      if (e.id) {
+        employeeMap.set(e.id, {
+          name: fullName,
+          code: e.jobNumber || e.employee_Code,
+          phone: e.phone || e.phoneNumber,
+        });
+      }
+    });
 
     // في حال كانت القائمة فارغة أو فشل الطلب، نحاول الفولباك من Inventory/Product/GetAll/GetAll
     if (!servicesRaw || servicesRaw.length === 0) {
@@ -145,17 +168,38 @@ export async function getAppointmentLookups() {
       };
     });
 
-    const providers = providersRaw.map((p) => ({
-      id: p.id,
-      label:
+    const providers = providersRaw.map((p, idx) => {
+      const empId = p.hrEmployeeId || p.employeeId || p.hr_Employee_Id || p.id;
+      const matchedEmp = empId ? employeeMap.get(empId) : null;
+
+      const directName =
         p.name ||
+        p.fullName ||
+        p.providerName ||
+        p.provider_Name ||
         p.employeeName ||
+        p.employee_Name ||
+        p.hrEmployeeName ||
+        p.hr_Employee_Name ||
+        p.hrEmployee?.fullName ||
         p.hrEmployee?.name ||
-        `${p.hrEmployee?.first_Name || ""} ${p.hrEmployee?.last_Name || ""}`.trim() ||
-        "Service Provider",
-      value: p.id, // Must be UUID
-      name: p.name || p.employeeName || "",
-    }));
+        `${p.hrEmployee?.first_Name || ""} ${p.hrEmployee?.last_Name || ""}`.trim();
+
+      const resolvedName =
+        directName ||
+        matchedEmp?.name ||
+        (matchedEmp?.code ? `Employee #${matchedEmp.code}` : null) ||
+        (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
+
+      return {
+        id: p.id,
+        label: resolvedName,
+        value: p.id, // Must be UUID
+        name: resolvedName,
+        hrEmployeeId: p.hrEmployeeId || p.employeeId || null,
+        raw: p,
+      };
+    });
     
     return {
       data: {

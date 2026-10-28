@@ -97,17 +97,42 @@ export async function getServiceProvidersStats() {
 
 export async function getServiceProviders(params = {}) {
   try {
-    const res = await apiHandler({
-      endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
-      method: "GET",
-      params: {
-        PageNumber: params.PageNumber || params.page || 1,
-        PageSize: params.PageSize || params.pageSize || 10,
-        Search: params.SearchTerm || params.search || undefined,
-        IsActive: params.Status === "Active" ? true : params.Status === "Inactive" ? false : undefined,
-        SortBy: params.SortBy || undefined,
-        SortDirection: params.SortDirection || undefined,
-      },
+    const [providersRes, employeesRes] = await Promise.allSettled([
+      apiHandler({
+        endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
+        method: "GET",
+        params: {
+          PageNumber: params.PageNumber || params.page || 1,
+          PageSize: params.PageSize || params.pageSize || 10,
+          Search: params.SearchTerm || params.search || undefined,
+          IsActive: params.Status === "Active" ? true : params.Status === "Inactive" ? false : undefined,
+          SortBy: params.SortBy || undefined,
+          SortDirection: params.SortDirection || undefined,
+        },
+      }),
+      apiHandler({
+        endPoint: "HR/Employees/GetAll",
+        method: "GET",
+        params: { PageSize: 1000 },
+      }),
+    ]);
+
+    const res = providersRes.status === "fulfilled" ? providersRes.value : null;
+    const employeesRaw = employeesRes.status === "fulfilled"
+      ? (employeesRes.value?.data?.items || employeesRes.value?.data || [])
+      : [];
+
+    const employeeMap = new Map();
+    employeesRaw.forEach((e) => {
+      const fullName =
+        e.fullName ||
+        `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
+        e.name ||
+        e.employeeName ||
+        (e.jobNumber ? `Employee #${e.jobNumber}` : "");
+      if (e.id) {
+        employeeMap.set(e.id, fullName);
+      }
     });
 
     const raw = res?.data || res || {};
@@ -128,9 +153,20 @@ export async function getServiceProviders(params = {}) {
         return d ? d.id : day;
       });
 
+      const empId = p.hrEmployeeId || p.employeeId || null;
+      const resolvedName =
+        p.name ||
+        p.fullName ||
+        p.employeeName ||
+        p.hrEmployeeName ||
+        (empId ? employeeMap.get(empId) : null) ||
+        (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
+
       return {
         id: p.id || idx + 1,
-        hrEmployeeId: p.hrEmployeeId || null,
+        hrEmployeeId: empId,
+        employeeName: resolvedName,
+        name: resolvedName,
         isActive: Boolean(p.isActive ?? true),
         status: p.isActive === false ? "Inactive" : "Active",
         weeklySchedule: schedule,

@@ -61,7 +61,7 @@ export async function getCommissionLedgerStats() {
 
 export async function getCommissionLookups() {
   try {
-    const [providersRes, servicesRes] = await Promise.allSettled([
+    const [providersRes, servicesRes, employeesRes] = await Promise.allSettled([
       apiHandler({
         endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
         method: "GET",
@@ -71,6 +71,11 @@ export async function getCommissionLookups() {
         endPoint: "Inventory/Product/GetAll/GetAll",
         method: "GET",
         params: { PageSize: 100 },
+      }),
+      apiHandler({
+        endPoint: "HR/Employees/GetAll",
+        method: "GET",
+        params: { PageSize: 1000 },
       }),
     ]);
 
@@ -82,12 +87,42 @@ export async function getCommissionLookups() {
       servicesRes.status === "fulfilled"
         ? servicesRes.value?.data?.items || servicesRes.value?.data || []
         : [];
+    const employeesRaw =
+      employeesRes.status === "fulfilled"
+        ? employeesRes.value?.data?.items || employeesRes.value?.data || []
+        : [];
 
-    const providers = providersRaw.map((p, idx) => ({
-      id: p.id || String(idx + 1),
-      name: p.name || p.employeeName || p.hrEmployee?.name || `Provider ${idx + 1}`,
-      raw: p,
-    }));
+    const employeeMap = new Map();
+    employeesRaw.forEach((e) => {
+      const name =
+        e.fullName ||
+        `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
+        e.name ||
+        e.employeeName ||
+        (e.jobNumber ? `Employee #${e.jobNumber}` : "");
+      if (e.id) {
+        employeeMap.set(e.id, name);
+      }
+    });
+
+    const providers = providersRaw.map((p, idx) => {
+      const empId = p.hrEmployeeId || p.employeeId;
+      const empName = empId ? employeeMap.get(empId) : null;
+      const name =
+        p.name ||
+        p.fullName ||
+        p.employeeName ||
+        p.hrEmployeeName ||
+        p.hrEmployee?.name ||
+        empName ||
+        (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
+
+      return {
+        id: p.id || String(idx + 1),
+        name,
+        raw: p,
+      };
+    });
 
     const services = servicesRaw.map((s, idx) => ({
       id: s.id || String(idx + 1),

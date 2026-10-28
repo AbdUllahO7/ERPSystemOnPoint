@@ -142,19 +142,22 @@ export default function ServiceProvidersPage() {
         },
       },
       {
-        accessorKey: "hrEmployeeId",
-        header: "HR Employee ID",
+        accessorKey: "employeeName",
+        header: "Provider Name / Employee",
         cell: ({ row }) => {
+          const empName = row.original.employeeName || row.original.name;
           const empId = row.original.hrEmployeeId;
-          return empId ? (
-            <span
-              className="font-mono text-xs text-foreground bg-muted px-2 py-0.5 rounded"
-              title={empId}
-            >
-              {empId.length > 8 ? `${empId.slice(0, 8)}...` : empId}
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground/60">— (Unassigned)</span>
+          return (
+            <div className="flex flex-col gap-0.5">
+              <span className="font-medium text-foreground text-sm">
+                {empName && !empName.startsWith("Provider #") ? empName : (empId ? `Employee (${empId.slice(0, 8)})` : "Unassigned")}
+              </span>
+              {empId && (
+                <span className="font-mono text-[11px] text-muted-foreground" title={empId}>
+                  {empId.length > 8 ? `${empId.slice(0, 8)}...` : empId}
+                </span>
+              )}
+            </div>
           );
         },
       },

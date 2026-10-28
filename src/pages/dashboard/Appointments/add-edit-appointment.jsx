@@ -20,6 +20,7 @@ import {
   updateAppointment,
   getAppointmentLookups,
   getAppointmentPricingLookup,
+  getServiceProviderLookups,
 } from "@/services/appointments";
 
 export default function AddEditAppointment() {
@@ -54,6 +55,12 @@ export default function AddEditAppointment() {
   const { data: pricingLookupData, isLoading: isLoadingPricing } = useQuery({
     queryKey: ["appointmentPricingLookup"],
     queryFn: getAppointmentPricingLookup,
+  });
+
+  // Fetch Provider Lookups (HR Employees) to guarantee provider names always resolve
+  const { data: providerEmployeesData } = useQuery({
+    queryKey: ["serviceProviderLookups"],
+    queryFn: getServiceProviderLookups,
   });
 
   const lookups = lookupsData?.data || {
@@ -200,7 +207,35 @@ export default function AddEditAppointment() {
   }, [pricingLookupData, lookups.services, formData.productVariantId, formData.serviceName, formData.unitOfMeasurementId]);
 
   const providerOptions = useMemo(() => {
-    const list = [...(lookups.providers || [])];
+    const employees = providerEmployeesData?.data?.employees || [];
+    const empMap = new Map();
+    employees.forEach((e) => {
+      const name = e.fullName || e.label || e.name;
+      if (e.id && name) {
+        empMap.set(e.id, name);
+      }
+    });
+
+    const list = (lookups.providers || []).map((p, idx) => {
+      const empId = p.hrEmployeeId || p.raw?.hrEmployeeId || p.raw?.employeeId;
+      const matchedName = empId ? empMap.get(empId) : null;
+
+      let label = p.label;
+      if (!label || label === "Service Provider" || label.toLowerCase() === "service provider") {
+        label =
+          matchedName ||
+          p.name ||
+          p.employeeName ||
+          (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
+      }
+
+      return {
+        ...p,
+        label,
+        name: label,
+      };
+    });
+
     if (
       formData.serviceProviderId &&
       !list.some(
@@ -209,14 +244,15 @@ export default function AddEditAppointment() {
           p.id === formData.serviceProviderId
       )
     ) {
+      const empName = empMap.get(formData.serviceProviderId);
       list.unshift({
         id: formData.serviceProviderId,
         value: formData.serviceProviderId,
-        label: formData.serviceProviderName || formData.serviceProviderId,
+        label: formData.serviceProviderName || empName || formData.serviceProviderId,
       });
     }
     return list;
-  }, [lookups.providers, formData.serviceProviderId, formData.serviceProviderName]);
+  }, [lookups.providers, providerEmployeesData, formData.serviceProviderId, formData.serviceProviderName]);
 
   const statusOptions = useMemo(() => {
     const list = [...(lookups.statuses || [])].filter((st) => st !== "All");
@@ -430,7 +466,7 @@ export default function AddEditAppointment() {
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Provider">
-                    {formData.serviceProviderName || providerOptions.find((p) => p.value === formData.serviceProviderId)?.label}
+                    {providerOptions.find((p) => p.value === formData.serviceProviderId || p.id === formData.serviceProviderId)?.label || (formData.serviceProviderName !== "Service Provider" ? formData.serviceProviderName : "")}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
