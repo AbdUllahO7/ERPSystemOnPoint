@@ -366,23 +366,36 @@ export async function getRentalById(id) {
 
     const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "";
     const endDateStr = c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "";
-    const totalAmount = c.totalAmount ?? 0;
+    const totalAmount = Number(c.totalAmount ?? 0);
     const contractNum = c.contractNumber || `RC-${String(id).substring(0, 8)}`;
 
-    const items = (c.items || []).map((itm, idx) => ({
-      id: itm.id || idx + 1,
-      name: itm.custom_Item_Name || itm.productVariantName || "Item",
-      quantity: itm.quantity || 1,
-      unitPrice: itm.unit_Price || 0,
-      totalPrice: (itm.quantity || 1) * (itm.unit_Price || 0),
-    }));
+    const items = (c.items || []).map((itm, idx) => {
+      const q = Number(itm.quantity || 1);
+      const p = Number(itm.unitPrice ?? itm.unit_Price ?? 0);
+      const total = Number(itm.totalPrice ?? itm.total_Price ?? q * p);
+      return {
+        id: itm.id || idx + 1,
+        productVariantId: itm.productVariantId || null,
+        unitOfMeasurementId: itm.unitOfMeasurementId || null,
+        unitOfMeasurementName: itm.unitOfMeasurementName || "N/A",
+        customItemName: itm.customItemName || itm.custom_Item_Name || itm.name || itm.productVariantName || "Item",
+        name: itm.customItemName || itm.custom_Item_Name || itm.name || itm.productVariantName || "Item",
+        description: itm.description || "",
+        quantity: q,
+        unitPrice: p,
+        totalPrice: total,
+      };
+    });
 
     const installments = (c.installments || []).map((ins, idx) => ({
       id: ins.id || idx + 1,
-      name: ins.installment_Name || `Installment #${idx + 1}`,
-      amount: ins.amount || 0,
-      dueDate: ins.due_Date ? new Date(ins.due_Date).toISOString().split("T")[0] : "",
-      isPaid: ins.isPaid ?? false,
+      installmentName: ins.installmentName || ins.installment_Name || `Installment #${idx + 1}`,
+      name: ins.installmentName || ins.installment_Name || `Installment #${idx + 1}`,
+      amount: Number(ins.amount || 0),
+      dueDate: ins.dueDate ? new Date(ins.dueDate).toISOString().split("T")[0] : (ins.due_Date ? new Date(ins.due_Date).toISOString().split("T")[0] : ""),
+      status: ins.status || (ins.isPaid ? "Paid" : "Pending"),
+      invoiceId: ins.invoiceId || null,
+      isPaid: ins.isPaid || ins.status === "Paid" || ins.status === "Invoiced",
     }));
 
     return {
@@ -395,13 +408,15 @@ export async function getRentalById(id) {
         customerName: c.customerName || "Customer",
         title: c.title || "Rental Agreement",
         serviceName: c.title || "Rental Agreement",
-        resourceName: items[0]?.name || "Facility / Equipment",
+        resourceName: items[0]?.customItemName || items[0]?.name || "Facility / Equipment",
         startDate: startDateStr,
         endDate: endDateStr,
         period: startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A",
         totalAmount,
         numericTotal: totalAmount,
         total: `$${totalAmount}`,
+        currencyId: c.currencyId || null,
+        currencyCode: c.currencyCode || "USD",
         status: c.status || (c.isActive ? "Active" : "Closed"),
         isActive: c.isActive ?? true,
         terms_And_Conditions: c.terms_And_Conditions || "",
@@ -409,13 +424,14 @@ export async function getRentalById(id) {
         notes: c.terms_And_Conditions || c.description || "",
         items,
         installments,
+        attachments: c.attachments || [],
         invoices: installments.map((ins, idx) => ({
-          id: `#${idx + 1}`,
+          id: ins.invoiceId ? `#${String(ins.invoiceId).slice(0, 8)}` : `#${idx + 1}`,
           returnDate: ins.dueDate,
           damage: "None",
           total: `$${ins.amount}`,
           paid: ins.isPaid ? `$${ins.amount}` : "$0",
-          status: ins.isPaid ? "Paid" : "Pending",
+          status: ins.status,
         })),
       },
     };
@@ -430,6 +446,59 @@ export async function getRentalById(id) {
  * Endpoint: POST /api/Inventory/RentalContract/CreateContract/create-contract
  */
 export async function createRental(data) {
+  // If payload contains contract items or title, send to CustomerContracts/CreateContract/create
+  if (data.items || data.title) {
+    const items = (data.items || []).map((itm) => {
+      const q = Number(itm.quantity || 1);
+      const p = Number(itm.unitPrice || 0);
+      const total = Number(itm.totalPrice || q * p);
+      return {
+        productVariantId: itm.productVariantId || null,
+        customItemName: itm.customItemName || itm.name || "Item",
+        description: itm.description || "",
+        quantity: q,
+        unitPrice: p,
+        totalPrice: total,
+      };
+    });
+
+    const installments = (data.installments || []).map((ins, idx) => ({
+      installmentName: ins.installmentName || ins.name || `Installment #${idx + 1}`,
+      amount: Number(ins.amount || 0),
+      dueDate: ins.dueDate ? new Date(ins.dueDate).toISOString() : new Date().toISOString(),
+    }));
+
+    const computedTotal = items.reduce((sum, itm) => sum + itm.totalPrice, 0);
+
+    const payload = {
+      id: data.id || undefined,
+      customerId: data.customerId,
+      contractNumber: data.contractNumber || `CNT-${Date.now().toString().slice(-5)}`,
+      title: data.title || "Rental Agreement",
+      description: data.description || "",
+      terms_And_Conditions: data.terms_And_Conditions || data.notes || "",
+      startDate: data.startDate ? new Date(data.startDate).toISOString() : new Date().toISOString(),
+      endDate: data.endDate ? new Date(data.endDate).toISOString() : new Date(Date.now() + 86400000 * 30).toISOString(),
+      totalAmount: Number(data.totalAmount || computedTotal),
+      currencyId: data.currencyId || null,
+      status: data.status || "Active",
+      items,
+      installments,
+    };
+
+    const res = await apiHandler({
+      endPoint: "inventory/CustomerContracts/CreateContract/create",
+      method: "POST",
+      body: payload,
+    });
+
+    return {
+      status: 201,
+      data: res?.data || res,
+      message: "Customer contract saved successfully",
+    };
+  }
+
   const rentalRate = Number(data.rentalRate ?? data.rentalPrice ?? 0);
   const quantity = Number(data.quantity || 1);
   const discount = Number(data.discount || 0);
