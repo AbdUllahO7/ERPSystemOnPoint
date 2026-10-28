@@ -203,7 +203,7 @@ export function buildUpdateProductUnitDto(unit = {}) {
 
 export function buildUpdateProductComponentDto(c = {}) {
   return {
-    id: toGuidOrNull(c.id),
+    id: toGuidOrNull(c.id) || "00000000-0000-0000-0000-000000000000",
     component_Variant_Id: toGuidOrNull(c.component_Variant_Id || c.componentVariantId),
     quantity: Number(c.quantity ?? 1) || 0,
     unit_Of_Measurement_Id: toGuidOrNull(c.unit_Of_Measurement_Id || c.unitOfMeasurementId),

@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -992,9 +993,15 @@ export default function SimpleProductWithVariantsForm({
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-6"
     >
-      {currentStep === 2 && renderDetails()}
-      {currentStep === 3 && renderUnitsAndVariants()}
-      {currentStep === 4 && renderVariantProperties()}
+      <div className={cn("space-y-6", currentStep === 2 ? "block" : "hidden")}>
+        {renderDetails()}
+      </div>
+      <div className={cn("space-y-6", currentStep === 3 ? "block" : "hidden")}>
+        {renderUnitsAndVariants()}
+      </div>
+      <div className={cn("space-y-6", currentStep === 4 ? "block" : "hidden")}>
+        {renderVariantProperties()}
+      </div>
     </form>
   );
 }

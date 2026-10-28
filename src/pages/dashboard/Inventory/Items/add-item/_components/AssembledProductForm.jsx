@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Upload, Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHorizontal, QrCode, ScanBarcode, Edit2 } from "lucide-react";
@@ -5,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getAllUnitOfMeasurements, createProduct, createAssemblyWithoutSpecs, updateAssemblyWithoutSpecs, getProductById } from "@/lib/api";
+import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getInventoryPricingLookup, getAllUnitOfMeasurements, createProduct, createAssemblyWithoutSpecs, updateAssemblyWithoutSpecs, getProductById } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -15,6 +16,7 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
   const isEdit = Boolean(id);
 
     const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+    shouldUnregister: false,
     defaultValues: {
       name_Product: "",
       product_Number: "",
@@ -81,6 +83,11 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 100 }),
   });
 
+  const { data: pricingRes } = useQuery({
+    queryKey: ["getInventoryPricingLookup"],
+    queryFn: () => getInventoryPricingLookup(),
+  });
+
   const { data: productsRes, isLoading: productsLoading } = useQuery({
     queryKey: ["materials-for-invoice"],
     queryFn: () => searchMaterialsForInvoice({ PageNumber: 1, PageSize: 1000 }),
@@ -99,7 +106,22 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
 
   const categories = categoriesRes?.data?.items || [];
   const accounts = accountsRes?.data?.items || [];
-  const products = productsRes?.data?.items || [];
+  const products = (() => {
+    const pList = pricingRes?.data?.items || pricingRes?.data || [];
+    if (Array.isArray(pList) && pList.length > 0) {
+      return pList.map((p) => ({
+        productVariantId: p.productVariantId || p.variantId || p.id,
+        productName: p.productName || p.name_Product || p.name,
+        availableUnits: p.unitOfMeasurementId
+          ? [{ productUnitId: p.unitOfMeasurementId, unitOfMesuranse_Id: p.unitOfMeasurementId, unitName: p.unitName || "Unit" }]
+          : [],
+        availableQuantity: p.availableQuantity || 0,
+        price: p.consumerPrice || 0,
+      }));
+    }
+    const mList = productsRes?.data?.items || productsRes?.data || [];
+    return Array.isArray(mList) ? mList : [];
+  })();
   const measurements = unitsRes?.data?.items || [];
   const productComponentsWatch = watch("product_Components");
   const productUnitsWatch = watch("product_Units");
@@ -569,9 +591,14 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
                       </select>
                     </td>
                     <td className="px-4 py-4 min-w-[150px]">
-                      <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50" {...register(`product_Components.${index}.unit_Of_Measurement_Id`)} disabled={!currentVariantId || availableUnits.length === 0}>
+                      <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm" {...register(`product_Components.${index}.unit_Of_Measurement_Id`)}>
                         <option value="">Unit</option>
-                        {availableUnits.map((u) => <option key={u.productUnitId} value={u.unitOfMesuranse_Id}>{u.unitName}</option>)}
+                        {(availableUnits.length > 0
+                          ? availableUnits.map((u) => ({ id: u.unitOfMesuranse_Id || u.productUnitId, name: u.unitName }))
+                          : measurements.map((m) => ({ id: m.unit_Name_Id || m.id, name: m.unit_name || m.name }))
+                        ).map((u) => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-4 py-4 min-w-[120px]">
@@ -677,10 +704,22 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
 
   return (
     <form id="assembled-product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {currentStep === 2 && renderDetails()}
-      {currentStep === 3 && thereAreUnits && renderUnits()}
-      {currentStep === (thereAreUnits ? 4 : 3) && renderBundleComponents()}
-      {currentStep === 5 && thereAreUnits && renderVariantProperties()}
+      <div className={cn("space-y-6", currentStep === 2 ? "block" : "hidden")}>
+        {renderDetails()}
+      </div>
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 3 ? "block" : "hidden")}>
+          {renderUnits()}
+        </div>
+      )}
+      <div className={cn("space-y-6", currentStep === (thereAreUnits ? 4 : 3) ? "block" : "hidden")}>
+        {renderBundleComponents()}
+      </div>
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 5 ? "block" : "hidden")}>
+          {renderVariantProperties()}
+        </div>
+      )}
     </form>
   );
 }

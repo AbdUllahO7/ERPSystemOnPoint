@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Upload, Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHorizontal, QrCode, ScanBarcode, Edit2 } from "lucide-react";
@@ -15,6 +16,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   const isEdit = Boolean(id);
 
     const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+    shouldUnregister: false,
     defaultValues: {
       name_Product: "",
       product_Number: "",
@@ -275,7 +277,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   };
 
   const renderDetails = () => (
-    <div className="space-y-6 border border-red-500 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-card p-6 rounded-xl border shadow-sm flex items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="w-24 h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
@@ -586,9 +588,19 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   return (
     <form id="simple-product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {currentStep === 2 && renderDetails()}
-      {thereAreUnits && currentStep === 3 && renderUnits()}
-      {thereAreUnits && currentStep === 4 && renderVariantProperties()}
+      <div className={cn("space-y-6", currentStep === 2 ? "block" : "hidden")}>
+        {renderDetails()}
+      </div>
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 3 ? "block" : "hidden")}>
+          {renderUnits()}
+        </div>
+      )}
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 4 ? "block" : "hidden")}>
+          {renderVariantProperties()}
+        </div>
+      )}
     </form>
   );
 }
