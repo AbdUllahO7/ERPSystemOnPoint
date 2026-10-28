@@ -87,14 +87,19 @@ export default function AddEditProject() {
 
   const saveMutation = useMutation({
     mutationFn: (data) =>
-      isEdit ? updateCustomerProject({ ...data, id }) : createCustomerProject(data),
+      isEdit ? updateCustomerProject(id, data) : createCustomerProject(data),
     onSuccess: () => {
       toast.success(isEdit ? "Project updated successfully" : "Project created successfully");
-      queryClient.invalidateQueries(["allCustomerProjects"]);
+      queryClient.invalidateQueries({ queryKey: ["allCustomerProjects"] });
+      queryClient.invalidateQueries({ queryKey: ["projectDetails", id] });
       navigate("/dashboard/crm/projects");
     },
     onError: (err) => {
-      toast.error(err?.message || (isEdit ? "Failed to update project" : "Failed to create project"));
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        (isEdit ? "Failed to update project" : "Failed to create project")
+      );
     },
   });
 
@@ -121,6 +126,7 @@ export default function AddEditProject() {
       description: formData.description,
       completionPercentage: Number(formData.completionPercentage) || 0,
       value: Number(formData.value) || 0,
+      projectValue: Number(formData.value) || 0,
       status: formData.status,
       startDate: formData.startDate
         ? new Date(formData.startDate).toISOString()

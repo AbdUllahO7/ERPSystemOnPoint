@@ -187,11 +187,33 @@ export async function createCustomerProject(data) {
   });
 }
 
-export async function updateCustomerProject(data) {
+export async function updateCustomerProject(idOrData, maybeData) {
+  let id;
+  let body;
+
+  if (maybeData !== undefined) {
+    id = idOrData;
+    body = { ...maybeData, id };
+  } else if (typeof idOrData === "object" && idOrData !== null) {
+    id = idOrData.id;
+    body = { ...idOrData };
+  } else {
+    id = idOrData;
+    body = { id };
+  }
+
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
+
   return apiHandler({
-    endPoint: "inventory/CustomerProjects/UpdateProject/update",
+    endPoint: `inventory/CustomerProjects/UpdateProject/Update/${normalizedId}`,
     method: "POST",
-    body: data,
+    body: {
+      ...body,
+      id: normalizedId,
+      projectValue: Number(body.value || body.projectValue || 0),
+      value: Number(body.value || body.projectValue || 0),
+    },
   });
 }
 
