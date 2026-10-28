@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -178,16 +179,7 @@ export default function AddEditProject() {
         </div>
       </div>
 
-      {/* Guidance Callout */}
-      <div className="p-4 bg-blue-50/80 border-r-4 border-blue-600 rounded-xl text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          قواعد ربط المشروع والفوترة (Project & Progress Rules):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          يتضمن المشروع العميل والاسم والوصف والفترة والقيمة والحالة ونسبة الإنجاز، مع إمكانية ربطه بعقد. تذكر أن إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل؛ لذلك تُقاس نسبة الإنجاز بتقدم المهام ومراحل التنفيذ الفعلي المعتمدة.
-        </p>
-      </div>
+    
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6 space-y-6 min-h-[300px]">
@@ -237,7 +229,7 @@ export default function AddEditProject() {
                   )}
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
-                      {c.customerName || c.customer_Name || `Customer #${c.id.substring(0, 8)}`}
+                      {c.name || c.customerName || c.customer_Name || `Customer #${c.id.substring(0, 8)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>

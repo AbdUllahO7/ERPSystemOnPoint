@@ -264,16 +264,7 @@ export default function ProjectsPage() {
         ))}
       </div>
 
-      {/* Guidance Alert */}
-      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          الفوترة ليست إنجازاً تشغيلياً (Operational Progress vs Invoicing):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. ترتبط نسبة الإنجاز (CompletionPercentage) بتقدم المهام ومراحل التنفيذ المعتمدة، مع إظهار الفوترة كمؤشر مستقل.
-        </p>
-      </div>
+     
 
       {/* Status Tabs */}
       <div className="flex items-center gap-6 border-b border-border overflow-x-auto bg-white px-2 pt-2 rounded-t-xl">

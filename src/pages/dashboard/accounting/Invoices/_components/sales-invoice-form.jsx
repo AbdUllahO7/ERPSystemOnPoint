@@ -285,27 +285,7 @@ export default function SalesInvoiceForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
       <div className="xl:col-span-2 space-y-6">
-        {/* Page 6 Guidance Callout */}
-        <div className="p-4 bg-blue-50/90 border-r-4 border-blue-600 rounded-xl text-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
-              <Receipt className="w-4 h-4 text-blue-600" />
-              قواعد إصدار الفاتورة وتوافق الدفع (Invoicing & Payment Rules - وسام):
-            </p>
-            <span className="text-[11px] font-semibold text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-full">
-              ContractItemsDtoInvoices & Installments
-            </span>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-blue-900 leading-relaxed">
-            <div>
-              • <strong>ربط العقود والبنود:</strong> يمكنك ربط الفاتورة بعقد العميل واستيراد البنود غير المفوترة فقط. الكميات يجب أن تكون موجبة ولا تتجاوز المتاح.
-            </div>
-            <div>
-              • <strong>توافق طريقة الدفع:</strong> الفاتورة النقدية أو البنكية يجب أن تكون مدفوعة بالكامل. للتحصيل الجزئي يرجى التبديل لنمط آجل (Credit) لمنع اختلاف مالية العقد عن الفاتورة.
-            </div>
-          </div>
-        </div>
-
+     
         <div className="bg-card p-6 rounded-xl border shadow-sm grid grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-semibold">Invoice Number <span className="text-red-500">*</span></label>

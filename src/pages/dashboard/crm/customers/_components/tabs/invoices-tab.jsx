@@ -172,16 +172,6 @@ export function InvoicesTab({ customerId: propCustomerId }) {
         </div>
       </div>
 
-      {/* Guidance Callout */}
-      <div className="p-3.5 bg-teal-50/80 border-r-4 border-teal-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-teal-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-teal-600" />
-          الفواتير والمالية وعلاقتها بالعقود (Customer Invoices & Contract Linkage):
-        </p>
-        <p className="text-teal-900 leading-relaxed">
-          عرض فواتير العميل مع مرجع العقد المنظم (Contract Reference). تذكير: حالة القسط «مفوتر» لا تعني «مدفوع»، ويتم تسجيل التحصيل الفعلي في خانة المدفوع فقط لمنع التضارب المحاسبي.
-        </p>
-      </div>
 
       {/* Filter Menu */}
       <div className="flex items-center justify-between gap-4">

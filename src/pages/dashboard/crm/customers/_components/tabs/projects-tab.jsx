@@ -208,17 +208,7 @@ export function ProjectsTab({ customerId: propCustomerId }) {
 
   return (
     <div className="space-y-6">
-      {/* Guidance Callout from Spec */}
-      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          الفوترة ليست إنجازاً تشغيلياً (Operational Progress vs Billing):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. يتم ربط نسبة الإنجاز (CompletionPercentage) بتقدم المهام أو مراحل التنفيذ المعتمدة في الميدان، مع إظهار الفوترة كمؤشر مستقل.
-        </p>
-      </div>
-
+     
       <DataView
         data={filteredProjects}
         isLoading={isLoading}

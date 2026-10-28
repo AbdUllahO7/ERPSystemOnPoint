@@ -97,7 +97,6 @@ export default function RentalDetailsPage() {
             { label: "Rental Contracts", href: "/dashboard/rentals" },
             { label: "Contract Details" },
           ]}
-          infoTooltip="Detailed overview of rental contract terms, rate schedules, dynamic details, and invoice returns."
         />
 
         <div className="flex items-center gap-2.5">
@@ -136,42 +135,6 @@ export default function RentalDetailsPage() {
         </div>
       </div>
 
-      {/* Guidance Alert matching Image Page 5 & Page 6 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-teal-50/90 border-r-4 border-teal-600 rounded-xl text-xs space-y-1.5">
-          <p className="font-bold text-teal-950 flex items-center gap-1.5 text-sm">
-            مثال لفهم الكميات والفوترة (Quantities vs Billed):
-          </p>
-          <p className="text-teal-900 leading-relaxed">
-            عقد يتضمن 10 جلسات بسعر 100 للجلسة؛ إجماليه 1,000. إذا فُوترت 3 جلسات، تصبح الكمية المفوترة 3 والمتاحة للفوترة 7. إذا لم يدفع العميل، فلا يصبح العقد مدفوعاً لمجرد إصدار الفاتورة.
-          </p>
-          <p className="text-[11px] text-teal-800 font-medium">
-            • المتبقي للفوترة = الكمية المتعاقد عليها ناقص الكمية المفوترة.
-          </p>
-        </div>
-
-        <div className="p-4 bg-amber-50/90 border-r-4 border-amber-600 rounded-xl text-xs space-y-1.5">
-          <p className="font-bold text-amber-950 flex items-center gap-1.5 text-sm">
-            الأقساط والعربون ومنع احتسابه مرتين (Advance & Collections):
-          </p>
-          <p className="text-amber-900 leading-relaxed">
-            عقد 1,000 وعربون 200 يعني أن المتبقي للتحصيل 800. عند إصدار الفواتير يجب تخصيص العربون لها بآلية واضحة، دون تسجيل مبلغ 200 نفسه مرة أخرى كتحصيل جديد.
-          </p>
-          <p className="text-[11px] text-amber-800 font-medium">
-            • المتبقي للتحصيل = قيمة الالتزام المستحق ناقص المبالغ المحصلة والمخصصة له.
-          </p>
-        </div>
-
-        <div className="p-4 bg-blue-50/90 border-r-4 border-blue-600 rounded-xl text-xs space-y-1.5 md:col-span-2">
-          <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
-            <Receipt className="w-4 h-4 text-blue-600" />
-            إصدار فاتورة من العقد وتوافق الدفع (Invoicing from Contract & Payment Rules):
-          </p>
-          <p className="text-blue-900 leading-relaxed">
-            تختار بنود العقد والكميات (ContractItemsDtoInvoices) والأقساط المرتبطة بها (InstallmentIds - بشرط تطابق مجموعها مع قيمة الفاتورة). الفاتورة النقدية/البنكية تتطلب سداد كامل الفاتورة، وللتحصيل الجزئي يجب استخدام نمط آجل (Credit).
-          </p>
-        </div>
-      </div>
 
       {/* Top Grid: Left 8 cols (Contract Info + Items Breakdown) + Right 4 cols (Financials) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
