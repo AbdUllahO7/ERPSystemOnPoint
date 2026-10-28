@@ -271,7 +271,7 @@ export default function CommissionLedgerPage() {
                 <SelectContent>
                   <SelectItem value="all">All Providers</SelectItem>
                   {lookups.providers.map((p) => (
-                    <SelectItem key={p.id} value={p.name}>
+                    <SelectItem key={p.id} value={p.id}>
                       {p.name}
                     </SelectItem>
                   ))}

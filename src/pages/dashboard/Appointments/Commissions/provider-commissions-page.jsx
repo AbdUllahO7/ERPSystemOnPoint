@@ -38,7 +38,7 @@ export default function ProviderCommissionsPage() {
     service: "",
     type: "Percentage",
     percentage: "",
-    startDate: "2026-01-01",
+    startDate: new Date().toISOString().split("T")[0],
   });
 
   const queryClient = useQueryClient();
@@ -88,7 +88,7 @@ export default function ProviderCommissionsPage() {
         service: "",
         type: "Percentage",
         percentage: "",
-        startDate: "2026-01-01",
+        startDate: new Date().toISOString().split("T")[0],
       });
     },
     onError: () => {
@@ -238,7 +238,7 @@ export default function ProviderCommissionsPage() {
                     <SelectContent>
                       <SelectItem value="all">All Providers</SelectItem>
                       {lookups.providers.map((p) => (
-                        <SelectItem key={p.id} value={p.name}>
+                        <SelectItem key={p.id} value={p.id}>
                           {p.name}
                         </SelectItem>
                       ))}
@@ -262,11 +262,14 @@ export default function ProviderCommissionsPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Services</SelectItem>
-                      {lookups.services.map((s) => (
-                        <SelectItem key={s.id} value={s.name}>
-                          {s.name}
-                        </SelectItem>
-                      ))}
+                      {lookups.services.map((s) => {
+                        const optionVal = s.variantId || s.id;
+                        return (
+                          <SelectItem key={optionVal} value={optionVal}>
+                            {s.name}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 </div>
