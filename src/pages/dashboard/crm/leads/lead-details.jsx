@@ -86,7 +86,7 @@ export default function LeadDetails() {
     enabled: !!id,
   });
 
-  const lead = data?.data;
+  const lead = data?.data?.data || data?.data || data;
   const isConverted = lead?.status === "Converted" || !!lead?.customerId;
 
   // Mutations
@@ -215,7 +215,12 @@ export default function LeadDetails() {
   if (isLoading) return <div className="p-6">Loading lead details...</div>;
   if (isError || !lead) return <div className="p-6 text-red-500">Error loading lead details.</div>;
 
-  const documents = docsData?.data?.items || docsData?.data || [];
+  const documents =
+    (docsData?.data?.items && docsData.data.items.length > 0)
+      ? docsData.data.items
+      : (Array.isArray(docsData?.data) && docsData.data.length > 0)
+      ? docsData.data
+      : (lead?.leadDoucumentDtos || lead?.leadDocumentDtos || []);
 
   const getInitials = (name) => (name ? name.substring(0, 2).toUpperCase() : "LD");
 
