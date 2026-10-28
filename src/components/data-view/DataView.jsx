@@ -43,7 +43,7 @@ function ViewToggle({ view, onChange, allowedViews }) {
     <div
       role="group"
       aria-label="View mode"
-      className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1"
+      className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200/90 bg-white p-1"
     >
       {options.map((opt) => {
         const isActive = view === opt.id;
@@ -55,10 +55,10 @@ function ViewToggle({ view, onChange, allowedViews }) {
             aria-label={opt.label}
             aria-pressed={isActive}
             className={cn(
-              "flex h-8 w-8 items-center justify-center rounded-md transition-colors",
+              "flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg transition-colors cursor-pointer",
               isActive
-                ? "bg-primary shadow-sm text-white"
-                : "bg-transparent hover:bg-muted",
+                ? "bg-[#0066d1] shadow-xs text-white"
+                : "bg-transparent hover:bg-slate-100 text-slate-500",
             )}
           >
             <ViewToggleIcon src={opt.icon} active={isActive} alt="" />
@@ -74,7 +74,7 @@ function ToolbarIconButton({ active, children, className, ...props }) {
     <button
       type="button"
       className={cn(
-        "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-600 transition-colors hover:bg-slate-50 cursor-pointer",
+        "flex h-9 w-9 sm:h-10 sm:w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200/90 bg-white text-slate-600 transition-colors hover:bg-slate-50 cursor-pointer",
         active &&
           "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
         className,
@@ -270,75 +270,80 @@ export function DataView({
       const subtitle = card.subtitle?.(row, index);
 
       return (
-        <article key={id} className="rounded-xl border border-border bg-card">
-          <div className="flex items-start justify-between gap-2 border-b border-border px-4 py-3">
-            <div className="flex min-w-0 items-center gap-2">
-              {CardIcon && (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                  <CardIcon className="size-4" />
-                </div>
+        <article
+          key={id}
+          className="rounded-xl border border-slate-200/80 bg-white shadow-2xs hover:shadow-xs transition-shadow flex flex-col justify-between"
+        >
+          <div>
+            <div className="flex items-start justify-between gap-2 border-b border-slate-100 px-3.5 sm:px-4 py-3">
+              <div className="flex min-w-0 items-center gap-2">
+                {CardIcon && (
+                  <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg bg-[#eaf4ff] text-[#0066d1]">
+                    <CardIcon className="size-4" />
+                  </div>
+                )}
+                <h3 className="truncate text-xs sm:text-sm font-semibold text-slate-900">
+                  {title}
+                </h3>
+              </div>
+              {hasRowMenu ? (
+                <RowActionsMenu
+                  row={row}
+                  rowIndex={index}
+                  groups={
+                    typeof rowActionsMenu === "function"
+                      ? rowActionsMenu(row, index)
+                      : rowActionsMenu
+                  }
+                />
+              ) : (
+                renderCardMenu && (
+                  <button
+                    type="button"
+                    onClick={() => renderCardMenu(row, index)}
+                    className="shrink-0 rounded-md p-1 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                    aria-label="More options"
+                  >
+                    <MoreVertical className="size-4" />
+                  </button>
+                )
               )}
-              <h3 className="truncate text-sm font-semibold text-foreground">
-                {title}
-              </h3>
             </div>
-            {hasRowMenu ? (
-              <RowActionsMenu
-                row={row}
-                rowIndex={index}
-                groups={
-                  typeof rowActionsMenu === "function"
-                    ? rowActionsMenu(row, index)
-                    : rowActionsMenu
-                }
-              />
-            ) : (
-              renderCardMenu && (
-                <button
-                  type="button"
-                  onClick={() => renderCardMenu(row, index)}
-                  className="shrink-0 rounded-md p-1 text-muted-foreground hover:bg-muted hover:text-muted-foreground"
-                  aria-label="More options"
-                >
-                  <MoreVertical className="size-4" />
-                </button>
-              )
-            )}
-          </div>
-          <div className="space-y-2 px-4 py-3">
-            {subtitle && <p className="text-xs text-primary/80">{subtitle}</p>}
-            {card.fields?.map((field, fi) => {
-              const value = field.value?.(row, index) ?? row[field.key];
-              if (value == null || value === "") return null;
-              const FieldIcon = field.icon;
-              return (
-                <div
-                  key={field.key ?? fi}
-                  className="flex items-center gap-2 text-sm text-muted-foreground"
-                >
-                  {FieldIcon && (
-                    <FieldIcon className="size-4 shrink-0 text-muted-foreground" />
-                  )}
-                  {field.label && (
-                    <span className="text-muted-foreground">{field.label}</span>
-                  )}
-                  <span className="truncate">{value}</span>
-                </div>
-              );
-            })}
-            {card.renderFooter?.(row, index)}
+            <div className="space-y-2 px-3.5 sm:px-4 py-3 text-xs">
+              {subtitle && <p className="text-xs text-[#0066d1] font-medium">{subtitle}</p>}
+              {card.fields?.map((field, fi) => {
+                const value = field.value?.(row, index) ?? row[field.key];
+                if (value == null || value === "") return null;
+                const FieldIcon = field.icon;
+                return (
+                  <div
+                    key={field.key ?? fi}
+                    className="flex items-center gap-2 text-xs text-slate-600"
+                  >
+                    {FieldIcon && (
+                      <FieldIcon className="size-3.5 shrink-0 text-slate-400" />
+                    )}
+                    {field.label && (
+                      <span className="text-slate-500">{field.label}:</span>
+                    )}
+                    <span className="truncate font-medium text-slate-800">{value}</span>
+                  </div>
+                );
+              })}
+              {card.renderFooter?.(row, index)}
+            </div>
           </div>
         </article>
       );
     });
 
   const tableContent = showTableView && (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto -mx-3.5 sm:mx-0 px-3.5 sm:px-0 scrollbar-thin">
       <table className="min-w-full text-sm">
         <thead>
           <tr className="border-b border-slate-100 bg-white">
             {selectable && (
-              <th className="w-10 px-4 py-3.5 text-start">
+              <th className="w-10 px-3 sm:px-4 py-3 sm:py-3.5 text-start shrink-0">
                 <input
                   type="checkbox"
                   checked={allSelected}
@@ -364,7 +369,7 @@ export function DataView({
                 <th
                   key={colKey}
                   className={cn(
-                    "px-4 py-3.5 text-start text-xs font-semibold text-slate-800",
+                    "px-3 sm:px-4 py-3 sm:py-3.5 text-start text-xs font-semibold text-slate-800 whitespace-nowrap",
                     col.className,
                   )}
                 >
@@ -390,7 +395,7 @@ export function DataView({
                 </th>
               );
             })}
-            <th className="w-14 px-4 py-3.5 text-end">
+            <th className="w-12 sm:w-14 px-3 sm:px-4 py-3 sm:py-3.5 text-end shrink-0 whitespace-nowrap">
               <div className="flex items-center justify-end">
                 <button
                   type="button"
@@ -398,7 +403,7 @@ export function DataView({
                   className="rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
                   aria-label="Column settings"
                 >
-                  <SlidersHorizontal className="size-4 text-slate-600" />
+                  <SlidersHorizontal className="size-3.5 sm:size-4 text-slate-600" />
                 </button>
               </div>
             </th>
@@ -418,7 +423,7 @@ export function DataView({
                 )}
               >
                 {selectable && (
-                  <td className="px-4 py-3.5">
+                  <td className="px-3 sm:px-4 py-3 sm:py-3.5 shrink-0">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -440,7 +445,7 @@ export function DataView({
                     <td
                       key={cellKey}
                       className={cn(
-                        "px-4 py-3.5 text-xs text-slate-700 font-normal",
+                        "px-3 sm:px-4 py-3 sm:py-3.5 text-xs text-slate-700 font-normal",
                         col.cellClassName,
                       )}
                     >
@@ -448,7 +453,7 @@ export function DataView({
                     </td>
                   );
                 })}
-                <td className="px-4 py-3.5 text-end">
+                <td className="px-3 sm:px-4 py-3 sm:py-3.5 text-end shrink-0 whitespace-nowrap">
                   {hasRowMenu ? (
                     <RowActionsMenu
                       row={row}
@@ -476,10 +481,10 @@ export function DataView({
       {stats?.length > 0 && <StatsCards cards={stats} />}
 
       {/* Main Unified White Card Container matching Figma */}
-      <div className="bg-white rounded-2xl border border-slate-100/90 shadow-sm p-5 space-y-4">
+      <div className="bg-white rounded-xl sm:rounded-2xl border border-slate-100/90 shadow-sm p-3.5 sm:p-5 space-y-3.5 sm:space-y-4">
         {/* Status Tabs inside Card Header matching Figma */}
         {tabs && (Array.isArray(tabs) ? tabs : tabs.items)?.length > 0 && (
-          <div className="flex items-center gap-6 px-1 border-b border-slate-100 overflow-x-auto -mt-1 mb-2">
+          <div className="flex items-center gap-4 sm:gap-6 px-1 border-b border-slate-100 overflow-x-auto scrollbar-none -mt-0.5 sm:-mt-1 mb-2">
             {(Array.isArray(tabs) ? tabs : tabs.items).map((tab) => {
               const tabId = typeof tab === "string" ? tab : tab.id;
               const tabLabel = typeof tab === "string" ? tab : tab.label;
@@ -491,7 +496,7 @@ export function DataView({
                   type="button"
                   onClick={() => (tabs.onChange ?? tabs.onTabChange)?.(tabId)}
                   className={cn(
-                    "text-xs font-semibold transition-all relative cursor-pointer pb-3 pt-1 whitespace-nowrap",
+                    "text-xs font-semibold transition-all relative cursor-pointer pb-2.5 sm:pb-3 pt-1 whitespace-nowrap",
                     isActive
                       ? "text-[#0066d1] font-bold"
                       : "text-slate-500 hover:text-slate-800 font-medium"
@@ -508,11 +513,11 @@ export function DataView({
         )}
 
         {/* Top Toolbar matching Figma */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2.5 sm:gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* Left: Search & Filter */}
-          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+          <div className="flex w-full lg:w-auto min-w-0 flex-1 items-center gap-2 sm:gap-2.5">
             {activeSearch && (
-              <div className="relative min-w-[260px] max-w-sm">
+              <div className="relative flex-1 min-w-0 w-full sm:max-w-md">
                 <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   value={activeSearch.value ?? ""}
@@ -523,7 +528,7 @@ export function DataView({
                   placeholder={
                     activeSearch.placeholder ?? "Search by id or employee name..."
                   }
-                  className="h-10 w-full rounded-xl border-slate-200/90 bg-white ps-9 pe-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                  className="h-9 sm:h-10 w-full rounded-xl border-slate-200/90 bg-white ps-9 pe-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
                 />
               </div>
             )}
@@ -532,53 +537,56 @@ export function DataView({
                 type="button"
                 variant="ghost"
                 onClick={activeFilter.onClick}
-                className="h-10 gap-1.5 rounded-xl bg-[#eaf4ff] text-[#0066d1] hover:bg-[#d8ecff] hover:text-[#0052a8] text-xs font-semibold px-4 cursor-pointer"
+                className="h-9 sm:h-10 shrink-0 gap-1.5 rounded-xl bg-[#eaf4ff] text-[#0066d1] hover:bg-[#d8ecff] hover:text-[#0052a8] text-xs font-semibold px-3 sm:px-4 cursor-pointer"
               >
                 <Filter className="size-3.5" />
-                {activeFilter.label ?? "Filter"}
+                <span>{activeFilter.label ?? "Filter"}</span>
               </Button>
             )}
           </div>
 
           {/* Right: Actions */}
-          <div className="flex flex-wrap items-center gap-2">
-            {showViewToggle && (
-              <ViewToggle
-                view={view}
-                onChange={setView}
-                allowedViews={allowedViews}
-              />
-            )}
-            <ToolbarIconButton
-              onClick={onRefresh || (() => window.location.reload())}
-              aria-label="Refresh"
-            >
-              <RefreshCw className="size-4 text-slate-600" />
-            </ToolbarIconButton>
-            {onPrint && (
-              <ToolbarIconButton onClick={onPrint} aria-label="Print">
-                <Printer className="size-4 text-slate-600" />
-              </ToolbarIconButton>
-            )}
-            {(exportAction || onExport) && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={exportAction?.onClick || onExport}
-                className="h-10 gap-1.5 rounded-xl border-slate-200/90 text-slate-700 bg-white hover:bg-slate-50 text-xs font-medium px-4 cursor-pointer"
+          <div className="flex items-center flex-wrap gap-1.5 sm:gap-2 justify-between sm:justify-end w-full lg:w-auto">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              {showViewToggle && (
+                <ViewToggle
+                  view={view}
+                  onChange={setView}
+                  allowedViews={allowedViews}
+                />
+              )}
+              <ToolbarIconButton
+                onClick={onRefresh || (() => window.location.reload())}
+                aria-label="Refresh"
               >
-                <Download className="size-3.5 text-slate-600" />
-                {exportAction?.label ?? "Export"}
-              </Button>
-            )}
+                <RefreshCw className="size-3.5 sm:size-4 text-slate-600" />
+              </ToolbarIconButton>
+              {onPrint && (
+                <ToolbarIconButton onClick={onPrint} aria-label="Print">
+                  <Printer className="size-3.5 sm:size-4 text-slate-600" />
+                </ToolbarIconButton>
+              )}
+              {(exportAction || onExport) && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={exportAction?.onClick || onExport}
+                  className="h-9 sm:h-10 gap-1.5 rounded-xl border-slate-200/90 text-slate-700 bg-white hover:bg-slate-50 text-xs font-medium px-3 sm:px-4 cursor-pointer shrink-0"
+                >
+                  <Download className="size-3.5 text-slate-600" />
+                  <span>{exportAction?.label ?? "Export"}</span>
+                </Button>
+              )}
+            </div>
+
             {activeAddButton && (
               <Button
                 type="button"
                 onClick={activeAddButton.onClick}
-                className="h-10 gap-1.5 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 text-xs font-semibold shadow-xs cursor-pointer"
+                className="h-9 sm:h-10 gap-1.5 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white px-3.5 sm:px-5 text-xs font-semibold shadow-xs cursor-pointer shrink-0 ms-auto sm:ms-0"
               >
                 <Plus className="size-3.5 stroke-[2.5]" />
-                {activeAddButton.label ?? "Add"}
+                <span>{activeAddButton.label ?? "Add"}</span>
               </Button>
             )}
           </div>
@@ -616,13 +624,13 @@ export function DataView({
               data-active={view === "cards" ? "true" : "false"}
               aria-hidden={view !== "cards"}
             >
-              <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4 p-1 sm:p-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {cardsContent}
               </div>
             </div>
           </div>
         ) : view === "cards" && showCardsView ? (
-          <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 sm:gap-4 p-1 sm:p-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {cardsContent}
           </div>
         ) : (
@@ -631,75 +639,86 @@ export function DataView({
 
         {/* Bottom Pagination matching Figma */}
         {activePagination && (
-          <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              disabled={activePagination.page <= 1}
-              onClick={() =>
-                activePagination.onPageChange?.(activePagination.page - 1)
-              }
-              className="px-2 py-1 text-xs font-medium text-slate-500 disabled:opacity-40 hover:text-slate-800 cursor-pointer"
-            >
-              {activePagination.prevLabel ?? "Pre"}
-            </button>
-            <div className="flex items-center gap-1">
-              {buildPageItems(
-                activePagination.page,
-                activePagination.totalPages,
-              ).map((item, i) =>
-                item === "..." ? (
-                  <span
-                    key={`ellipsis-${i}`}
-                    className="px-1.5 text-xs text-slate-400"
-                  >
-                    ....
-                  </span>
-                ) : (
-                  <button
-                    key={item}
-                    type="button"
-                    onClick={() => activePagination.onPageChange?.(item)}
-                    className={cn(
-                      "flex h-7 min-w-7 items-center justify-center rounded text-xs font-medium transition-colors cursor-pointer",
-                      item === activePagination.page
-                        ? "bg-[#0066d1] text-white"
-                        : "text-slate-600 hover:bg-slate-100",
-                    )}
-                  >
-                    {item}
-                  </button>
-                ),
-              )}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <div className="text-xs text-slate-500 order-2 sm:order-1 text-center sm:text-start">
+              <span>
+                Page <strong className="font-semibold text-slate-800">{activePagination.page}</strong> of{" "}
+                <strong className="font-semibold text-slate-800">{Math.max(1, activePagination.totalPages)}</strong>
+              </span>
             </div>
-            <button
-              type="button"
-              disabled={activePagination.page >= activePagination.totalPages}
-              onClick={() =>
-                activePagination.onPageChange?.(activePagination.page + 1)
-              }
-              className="px-2 py-1 text-xs font-semibold text-[#0066d1] disabled:opacity-40 hover:text-[#0052a8] cursor-pointer"
-            >
-              {activePagination.nextLabel ?? "Next"}
-            </button>
+
+            <div className="flex items-center gap-1 sm:gap-1.5 order-1 sm:order-2 flex-wrap justify-center">
+              <button
+                type="button"
+                disabled={activePagination.page <= 1}
+                onClick={() =>
+                  activePagination.onPageChange?.(activePagination.page - 1)
+                }
+                className="px-2.5 py-1 text-xs font-semibold text-slate-600 disabled:opacity-40 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                {activePagination.prevLabel ?? "Pre"}
+              </button>
+              <div className="flex items-center gap-1">
+                {buildPageItems(
+                  activePagination.page,
+                  activePagination.totalPages,
+                ).map((item, i) =>
+                  item === "..." ? (
+                    <span
+                      key={`ellipsis-${i}`}
+                      className="px-1 text-xs text-slate-400 select-none"
+                    >
+                      ...
+                    </span>
+                  ) : (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => activePagination.onPageChange?.(item)}
+                      className={cn(
+                        "flex h-7 min-w-7 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                        item === activePagination.page
+                          ? "bg-[#0066d1] text-white font-semibold shadow-xs"
+                          : "text-slate-600 hover:bg-slate-100",
+                      )}
+                    >
+                      {item}
+                    </button>
+                  ),
+                )}
+              </div>
+              <button
+                type="button"
+                disabled={activePagination.page >= activePagination.totalPages}
+                onClick={() =>
+                  activePagination.onPageChange?.(activePagination.page + 1)
+                }
+                className="px-2.5 py-1 text-xs font-semibold text-[#0066d1] disabled:opacity-40 hover:text-[#0052a8] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+              >
+                {activePagination.nextLabel ?? "Next"}
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {/* Filter Drawer / Dialog */}
       {isFilterOpen && filterContent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xl w-full max-w-md animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
               <h3 className="text-base font-bold text-slate-800">Filters</h3>
               <button
                 type="button"
                 onClick={onCloseFilter}
-                className="text-slate-400 hover:text-slate-700 p-1 rounded-md"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 ✕
               </button>
             </div>
-            <div className="py-2">{filterContent}</div>
+            <div className="py-3 overflow-y-auto flex-1 min-h-0 space-y-4">
+              {filterContent}
+            </div>
           </div>
         </div>
       )}
