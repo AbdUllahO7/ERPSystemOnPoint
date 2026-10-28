@@ -449,24 +449,48 @@ export async function createRental(data) {
   // If payload contains contract items or title, send to CustomerContracts/CreateContract/create
   if (data.items || data.title) {
     const items = (data.items || []).map((itm) => {
+      const itemName = (
+        itm.custom_Item_Name ||
+        itm.customItemName ||
+        itm.name ||
+        itm.productName ||
+        "Item"
+      ).trim();
       const q = Number(itm.quantity || 1);
-      const p = Number(itm.unitPrice || 0);
-      const total = Number(itm.totalPrice || q * p);
+      const p = Number(itm.unit_Price ?? itm.unitPrice ?? 0);
+      const total = Number(itm.total_Price ?? itm.totalPrice ?? q * p);
       return {
-        productVariantId: itm.productVariantId || null,
-        customItemName: itm.customItemName || itm.name || "Item",
+        productVariantId: itm.productVariantId || itm.productVariant_Id || null,
+        productVariant_Id: itm.productVariantId || itm.productVariant_Id || null,
+        custom_Item_Name: itemName,
+        customItemName: itemName,
         description: itm.description || "",
         quantity: q,
+        unit_Price: p,
         unitPrice: p,
+        total_Price: total,
         totalPrice: total,
       };
     });
 
-    const installments = (data.installments || []).map((ins, idx) => ({
-      installmentName: ins.installmentName || ins.name || `Installment #${idx + 1}`,
-      amount: Number(ins.amount || 0),
-      dueDate: ins.dueDate ? new Date(ins.dueDate).toISOString() : new Date().toISOString(),
-    }));
+    const installments = (data.installments || []).map((ins, idx) => {
+      const insName = (
+        ins.installment_Name ||
+        ins.installmentName ||
+        ins.name ||
+        `Installment #${idx + 1}`
+      ).trim();
+      const dateIso = ins.due_Date || ins.dueDate
+        ? new Date(ins.due_Date || ins.dueDate).toISOString()
+        : new Date().toISOString();
+      return {
+        installment_Name: insName,
+        installmentName: insName,
+        amount: Number(ins.amount || 0),
+        due_Date: dateIso,
+        dueDate: dateIso,
+      };
+    });
 
     const computedTotal = items.reduce((sum, itm) => sum + itm.totalPrice, 0);
 

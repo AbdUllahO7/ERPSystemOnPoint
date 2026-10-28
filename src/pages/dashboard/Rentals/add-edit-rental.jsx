@@ -124,12 +124,12 @@ export default function AddEditRentalPage() {
         setItems(
           c.items.map((itm, idx) => ({
             id: itm.id || `item-${idx + 1}`,
-            productVariantId: itm.productVariantId || null,
-            customItemName: itm.customItemName || itm.name || "",
+            productVariantId: itm.productVariantId || itm.productVariant_Id || null,
+            customItemName: itm.custom_Item_Name || itm.customItemName || itm.productName || itm.name || "",
             description: itm.description || "",
             quantity: Number(itm.quantity || 1),
-            unitPrice: Number(itm.unitPrice || 0),
-            totalPrice: Number(itm.totalPrice || (Number(itm.quantity || 1) * Number(itm.unitPrice || 0))),
+            unitPrice: Number(itm.unit_Price ?? itm.unitPrice ?? 0),
+            totalPrice: Number(itm.total_Price ?? itm.totalPrice ?? (Number(itm.quantity || 1) * Number(itm.unitPrice || 0))),
           }))
         );
       }
@@ -138,9 +138,9 @@ export default function AddEditRentalPage() {
         setInstallments(
           c.installments.map((ins, idx) => ({
             id: ins.id || `inst-${idx + 1}`,
-            installmentName: ins.installmentName || ins.name || `Installment #${idx + 1}`,
+            installmentName: ins.installment_Name || ins.installmentName || ins.name || `Installment #${idx + 1}`,
             amount: Number(ins.amount || 0),
-            dueDate: ins.dueDate ? ins.dueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+            dueDate: (ins.due_Date || ins.dueDate) ? (ins.due_Date || ins.dueDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
             status: ins.status || "Pending",
           }))
         );
@@ -303,6 +303,22 @@ export default function AddEditRentalPage() {
       return;
     }
 
+    const hasEmptyItem = items.some(
+      (itm) => !(itm.customItemName || itm.custom_Item_Name || itm.name || "").trim()
+    );
+    if (hasEmptyItem) {
+      toast.error("Please enter an item/service name for all contract items");
+      return;
+    }
+
+    const hasEmptyInstallment = installments.some(
+      (ins) => !(ins.installmentName || ins.installment_Name || ins.name || "").trim()
+    );
+    if (hasEmptyInstallment) {
+      toast.error("Please enter a name for all installments");
+      return;
+    }
+
     const payload = {
       id: isEdit ? id : undefined,
       customerId: formData.customerId,
@@ -319,19 +335,47 @@ export default function AddEditRentalPage() {
       totalAmount: calculations.totalItemsAmount,
       currencyId: formData.currencyId || null,
       status: formData.status,
-      items: items.map((itm) => ({
-        productVariantId: itm.productVariantId || null,
-        customItemName: itm.customItemName.trim() || "Item",
-        description: itm.description || "",
-        quantity: Number(itm.quantity || 1),
-        unitPrice: Number(itm.unitPrice || 0),
-        totalPrice: Number(itm.totalPrice || 0),
-      })),
-      installments: installments.map((ins) => ({
-        installmentName: ins.installmentName.trim() || "Installment",
-        amount: Number(ins.amount || 0),
-        dueDate: ins.dueDate ? new Date(ins.dueDate).toISOString() : new Date().toISOString(),
-      })),
+      items: items.map((itm) => {
+        const itemName = (
+          itm.custom_Item_Name ||
+          itm.customItemName ||
+          itm.name ||
+          formData.title ||
+          "Item"
+        ).trim();
+        const q = Number(itm.quantity || 1);
+        const p = Number(itm.unit_Price ?? itm.unitPrice ?? 0);
+        return {
+          productVariantId: itm.productVariantId || itm.productVariant_Id || null,
+          productVariant_Id: itm.productVariantId || itm.productVariant_Id || null,
+          custom_Item_Name: itemName,
+          customItemName: itemName,
+          description: itm.description || "",
+          quantity: q,
+          unit_Price: p,
+          unitPrice: p,
+          total_Price: Number(itm.totalPrice || q * p),
+          totalPrice: Number(itm.totalPrice || q * p),
+        };
+      }),
+      installments: installments.map((ins, idx) => {
+        const insName = (
+          ins.installment_Name ||
+          ins.installmentName ||
+          ins.name ||
+          `Installment #${idx + 1}`
+        ).trim();
+        const dateIso = ins.due_Date || ins.dueDate
+          ? new Date(ins.due_Date || ins.dueDate).toISOString()
+          : new Date().toISOString();
+        return {
+          installment_Name: insName,
+          installmentName: insName,
+          amount: Number(ins.amount || 0),
+          due_Date: dateIso,
+          dueDate: dateIso,
+        };
+      }),
     };
 
     saveMutation.mutate(payload);
