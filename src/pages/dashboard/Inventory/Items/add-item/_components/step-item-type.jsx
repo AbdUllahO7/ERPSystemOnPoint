@@ -1,4 +1,4 @@
-import { Box, Briefcase, Layers } from "lucide-react";
+import { Box, Briefcase, Layers, KeyRound } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllProductAttributes } from "@/lib/api";
 
@@ -21,6 +21,14 @@ export default function StepItemType({
       icon: Box,
       color: "text-blue-500",
       bg: "bg-blue-50",
+    },
+    {
+      id: "rental",
+      label: "Rental",
+      description: "Machinery, vehicles, or units for lease",
+      icon: KeyRound,
+      color: "text-emerald-500",
+      bg: "bg-emerald-50",
     },
     {
       id: "service",
@@ -56,7 +64,7 @@ export default function StepItemType({
 
   return (
     <div className="space-y-8">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {options.map((opt) => {
           const isSelected = itemType === opt.id;
           return (

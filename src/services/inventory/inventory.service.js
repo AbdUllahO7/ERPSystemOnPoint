@@ -679,6 +679,119 @@ export async function updateSimpleProductWithoutSpecs(data) {
   });
 }
 
+export function buildRentalProductDto(data = {}, isUpdate = false) {
+  const costPrice = Number(data.cost_Price ?? data.costPrice ?? 0) || 0;
+  const consumerPrice = Number(data.consumer_Price ?? data.consumerPrice ?? 0) || 0;
+
+  let units = [];
+  const rawUnits =
+    data.productUnitrental ||
+    data.product_Unit_Rental ||
+    data.productUnits ||
+    data.units;
+
+  if (Array.isArray(rawUnits) && rawUnits.length > 0) {
+    units = rawUnits
+      .map((u) => {
+        const uomId = toGuidOrNull(
+          u.unitOfMeasurmentId ||
+          u.unitOfMeasurementId ||
+          u.unit_Of_Measurement_Id ||
+          u.unit_id ||
+          u.unitId ||
+          u.id
+        );
+        if (!uomId) return null;
+        return {
+          unitOfMeasurmentId: uomId,
+          cost_Price: Number(u.cost_Price ?? u.costPrice ?? costPrice) || 0,
+          consumer_Price: Number(u.consumer_Price ?? u.consumerPrice ?? consumerPrice) || 0,
+        };
+      })
+      .filter(Boolean);
+  }
+
+  if (units.length === 0) {
+    const singleUomId = toGuidOrNull(
+      data.unitOfMeasurmentId ||
+      data.unitOfMeasurementId ||
+      data.unit_Of_Measurement_Id ||
+      data.unitId ||
+      data.unit_id ||
+      data.variants?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id
+    );
+    if (singleUomId) {
+      units = [
+        {
+          unitOfMeasurmentId: singleUomId,
+          cost_Price: costPrice,
+          consumer_Price: consumerPrice,
+        },
+      ];
+    }
+  }
+
+  const dto = {
+    name_Product: (data.name_Product || data.name || "").trim(),
+    product_Number: (data.product_Number || data.productNumber || "").trim(),
+    has_Expiry_Date: Boolean(data.has_Expiry_Date ?? data.hasExpiryDate ?? false),
+    category_Id: toGuidOrNull(data.category_Id || data.categoryId || data.category),
+    can_Be_Sold: Boolean(data.can_Be_Sold ?? data.canBeSold ?? true),
+    requires_Contract: Boolean(data.requires_Contract ?? data.requiresContract ?? true),
+    default_Deposit_Amount:
+      Number(
+        data.default_Deposit_Amount ??
+        data.defaultDepositAmount ??
+        data.defaultInsuranceQty ??
+        0
+      ) || 0,
+    revenue_Account_Id: toGuidOrNull(
+      data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount
+    ),
+    expense_Account_Id: toGuidOrNull(
+      data.expense_Account_Id || data.expenseAccountId || data.expenseAccount
+    ),
+    billing_Method: data.billing_Method || data.billingMethod || "FixedPrice",
+    cost_Price: costPrice,
+    consumer_Price: consumerPrice,
+    productUnitrental: units,
+  };
+
+  const idVal = toGuidOrNull(data.id);
+  if (isUpdate || idVal) {
+    dto.id = idVal;
+  }
+
+  return dto;
+}
+
+/**
+ * Create Rental Product
+ * Endpoint: POST /api/Inventory/Product/CreateRenatal
+ */
+export async function createRentalProduct(data) {
+  const cleanDto = buildRentalProductDto(data, false);
+  return apiHandler({
+    endPoint: "Inventory/Product/CreateRenatal",
+    method: "POST",
+    body: cleanDto,
+  });
+}
+
+/**
+ * Update Rental Product
+ * Endpoint: POST /api/Inventory/Product/Update/{id}
+ */
+export async function updateRentalProduct(id, data) {
+  const cleanId = toGuidOrNull(id || data?.id);
+  const cleanDto = buildRentalProductDto({ ...data, id: cleanId }, true);
+  return apiHandler({
+    endPoint: `Inventory/Product/Update/${cleanId}`,
+    method: "POST",
+    body: cleanDto,
+  });
+}
+
 export async function searchMaterialsForInvoice(params) {
   return apiHandler({
     endPoint: "Inventory/Product/SearchMaterialsForInvoice/search-for-invoice",

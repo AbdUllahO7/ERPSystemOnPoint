@@ -28,6 +28,8 @@ import {
   updateAssemblyWithoutSpecs,
   updateBundleWithoutSpecs,
   updateSimpleProductWithSpecs,
+  createRentalProduct,
+  updateRentalProduct,
 } from "@/services/inventory/inventory.service";
 
 export default function AddEditService() {
@@ -169,7 +171,12 @@ export default function AddEditService() {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data) => createService(data),
+    mutationFn: (data) => {
+      if (data.productType === "Rental") {
+        return createRentalProduct(data);
+      }
+      return createService(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(["services"]);
       toast.success(t("services.createdSuccess") || "Service created successfully!");
@@ -277,6 +284,9 @@ export default function AddEditService() {
       if (data.productType === "Bundle") {
         return updateBundleWithoutSpecs({ ...raw, ...data, id });
       }
+      if (data.productType === "Rental" || raw.product_Type === "Rental") {
+        return updateRentalProduct(id, { ...raw, ...data, id });
+      }
 
       // Default (Service / Inventory with specifications):
       // POST /api/Inventory/Product/UpdateProductInventoryWithSpecifications/inventory-with-specifications
@@ -378,6 +388,7 @@ export default function AddEditService() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Service">{t("services.types.service") || "Service"}</SelectItem>
+                    <SelectItem value="Rental">{t("services.types.rental") || "Rental"}</SelectItem>
                     <SelectItem value="Inventory">{t("services.types.inventory") || "Inventory without specs"}</SelectItem>
                     <SelectItem value="InventoryWithSpecs">{t("services.types.inventoryWithSpecs") || "Inventory with specs"}</SelectItem>
                     <SelectItem value="Assembly">{t("services.types.assembly") || "Assembly"}</SelectItem>

@@ -33,9 +33,10 @@ import { cn } from "@/lib/utils";
 
 const TYPE_STYLES = {
   Inventory: "bg-blue-50 text-blue-700 border-blue-200",
+  Rental: "bg-emerald-50 text-emerald-700 border-emerald-200",
   Service: "bg-amber-50 text-amber-700 border-amber-200",
   Appointment: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  Reservation: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  Reservation: "bg-rose-50 text-rose-700 border-rose-200",
   Bundle: "bg-purple-50 text-purple-700 border-purple-200",
   Assembly: "bg-teal-50 text-teal-700 border-teal-200",
 };
@@ -65,6 +66,7 @@ export default function ItemsPage() {
   const tabs = [
     "All Items",
     "Inventory",
+    "Rental",
     "Service",
     "Appointment",
     "Reservation",

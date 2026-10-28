@@ -604,3 +604,9 @@ export async function getRentalPricingLookup() {
     method: "GET",
   });
 }
+
+export {
+  createRentalProduct,
+  updateRentalProduct,
+  buildRentalProductDto,
+} from "@/services/inventory/inventory.service";
