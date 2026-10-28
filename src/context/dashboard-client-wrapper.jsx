@@ -187,8 +187,11 @@ const sidebarLinks = [
       },
       {
         title: "Invoices",
-        href: "/dashboard/accounting/invoices",
         icon: FileText,
+        submenu: [
+          { title: "All Invoices", href: "/dashboard/accounting/invoices" },
+          { title: "Installments", href: "/dashboard/accounting/invoices/installments" },
+        ],
       },
       // {
       //   title: "Bonds",

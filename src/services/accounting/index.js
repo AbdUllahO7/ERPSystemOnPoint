@@ -11,6 +11,16 @@ export const accountingApi = {
     getById: accountingService.getInvoiceById,
     createSales: accountingService.createSalesInvoice,
     createPurchase: accountingService.createPurchaseInvoice,
+    installments: {
+      getAll: accountingService.getAllInstallments,
+      getById: accountingService.getInstallmentById,
+      pay: accountingService.payInstallment,
+    },
+  },
+  installments: {
+    getAll: accountingService.getAllInstallments,
+    getById: accountingService.getInstallmentById,
+    pay: accountingService.payInstallment,
   },
   expenses: {
     getAll: accountingService.getAllExpenses,

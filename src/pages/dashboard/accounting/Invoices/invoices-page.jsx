@@ -3,12 +3,13 @@ import {
   FileText,
   Eye,
   Info,
-  Plus
+  Plus,
+  Layers,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { useQuery } from "@tanstack/react-query";
 import { getAllInvoices } from "../../../../lib/api";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function InvoicesPage() {
   const [search, setSearch] = useState("");
@@ -80,12 +81,35 @@ export default function InvoicesPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <h2 className="text-xl font-semibold text-foreground">
-          Invoices
-        </h2>
-        <Info className="w-4 h-4 text-muted-foreground" />
+    <div className="space-y-6">
+      {/* Navigation Switcher Tabs (All Invoices vs Installments) */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              Invoices (الفواتير)
+            </h1>
+            <Info className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            Manage sales and purchase invoices, payment terms, and transactions.
+          </p>
+        </div>
+
+        {/* Section Switcher Tabs */}
+        <div className="inline-flex items-center p-1 rounded-xl bg-muted/60 border border-border">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-background text-foreground shadow-xs border border-border">
+            <FileText className="w-3.5 h-3.5 text-primary" />
+            All Invoices
+          </div>
+          <Link
+            to="/dashboard/accounting/invoices/installments"
+            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            Installments
+          </Link>
+        </div>
       </div>
 
       <DataView

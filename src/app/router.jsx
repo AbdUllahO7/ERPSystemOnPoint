@@ -87,6 +87,7 @@ const InvoicePatternsPage = lazy(() => import("../pages/dashboard/accounting/Inv
 const AddEditInvoicePattern = lazy(() => import("../pages/dashboard/accounting/InvoicePatterns/add-edit-invoice-pattern"))
 const InvoicePatternDetails = lazy(() => import("../pages/dashboard/accounting/InvoicePatterns/invoice-pattern-details"))
 const InvoicesPage = lazy(() => import("../pages/dashboard/accounting/Invoices/invoices-page"))
+const InstallmentsPage = lazy(() => import("../pages/dashboard/accounting/Invoices/Installments/installments-page"))
 const AddEditInvoice = lazy(() => import("../pages/dashboard/accounting/Invoices/add-edit-invoice"))
 const InvoiceDetails = lazy(() => import("../pages/dashboard/accounting/Invoices/invoice-details"))
 const OperatingExpensesPage = lazy(() => import("../pages/dashboard/accounting/OperatingExpenses/operating-expenses-page"))
@@ -305,6 +306,7 @@ export const router = createBrowserRouter([
       { path: "/dashboard/accounting/invoice-patterns/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/InvoicePatterns/invoice-pattern-details")) },
 
       { path: "/dashboard/accounting/invoices", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/invoices-page")) },
+      { path: "/dashboard/accounting/invoices/installments", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/Installments/installments-page")) },
       { path: "/dashboard/accounting/invoices/add", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/add-edit-invoice")) },
       { path: "/dashboard/accounting/invoices/:id", element: lazyLoad(() => import("../pages/dashboard/accounting/Invoices/invoice-details")) },
 

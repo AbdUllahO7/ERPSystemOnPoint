@@ -1,11 +1,23 @@
-import React from "react";
+import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Info, Printer, Download, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import {
+  Info,
+  Printer,
+  Download,
+  ChevronLeft,
+  ChevronRight,
+  FileText,
+  Layers,
+  CreditCard,
+  Clock,
+  CheckCircle2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataView } from "@/components/data-view/DataView";
 import {
   getInvoiceById,
+  getAllInstallments,
   getWarehouses,
   getAllCostCenters,
   getAllCurrencies,
@@ -13,6 +25,7 @@ import {
   getAllCustomers,
   getAllInvoicePatterns
 } from "../../../../lib/api";
+import PayInstallmentDialog from "./Installments/_components/pay-installment-dialog";
 
 export default function InvoiceDetails() {
   const { id } = useParams();
@@ -23,6 +36,27 @@ export default function InvoiceDetails() {
   });
 
   const invoice = invoiceData?.data;
+
+  const [selectedForPay, setSelectedForPay] = useState(null);
+
+  // Fetch Payment Schedules / Installments for this invoice
+  const {
+    data: installmentsRes,
+    isLoading: isLoadingInstallments,
+    refetch: refetchInstallments,
+  } = useQuery({
+    queryKey: ["getAllInstallments", { InvoiceId: id }],
+    queryFn: () => getAllInstallments({ InvoiceId: id, PageSize: 100 }),
+    enabled: Boolean(id),
+  });
+
+  const invoiceSchedules = Array.isArray(installmentsRes?.data)
+    ? installmentsRes.data
+    : Array.isArray(installmentsRes?.data?.items)
+    ? installmentsRes.data.items
+    : Array.isArray(invoice?.paymentSchedules)
+    ? invoice.paymentSchedules
+    : [];
 
   // We can fetch related data to map IDs to Names
   // In a real scenario, the backend might return the names directly, but since the sample JSON only has IDs, we fetch lists.
@@ -146,6 +180,107 @@ export default function InvoiceDetails() {
               }}
             />
           </div>
+
+          {/* Installments & Payment Schedule Section */}
+          <div className="bg-card rounded-xl border shadow-sm p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-primary" />
+                <h3 className="font-semibold text-lg text-foreground">
+                  Installments & Payment Schedule (جدول الأقساط)
+                </h3>
+              </div>
+              <Link
+                to={`/dashboard/accounting/invoices/installments?invoiceId=${id}`}
+                className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1"
+              >
+                View all in Installments <ChevronRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {isLoadingInstallments ? (
+              <div className="py-6 text-center text-xs text-muted-foreground">
+                Loading payment schedules...
+              </div>
+            ) : invoiceSchedules.length === 0 ? (
+              <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
+                No installments configured for this invoice (Standard single-payment invoice).
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-border">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-muted/50 text-muted-foreground border-b border-border">
+                    <tr>
+                      <th className="py-2.5 px-3 font-semibold">Schedule</th>
+                      <th className="py-2.5 px-3 font-semibold">Due Date</th>
+                      <th className="py-2.5 px-3 font-semibold">Amount Due</th>
+                      <th className="py-2.5 px-3 font-semibold">Paid</th>
+                      <th className="py-2.5 px-3 font-semibold">Remaining</th>
+                      <th className="py-2.5 px-3 font-semibold">Status</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {invoiceSchedules.map((sch, sIdx) => {
+                      const due = Number(sch.amountDue ?? sch.amount_Due ?? sch.amount ?? 0);
+                      const paid = Number(sch.amountPaid ?? sch.amount_Paid ?? sch.paidAmount ?? 0);
+                      const remaining = Math.max(0, due - paid);
+                      const isPaid = remaining === 0 && due > 0;
+                      return (
+                        <tr key={sch.id || sch.scheduleId || sIdx} className="hover:bg-muted/30">
+                          <td className="py-2.5 px-3 font-medium text-foreground">
+                            {sch.description || `Installment ${sIdx + 1}`}
+                          </td>
+                          <td className="py-2.5 px-3 font-mono text-muted-foreground">
+                            {sch.dueDate ? new Date(sch.dueDate).toLocaleDateString() : "-"}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold text-foreground">
+                            ${due.toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold text-emerald-600">
+                            ${paid.toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3 font-bold text-primary">
+                            ${remaining.toFixed(2)}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                isPaid
+                                  ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                                  : "bg-blue-500/10 text-blue-600 border-blue-500/20"
+                              }`}
+                            >
+                              {isPaid ? "Paid" : "Pending"}
+                            </span>
+                          </td>
+                          <td className="py-2.5 px-3 text-right">
+                            {remaining > 0 && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() =>
+                                  setSelectedForPay({
+                                    ...sch,
+                                    scheduleId: sch.id || sch.scheduleId,
+                                    invoice_Number: invoice.invoice_Number,
+                                    invoiceId: id,
+                                  })
+                                }
+                                className="h-7 px-2 text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground font-semibold"
+                              >
+                                <CreditCard className="w-3 h-3" /> Pay
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sidebar Info */}
@@ -190,6 +325,16 @@ export default function InvoiceDetails() {
           )}
         </div>
       </div>
+
+      {/* Pay Installment Modal */}
+      {selectedForPay && (
+        <PayInstallmentDialog
+          isOpen={Boolean(selectedForPay)}
+          onClose={() => setSelectedForPay(null)}
+          installment={selectedForPay}
+          onSuccess={() => refetchInstallments()}
+        />
+      )}
     </div>
   );
 }
