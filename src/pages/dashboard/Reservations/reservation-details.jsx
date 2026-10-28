@@ -32,6 +32,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getReservationById,
   cancelReservationTickets,
@@ -71,6 +72,7 @@ function formatDateTime(dateStr) {
 }
 
 export default function ReservationDetails() {
+  const { t } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -428,7 +430,7 @@ export default function ReservationDetails() {
           </div>
           <div>
             <h3 className="text-base font-semibold text-slate-800">
-              Event Schedule Period (فترة وتواريخ الحدث)
+              {t?.reservationsModule?.schedulePeriod || "Event Schedule Period"}
             </h3>
             <p className="text-xs text-slate-500">
               Operational schedule window for this booked event.
@@ -475,7 +477,7 @@ export default function ReservationDetails() {
           setIsCancelModalOpen(open);
           if (!open) setCancelError(null);
         }}
-        title="Cancel Reservation Tickets (إلغاء المقاعد)"
+        title={t?.reservationsModule?.cancelTickets || "Cancel Reservation Tickets"}
         icon={XCircle}
         showDefaultFooter={false}
         size="md"
@@ -542,16 +544,16 @@ export default function ReservationDetails() {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Refund Method (طريقة الاسترداد)
+              {t?.reservationsModule?.refundMethod || "Refund Method"}
             </Label>
             <Select value={cancelPaymentMethod} onValueChange={setCancelPaymentMethod}>
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white">
                 <SelectValue placeholder="Select refund method" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Cash">Cash (نقداً)</SelectItem>
-                <SelectItem value="Credit">Credit / Card (بطاقة)</SelectItem>
-                <SelectItem value="Bank">Bank Transfer (تحويل بنكي)</SelectItem>
+                <SelectItem value="Cash">{t?.reservationsModule?.cash || "Cash"}</SelectItem>
+                <SelectItem value="Credit">{t?.reservationsModule?.credit || "Credit / Card"}</SelectItem>
+                <SelectItem value="Bank">{t?.reservationsModule?.bankTransfer || "Bank Transfer"}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -583,7 +585,7 @@ export default function ReservationDetails() {
           setIsStatusModalOpen(open);
           if (!open) setStatusError(null);
         }}
-        title="Change Operational Status (تعديل الحالة التشغيلية)"
+        title={t?.reservationsModule?.changeStatus || "Change Operational Status"}
         icon={CheckCircle2}
         showDefaultFooter={false}
         size="sm"
@@ -610,10 +612,10 @@ export default function ReservationDetails() {
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Booked">Booked (محجوز)</SelectItem>
-                <SelectItem value="CheckedIn">Checked-In (حاضر / تم تسجيل الحضور)</SelectItem>
-                <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
-                <SelectItem value="NoShow">No-Show (لم يحضر)</SelectItem>
+                <SelectItem value="Booked">{t?.reservationsModule?.statuses?.booked || "Booked"}</SelectItem>
+                <SelectItem value="CheckedIn">{t?.reservationsModule?.statuses?.checkedIn || "Checked-In"}</SelectItem>
+                <SelectItem value="Completed">{t?.reservationsModule?.statuses?.completed || "Completed"}</SelectItem>
+                <SelectItem value="NoShow">{t?.reservationsModule?.statuses?.noShow || "No-Show"}</SelectItem>
               </SelectContent>
             </Select>
           </div>

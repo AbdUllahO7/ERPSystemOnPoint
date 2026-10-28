@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getEvents,
   getEventsStats,
@@ -37,6 +38,7 @@ import {
 } from "@/services/events";
 
 export default function EventsPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
@@ -116,25 +118,25 @@ export default function EventsPage() {
         items: [
           {
             key: "view",
-            label: "View Details (عرض التفاصيل)",
+            label: t?.eventsModule?.viewDetails || "View Details",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/events/${row.id}`),
           },
           {
             key: "reservations",
-            label: "View Reservations (عرض سجل الحجوزات)",
+            label: t?.eventsModule?.viewReservations || "View Reservations",
             icon: Users,
             onClick: (row) => navigate(`/dashboard/reservations?bookingEventId=${row.id}`),
           },
           {
             key: "edit",
-            label: "Edit Event (تعديل الحدث)",
+            label: t?.eventsModule?.editEvent || "Edit Event",
             icon: Pencil,
             onClick: (row) => navigate(`/dashboard/events/edit/${row.id}`),
           },
           {
             key: "delete",
-            label: "Delete (حذف)",
+            label: t?.eventsModule?.delete || "Delete",
             icon: Trash2,
             variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
@@ -318,7 +320,7 @@ export default function EventsPage() {
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Events & Bookings (الأحداث والأيام المتكررة)"
+        title={t?.eventsModule?.title || "Events & Bookings"}
         infoTooltip="طرح الخدمات في موارد ومواعيد محددة مع ضبط الأيام المتكررة، السعة المحجوزة، وأسعار التذاكر."
       />
 
@@ -400,7 +402,7 @@ export default function EventsPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Service (الخدمة / الصنف)
+                {t?.eventsModule?.service || "Service"}
               </Label>
               <Select
                 value={selectedService}
@@ -413,7 +415,7 @@ export default function EventsPage() {
                   <SelectValue placeholder="All Services" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Services (جميع الخدمات)</SelectItem>
+                  <SelectItem value="all">{t?.eventsModule?.allServices || "All Services"}</SelectItem>
                   {lookups.services.map((s) => (
                     <SelectItem key={s.id} value={String(s.id)}>
                       {s.name}
@@ -425,7 +427,7 @@ export default function EventsPage() {
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Resource (المكان / المورد)
+                {t?.eventsModule?.resource || "Resource"}
               </Label>
               <Select
                 value={selectedResource}
@@ -438,7 +440,7 @@ export default function EventsPage() {
                   <SelectValue placeholder="All Resources" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Resources (جميع الموارد)</SelectItem>
+                  <SelectItem value="all">{t?.eventsModule?.allResources || "All Resources"}</SelectItem>
                   {lookups.resources.map((r) => (
                     <SelectItem key={r.id} value={String(r.id)}>
                       {r.name}
@@ -450,7 +452,7 @@ export default function EventsPage() {
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Provider (مقدم الخدمة)
+                {t?.eventsModule?.provider || "Provider"}
               </Label>
               <Select
                 value={selectedProvider}
@@ -463,7 +465,7 @@ export default function EventsPage() {
                   <SelectValue placeholder="All Providers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Providers (جميع مقدمي الخدمات)</SelectItem>
+                  <SelectItem value="all">{t?.eventsModule?.allProviders || "All Providers"}</SelectItem>
                   {lookups.providers.map((p) => (
                     <SelectItem key={p.id} value={String(p.id)}>
                       {p.name}

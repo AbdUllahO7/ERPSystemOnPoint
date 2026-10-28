@@ -200,11 +200,11 @@ export default function AddEditProject() {
           <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label className="text-sm font-semibold">
-              Project Name (اسم المشروع) <span className="text-red-500">*</span>
+              Project Name <span className="text-red-500">*</span>
             </Label>
             <Input
               name="projectName"
-              placeholder="e.g. مشروع تجهيز قاعة لشركة"
+              placeholder="e.g. Office Hall Setup Project"
               value={formData.projectName}
               onChange={handleChange}
               required
@@ -215,7 +215,7 @@ export default function AddEditProject() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-sm font-semibold">
-                Customer (العميل) <span className="text-red-500">*</span>
+                Customer <span className="text-red-500">*</span>
               </Label>
               <Select
                 key={formData.customerId || "customer-select"}
@@ -243,7 +243,7 @@ export default function AddEditProject() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Linked Contract (عقد العميل - اختياري)</Label>
+              <Label className="text-sm font-semibold">Linked Contract (Optional)</Label>
               <Select
                 key={formData.contractId || "contract-select"}
                 value={formData.contractId || "none"}
@@ -264,7 +264,7 @@ export default function AddEditProject() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                  <SelectItem value="none">No contract link</SelectItem>
                   {contracts.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.title || c.contractNumber || `Contract #${c.id.substring(0, 8)}`}
@@ -277,7 +277,7 @@ export default function AddEditProject() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Status (الحالة)</Label>
+              <Label className="text-sm font-semibold">Status</Label>
               <Select
                 key={formData.status || "status-select"}
                 value={formData.status}
@@ -287,17 +287,17 @@ export default function AddEditProject() {
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Planning">Planning (تخطيط)</SelectItem>
-                  <SelectItem value="InProgress">In Progress (قيد التنفيذ)</SelectItem>
-                  <SelectItem value="Pending">Pending (معلق)</SelectItem>
-                  <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled (ملغي)</SelectItem>
+                  <SelectItem value="Planning">Planning</SelectItem>
+                  <SelectItem value="InProgress">In Progress</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Contractual Value ($) (القيمة)</Label>
+              <Label className="text-sm font-semibold">Contractual Value ($)</Label>
               <Input
                 type="number"
                 name="value"
@@ -311,7 +311,7 @@ export default function AddEditProject() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-sm font-semibold">Progress (%) (نسبة الإنجاز)</Label>
+                <Label className="text-sm font-semibold">Progress (%)</Label>
                 <span className="text-xs text-blue-600 font-bold">{formData.completionPercentage}%</span>
               </div>
               <Input
@@ -325,14 +325,14 @@ export default function AddEditProject() {
                 className="h-11"
               />
               <span className="text-[10px] text-muted-foreground block">
-                مبني على إنجاز المهام وليس الفوترة
+                Based on task delivery milestones, not invoicing.
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Start Date (تاريخ البداية)</Label>
+              <Label className="text-sm font-semibold">Start Date</Label>
               <Input
                 type="date"
                 name="startDate"
@@ -344,7 +344,7 @@ export default function AddEditProject() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">End Date (تاريخ النهاية)</Label>
+              <Label className="text-sm font-semibold">End Date</Label>
               <Input
                 type="date"
                 name="endDate"
@@ -357,7 +357,7 @@ export default function AddEditProject() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Project Scope & Notes (الوصف ونطاق العمل)</Label>
+            <Label className="text-sm font-semibold">Project Scope & Notes</Label>
             <Textarea
               name="description"
               placeholder="Detailed description of the project deliverables, milestones, and client agreements..."

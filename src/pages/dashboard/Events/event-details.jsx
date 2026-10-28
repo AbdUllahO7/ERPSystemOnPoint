@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getEventById,
   changeEventStatus,
@@ -56,6 +57,7 @@ function formatDate(dateStr) {
 }
 
 export default function EventDetailsPage() {
+  const { t } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -188,7 +190,7 @@ export default function EventDetailsPage() {
             className="h-10 gap-1.5 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-semibold px-4 cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5" />
-            New Reservation (حجز عميل جديد)
+            {t?.eventsModule?.newReservation || "New Reservation"}
           </Button>
 
           <Button
@@ -223,7 +225,7 @@ export default function EventDetailsPage() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#0066d1]" />
-              Event Specifications (مواصفات وتفاصيل الحدث)
+              {t?.eventsModule?.specifications || "Event Specifications"}
             </h2>
             <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
               Ref: {event.code || `EVT-${event.id}`}
@@ -291,7 +293,7 @@ export default function EventDetailsPage() {
               <p className="text-xs font-semibold text-slate-800">المنطقة الزمنية (Timezone)</p>
               <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5 text-slate-400" />
-                Asia/Riyadh (توقيت مكة)
+                Asia/Riyadh
               </p>
             </div>
           </div>
@@ -302,7 +304,7 @@ export default function EventDetailsPage() {
               <p className="text-xs font-bold text-[#0066d1] mt-1">
                 {event.price || "$0"}
                 <span className="text-[10px] text-slate-400 font-normal ms-1">
-                  ({pricingModel === "PerSeat" ? "لكل مقعد" : "لكامل الحجز"})
+                  ({pricingModel === "PerSeat" ? (t?.eventsModule?.perSeat || "Per Seat") : (t?.eventsModule?.perBooking || "Per Booking")})
                 </span>
               </p>
             </div>
@@ -317,7 +319,7 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-xs font-semibold text-slate-800">قاعدة التسعير</p>
               <span className="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700 mt-1">
-                {pricingModel === "PerSeat" ? "Per Seat (لكل مقعد)" : "Per Booking (لكامل الحجز)"}
+                {pricingModel === "PerSeat" ? (t?.eventsModule?.perSeat || "Per Seat") : (t?.eventsModule?.perBooking || "Per Booking")}
               </span>
             </div>
           </div>
@@ -576,7 +578,7 @@ export default function EventDetailsPage() {
       <DynamicModal
         open={isStatusModalOpen}
         onOpenChange={setIsStatusModalOpen}
-        title="Change Event Status (تعديل حالة الحدث)"
+        title={t?.eventsModule?.changeStatus || "Change Event Status"}
         icon={RefreshCcw}
         showDefaultFooter={false}
         size="md"

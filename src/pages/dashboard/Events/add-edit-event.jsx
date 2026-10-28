@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   createEvent,
   updateEvent,
@@ -34,6 +35,7 @@ import {
 } from "@/services/events";
 
 export default function AddEditEventPage() {
+  const { t } = useI18n();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -280,7 +282,11 @@ export default function AddEditEventPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageTitle
-          title={isEdit ? "Edit Event (تعديل الحدث)" : "Add Event (إنشاء حدث جديد)"}
+          title={
+            isEdit
+              ? t?.eventsModule?.editEvent || "Edit Event"
+              : t?.eventsModule?.addEvent || "Add Event"
+          }
           breadcrumbLinks={[
             { label: "Events", href: "/dashboard/events" },
             { label: isEdit ? "Edit Event" : "Add Event" },
@@ -305,7 +311,7 @@ export default function AddEditEventPage() {
             {saveMutation.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
             )}
-            Save Event (حفظ الحدث)
+            {t?.eventsModule?.saveEvent || "Save Event"}
           </Button>
         </div>
       </div>

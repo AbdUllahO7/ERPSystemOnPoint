@@ -367,7 +367,7 @@ export default function LeadsPage() {
               <div className="space-y-4 p-4 border border-teal-200 bg-teal-50/50 rounded-xl">
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-teal-900">
-                    What happens upon conversion? (ما الذي يحدث عند التحويل؟)
+                    What happens upon conversion?
                   </p>
                   <p className="text-xs text-teal-700 leading-relaxed">
                     In this conversion flow, an accounting account, customer, and customer project are created. The project value should reflect the approved final agreement value (not necessarily the initial expected estimate).

@@ -94,14 +94,14 @@ export default function ProjectsPage() {
       icon: FolderKanban,
     },
     {
-      title: "In Progress (قيد التنفيذ)",
+      title: "In Progress",
       value: inProgressCount.toString(),
       sub: "Currently executing",
       color: "bg-amber-500",
       icon: Clock,
     },
     {
-      title: "Completed (مكتمل)",
+      title: "Completed",
       value: completedCount.toString(),
       sub: "Handed over successfully",
       color: "bg-emerald-500",
@@ -129,7 +129,7 @@ export default function ProjectsPage() {
     },
     {
       key: "customerName",
-      label: "Customer (العميل)",
+      label: "Customer",
       render: (row) => (
         <span className="font-medium text-foreground">
           {row.customerName || (row.customerId ? `Customer #${row.customerId.substring(0, 8)}` : "-")}
@@ -158,7 +158,7 @@ export default function ProjectsPage() {
     },
     {
       key: "completionPercentage",
-      label: "Progress (نسبة الإنجاز)",
+      label: "Progress",
       render: (row) => {
         const perc = Number(row.completionPercentage || 0);
         return (
@@ -234,7 +234,7 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Customer Projects (المشاريع)</h2>
+          <h2 className="text-xl font-bold text-foreground">Customer Projects</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage client scopes of work, contractual milestones, and execution progress
           </p>

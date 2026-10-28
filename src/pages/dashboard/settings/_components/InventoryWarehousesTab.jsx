@@ -141,7 +141,7 @@ export default function InventoryWarehousesTab() {
 
           <div className="space-y-2">
             <Label className="text-sm font-semibold text-foreground">
-              Default Reorder Limit (الحد الأدنى للطلب)
+              Default Reorder Limit
             </Label>
             <Input
               type="number"

@@ -23,8 +23,10 @@ import {
 } from "@/services/rentals";
 import { IssueContractInvoiceDialog } from "@/pages/dashboard/crm/customers/_components/tabs/issue-contract-invoice-dialog";
 import SettleRentalContractDialog from "./_components/settle-rental-contract-dialog";
+import { useI18n } from "@/context/translate-api";
 
 export default function RentalDetailsPage() {
+  const { t } = useI18n();
   const { id } = useParams();
   const queryClient = useQueryClient();
 
@@ -213,10 +215,10 @@ export default function RentalDetailsPage() {
             </div>
           </div>
 
-          {/* Card 2: Items & Quantities Breakdown (بنود العقد والكميات) */}
+          {/* Card 2: Items & Quantities Breakdown */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-4">
             <h2 className="text-base font-bold text-slate-800">
-              Contract Items & Quantities (بنود العقد والكميات المتاحة للفوترة)
+              {t?.rentalDetails?.itemsBreakdown || "Contract Items & Quantities"}
             </h2>
 
             <div className="overflow-x-auto border rounded-xl">
@@ -265,7 +267,7 @@ export default function RentalDetailsPage() {
         {/* Right Financials Card (4 cols) with Collections breakdown */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5 sticky top-6">
           <h2 className="text-base font-bold text-slate-800">
-            Financials & Collections (المالية والتحصيل)
+            {t?.rentalDetails?.financials || "Financials & Collections"}
           </h2>
 
           <div className="space-y-3 text-xs">
@@ -284,7 +286,7 @@ export default function RentalDetailsPage() {
             </div>
 
             <div className="flex items-center justify-between text-slate-500">
-              <span>Advance Payment / العربون</span>
+              <span>{t?.customerContracts?.advancePayment || "Advance Payment"}</span>
               <span className="font-semibold text-emerald-600">
                 {contract.deposit || "$0.00"}
               </span>
@@ -293,7 +295,9 @@ export default function RentalDetailsPage() {
             <hr className="border-slate-100" />
 
             <div className="flex items-center justify-between font-bold text-xs pt-1">
-              <span className="text-slate-800">Remaining to Collect (المتبقي للتحصيل)</span>
+              <span className="text-slate-800">
+                {t?.rentalDetails?.remainingToCollect || "Remaining to Collect"}
+              </span>
               <span className="text-purple-700 font-bold text-sm">
                 ${Math.max(
                   0,

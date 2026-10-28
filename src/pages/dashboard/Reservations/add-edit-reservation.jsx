@@ -31,6 +31,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getReservationById,
   createReservation,
@@ -39,6 +40,7 @@ import {
 } from "@/services/reservations";
 
 export default function AddEditReservation() {
+  const { t } = useI18n();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
@@ -85,9 +87,9 @@ export default function AddEditReservation() {
     costCenters: [],
     currencies: [],
     paymentMethods: [
-      { id: "Cash", name: "Cash (نقداً)" },
-      { id: "Credit", name: "Credit / Card (بطاقة ائتمان)" },
-      { id: "Bank", name: "Bank Transfer (تحويل بنكي)" },
+      { id: "Cash", name: t?.reservationsModule?.cash || "Cash" },
+      { id: "Credit", name: t?.reservationsModule?.credit || "Credit / Card" },
+      { id: "Bank", name: t?.reservationsModule?.bankTransfer || "Bank Transfer" },
     ],
   };
 
@@ -359,7 +361,11 @@ export default function AddEditReservation() {
     <div className="space-y-6">
       {/* Page Title with Top Actions */}
       <PageTitle
-        title={isEdit ? "Edit Reservation (تعديل الحجز)" : "New Reservation (حجز عميل جديد)"}
+        title={
+          isEdit
+            ? t?.reservationsModule?.editReservation || "Edit Reservation"
+            : t?.reservationsModule?.newReservation || "New Reservation"
+        }
         breadcrumbLinks={[
           { label: "Reservations", href: "/dashboard/reservations" },
           { label: isEdit ? "Edit Reservation" : "New Reservation" },
@@ -382,7 +388,11 @@ export default function AddEditReservation() {
               {saveMutation.isPending && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
               )}
-              {saveMutation.isPending ? "Saving..." : isEdit ? "Update Reservation (حفظ التعديل)" : "Confirm Reservation (تأكيد الحجز)"}
+              {saveMutation.isPending
+                ? "Saving..."
+                : isEdit
+                ? t?.reservationsModule?.updateReservation || "Update Reservation"
+                : t?.reservationsModule?.confirmReservation || "Confirm Reservation"}
             </Button>
           </div>
         }
