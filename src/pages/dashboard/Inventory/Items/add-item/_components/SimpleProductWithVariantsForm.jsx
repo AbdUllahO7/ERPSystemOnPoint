@@ -126,6 +126,10 @@ export default function SimpleProductWithVariantsForm({
   const productUnitsWatch = watch("product_Units");
   const selectedAttributesWatch = watch("selectedAttributes");
   const createProductvariantsWatch = watch("createProductvariants");
+  const categoryId = watch("category_Id");
+
+  const rawProduct = productRes?.data?.data || productRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
 
   useEffect(() => {
     if (measurements.length > 0 && !isEdit) {
@@ -147,7 +151,7 @@ export default function SimpleProductWithVariantsForm({
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
-      const bData = productRes.data;
+      const bData = productRes.data?.data || productRes.data;
 
       const attrMap = {};
       bData.variants?.forEach((v) => {
@@ -232,6 +236,16 @@ export default function SimpleProductWithVariantsForm({
       });
     }
   }, [isEdit, productRes, reset]);
+
+  useEffect(() => {
+    if (isEdit && productRes?.data) {
+      const bData = productRes.data?.data || productRes.data;
+      if (bData.category_Id) setValue("category_Id", bData.category_Id, { shouldValidate: true });
+      if (bData.revenue_Account_Id) setValue("revenue_Account_Id", bData.revenue_Account_Id);
+      if (bData.expense_Account_Id) setValue("expense_Account_Id", bData.expense_Account_Id);
+      if (bData.inventory_Account_Id) setValue("inventory_Account_Id", bData.inventory_Account_Id);
+    }
+  }, [isEdit, productRes, categories, accounts, setValue]);
 
   const generateCombinations = () => {
     const attrs = selectedAttributesWatch.filter(
@@ -513,13 +527,20 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Item Category <span className="text-red-500">*</span></label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              {...register("category_Id", { required: true })}
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
+              disabled={categoriesLoading}
             >
-              <option value="">Item Category</option>
+              <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.name}
+                  {cat.name || cat.name_Category || "Category"}
                 </option>
               ))}
             </select>

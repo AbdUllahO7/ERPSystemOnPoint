@@ -123,6 +123,10 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     return Array.isArray(mList) ? mList : [];
   })();
   const measurements = unitsRes?.data?.items || [];
+  const categoryId = watch("category_Id");
+
+  const rawProduct = assemblyRes?.data?.data || assemblyRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
   const productComponentsWatch = watch("product_Components");
   const productUnitsWatch = watch("product_Units");
 
@@ -203,6 +207,16 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       });
     }
   }, [isEdit, assemblyRes, reset, setThereAreUnits]);
+
+  useEffect(() => {
+    if (isEdit && assemblyRes?.data) {
+      const bData = assemblyRes.data?.data || assemblyRes.data;
+      if (bData.category_Id) setValue("category_Id", bData.category_Id, { shouldValidate: true });
+      if (bData.revenue_Account_Id) setValue("revenue_Account_Id", bData.revenue_Account_Id);
+      if (bData.expense_Account_Id) setValue("expense_Account_Id", bData.expense_Account_Id);
+      if (bData.inventory_Account_Id) setValue("inventory_Account_Id", bData.inventory_Account_Id);
+    }
+  }, [isEdit, assemblyRes, categories, accounts, setValue]);
 
   const createMutation = useMutation({
     mutationFn: (data) => {
@@ -367,12 +381,18 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
             <label className="text-sm font-semibold text-foreground leading-none">Item Category <span className="text-red-500">*</span></label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-              {...register("category_Id", { required: true })}
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
               disabled={categoriesLoading}
             >
               <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>{cat.name || cat.name_Category || "Category"}</option>
               ))}
             </select>
             {errors.category_Id && <span className="text-red-500 text-xs">Required</span>}

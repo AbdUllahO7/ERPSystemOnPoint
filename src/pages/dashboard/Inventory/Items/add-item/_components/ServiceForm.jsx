@@ -47,10 +47,14 @@ export default function ServiceForm() {
 
   const categories = categoriesRes?.data?.items || [];
   const accounts = accountsRes?.data?.items || [];
+  const categoryId = watch("category_Id");
+
+  const rawProduct = serviceRes?.data?.data || serviceRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
 
   useEffect(() => {
     if (isEdit && serviceRes?.data) {
-      const sData = serviceRes.data;
+      const sData = serviceRes.data?.data || serviceRes.data;
       const unitData = sData.variants?.[0]?.productUnitDtos?.[0] || {};
       reset({
         name_Product: sData.name_Product || "",
@@ -67,6 +71,15 @@ export default function ServiceForm() {
       });
     }
   }, [isEdit, serviceRes, reset]);
+
+  useEffect(() => {
+    if (isEdit && serviceRes?.data) {
+      const sData = serviceRes.data?.data || serviceRes.data;
+      if (sData.category_Id) setValue("category_Id", sData.category_Id, { shouldValidate: true });
+      if (sData.revenue_Account_Id) setValue("revenue_Account_Id", sData.revenue_Account_Id);
+      if (sData.expense_Account_Id) setValue("expense_Account_Id", sData.expense_Account_Id);
+    }
+  }, [isEdit, serviceRes, categories, accounts, setValue]);
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateService({ id, ...data }) : createService(data),
@@ -195,12 +208,18 @@ export default function ServiceForm() {
             <select
               id="category_Id"
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("category_Id", { required: true })}
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
               disabled={categoriesLoading}
             >
               <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>{cat.name || cat.name_Category || "Category"}</option>
               ))}
             </select>
             {errors.category_Id && <span className="text-red-500 text-xs">Required</span>}

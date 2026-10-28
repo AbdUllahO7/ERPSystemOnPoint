@@ -88,9 +88,13 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   const accounts = accountsRes?.data?.items || accountsRes?.data || [];
   const measurements = unitsRes?.data?.items || unitsRes?.data || [];
   const productUnitsWatch = watch("product_Units");
+  const categoryId = watch("category_Id");
   const revenueAccountId = watch("revenue_Account_Id");
   const expenseAccountId = watch("expense_Account_Id");
   const inventoryAccountId = watch("inventory_Account_Id");
+
+  const rawProduct = productRes?.data?.data || productRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
 
   useEffect(() => {
     if (measurements.length > 0 && !isEdit) {
@@ -105,8 +109,10 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
-      const bData = productRes.data;
-      const unitData = bData.variants?.[0]?.productUnitDtos || bData.variants?.[0]?.productUnits || bData.productUnitDtos || bData.productUnits || [];
+      const bData = productRes.data?.data || productRes.data;
+      const firstVariant = bData.variants?.[0] || {};
+      const unitData = firstVariant.productUnitDtos || firstVariant.productUnits || bData.productUnitDtos || bData.productUnits || [];
+      const firstUnit = unitData[0] || {};
 
       const hasUnits = Boolean(bData.has_Multiple_Units ?? bData.hasMultipleUnits);
       setThereAreUnits(hasUnits);
@@ -115,7 +121,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         id: u.id,
         variant_id: firstVariant.id || "",
         unit_id: u.id || "",
-        unitName: u.unitName || u.unit_Name || `Unit ${i + 1}`,
+        unitName: u.unitName || u.unit_Name || u.unit_name || `Unit ${i + 1}`,
         unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || u.unitOfMeasurementId || "",
         secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || "",
         relative_factor: u.conversion_Factor ?? u.conversionFactor ?? u.relative_factor ?? 1,
@@ -130,7 +136,6 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         average_Purchase_Price: u.average_Purchase_Price ?? u.averagePurchasePrice ?? 0
       }));
 
-      const firstVariant = bData.variants?.[0] || {};
       reset({
         id: id,
         name_Product: bData.name_Product || bData.nameProduct || bData.name || "",
@@ -138,22 +143,24 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         has_Expiry_Date: bData.has_Expiry_Date ?? bData.hasExpiryDate ?? false,
         is_Tracking_Inventory: bData.is_Tracking_Inventory ?? bData.isTrackingInventory ?? true,
         category_Id: bData.category_Id || bData.categoryId || "",
-        item_Origin: bData.item_Origin || bData.itemOrigin || "",
+        item_Origin: bData.origin_Id || bData.originId || bData.item_Origin || bData.itemOrigin || "",
         requires_Shipping: bData.requires_Shipping ?? bData.requiresShipping ?? false,
+        requires_Contract: bData.requires_Contract ?? bData.requiresContract ?? false,
+        requires_Scheduling: bData.requires_Scheduling ?? bData.requiresScheduling ?? false,
         there_Are_Units: hasUnits,
         minimum_Alert_Level: firstVariant.minimum_Alert_Level ?? firstVariant.minimumAlertLevel ?? bData.minimum_Alert_Level ?? bData.minimumAlertLevel ?? 0,
         maximum_Stock_Level: firstVariant.maximum_Stock_Level ?? firstVariant.maximumStockLevel ?? bData.maximum_Stock_Level ?? bData.maximumStockLevel ?? 0,
         revenue_Account_Id: bData.revenue_Account_Id || bData.revenueAccountId || "",
         expense_Account_Id: bData.expense_Account_Id || bData.expenseAccountId || "",
         inventory_Account_Id: bData.inventory_Account_Id || bData.inventoryAccountId || "",
-        barcode_Option: "Manual",
-        barcode: units[0]?.barcode || firstVariant.barcode || bData.barcode || "",
-        qr_Code: units[0]?.qr_Code || firstVariant.qr_Code || firstVariant.qrCode || bData.qr_Code || bData.qrCode || "",
-        cost_Price: units[0]?.cost_Price ?? firstVariant.cost_Price ?? firstVariant.costPrice ?? bData.cost_Price ?? bData.costPrice ?? 0,
-        consumer_Price: units[0]?.consumer_Price ?? firstVariant.consumer_Price ?? firstVariant.consumerPrice ?? bData.consumer_Price ?? bData.consumerPrice ?? 0,
-        wholesale_Price: units[0]?.wholesale_Price ?? firstVariant.wholesale_Price ?? firstVariant.wholesalePrice ?? bData.wholesale_Price ?? bData.wholesalePrice ?? 0,
-        last_Purchase_Price: units[0]?.last_Purchase_Price ?? firstVariant.last_Purchase_Price ?? firstVariant.lastPurchasePrice ?? bData.last_Purchase_Price ?? bData.lastPurchasePrice ?? 0,
-        average_Purchase_Price: units[0]?.average_Purchase_Price ?? firstVariant.average_Purchase_Price ?? firstVariant.averagePurchasePrice ?? bData.average_Purchase_Price ?? bData.averagePurchasePrice ?? 0,
+        barcode_Option: firstUnit.barcode_Option || firstVariant.barcode_Option || "Manual",
+        barcode: firstUnit.barcode || firstVariant.barcode || bData.barcode || "",
+        qr_Code: firstUnit.qr_code || firstUnit.qrCode || firstVariant.qr_code || firstVariant.qrCode || bData.qr_code || bData.qr_Code || "",
+        cost_Price: firstUnit.cost_Price ?? firstVariant.cost_Price ?? bData.cost_Price ?? 0,
+        consumer_Price: firstUnit.consumer_Price ?? firstVariant.consumer_Price ?? bData.consumer_Price ?? 0,
+        wholesale_Price: firstUnit.wholesale_Price ?? firstVariant.wholesalePrice ?? bData.wholesale_Price ?? 0,
+        last_Purchase_Price: firstUnit.last_Purchase_Price ?? firstVariant.last_Purchase_Price ?? bData.last_Purchase_Price ?? 0,
+        average_Purchase_Price: firstUnit.average_Purchase_Price ?? firstVariant.average_Purchase_Price ?? bData.average_Purchase_Price ?? 0,
         product_Units: units.length > 0 ? units : [
           { unitName: "قطعة", relative_factor: 1, is_Default_Selling: true, is_Default_Purchasing: true }
         ],
@@ -163,11 +170,13 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
-      if (productRes.data.revenue_Account_Id) setValue("revenue_Account_Id", productRes.data.revenue_Account_Id);
-      if (productRes.data.expense_Account_Id) setValue("expense_Account_Id", productRes.data.expense_Account_Id);
-      if (productRes.data.inventory_Account_Id) setValue("inventory_Account_Id", productRes.data.inventory_Account_Id);
+      const bData = productRes.data?.data || productRes.data;
+      if (bData.category_Id) setValue("category_Id", bData.category_Id, { shouldValidate: true });
+      if (bData.revenue_Account_Id) setValue("revenue_Account_Id", bData.revenue_Account_Id);
+      if (bData.expense_Account_Id) setValue("expense_Account_Id", bData.expense_Account_Id);
+      if (bData.inventory_Account_Id) setValue("inventory_Account_Id", bData.inventory_Account_Id);
     }
-  }, [isEdit, productRes, accounts, setValue]);
+  }, [isEdit, productRes, categories, accounts, setValue]);
 
   // Create Product Mutation using POST /api/Inventory/Product/CreateProduct/Create
   const createMutation = useMutation({
@@ -303,7 +312,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       </div>
 
       <div className="bg-card p-6 rounded-xl border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <span className="text-sm font-medium text-muted-foreground">Requires Shipping</span>
             <Switch checked={watch("requires_Shipping")} onCheckedChange={(val) => setValue("requires_Shipping", val)} />
@@ -311,6 +320,14 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <span className="text-sm font-medium text-muted-foreground">There Are Units</span>
             <Switch checked={watchThereAreUnits} onCheckedChange={(val) => setValue("there_Are_Units", val)} />
+          </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+            <span className="text-sm font-medium text-muted-foreground">Has Expiry Date</span>
+            <Switch checked={watch("has_Expiry_Date")} onCheckedChange={(val) => setValue("has_Expiry_Date", val)} />
+          </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+            <span className="text-sm font-medium text-muted-foreground">Tracking Inventory</span>
+            <Switch checked={watch("is_Tracking_Inventory")} onCheckedChange={(val) => setValue("is_Tracking_Inventory", val)} />
           </div>
         </div>
       </div>
@@ -330,12 +347,18 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
             <label className="text-sm font-semibold text-foreground leading-none">Item Category <span className="text-red-500">*</span></label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-              {...register("category_Id", { required: true })}
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
               disabled={categoriesLoading}
             >
               <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>{cat.name || cat.name_Category || "Category"}</option>
               ))}
             </select>
             {errors.category_Id && <span className="text-red-500 text-xs">Required</span>}
