@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/context/translate-api";
 import { getAllInstallments } from "@/services/accounting";
 import PayInstallmentDialog from "./_components/pay-installment-dialog";
 import InstallmentDetailsDialog from "./_components/installment-details-dialog";
@@ -36,6 +37,10 @@ import InstallmentDetailsDialog from "./_components/installment-details-dialog";
 export default function InstallmentsPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useI18n();
+
+  const instT = t?.installments || {};
+  const invT = t?.invoices || {};
 
   // Filters state
   const [search, setSearch] = useState("");
@@ -147,27 +152,27 @@ export default function InstallmentsPage() {
     if (isFullyPaid) {
       return (
         <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1 text-[11px] font-medium">
-          <CheckCircle2 className="w-3 h-3" /> Paid
+          <CheckCircle2 className="w-3 h-3" /> {instT.statuses?.paid || "Paid"}
         </Badge>
       );
     }
     if (isOverdue) {
       return (
         <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 gap-1 text-[11px] font-medium">
-          <AlertCircle className="w-3 h-3" /> Overdue
+          <AlertCircle className="w-3 h-3" /> {instT.statuses?.overdue || "Overdue"}
         </Badge>
       );
     }
     if (isPartiallyPaid) {
       return (
         <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1 text-[11px] font-medium">
-          <Clock className="w-3 h-3" /> Partially Paid
+          <Clock className="w-3 h-3" /> {instT.statuses?.partiallyPaid || "Partially Paid"}
         </Badge>
       );
     }
     return (
       <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 gap-1 text-[11px] font-medium">
-        <Clock className="w-3 h-3" /> Pending
+        <Clock className="w-3 h-3" /> {instT.statuses?.pending || "Pending"}
       </Badge>
     );
   };
@@ -179,27 +184,27 @@ export default function InstallmentsPage() {
         items: [
           {
             key: "details",
-            label: "View Details",
+            label: instT.viewDetails || "View Details",
             icon: Eye,
             onClick: (row) => setSelectedIdForDetails(row.id || row.scheduleId),
           },
           {
             key: "pay",
-            label: "Pay Installment",
+            label: instT.payInstallment || "Pay Installment",
             icon: CreditCard,
             onClick: (row) => setSelectedForPay(row),
           },
         ],
       },
     ],
-    []
+    [instT]
   );
 
   // Table Columns
   const columns = [
     {
       key: "invoice_Number",
-      label: "Invoice #",
+      label: instT.invoiceNumber || "Invoice #",
       render: (row) => {
         const invNum =
           row.invoice_Number ||
@@ -221,11 +226,11 @@ export default function InstallmentsPage() {
     },
     {
       key: "description",
-      label: "Schedule / Description",
+      label: instT.scheduleDescription || "Schedule / Description",
       render: (row) => (
         <div className="space-y-0.5">
           <span className="font-medium text-foreground text-xs block">
-            {row.description || row.desc || "Payment Schedule"}
+            {row.description || row.desc || (instT.scheduleDescription || "Payment Schedule")}
           </span>
           {row.notes && (
             <span className="text-[11px] text-muted-foreground line-clamp-1">
@@ -237,7 +242,7 @@ export default function InstallmentsPage() {
     },
     {
       key: "dueDate",
-      label: "Due Date",
+      label: instT.dueDate || "Due Date",
       render: (row) => {
         const dateVal = row.dueDate || row.due_Date;
         return dateVal ? (
@@ -251,7 +256,7 @@ export default function InstallmentsPage() {
     },
     {
       key: "amountDue",
-      label: "Amount Due",
+      label: instT.amountDue || "Amount Due",
       render: (row) => {
         const amount = Number(
           row.amountDue ?? row.amount_Due ?? row.totalAmount ?? row.amount ?? 0
@@ -265,7 +270,7 @@ export default function InstallmentsPage() {
     },
     {
       key: "amountPaid",
-      label: "Amount Paid",
+      label: instT.amountPaid || "Amount Paid",
       render: (row) => {
         const paid = Number(
           row.amountPaid ?? row.amount_Paid ?? row.paidAmount ?? 0
@@ -279,7 +284,7 @@ export default function InstallmentsPage() {
     },
     {
       key: "remainingAmount",
-      label: "Remaining",
+      label: instT.remaining || "Remaining",
       render: (row) => {
         const due = Number(
           row.amountDue ?? row.amount_Due ?? row.totalAmount ?? row.amount ?? 0
@@ -297,12 +302,12 @@ export default function InstallmentsPage() {
     },
     {
       key: "status",
-      label: "Status",
+      label: instT.status || "Status",
       render: (row) => renderStatusBadge(row),
     },
     {
       key: "actions",
-      label: "Actions",
+      label: instT.actions || "Actions",
       render: (row) => {
         const due = Number(row.amountDue ?? row.amount_Due ?? row.amount ?? 0);
         const paid = Number(row.amountPaid ?? row.amount_Paid ?? row.paidAmount ?? 0);
@@ -315,7 +320,7 @@ export default function InstallmentsPage() {
               size="sm"
               onClick={() => setSelectedIdForDetails(row.id || row.scheduleId)}
               className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-              title="View Details"
+              title={instT.viewDetails || "View Details"}
             >
               <Eye className="w-4 h-4" />
             </Button>
@@ -325,10 +330,10 @@ export default function InstallmentsPage() {
                 size="sm"
                 onClick={() => setSelectedForPay(row)}
                 className="h-8 px-2.5 text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground font-semibold"
-                title="Pay Installment"
+                title={instT.payInstallment || "Pay Installment"}
               >
                 <CreditCard className="w-3.5 h-3.5" />
-                Pay
+                {instT.pay || "Pay"}
               </Button>
             )}
           </div>
@@ -344,14 +349,14 @@ export default function InstallmentsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Invoice Installments (أقساط الفواتير)
+              {instT.title || "Invoice Installments"}
             </h1>
             <Badge variant="outline" className="text-xs bg-primary/5 text-primary">
-              Accounting / Invoices
+              {invT.title || "Invoices"} / {instT.allInstallments || "Installments"}
             </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Track, manage, and collect invoice payment schedules and installments.
+            {instT.subtitle || "Track, manage, and collect invoice payment schedules and installments."}
           </p>
         </div>
 
@@ -362,11 +367,11 @@ export default function InstallmentsPage() {
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
           >
             <Receipt className="w-3.5 h-3.5" />
-            All Invoices
+            {invT.allInvoices || "All Invoices"}
           </Link>
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-background text-foreground shadow-xs border border-border">
             <Layers className="w-3.5 h-3.5 text-primary" />
-            Installments
+            {instT.allInstallments || "Installments"}
           </div>
         </div>
       </div>
@@ -376,7 +381,7 @@ export default function InstallmentsPage() {
         <div className="flex items-center justify-between p-3.5 rounded-xl border border-primary/20 bg-primary/5 text-xs">
           <div className="flex items-center gap-2 text-primary font-medium">
             <Filter className="w-4 h-4" />
-            <span>Showing installments filtered for Invoice ID:</span>
+            <span>{instT.filteredForInvoice || "Showing installments filtered for Invoice ID:"}</span>
             <span className="font-mono font-bold">{invoiceIdParam}</span>
           </div>
           <Button
@@ -385,7 +390,7 @@ export default function InstallmentsPage() {
             onClick={handleResetFilters}
             className="h-7 text-xs text-muted-foreground hover:text-foreground gap-1"
           >
-            <X className="w-3.5 h-3.5" /> Clear Filter
+            <X className="w-3.5 h-3.5" /> {instT.clearFilter || "Clear Filter"}
           </Button>
         </div>
       )}
@@ -395,7 +400,7 @@ export default function InstallmentsPage() {
         <div className="p-4 rounded-xl border border-border bg-card shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground font-medium block">
-              Total Installments
+              {instT.totalInstallments || "Total Installments"}
             </span>
             <span className="text-2xl font-bold text-foreground">
               {stats.totalCount}
@@ -409,7 +414,7 @@ export default function InstallmentsPage() {
         <div className="p-4 rounded-xl border border-border bg-card shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground font-medium block">
-              Total Due (المستحق الكلي)
+              {instT.totalDue || "Total Due"}
             </span>
             <span className="text-2xl font-bold text-foreground">
               ${stats.totalDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -423,7 +428,7 @@ export default function InstallmentsPage() {
         <div className="p-4 rounded-xl border border-border bg-card shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground font-medium block">
-              Total Collected (المحصل)
+              {instT.totalCollected || "Total Collected"}
             </span>
             <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
               ${stats.totalPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -437,7 +442,7 @@ export default function InstallmentsPage() {
         <div className="p-4 rounded-xl border border-border bg-card shadow-xs flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground font-medium block">
-              Outstanding (المتبقي)
+              {instT.outstanding || "Outstanding"}
             </span>
             <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
               ${stats.totalRemaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -461,21 +466,21 @@ export default function InstallmentsPage() {
             }}
           >
             <SelectTrigger className="w-full h-9 text-xs">
-              <SelectValue placeholder="All Statuses" />
+              <SelectValue placeholder={instT.allStatuses || "All Statuses"} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="Pending">Pending</SelectItem>
-              <SelectItem value="PartiallyPaid">Partially Paid</SelectItem>
-              <SelectItem value="Paid">Paid</SelectItem>
-              <SelectItem value="Overdue">Overdue</SelectItem>
+              <SelectItem value="all">{instT.allStatuses || "All Statuses"}</SelectItem>
+              <SelectItem value="Pending">{instT.statuses?.pending || "Pending"}</SelectItem>
+              <SelectItem value="PartiallyPaid">{instT.statuses?.partiallyPaid || "Partially Paid"}</SelectItem>
+              <SelectItem value="Paid">{instT.statuses?.paid || "Paid"}</SelectItem>
+              <SelectItem value="Overdue">{instT.statuses?.overdue || "Overdue"}</SelectItem>
             </SelectContent>
           </Select>
         </div>
 
         {/* Date Range: From */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>From:</span>
+          <span>{instT.from || "From:"}</span>
           <Input
             type="date"
             value={fromDueDate}
@@ -489,7 +494,7 @@ export default function InstallmentsPage() {
 
         {/* Date Range: To */}
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span>To:</span>
+          <span>{instT.to || "To:"}</span>
           <Input
             type="date"
             value={toDueDate}
@@ -509,7 +514,7 @@ export default function InstallmentsPage() {
             className="h-9 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
           >
             <RotateCcw className="w-3.5 h-3.5" />
-            Reset
+            {instT.reset || "Reset"}
           </Button>
         )}
       </div>
@@ -520,7 +525,7 @@ export default function InstallmentsPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id || row.scheduleId}
         search={{
-          placeholder: "Search by description, invoice #, or notes...",
+          placeholder: instT.searchPlaceholder || "Search by description, invoice #, or notes...",
           value: search,
           onChange: (val) => {
             setSearch(val);
@@ -538,26 +543,26 @@ export default function InstallmentsPage() {
           icon: Layers,
           title: (row) =>
             row.invoice_Number
-              ? `Inv #${row.invoice_Number}`
-              : row.description || "Schedule",
+              ? `#${row.invoice_Number}`
+              : row.description || (instT.scheduleDescription || "Schedule"),
           subtitle: (row) =>
             row.dueDate
-              ? `Due: ${new Date(row.dueDate).toLocaleDateString()}`
-              : "No due date",
+              ? `${instT.dueDate || "Due"}: ${new Date(row.dueDate).toLocaleDateString()}`
+              : (instT.notSpecified || "No due date"),
           fields: [
             {
               icon: DollarSign,
-              label: "Due Amount:",
+              label: `${instT.amountDue || "Due"}:`,
               value: (row) => `$${Number(row.amountDue || 0).toFixed(2)}`,
             },
             {
               icon: CheckCircle2,
-              label: "Paid:",
+              label: `${instT.amountPaid || "Paid"}:`,
               value: (row) => `$${Number(row.amountPaid || 0).toFixed(2)}`,
             },
             {
               icon: Clock,
-              label: "Remaining:",
+              label: `${instT.remaining || "Remaining"}:`,
               value: (row) =>
                 `$${Math.max(0, Number(row.amountDue || 0) - Number(row.amountPaid || 0)).toFixed(2)}`,
             },
@@ -567,10 +572,10 @@ export default function InstallmentsPage() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t?.previous || "Prev",
+          nextLabel: t?.next || "Next",
         }}
-        emptyMessage="No installments or payment schedules found."
+        emptyMessage={instT.noInstallmentsFound || "No installments or payment schedules found."}
       />
 
       {/* Pay Installment Modal */}

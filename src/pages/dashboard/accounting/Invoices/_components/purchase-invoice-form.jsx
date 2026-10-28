@@ -23,10 +23,13 @@ import {
   getAllSuppliers,
   getSupplierContracts,
 } from "../../../../../lib/api";
+import { useI18n } from "@/context/translate-api";
 
 export default function PurchaseInvoiceForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
+  const invT = t?.invoices || {};
 
   const {
     register,
@@ -287,7 +290,7 @@ export default function PurchaseInvoiceForm() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold">Supplier Contract (عقد المورد)</label>
+              <label className="text-sm font-semibold">{invT.supplierContract || "Supplier Contract"}</label>
               <span className="text-[11px] text-muted-foreground">Optional Contract Link</span>
             </div>
             <Controller
@@ -304,7 +307,7 @@ export default function PurchaseInvoiceForm() {
                     <SelectValue placeholder={!watchSupplierId ? "Select a supplier first" : supplierContracts.length === 0 ? "No active contracts found" : "Link to Supplier Contract (Optional)"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                    <SelectItem value="none">{invT.noContractLink || "No contract link"}</SelectItem>
                     {supplierContracts.map((c) => {
                       const rem = Math.max(0, Number(c.totalValue || 0) - Number(c.consumedAmount || 0));
                       return (

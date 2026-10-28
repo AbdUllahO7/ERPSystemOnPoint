@@ -35,10 +35,13 @@ import {
   getAllCustomers,
   getCustomerContracts,
 } from "../../../../../lib/api";
+import { useI18n } from "@/context/translate-api";
 
 export default function SalesInvoiceForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
+  const invT = t?.invoices || {};
 
   const {
     register,
@@ -638,9 +641,9 @@ export default function SalesInvoiceForm() {
           {/* Paid Amount Field (Actual Collection separation from Page 6) */}
           <div className="space-y-1.5 pt-2 border-t">
             <label className="text-xs font-semibold flex items-center justify-between">
-              <span>Paid Amount (التحصيل الفعلي الآن)</span>
+              <span>{invT.paid || "Paid Amount"}</span>
               <span className="text-[11px] text-muted-foreground font-normal">
-                Remaining Debt: ${(Math.max(0, summary.total - (Number(watchPaidAmount) || 0))).toFixed(2)}
+                {invT.due || "Remaining Debt"}: ${(Math.max(0, summary.total - (Number(watchPaidAmount) || 0))).toFixed(2)}
               </span>
             </label>
             <Input

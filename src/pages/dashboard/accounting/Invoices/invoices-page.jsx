@@ -10,10 +10,15 @@ import { DataView } from "@/components/data-view/DataView";
 import { useQuery } from "@tanstack/react-query";
 import { getAllInvoices } from "../../../../lib/api";
 import { useNavigate, Link } from "react-router-dom";
+import { useI18n } from "@/context/translate-api";
 
 export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const { t } = useI18n();
+
+  const invT = t?.invoices || {};
+  const instT = t?.installments || {};
 
   const navigate = useNavigate();
 
@@ -60,22 +65,20 @@ export default function InvoicesPage() {
   const columns = [
     {
       key: "invoice_Number",
-      label: "Invoice Number",
-      
+      label: invT.invoiceNumber || "Invoice Number",
     },
     {
       key: "invoice_Date",
-      label: "Date",
-      
+      label: invT.date || "Date",
       render: (row) => new Date(row.invoice_Date).toLocaleString(),
     },
     {
       key: "payment_Method",
-      label: "Payment Method",
+      label: invT.paymentMethod || "Payment Method",
     },
     {
       key: "net_Amount",
-      label: "Net Amount",
+      label: invT.netAmount || "Net Amount",
       render: (row) => `${Number(row?.net_Amount || 0).toFixed(2)}`,
     },
   ];
@@ -87,12 +90,12 @@ export default function InvoicesPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              Invoices (الفواتير)
+              {invT.title || "Invoices"}
             </h1>
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            Manage sales and purchase invoices, payment terms, and transactions.
+            {invT.description || "Manage sales and purchase invoices, payment terms, and transactions."}
           </p>
         </div>
 
@@ -100,14 +103,14 @@ export default function InvoicesPage() {
         <div className="inline-flex items-center p-1 rounded-xl bg-muted/60 border border-border">
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-background text-foreground shadow-xs border border-border">
             <FileText className="w-3.5 h-3.5 text-primary" />
-            All Invoices
+            {invT.allInvoices || "All Invoices"}
           </div>
           <Link
             to="/dashboard/accounting/invoices/installments"
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
           >
             <Layers className="w-3.5 h-3.5" />
-            Installments
+            {instT.allInstallments || "Installments"}
           </Link>
         </div>
       </div>
@@ -118,7 +121,7 @@ export default function InvoicesPage() {
         getRowId={(row) => row.id}
         // selectable
         search={{
-          placeholder: "Search invoices...",
+          placeholder: invT.searchPlaceholder || "Search invoices...",
           value: search,
           onChange: handleSearch,
         }}
@@ -128,24 +131,24 @@ export default function InvoicesPage() {
           onClick: () => console.log("export"),
         }}
         addButton={{
-          label: "Add Invoice",
+          label: invT.addInvoice || "Add Invoice",
           onClick: () => navigate("/dashboard/accounting/invoices/add"),
         }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{
           icon: FileText,
-          title: (row) => `Inv: ${row.invoice_Number}`,
+          title: (row) => `${invT.invoiceNumber || "Inv"}: ${row.invoice_Number}`,
           subtitle: (row) => new Date(row.invoice_Date).toLocaleDateString(),
           fields: [
             {
               icon: Info,
-              label: "Net Amount:",
+              label: `${invT.netAmount || "Net Amount"}:`,
               value: (row) => `$${Number(row.net_Amount || 0).toFixed(2)}`,
             },
             {
               icon: Info,
-              label: "Payment Method:",
+              label: `${invT.paymentMethod || "Payment Method"}:`,
               value: (row) => row.payment_Method || "-",
             },
           ],
@@ -154,10 +157,10 @@ export default function InvoicesPage() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t?.previous || "Prev",
+          nextLabel: t?.next || "Next",
         }}
-        emptyMessage="No invoices found"
+        emptyMessage={invT.noInvoicesFound || "No invoices found"}
       />
     </div>
   );

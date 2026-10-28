@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/context/translate-api";
 import { getInstallmentById } from "@/services/accounting";
 
 export default function InstallmentDetailsDialog({
@@ -33,6 +34,9 @@ export default function InstallmentDetailsDialog({
   installmentId,
   onPay,
 }) {
+  const { t } = useI18n();
+  const instT = t?.installments || {};
+
   const { data: responseData, isLoading, isError } = useQuery({
     queryKey: ["getInstallmentById", installmentId],
     queryFn: () => getInstallmentById(installmentId),
@@ -79,26 +83,26 @@ export default function InstallmentDetailsDialog({
       case "paid":
         return (
           <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 gap-1.5 py-1 px-3">
-            <CheckCircle2 className="w-3.5 h-3.5" /> Paid (مسدد)
+            <CheckCircle2 className="w-3.5 h-3.5" /> {instT.statuses?.paid || "Paid"}
           </Badge>
         );
       case "overdue":
         return (
           <Badge className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30 gap-1.5 py-1 px-3">
-            <AlertCircle className="w-3.5 h-3.5" /> Overdue (متأخر)
+            <AlertCircle className="w-3.5 h-3.5" /> {instT.statuses?.overdue || "Overdue"}
           </Badge>
         );
       case "partially paid":
       case "partiallypaid":
         return (
           <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 gap-1.5 py-1 px-3">
-            <Clock className="w-3.5 h-3.5" /> Partially Paid (مسدد جزئياً)
+            <Clock className="w-3.5 h-3.5" /> {instT.statuses?.partiallyPaid || "Partially Paid"}
           </Badge>
         );
       default:
         return (
           <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/30 gap-1.5 py-1 px-3">
-            <Clock className="w-3.5 h-3.5" /> Pending (معلق)
+            <Clock className="w-3.5 h-3.5" /> {instT.statuses?.pending || "Pending"}
           </Badge>
         );
     }
@@ -115,7 +119,7 @@ export default function InstallmentDetailsDialog({
               </div>
               <div>
                 <DialogTitle className="text-lg font-bold text-foreground">
-                  Installment Details (تفاصيل القسط)
+                  {instT.title || "Installment Details"}
                 </DialogTitle>
                 <DialogDescription className="text-xs text-muted-foreground mt-0.5">
                   ID: <span className="font-mono text-foreground">{id || "N/A"}</span>
@@ -129,12 +133,12 @@ export default function InstallmentDetailsDialog({
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            <p className="text-sm font-medium">Loading installment details...</p>
+            <p className="text-sm font-medium">{instT.loadingDetails || "Loading installment details..."}</p>
           </div>
         ) : isError ? (
           <div className="p-8 text-center text-destructive space-y-2">
             <AlertCircle className="w-8 h-8 mx-auto" />
-            <p className="font-medium text-sm">Failed to load installment details.</p>
+            <p className="font-medium text-sm">{instT.loadError || "Failed to load installment details."}</p>
           </div>
         ) : (
           <div className="p-6 space-y-5">
@@ -142,10 +146,10 @@ export default function InstallmentDetailsDialog({
             <div className="flex items-center justify-between p-3.5 rounded-xl border border-border bg-muted/20">
               <div className="space-y-0.5">
                 <span className="text-xs text-muted-foreground block">
-                  Associated Invoice (الفاتورة المرتبطة)
+                  {instT.associatedInvoice || "Associated Invoice"}
                 </span>
                 <span className="text-sm font-bold text-foreground">
-                  Invoice #{invoiceNumber}
+                  #{invoiceNumber}
                 </span>
               </div>
               {invoiceId && (
@@ -153,7 +157,7 @@ export default function InstallmentDetailsDialog({
                   to={`/dashboard/accounting/invoices/${invoiceId}`}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-lg border border-primary/20"
                 >
-                  View Invoice <ExternalLink className="w-3.5 h-3.5" />
+                  {instT.viewInvoice || "View Invoice"} <ExternalLink className="w-3.5 h-3.5" />
                 </Link>
               )}
             </div>
@@ -162,7 +166,7 @@ export default function InstallmentDetailsDialog({
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="p-3 rounded-xl bg-card border border-border/80 shadow-xs">
                 <span className="text-xs text-muted-foreground block mb-1">
-                  Amount Due
+                  {instT.amountDue || "Amount Due"}
                 </span>
                 <span className="text-base font-extrabold text-foreground">
                   ${amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -170,7 +174,7 @@ export default function InstallmentDetailsDialog({
               </div>
               <div className="p-3 rounded-xl bg-card border border-border/80 shadow-xs">
                 <span className="text-xs text-muted-foreground block mb-1">
-                  Amount Paid
+                  {instT.amountPaid || "Amount Paid"}
                 </span>
                 <span className="text-base font-extrabold text-emerald-600 dark:text-emerald-400">
                   ${amountPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -178,7 +182,7 @@ export default function InstallmentDetailsDialog({
               </div>
               <div className="p-3 rounded-xl bg-card border border-border/80 shadow-xs">
                 <span className="text-xs text-muted-foreground block mb-1">
-                  Remaining
+                  {instT.remaining || "Remaining"}
                 </span>
                 <span className="text-base font-extrabold text-primary">
                   ${remainingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -189,7 +193,7 @@ export default function InstallmentDetailsDialog({
             {/* Payment Progress Bar */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Payment Progress (نسبة السداد)</span>
+                <span>{instT.paymentProgress || "Payment Progress"}</span>
                 <span className="font-semibold text-foreground">{percentPaid}%</span>
               </div>
               <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
@@ -205,20 +209,20 @@ export default function InstallmentDetailsDialog({
               <div className="p-3 rounded-xl border border-border/70 bg-card space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Calendar className="w-3.5 h-3.5" />
-                  <span>Due Date (تاريخ الاستحقاق)</span>
+                  <span>{instT.dueDate || "Due Date"}</span>
                 </div>
                 <p className="font-semibold text-foreground text-sm">
-                  {dueDate ? new Date(dueDate).toLocaleDateString() : "Not specified"}
+                  {dueDate ? new Date(dueDate).toLocaleDateString() : (instT.notSpecified || "Not specified")}
                 </p>
               </div>
 
               <div className="p-3 rounded-xl border border-border/70 bg-card space-y-1">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Clock className="w-3.5 h-3.5" />
-                  <span>Payment Date (تاريخ السداد)</span>
+                  <span>{instT.paymentDate || "Payment Date"}</span>
                 </div>
                 <p className="font-semibold text-foreground text-sm">
-                  {paymentDate ? new Date(paymentDate).toLocaleDateString() : "Not paid yet"}
+                  {paymentDate ? new Date(paymentDate).toLocaleDateString() : (instT.notPaidYet || "Not paid yet")}
                 </p>
               </div>
             </div>
@@ -226,10 +230,10 @@ export default function InstallmentDetailsDialog({
             {/* Description & Notes */}
             <div className="p-3.5 rounded-xl border border-border/70 bg-card space-y-1 text-xs">
               <span className="text-muted-foreground font-medium block">
-                Description & Notes:
+                {instT.notes || "Description & Notes"}:
               </span>
               <p className="text-foreground leading-relaxed">
-                {notes || description || "No notes provided."}
+                {notes || description || (instT.noNotes || "No notes provided.")}
               </p>
             </div>
           </div>
@@ -237,7 +241,7 @@ export default function InstallmentDetailsDialog({
 
         <DialogFooter className="p-6 pt-4 border-t border-border bg-muted/20 flex items-center justify-between sm:justify-between">
           <Button variant="outline" onClick={onClose}>
-            Close
+            {instT.close || "Close"}
           </Button>
 
           {remainingAmount > 0 && onPay && (
@@ -249,7 +253,7 @@ export default function InstallmentDetailsDialog({
               className="gap-2"
             >
               <CreditCard className="w-4 h-4" />
-              Pay Installment (${remainingAmount.toFixed(2)})
+              {instT.payInstallment || "Pay Installment"} (${remainingAmount.toFixed(2)})
             </Button>
           )}
         </DialogFooter>
@@ -257,3 +261,4 @@ export default function InstallmentDetailsDialog({
     </Dialog>
   );
 }
+

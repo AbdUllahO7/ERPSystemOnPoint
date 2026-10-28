@@ -25,10 +25,14 @@ import {
   getAllCustomers,
   getAllInvoicePatterns
 } from "../../../../lib/api";
+import { useI18n } from "@/context/translate-api";
 import PayInstallmentDialog from "./Installments/_components/pay-installment-dialog";
 
 export default function InvoiceDetails() {
   const { id } = useParams();
+  const { t } = useI18n();
+  const invT = t?.invoices || {};
+  const instT = t?.installments || {};
 
   const { data: invoiceData, isLoading, isError } = useQuery({
     queryKey: ["getInvoiceById", id],
@@ -187,37 +191,37 @@ export default function InvoiceDetails() {
               <div className="flex items-center gap-2">
                 <Layers className="w-5 h-5 text-primary" />
                 <h3 className="font-semibold text-lg text-foreground">
-                  Installments & Payment Schedule (جدول الأقساط)
+                  {instT.paymentSchedule || "Installments & Payment Schedule"}
                 </h3>
               </div>
               <Link
                 to={`/dashboard/accounting/invoices/installments?invoiceId=${id}`}
                 className="text-xs text-primary font-semibold hover:underline inline-flex items-center gap-1"
               >
-                View all in Installments <ChevronRight className="w-3.5 h-3.5" />
+                {instT.viewAllInInstallments || "View all in Installments"} <ChevronRight className="w-3.5 h-3.5" />
               </Link>
             </div>
 
             {isLoadingInstallments ? (
               <div className="py-6 text-center text-xs text-muted-foreground">
-                Loading payment schedules...
+                {instT.loadingSchedules || "Loading payment schedules..."}
               </div>
             ) : invoiceSchedules.length === 0 ? (
               <div className="py-6 text-center text-xs text-muted-foreground border border-dashed rounded-lg bg-muted/20">
-                No installments configured for this invoice (Standard single-payment invoice).
+                {instT.noSchedulesForInvoice || "No installments configured for this invoice (Standard single-payment invoice)."}
               </div>
             ) : (
               <div className="overflow-x-auto rounded-lg border border-border">
                 <table className="w-full text-xs text-left">
                   <thead className="bg-muted/50 text-muted-foreground border-b border-border">
                     <tr>
-                      <th className="py-2.5 px-3 font-semibold">Schedule</th>
-                      <th className="py-2.5 px-3 font-semibold">Due Date</th>
-                      <th className="py-2.5 px-3 font-semibold">Amount Due</th>
-                      <th className="py-2.5 px-3 font-semibold">Paid</th>
-                      <th className="py-2.5 px-3 font-semibold">Remaining</th>
-                      <th className="py-2.5 px-3 font-semibold">Status</th>
-                      <th className="py-2.5 px-3 font-semibold text-right">Action</th>
+                      <th className="py-2.5 px-3 font-semibold">{instT.scheduleDescription || "Schedule"}</th>
+                      <th className="py-2.5 px-3 font-semibold">{instT.dueDate || "Due Date"}</th>
+                      <th className="py-2.5 px-3 font-semibold">{instT.amountDue || "Amount Due"}</th>
+                      <th className="py-2.5 px-3 font-semibold">{instT.amountPaid || "Paid"}</th>
+                      <th className="py-2.5 px-3 font-semibold">{instT.remaining || "Remaining"}</th>
+                      <th className="py-2.5 px-3 font-semibold">{instT.status || "Status"}</th>
+                      <th className="py-2.5 px-3 font-semibold text-right">{instT.actions || "Action"}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -229,7 +233,7 @@ export default function InvoiceDetails() {
                       return (
                         <tr key={sch.id || sch.scheduleId || sIdx} className="hover:bg-muted/30">
                           <td className="py-2.5 px-3 font-medium text-foreground">
-                            {sch.description || `Installment ${sIdx + 1}`}
+                            {sch.description || `${instT.scheduleDescription || "Installment"} ${sIdx + 1}`}
                           </td>
                           <td className="py-2.5 px-3 font-mono text-muted-foreground">
                             {sch.dueDate ? new Date(sch.dueDate).toLocaleDateString() : "-"}
@@ -251,7 +255,7 @@ export default function InvoiceDetails() {
                                   : "bg-blue-500/10 text-blue-600 border-blue-500/20"
                               }`}
                             >
-                              {isPaid ? "Paid" : "Pending"}
+                              {isPaid ? (instT.statuses?.paid || "Paid") : (instT.statuses?.pending || "Pending")}
                             </span>
                           </td>
                           <td className="py-2.5 px-3 text-right">
@@ -269,7 +273,7 @@ export default function InvoiceDetails() {
                                 }
                                 className="h-7 px-2 text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground font-semibold"
                               >
-                                <CreditCard className="w-3 h-3" /> Pay
+                                <CreditCard className="w-3 h-3" /> {instT.pay || "Pay"}
                               </Button>
                             )}
                           </td>

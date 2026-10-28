@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/context/translate-api";
 import { payInstallment, getCashLookUp, getCardLookUp } from "@/services/accounting";
 
 export default function PayInstallmentDialog({
@@ -41,6 +42,8 @@ export default function PayInstallmentDialog({
   onSuccess,
 }) {
   const queryClient = useQueryClient();
+  const { t } = useI18n();
+  const instT = t?.installments || {};
 
   const [paymentMethodType, setPaymentMethodType] = useState("cash"); // "cash" | "card"
   const [paymentAccountId, setPaymentAccountId] = useState("");
@@ -186,10 +189,10 @@ export default function PayInstallmentDialog({
             </div>
             <div>
               <DialogTitle className="text-lg font-bold text-foreground">
-                Pay Installment (تسديد قسط)
+                {instT.payInstallment || "Pay Installment"}
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Record payment for invoice schedule{" "}
+                {instT.associatedInvoice || "Invoice"}:{" "}
                 <span className="font-semibold text-foreground">
                   #{invoiceNumber}
                 </span>
@@ -204,14 +207,14 @@ export default function PayInstallmentDialog({
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{description}</span>
               <span className="font-mono text-muted-foreground">
-                Due: {installment?.dueDate ? new Date(installment.dueDate).toLocaleDateString() : "N/A"}
+                {instT.dueDate || "Due"}: {installment?.dueDate ? new Date(installment.dueDate).toLocaleDateString() : (instT.notSpecified || "N/A")}
               </span>
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-1 border-t border-border/50 text-center">
               <div className="p-2 rounded-lg bg-background border border-border/50">
                 <span className="text-[11px] text-muted-foreground block">
-                  Amount Due
+                  {instT.amountDue || "Amount Due"}
                 </span>
                 <span className="text-sm font-bold text-foreground">
                   ${amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -219,7 +222,7 @@ export default function PayInstallmentDialog({
               </div>
               <div className="p-2 rounded-lg bg-background border border-border/50">
                 <span className="text-[11px] text-muted-foreground block">
-                  Previously Paid
+                  {instT.previouslyPaid || "Previously Paid"}
                 </span>
                 <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                   ${previouslyPaid.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -227,7 +230,7 @@ export default function PayInstallmentDialog({
               </div>
               <div className="p-2 rounded-lg bg-primary/5 border border-primary/20">
                 <span className="text-[11px] text-primary font-medium block">
-                  Remaining
+                  {instT.remaining || "Remaining"}
                 </span>
                 <span className="text-sm font-extrabold text-primary">
                   ${remainingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -249,7 +252,7 @@ export default function PayInstallmentDialog({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label className="text-xs font-semibold text-foreground">
-                Payment Amount ($) <span className="text-destructive">*</span>
+                {instT.paymentAmount || "Payment Amount"} ($) <span className="text-destructive">*</span>
               </Label>
               {remainingAmount > 0 && (
                 <button
@@ -258,7 +261,7 @@ export default function PayInstallmentDialog({
                   className="text-[11px] font-medium text-primary hover:underline flex items-center gap-1"
                 >
                   <CheckCircle2 className="w-3 h-3" />
-                  Pay Full Remaining (${remainingAmount.toFixed(2)})
+                  {instT.payFullRemaining || "Pay Full Remaining"} (${remainingAmount.toFixed(2)})
                 </button>
               )}
             </div>
@@ -280,7 +283,7 @@ export default function PayInstallmentDialog({
           {/* Payment Method Selector (Cash vs Card/Bank) */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">
-              Payment Method Type <span className="text-destructive">*</span>
+              {instT.paymentMethodType || "Payment Method"} <span className="text-destructive">*</span>
             </Label>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -296,7 +299,7 @@ export default function PayInstallmentDialog({
                 }`}
               >
                 <Wallet className="w-4 h-4" />
-                Cash (نقدي)
+                {instT.cash || "Cash"}
               </button>
               <button
                 type="button"
@@ -311,7 +314,7 @@ export default function PayInstallmentDialog({
                 }`}
               >
                 <Building2 className="w-4 h-4" />
-                Bank / Card (بنكي / بطاقة)
+                {instT.card || "Bank / Card"}
               </button>
             </div>
           </div>
@@ -319,7 +322,7 @@ export default function PayInstallmentDialog({
           {/* Account Selector */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">
-              Payment Account (حساب الدفع) <span className="text-destructive">*</span>
+              {instT.paymentAccount || "Payment Account"} <span className="text-destructive">*</span>
             </Label>
             <Select
               value={paymentAccountId}
@@ -329,15 +332,15 @@ export default function PayInstallmentDialog({
                 <SelectValue
                   placeholder={
                     isLoadingCash || isLoadingCard
-                      ? "Loading accounts..."
-                      : `Select ${paymentMethodType === "cash" ? "Cash" : "Bank"} Account`
+                      ? (instT.loadingDetails || "Loading...")
+                      : (instT.selectPaymentAccount || "Select Payment Account")
                   }
                 />
               </SelectTrigger>
               <SelectContent position="popper">
                 {availableAccounts.length === 0 ? (
                   <div className="p-3 text-xs text-muted-foreground text-center">
-                    No accounts available
+                    {t?.common?.na || "No accounts available"}
                   </div>
                 ) : (
                   availableAccounts.map((acc) => (
@@ -353,7 +356,7 @@ export default function PayInstallmentDialog({
           {/* Payment Date */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">
-              Payment Date <span className="text-destructive">*</span>
+              {instT.paymentDate || "Payment Date"} <span className="text-destructive">*</span>
             </Label>
             <div className="relative">
               <Calendar className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -370,13 +373,13 @@ export default function PayInstallmentDialog({
           {/* Notes */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-foreground">
-              Notes (ملاحظات الدفع)
+              {instT.notes || "Notes"}
             </Label>
             <Textarea
               rows={2}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="e.g. Paid via cash receipt #1234..."
+              placeholder={instT.notesPlaceholder || "e.g. Paid via receipt..."}
               className="resize-none text-xs"
             />
           </div>
@@ -388,7 +391,7 @@ export default function PayInstallmentDialog({
               onClick={onClose}
               disabled={payMutation.isPending}
             >
-              Cancel
+              {instT.cancel || "Cancel"}
             </Button>
             <Button
               type="submit"
@@ -398,12 +401,12 @@ export default function PayInstallmentDialog({
               {payMutation.isPending ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
+                  {instT.processing || "Processing..."}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  Confirm Payment
+                  {instT.confirmPayment || "Confirm Payment"}
                 </>
               )}
             </Button>
@@ -413,3 +416,4 @@ export default function PayInstallmentDialog({
     </Dialog>
   );
 }
+

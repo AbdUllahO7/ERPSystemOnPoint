@@ -54,13 +54,14 @@ import {
   searchMaterialsForInvoice,
   getAllUnitOfMeasurements,
 } from "@/lib/api";
+import { useI18n } from "@/context/translate-api";
 
 const PAYMENT_METHODS = [
-  { id: "Cash", label: "Cash", subLabel: "نقداً", icon: Banknote },
-  { id: "Card", label: "Card", subLabel: "بطاقة", icon: CreditCard },
-  { id: "Bank", label: "Bank", subLabel: "تحويل بنكي", icon: Landmark },
-  { id: "Wallet", label: "Wallet", subLabel: "محفظة", icon: Wallet },
-  { id: "Credit", label: "Credit", subLabel: "آجل", icon: Clock },
+  { id: "Cash", enLabel: "Cash", arLabel: "نقداً", icon: Banknote },
+  { id: "Card", enLabel: "Card", arLabel: "بطاقة", icon: CreditCard },
+  { id: "Bank", enLabel: "Bank", arLabel: "تحويل بنكي", icon: Landmark },
+  { id: "Wallet", enLabel: "Wallet", arLabel: "محفظة", icon: Wallet },
+  { id: "Credit", enLabel: "Credit", arLabel: "آجل", icon: Clock },
 ];
 
 export function CreateContractPurchaseInvoiceDialog({
@@ -71,6 +72,8 @@ export function CreateContractPurchaseInvoiceDialog({
   onOpenChange,
 }) {
   const queryClient = useQueryClient();
+  const { locale } = useI18n();
+  const isArabic = locale === "ar";
 
   // Selected Contract ID
   const [selectedContractId, setSelectedContractId] = useState(contract?.id || "");
@@ -221,10 +224,10 @@ export function CreateContractPurchaseInvoiceDialog({
       (Array.isArray(unitsData) ? unitsData : []);
 
     const stdFallback = [
-      { id: "a3419b47-923a-4ca5-aacd-61a216d2bf6b", name: "Piece (قطعة)" },
-      { id: "56d99347-0fde-4ee5-9e70-e7a8df510eb3", name: "Box (صندوق)" },
-      { id: "c18df685-6184-4824-aeb5-3168d8767798", name: "Kg (كيلوغرام)" },
-      { id: "d29ea796-7295-4935-bfc6-4279e98788a9", name: "Meter (متر)" },
+      { id: "a3419b47-923a-4ca5-aacd-61a216d2bf6b", name: isArabic ? "قطعة" : "Piece" },
+      { id: "56d99347-0fde-4ee5-9e70-e7a8df510eb3", name: isArabic ? "صندوق" : "Box" },
+      { id: "c18df685-6184-4824-aeb5-3168d8767798", name: isArabic ? "كيلوغرام" : "Kg" },
+      { id: "d29ea796-7295-4935-bfc6-4279e98788a9", name: isArabic ? "متر" : "Meter" },
     ];
 
     if (Array.isArray(list) && list.length > 0) {
@@ -1196,8 +1199,9 @@ export function CreateContractPurchaseInvoiceDialog({
                           <Icon className="w-4 h-4" />
                           {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-blue-600"></span>}
                         </div>
-                        <span className="font-bold text-foreground">{method.label}</span>
-                        <span className="text-[10px] text-muted-foreground">{method.subLabel}</span>
+                        <span className="font-bold text-foreground">
+                          {isArabic ? method.arLabel : method.enLabel}
+                        </span>
                       </button>
                     );
                   })}
@@ -1206,13 +1210,15 @@ export function CreateContractPurchaseInvoiceDialog({
                 {/* Paid Amount */}
                 <div className="pt-2 space-y-1.5">
                   <div className="flex justify-between items-center">
-                    <Label className="text-xs font-semibold text-foreground">Paid Amount (المدفوع)</Label>
+                    <Label className="text-xs font-semibold text-foreground">
+                      {isArabic ? "المبلغ المدفوع" : "Paid Amount"}
+                    </Label>
                     <button
                       type="button"
                       onClick={() => setPaidAmount(summary.total)}
                       className="text-[11px] text-blue-600 hover:text-blue-800 font-semibold flex items-center gap-1"
                     >
-                      <Sparkles className="w-3 h-3" /> Pay Full Amount
+                      <Sparkles className="w-3 h-3" /> {isArabic ? "دفع كامل المبلغ" : "Pay Full Amount"}
                     </button>
                   </div>
                   <Input

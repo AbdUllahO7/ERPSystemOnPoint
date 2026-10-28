@@ -5,8 +5,11 @@ import { getAllInvoices } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FileText, Receipt, ShieldCheck } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function InvoicesTab({ supplierId }) {
+  const { locale } = useI18n();
+  const isArabic = locale === "ar";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -73,21 +76,21 @@ export function InvoicesTab({ supplierId }) {
     },
     { 
       key: "net_Amount", 
-      label: "Net Consumed (صافي الفاتورة)", 
+      label: isArabic ? "صافي الفاتورة" : "Net Consumed", 
       render: (row) => (
         <div>
           <span className="text-emerald-700 font-bold block">${Number(row.net_Amount || 0).toLocaleString()}</span>
-          <span className="text-[10px] text-muted-foreground">Consumes contract</span>
+          <span className="text-[10px] text-muted-foreground">{isArabic ? "يخصم من العقد" : "Consumes contract"}</span>
         </div>
       )
     },
     { 
       key: "paid_Amount", 
-      label: "Paid Amount (المدفوع)", 
+      label: isArabic ? "المبلغ المدفوع" : "Paid Amount", 
       render: (row) => (
         <div>
           <span className="font-semibold text-blue-600 block">${Number(row.paid_Amount || 0).toLocaleString()}</span>
-          <span className="text-[10px] text-muted-foreground">Cash paid</span>
+          <span className="text-[10px] text-muted-foreground">{isArabic ? "مدفوع نقداً" : "Cash paid"}</span>
         </div>
       )
     },
