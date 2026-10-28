@@ -21,7 +21,24 @@ import {
   getAppointmentLookups,
   getAppointmentPricingLookup,
   getServiceProviderLookups,
+  getServiceProviders,
 } from "@/services/appointments";
+
+const isGenericProviderName = (val) => {
+  if (!val || typeof val !== "string") return true;
+  const s = val.trim().toLowerCase();
+  return (
+    s === "" ||
+    s === "service provider" ||
+    s === "provider" ||
+    s === "unnamed provider" ||
+    s === "unnamed" ||
+    s === "null" ||
+    s === "undefined" ||
+    s === "n/a" ||
+    s === "—"
+  );
+};
 
 export default function AddEditAppointment() {
   const { id } = useParams();
@@ -61,6 +78,12 @@ export default function AddEditAppointment() {
   const { data: providerEmployeesData } = useQuery({
     queryKey: ["serviceProviderLookups"],
     queryFn: getServiceProviderLookups,
+  });
+
+  // Direct fetch of service providers as a primary / fallback source
+  const { data: directProvidersData } = useQuery({
+    queryKey: ["allServiceProvidersDirect"],
+    queryFn: () => getServiceProviders({ PageSize: 100 }),
   });
 
   const lookups = lookupsData?.data || {
@@ -207,52 +230,99 @@ export default function AddEditAppointment() {
   }, [pricingLookupData, lookups.services, formData.productVariantId, formData.serviceName, formData.unitOfMeasurementId]);
 
   const providerOptions = useMemo(() => {
+    // 1. Build employee map with case-insensitive / trimmed keys
     const employees = providerEmployeesData?.data?.employees || [];
     const empMap = new Map();
     employees.forEach((e) => {
-      const name = e.fullName || e.label || e.name;
-      if (e.id && name) {
-        empMap.set(e.id, name);
+      const name =
+        e.fullName ||
+        `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
+        e.name ||
+        e.employeeName ||
+        e.user_Name ||
+        e.userName ||
+        "";
+      const code = e.jobNumber || e.employee_Code || e.employeeCode || "";
+      const display = name ? (code ? `${name} (#${code})` : name) : (code ? `Employee #${code}` : "");
+
+      if (e.id) {
+        empMap.set(String(e.id).toLowerCase().trim(), { name, code, display });
+      }
+      if (e.jobNumber) {
+        empMap.set(String(e.jobNumber).toLowerCase().trim(), { name, code, display });
       }
     });
 
-    const list = (lookups.providers || []).map((p, idx) => {
-      const empId = p.hrEmployeeId || p.raw?.hrEmployeeId || p.raw?.employeeId;
-      const matchedName = empId ? empMap.get(empId) : null;
+    // 2. Base list of providers: from direct fetch or lookups
+    const directList = directProvidersData?.data?.items || [];
+    const lookupList = lookups.providers || [];
+    const baseList = directList.length > 0 ? directList : lookupList;
 
-      let label = p.label;
-      if (!label || label === "Service Provider" || label.toLowerCase() === "service provider") {
-        label =
-          matchedName ||
-          p.name ||
-          p.employeeName ||
-          (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
-      }
+    const list = baseList.map((p, idx) => {
+      const raw = p.raw || p;
+      const rawEmpId = p.hrEmployeeId || raw.hrEmployeeId || raw.employeeId || raw.hr_Employee_Id;
+      const normalizedEmpId = rawEmpId ? String(rawEmpId).toLowerCase().trim() : null;
+      const matchedEmp = normalizedEmpId ? empMap.get(normalizedEmpId) : null;
+      const directMatch = p.id ? empMap.get(String(p.id).toLowerCase().trim()) : null;
+      const empInfo = matchedEmp || directMatch;
+
+      const candidates = [
+        empInfo?.display,
+        empInfo?.name,
+        p.employeeName,
+        raw.employeeName,
+        p.fullName,
+        raw.fullName,
+        p.name,
+        raw.name,
+        p.label,
+      ];
+      const validName = candidates.find((c) => !isGenericProviderName(c));
+
+      const fallback = rawEmpId
+        ? `Employee (${String(rawEmpId).slice(0, 8)})`
+        : p.id
+        ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}`
+        : `Provider ${idx + 1}`;
+
+      const finalLabel = validName || fallback;
 
       return {
         ...p,
-        label,
-        name: label,
+        id: p.id,
+        value: p.id,
+        label: finalLabel,
+        name: finalLabel,
+        hrEmployeeId: rawEmpId || null,
+        raw,
       };
     });
 
+    // 3. Ensure currently selected provider in edit mode is always present
     if (
       formData.serviceProviderId &&
       !list.some(
         (p) =>
-          p.value === formData.serviceProviderId ||
-          p.id === formData.serviceProviderId
+          String(p.value).toLowerCase() === String(formData.serviceProviderId).toLowerCase() ||
+          String(p.id).toLowerCase() === String(formData.serviceProviderId).toLowerCase()
       )
     ) {
-      const empName = empMap.get(formData.serviceProviderId);
+      const selKey = String(formData.serviceProviderId).toLowerCase().trim();
+      const emp = empMap.get(selKey);
+      const customLabel = !isGenericProviderName(formData.serviceProviderName)
+        ? formData.serviceProviderName
+        : emp?.display || emp?.name || `Provider #${String(formData.serviceProviderId).slice(0, 8).toUpperCase()}`;
+
       list.unshift({
         id: formData.serviceProviderId,
         value: formData.serviceProviderId,
-        label: formData.serviceProviderName || empName || formData.serviceProviderId,
+        label: customLabel,
+        name: customLabel,
       });
     }
+
     return list;
-  }, [lookups.providers, providerEmployeesData, formData.serviceProviderId, formData.serviceProviderName]);
+  }, [directProvidersData, lookups.providers, providerEmployeesData, formData.serviceProviderId, formData.serviceProviderName]);
 
   const statusOptions = useMemo(() => {
     const list = [...(lookups.statuses || [])].filter((st) => st !== "All");
@@ -466,7 +536,7 @@ export default function AddEditAppointment() {
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Provider">
-                    {providerOptions.find((p) => p.value === formData.serviceProviderId || p.id === formData.serviceProviderId)?.label || (formData.serviceProviderName !== "Service Provider" ? formData.serviceProviderName : "")}
+                    {providerOptions.find((p) => String(p.value).toLowerCase() === String(formData.serviceProviderId).toLowerCase() || String(p.id).toLowerCase() === String(formData.serviceProviderId).toLowerCase())?.label || (!isGenericProviderName(formData.serviceProviderName) ? formData.serviceProviderName : "")}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

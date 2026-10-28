@@ -70,7 +70,7 @@ export async function getAppointmentLookups() {
     const providersRaw = providersRes.status === "fulfilled" ? (providersRes.value?.data?.items || providersRes.value?.data || []) : [];
     const employeesRaw = employeesRes.status === "fulfilled" ? (employeesRes.value?.data?.items || employeesRes.value?.data || []) : [];
 
-    // Map employees by ID to resolve provider names from hrEmployeeId
+    // Map employees by ID (normalized lowercase) to resolve provider names from hrEmployeeId
     const employeeMap = new Map();
     employeesRaw.forEach((e) => {
       const fullName =
@@ -82,12 +82,17 @@ export async function getAppointmentLookups() {
         e.userName ||
         (e.jobNumber ? `Employee #${e.jobNumber}` : "");
 
+      const empObj = {
+        name: fullName,
+        code: e.jobNumber || e.employee_Code,
+        phone: e.phone || e.phoneNumber,
+      };
+
       if (e.id) {
-        employeeMap.set(e.id, {
-          name: fullName,
-          code: e.jobNumber || e.employee_Code,
-          phone: e.phone || e.phoneNumber,
-        });
+        employeeMap.set(String(e.id).toLowerCase().trim(), empObj);
+      }
+      if (e.jobNumber) {
+        employeeMap.set(String(e.jobNumber).toLowerCase().trim(), empObj);
       }
     });
 
@@ -168,35 +173,53 @@ export async function getAppointmentLookups() {
       };
     });
 
+    const isGenericProviderName = (str) => {
+      if (!str || typeof str !== "string") return true;
+      const s = str.trim().toLowerCase();
+      return (
+        s === "" ||
+        s === "service provider" ||
+        s === "provider" ||
+        s === "unnamed provider" ||
+        s === "unnamed" ||
+        s === "n/a" ||
+        s === "—"
+      );
+    };
+
     const providers = providersRaw.map((p, idx) => {
-      const empId = p.hrEmployeeId || p.employeeId || p.hr_Employee_Id || p.id;
-      const matchedEmp = empId ? employeeMap.get(empId) : null;
+      const rawEmpId = p.hrEmployeeId || p.employeeId || p.hr_Employee_Id;
+      const normalizedEmpId = rawEmpId ? String(rawEmpId).toLowerCase().trim() : null;
+      const matchedEmp = normalizedEmpId ? employeeMap.get(normalizedEmpId) : null;
 
-      const directName =
-        p.name ||
-        p.fullName ||
-        p.providerName ||
-        p.provider_Name ||
-        p.employeeName ||
-        p.employee_Name ||
-        p.hrEmployeeName ||
-        p.hr_Employee_Name ||
-        p.hrEmployee?.fullName ||
-        p.hrEmployee?.name ||
-        `${p.hrEmployee?.first_Name || ""} ${p.hrEmployee?.last_Name || ""}`.trim();
+      const directCandidates = [
+        p.fullName,
+        p.employeeName,
+        p.employee_Name,
+        p.hrEmployeeName,
+        p.hr_Employee_Name,
+        p.hrEmployee?.fullName,
+        p.hrEmployee?.name,
+        p.name,
+        p.providerName,
+        p.provider_Name,
+      ];
+      const validDirectName = directCandidates.find((n) => !isGenericProviderName(n));
 
-      const resolvedName =
-        directName ||
-        matchedEmp?.name ||
-        (matchedEmp?.code ? `Employee #${matchedEmp.code}` : null) ||
-        (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
+      const fallbackName = rawEmpId
+        ? `Employee (${String(rawEmpId).slice(0, 8)})`
+        : p.id
+        ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}`
+        : `Provider ${idx + 1}`;
+
+      const resolvedName = validDirectName || matchedEmp?.name || fallbackName;
 
       return {
         id: p.id,
         label: resolvedName,
         value: p.id, // Must be UUID
         name: resolvedName,
-        hrEmployeeId: p.hrEmployeeId || p.employeeId || null,
+        hrEmployeeId: rawEmpId || null,
         raw: p,
       };
     });

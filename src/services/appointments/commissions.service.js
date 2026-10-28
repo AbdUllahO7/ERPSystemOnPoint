@@ -109,21 +109,44 @@ export async function getCommissionLookups() {
         e.employeeName ||
         (e.jobNumber ? `Employee #${e.jobNumber}` : "");
       if (e.id) {
-        employeeMap.set(e.id, name);
+        employeeMap.set(String(e.id).toLowerCase().trim(), name);
       }
     });
 
+    const isGenericProviderName = (str) => {
+      if (!str || typeof str !== "string") return true;
+      const s = str.trim().toLowerCase();
+      return (
+        s === "" ||
+        s === "service provider" ||
+        s === "provider" ||
+        s === "unnamed provider" ||
+        s === "unnamed" ||
+        s === "n/a" ||
+        s === "—"
+      );
+    };
+
     const providers = providersRaw.map((p, idx) => {
-      const empId = p.hrEmployeeId || p.employeeId;
-      const empName = empId ? employeeMap.get(empId) : null;
-      const name =
-        p.name ||
-        p.fullName ||
-        p.employeeName ||
-        p.hrEmployeeName ||
-        p.hrEmployee?.name ||
-        empName ||
-        (p.id ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}` : `Provider ${idx + 1}`);
+      const rawEmpId = p.hrEmployeeId || p.employeeId || p.hr_Employee_Id;
+      const normalizedEmpId = rawEmpId ? String(rawEmpId).toLowerCase().trim() : null;
+      const empName = normalizedEmpId ? employeeMap.get(normalizedEmpId) : null;
+
+      const directCandidates = [
+        p.fullName,
+        p.employeeName,
+        p.hrEmployeeName,
+        p.name,
+      ];
+      const validDirectName = directCandidates.find((n) => !isGenericProviderName(n));
+
+      const fallbackName = rawEmpId
+        ? `Employee (${String(rawEmpId).slice(0, 8)})`
+        : p.id
+        ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}`
+        : `Provider ${idx + 1}`;
+
+      const name = validDirectName || empName || fallbackName;
 
       return {
         id: p.id || String(idx + 1),
