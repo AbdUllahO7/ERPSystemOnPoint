@@ -303,19 +303,24 @@ export async function createCommissionRule(data) {
 }
 
 export async function deleteCommissionRule(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  if (!cleanId) {
+    throw new Error("Commission rule ID is required for deletion");
+  }
+
   try {
     const res = await apiHandler({
-      endPoint: `Inventory/ServiceProviderCommission/DeleteCommission/${id}`,
+      endPoint: `Inventory/ServiceProviderCommission/DeleteCommission/${cleanId}`,
       method: "POST",
     });
 
     return {
       status: 200,
-      data: res,
-      message: "Commission rule deleted successfully",
+      data: res?.data || res,
+      message: res?.message || "Commission rule deleted successfully",
     };
   } catch (err) {
-    console.error(`Failed to delete commission rule ${id}:`, err);
+    console.error(`Failed to delete commission rule ${cleanId}:`, err);
     throw err;
   }
 }

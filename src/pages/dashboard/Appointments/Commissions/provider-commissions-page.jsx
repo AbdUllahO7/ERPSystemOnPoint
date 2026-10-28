@@ -99,13 +99,17 @@ export default function ProviderCommissionsPage() {
   // Delete Mutation
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteCommissionRule(id),
-    onSuccess: () => {
+    onSuccess: (res) => {
       queryClient.invalidateQueries(["providerCommissionRules"]);
-      toast.success("Commission rule deleted successfully!");
+      toast.success(res?.message || "Commission rule deleted successfully!");
       setDeleteRowId(null);
     },
-    onError: () => {
-      toast.error("Failed to delete commission rule!");
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Failed to delete commission rule!";
+      toast.error(msg);
       setDeleteRowId(null);
     },
   });
@@ -133,7 +137,12 @@ export default function ProviderCommissionsPage() {
             label: "Delete Rule",
             icon: Trash2,
             destructive: true,
-            onClick: (row) => setDeleteRowId(row.id),
+            onClick: (row) => {
+              const ruleId = row?.id || row?.original?.id;
+              if (ruleId) {
+                setDeleteRowId(ruleId);
+              }
+            },
           },
         ],
       },
@@ -442,11 +451,17 @@ export default function ProviderCommissionsPage() {
 
       {/* Delete Rule Confirmation Dialog */}
       <DeleteConfirmDialog
-        open={!!deleteRowId}
+        isOpen={Boolean(deleteRowId)}
+        open={Boolean(deleteRowId)}
+        onClose={() => setDeleteRowId(null)}
         onOpenChange={(open) => !open && setDeleteRowId(null)}
         title="Delete Commission Rule"
         description="Are you sure you want to delete this commission rule? This action cannot be undone."
-        onConfirm={() => deleteMutation.mutate(deleteRowId)}
+        onConfirm={() => {
+          if (deleteRowId) {
+            deleteMutation.mutate(deleteRowId);
+          }
+        }}
         isLoading={deleteMutation.isPending}
       />
     </div>
