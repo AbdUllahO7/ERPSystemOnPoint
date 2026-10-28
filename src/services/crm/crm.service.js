@@ -355,6 +355,15 @@ export async function changeLeadStatus(data) {
   });
 }
 
+export async function deleteLead(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
+  return apiHandler({
+    endPoint: `crm/Lead/delete${normalizedId}`,
+    method: "POST",
+  });
+}
+
 export async function getLeadDocuments(params) {
   return apiHandler({
     endPoint: "crm/LeadDocument/GetAll",

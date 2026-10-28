@@ -10,7 +10,8 @@ import {
 import { DataView } from "@/components/data-view/DataView";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getLeads, changeLeadStatus } from "@/lib/api";
+import { getLeads, changeLeadStatus, deleteLead } from "@/lib/api";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -65,6 +66,7 @@ export default function LeadsPage() {
   const [activeTab, setActiveTab] = useState("All");
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
+  const [deleteRowId, setDeleteRowId] = useState(null);
   const [statusForm, setStatusForm] = useState({
     status: "",
     isPriceOfferAccepted: false,
@@ -104,6 +106,19 @@ export default function LeadsPage() {
     },
     onError: () => {
       toast.error("Failed to change status");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => deleteLead(id),
+    onSuccess: () => {
+      toast.success("Lead deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      setDeleteRowId(null);
+    },
+    onError: (error) => {
+      toast.error(error?.message || "Failed to delete lead!");
+      setDeleteRowId(null);
     },
   });
 
@@ -225,7 +240,7 @@ export default function LeadsPage() {
           label: "Delete",
           icon: Trash2,
           destructive: true,
-          onClick: (row) => console.log("Delete", row.id),
+          onClick: (row) => setDeleteRowId(row.id),
         },
       ]
     }
@@ -417,6 +432,15 @@ export default function LeadsPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      <DeleteConfirmDialog
+        isOpen={!!deleteRowId}
+        onClose={() => setDeleteRowId(null)}
+        onConfirm={() => deleteMutation.mutate(deleteRowId)}
+        title="Delete Lead"
+        description="Are you sure you want to delete this lead? This action cannot be undone."
+        isLoading={deleteMutation.isPending}
+      />
     </div>
   );
 }

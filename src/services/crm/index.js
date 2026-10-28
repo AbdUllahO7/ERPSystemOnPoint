@@ -15,7 +15,7 @@ export const crmApi = {
     getById: crmService.getLeadById,
     create: crmService.createLead,
     update: crmService.updateLead,
-    delete: (id) => crmService.deleteLeadDocument?.(id),
+    delete: crmService.deleteLead,
   },
   suppliers: {
     getAll: crmService.getAllSuppliers,
