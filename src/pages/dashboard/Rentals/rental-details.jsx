@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { XCircle, Loader2, Receipt } from "lucide-react";
+import { XCircle, Loader2, Receipt, ShieldCheck } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { Button } from "@/components/ui/button";
 import { DynamicModal } from "@/components/common/dynamic-modal";
@@ -22,6 +22,7 @@ import {
   getRentalLookups,
 } from "@/services/rentals";
 import { IssueContractInvoiceDialog } from "@/pages/dashboard/crm/customers/_components/tabs/issue-contract-invoice-dialog";
+import SettleRentalContractDialog from "./_components/settle-rental-contract-dialog";
 
 export default function RentalDetailsPage() {
   const { id } = useParams();
@@ -29,6 +30,7 @@ export default function RentalDetailsPage() {
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isInvoiceDialogOpen, setIsInvoiceDialogOpen] = useState(false);
+  const [isSettleModalOpen, setIsSettleModalOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [cancelForm, setCancelForm] = useState({
     cancellationReason: "",
@@ -99,6 +101,17 @@ export default function RentalDetailsPage() {
         />
 
         <div className="flex items-center gap-2.5">
+          {contract.status !== "Settled" && contract.status !== "Closed" && contract.status !== "Canceled" && (
+            <Button
+              type="button"
+              onClick={() => setIsSettleModalOpen(true)}
+              className="h-10 gap-2 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-semibold px-5 shadow-xs cursor-pointer transition-colors"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Settle Contract
+            </Button>
+          )}
+
           {contract.status !== "Canceled" && (
             <Button
               type="button"
@@ -531,6 +544,14 @@ export default function RentalDetailsPage() {
           onOpenChange={setIsInvoiceDialogOpen}
         />
       )}
+
+      {/* Settle Contract Dialog */}
+      <SettleRentalContractDialog
+        contract={contract}
+        isOpen={isSettleModalOpen}
+        onClose={() => setIsSettleModalOpen(false)}
+        onSuccess={() => queryClient.invalidateQueries(["rental", id])}
+      />
     </div>
   );
 }

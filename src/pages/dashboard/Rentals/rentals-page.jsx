@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, Pencil, Trash2, ArrowUp, ArrowDown } from "lucide-react";
+import { Eye, Pencil, Trash2, ArrowUp, ArrowDown, ShieldCheck } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import SettleRentalContractDialog from "./_components/settle-rental-contract-dialog";
 import { PageTitle } from "@/components/common/page-title";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,6 +32,7 @@ export default function RentalsPage() {
   const [deleteRowId, setDeleteRowId] = useState(null);
   const [selectedService, setSelectedService] = useState("all");
   const [selectedResource, setSelectedResource] = useState("all");
+  const [settleContractRow, setSettleContractRow] = useState(null);
 
   const navigate = useNavigate();
 
@@ -101,6 +103,12 @@ export default function RentalsPage() {
             label: "View Details",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/rentals/${row.id}`),
+          },
+          {
+            key: "settle",
+            label: "Settle Contract",
+            icon: ShieldCheck,
+            onClick: (row) => setSettleContractRow(row),
           },
           {
             key: "edit",
@@ -387,6 +395,14 @@ export default function RentalsPage() {
         description="Are you sure you want to delete this rental contract? This action cannot be undone."
         onConfirm={() => deleteMutation.mutate(deleteRowId)}
         isLoading={deleteMutation.isPending}
+      />
+
+      {/* Settle Contract Dialog */}
+      <SettleRentalContractDialog
+        isOpen={Boolean(settleContractRow)}
+        onClose={() => setSettleContractRow(null)}
+        contract={settleContractRow}
+        onSuccess={() => refetch()}
       />
     </div>
   );

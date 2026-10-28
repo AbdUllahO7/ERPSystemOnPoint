@@ -87,10 +87,26 @@ export function useRentalMutations() {
     },
   });
 
+  const settleRental = useMutation({
+    mutationFn: (data) => rentalsApi.settleRentalContract(data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.rentals.lists() });
+      const contractId = variables.contractId || variables.id;
+      if (contractId) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.rentals.detail(contractId) });
+      }
+      toast.success("تمت تسوية عقد الإيجار بنجاح");
+    },
+    onError: (error) => {
+      toast.error(error?.message || "فشل تسوية عقد الإيجار");
+    },
+  });
+
   return {
     createRental,
     updateRental,
     deleteRental,
+    settleRental,
   };
 }
 

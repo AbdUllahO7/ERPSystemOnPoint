@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Calendar, Plus, Trash2, Loader2 } from "lucide-react";
+import { Calendar, Plus, Trash2, Loader2, Sparkles } from "lucide-react";
 import { PageTitle } from "@/components/common/page-title";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DynamicModal } from "@/components/common/dynamic-modal";
 import toast from "react-hot-toast";
 import {
   createRental,
@@ -29,28 +28,29 @@ export default function AddEditRentalPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Dynamic Custom Fields State
+  // Dynamic Custom Fields State matching dynamicDetails
   const [dynamicFields, setDynamicFields] = useState([]);
-  const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
-  const [newFieldName, setNewFieldName] = useState("");
-  const [newFieldValue, setNewFieldValue] = useState("");
+  const [newKey, setNewKey] = useState("");
+  const [newValue, setNewValue] = useState("");
 
-  // Form State
+  // Form State conforming to POST /api/Inventory/RentalContract/CreateContract/create-contract
   const [formData, setFormData] = useState({
     contractNumber: "",
     customerId: "",
     customerName: "",
-    resource: "",
-    service: "",
-    costCenter: "",
-    currency: "USD",
-    startDate: "",
-    endDate: "",
+    resourceId: "",
+    resourceName: "",
+    productVariantId: "",
+    serviceName: "",
+    costCenterId: "",
+    currencyId: "",
+    startDate: new Date().toISOString().slice(0, 10),
+    expectedEndDate: "",
     status: "Active",
-    paymentMethod: "Card",
+    paymentAccountId: "",
     notes: "",
-    rentalPrice: "0",
-    rateType: "1=Day",
+    rentalRate: "0",
+    rateType: "Day",
     quantity: "1",
     discount: "0",
     taxPercent: "0",
@@ -68,10 +68,25 @@ export default function AddEditRentalPage() {
     services: [],
     costCenters: [],
     currencies: [],
+    paymentAccounts: [],
+    invoicePatterns: [],
     paymentMethods: [],
     rateTypes: [],
     statuses: [],
   };
+
+  // Set default currency & payment account when lookups load
+  useEffect(() => {
+    if (!formData.currencyId && lookups.currencies?.length > 0) {
+      setFormData((prev) => ({ ...prev, currencyId: String(lookups.currencies[0].id) }));
+    }
+    if (!formData.paymentAccountId && lookups.paymentAccounts?.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        paymentAccountId: String(lookups.paymentAccounts[0].id),
+      }));
+    }
+  }, [lookups.currencies, lookups.paymentAccounts]);
 
   // Fetch contract if in edit mode
   const { data: contractData, isLoading: isFetching } = useQuery({
@@ -87,27 +102,30 @@ export default function AddEditRentalPage() {
         contractNumber: c.contractNumber || c.id || "",
         customerId: c.customerId || "",
         customerName: c.customerName || c.customer || "",
-        resource: c.resourceName || c.resource || "",
-        service: c.title || c.service || "",
-        costCenter: c.costCenter || "",
-        currency: c.currency || "USD",
-        startDate: c.startDate || "",
-        endDate: c.endDate || "",
+        resourceId: c.resourceId || "",
+        resourceName: c.resourceName || c.resource || "",
+        productVariantId: c.productVariantId || "",
+        serviceName: c.serviceName || c.title || "",
+        costCenterId: c.costCenterId || "",
+        currencyId: c.currencyId || "",
+        startDate: c.startDate || new Date().toISOString().slice(0, 10),
+        expectedEndDate: c.expectedEndDate || c.endDate || "",
         status: c.status || "Active",
-        paymentMethod: c.paymentMethod || "Card",
-        notes: c.notes || "",
-        rentalPrice: String(c.rentalPrice || c.totalAmount || 0),
-        rateType: c.rateType || "1=Day",
+        paymentAccountId: c.paymentAccountId || "",
+        notes: c.notes || c.terms_And_Conditions || "",
+        rentalRate: String(c.rentalRate || c.rentalPrice || c.totalAmount || 0),
+        rateType: c.rateType || "Day",
         quantity: String(c.quantity || 1),
         discount: String(c.discount || 0),
         taxPercent: String(c.taxPercent || 0),
-        securityDeposit: String(c.numericDeposit || 0),
+        securityDeposit: String(c.securityDeposit || c.numericDeposit || 0),
       });
 
-      if (c.additionalData) {
-        const fields = Object.entries(c.additionalData).map(([key, val]) => ({
+      const details = c.dynamicDetails || c.additionalData;
+      if (details && typeof details === "object") {
+        const fields = Object.entries(details).map(([key, val]) => ({
           key,
-          value: val,
+          value: String(val ?? ""),
         }));
         setDynamicFields(fields);
       }
@@ -116,19 +134,20 @@ export default function AddEditRentalPage() {
 
   // Calculations for Summary Card
   const calculations = useMemo(() => {
-    const price = Number(formData.rentalPrice) || 0;
+    const rate = Number(formData.rentalRate) || 0;
     const qty = Number(formData.quantity) || 1;
     const discount = Number(formData.discount) || 0;
     const taxRate = Number(formData.taxPercent) || 0;
     const deposit = Number(formData.securityDeposit) || 0;
 
-    const subtotal = Math.max(0, price * qty - discount);
+    const baseAmount = rate * qty;
+    const subtotal = Math.max(0, baseAmount - discount);
     const taxAmount = (subtotal * taxRate) / 100;
     const total = subtotal + taxAmount;
     const collectedOnSigning = total + deposit;
 
     return {
-      unitsDay: price * qty,
+      baseAmount,
       subtotal,
       discount,
       taxAmount,
@@ -145,11 +164,13 @@ export default function AddEditRentalPage() {
       isEdit ? updateRental(id, data) : createRental(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(["rentals"]);
-      toast.success(res?.message || (isEdit ? "Contract updated!" : "Contract created!"));
+      toast.success(res?.message || (isEdit ? "Contract updated!" : "Rental contract created!"));
       navigate("/dashboard/rentals");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || (isEdit ? "Failed to update contract" : "Failed to create contract");
+      const msg =
+        err?.response?.data?.message ||
+        (isEdit ? "Failed to update contract" : "Failed to create contract");
       toast.error(msg);
     },
   });
@@ -159,17 +180,16 @@ export default function AddEditRentalPage() {
   };
 
   const handleAddDynamicField = () => {
-    if (!newFieldName.trim()) {
-      toast.error("Please enter variable name");
+    if (!newKey.trim()) {
+      toast.error("Please enter a property name");
       return;
     }
     setDynamicFields((prev) => [
       ...prev,
-      { key: newFieldName.trim(), value: newFieldValue.trim() },
+      { key: newKey.trim(), value: newValue.trim() },
     ]);
-    setNewFieldName("");
-    setNewFieldValue("");
-    setIsFieldModalOpen(false);
+    setNewKey("");
+    setNewValue("");
   };
 
   const handleRemoveDynamicField = (index) => {
@@ -178,21 +198,42 @@ export default function AddEditRentalPage() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (!formData.customerName && !formData.customerId) {
-      toast.error("Please enter or select a customer");
+    if (!formData.customerId) {
+      toast.error("Please select a customer");
       return;
     }
 
     const dynamicDetails = dynamicFields.reduce((acc, curr) => {
-      acc[curr.key] = curr.value;
+      if (curr.key && curr.key.trim()) {
+        acc[curr.key.trim()] = curr.value || "";
+      }
       return acc;
     }, {});
 
-    saveMutation.mutate({
-      ...formData,
-      total: calculations.total,
+    const payload = {
+      customerId: formData.customerId,
+      resourceId: formData.resourceId || null,
+      productVariantId: formData.productVariantId || null,
+      costCenterId: formData.costCenterId || null,
+      currencyId: formData.currencyId || null,
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : new Date().toISOString(),
+      expectedEndDate: formData.expectedEndDate
+        ? new Date(formData.expectedEndDate).toISOString()
+        : new Date(Date.now() + 86400000 * 30).toISOString(),
+      rentalRate: Number(formData.rentalRate || 0),
+      rateType: formData.rateType || "Day",
+      quantity: Number(formData.quantity || 1),
+      discount: Number(formData.discount || 0),
+      taxAmount: Number(calculations.taxAmount.toFixed(2)),
+      securityDeposit: Number(formData.securityDeposit || 0),
+      paymentAccountId: formData.paymentAccountId || null,
+      notes: formData.notes || "",
       dynamicDetails,
-    });
+    };
+
+    saveMutation.mutate(payload);
   };
 
   if (isFetching) {
@@ -256,63 +297,53 @@ export default function AddEditRentalPage() {
                 <Label className="text-xs font-semibold text-slate-700">
                   Customer <span className="text-rose-500">*</span>
                 </Label>
-                {lookups.customers.length > 0 ? (
-                  <Select
-                    value={formData.customerId || "custom"}
-                    onValueChange={(val) => {
-                      if (val === "custom") {
-                        handleInputChange("customerId", "");
-                      } else {
-                        const cust = lookups.customers.find((c) => String(c.id) === String(val));
-                        handleInputChange("customerId", val);
-                        handleInputChange("customerName", cust?.name || "");
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                      <SelectValue placeholder={formData.customerName || "Select Customer"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {lookups.customers.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    placeholder="Customer Name"
-                    value={formData.customerName}
-                    onChange={(e) => handleInputChange("customerName", e.target.value)}
-                    className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                  />
-                )}
+                <Select
+                  value={formData.customerId}
+                  onValueChange={(val) => {
+                    const cust = lookups.customers.find((c) => String(c.id) === String(val));
+                    handleInputChange("customerId", val);
+                    handleInputChange("customerName", cust?.name || "");
+                  }}
+                >
+                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                    <SelectValue placeholder="Select Customer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lookups.customers.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name} {c.phone ? `(${c.phone})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Row 2: Resource, Service */}
+            {/* Row 2: Resource, Service / Product Variant */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
                   Resource / Equipment
                 </Label>
                 <Select
-                  value={formData.resource}
+                  value={formData.resourceId}
                   onValueChange={(val) => {
-                    handleInputChange("resource", val);
-                    const selRes = lookups.resources.find((r) => r.name === val || String(r.id) === String(val));
-                    if (selRes && selRes.dailyRentalCost && Number(formData.rentalPrice) === 0) {
-                      handleInputChange("rentalPrice", String(selRes.dailyRentalCost));
+                    handleInputChange("resourceId", val);
+                    const selRes = lookups.resources.find((r) => String(r.id) === String(val));
+                    if (selRes) {
+                      handleInputChange("resourceName", selRes.name);
+                      if (selRes.dailyRentalCost && Number(formData.rentalRate) === 0) {
+                        handleInputChange("rentalRate", String(selRes.dailyRentalCost));
+                      }
                     }
                   }}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Select Resource" />
+                    <SelectValue placeholder="Select Resource / Equipment" />
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.resources.map((res) => (
-                      <SelectItem key={res.id} value={res.name}>
+                      <SelectItem key={res.id} value={String(res.id)}>
                         {res.name} {res.dailyRentalCost ? `($${res.dailyRentalCost}/day)` : ""}
                       </SelectItem>
                     ))}
@@ -322,33 +353,56 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Contract Title / Service
+                  Service / Product Variant
                 </Label>
-                <Input
-                  placeholder="e.g. Vehicle / Facility Rental"
-                  value={formData.service}
-                  onChange={(e) => handleInputChange("service", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
+                <Select
+                  value={formData.productVariantId}
+                  onValueChange={(val) => {
+                    handleInputChange("productVariantId", val);
+                    const selServ = lookups.services.find(
+                      (s) => String(s.variantId) === String(val) || String(s.id) === String(val)
+                    );
+                    if (selServ) {
+                      handleInputChange("serviceName", selServ.name);
+                      if (selServ.price && Number(formData.rentalRate) === 0) {
+                        handleInputChange("rentalRate", String(selServ.price));
+                      }
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                    <SelectValue placeholder="Select Service / Product Variant" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lookups.services.map((serv) => (
+                      <SelectItem
+                        key={serv.variantId || serv.id}
+                        value={String(serv.variantId || serv.id)}
+                      >
+                        {serv.name} {serv.price ? `($${serv.price})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
-            {/* Row 3: Cost Center Account, Currency */}
+            {/* Row 3: Cost Center, Currency */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
                   Cost Center
                 </Label>
                 <Select
-                  value={formData.costCenter}
-                  onValueChange={(val) => handleInputChange("costCenter", val)}
+                  value={formData.costCenterId}
+                  onValueChange={(val) => handleInputChange("costCenterId", val)}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
                     <SelectValue placeholder="Select Cost Center" />
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.costCenters.map((cc) => (
-                      <SelectItem key={cc.id} value={cc.name}>
+                      <SelectItem key={cc.id} value={String(cc.id)}>
                         {cc.name}
                       </SelectItem>
                     ))}
@@ -361,16 +415,16 @@ export default function AddEditRentalPage() {
                   Currency
                 </Label>
                 <Select
-                  value={formData.currency}
-                  onValueChange={(val) => handleInputChange("currency", val)}
+                  value={formData.currencyId}
+                  onValueChange={(val) => handleInputChange("currencyId", val)}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Currency" />
+                    <SelectValue placeholder="Select Currency" />
                   </SelectTrigger>
                   <SelectContent>
                     {lookups.currencies.map((curr) => (
-                      <SelectItem key={curr.id} value={curr.id}>
-                        {curr.name}
+                      <SelectItem key={curr.id} value={String(curr.id)}>
+                        {curr.name} {curr.symbol ? `(${curr.symbol})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -378,11 +432,11 @@ export default function AddEditRentalPage() {
               </div>
             </div>
 
-            {/* Row 4: Start Date, End Date */}
+            {/* Row 4: Start Date, Expected End Date */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Start Date
+                  Start Date <span className="text-rose-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -390,6 +444,7 @@ export default function AddEditRentalPage() {
                     value={formData.startDate}
                     onChange={(e) => handleInputChange("startDate", e.target.value)}
                     className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
+                    required
                   />
                   <Calendar className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 </div>
@@ -397,22 +452,44 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  End Date
+                  Expected End Date <span className="text-rose-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
                     type="date"
-                    value={formData.endDate}
-                    onChange={(e) => handleInputChange("endDate", e.target.value)}
+                    value={formData.expectedEndDate}
+                    onChange={(e) => handleInputChange("expectedEndDate", e.target.value)}
                     className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
+                    required
                   />
                   <Calendar className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 </div>
               </div>
             </div>
 
-            {/* Row 5: Status, Payment Method */}
+            {/* Row 5: Payment Account, Status */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold text-slate-700">
+                  Payment / Deposit Account
+                </Label>
+                <Select
+                  value={formData.paymentAccountId}
+                  onValueChange={(val) => handleInputChange("paymentAccountId", val)}
+                >
+                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
+                    <SelectValue placeholder="Select Payment Account" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {lookups.paymentAccounts.map((acc) => (
+                      <SelectItem key={acc.id} value={String(acc.id)}>
+                        {acc.name} {acc.accountNumber ? `(${acc.accountNumber})` : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
                   Status
@@ -433,27 +510,6 @@ export default function AddEditRentalPage() {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Payment Method
-                </Label>
-                <Select
-                  value={formData.paymentMethod}
-                  onValueChange={(val) => handleInputChange("paymentMethod", val)}
-                >
-                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Payment Method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {lookups.paymentMethods.map((pm) => (
-                      <SelectItem key={pm.id} value={pm.id}>
-                        {pm.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
 
             {/* Row 6: Notes */}
@@ -462,7 +518,7 @@ export default function AddEditRentalPage() {
                 Notes & Terms
               </Label>
               <Textarea
-                rows={4}
+                rows={3}
                 placeholder="Contract guidelines, terms, or conditions..."
                 value={formData.notes}
                 onChange={(e) => handleInputChange("notes", e.target.value)}
@@ -471,23 +527,24 @@ export default function AddEditRentalPage() {
             </div>
           </div>
 
-          {/* Card 2: Pricing & Terms */}
+          {/* Card 2: Pricing & Rate Terms */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-800">
               Pricing & Rate Terms
             </h2>
 
-            {/* Row 1: Rental Price, Rate Type */}
+            {/* Row 1: Rental Rate, Rate Type */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Rental Price
+                  Rental Rate ($)
                 </Label>
                 <Input
                   type="number"
+                  step="0.01"
                   placeholder="0"
-                  value={formData.rentalPrice}
-                  onChange={(e) => handleInputChange("rentalPrice", e.target.value)}
+                  value={formData.rentalRate}
+                  onChange={(e) => handleInputChange("rentalRate", e.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
                 />
               </div>
@@ -531,10 +588,11 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Discount
+                  Discount ($)
                 </Label>
                 <Input
                   type="number"
+                  step="0.01"
                   placeholder="0"
                   value={formData.discount}
                   onChange={(e) => handleInputChange("discount", e.target.value)}
@@ -546,11 +604,17 @@ export default function AddEditRentalPage() {
             {/* Row 3: Tax %, Security Deposit */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Tax %
-                </Label>
+                <div className="flex justify-between items-center">
+                  <Label className="text-xs font-semibold text-slate-700">
+                    Tax Rate (%)
+                  </Label>
+                  <span className="text-[11px] text-slate-400">
+                    Amount: ${calculations.taxAmount.toFixed(2)}
+                  </span>
+                </div>
                 <Input
                   type="number"
+                  step="0.1"
                   placeholder="0"
                   value={formData.taxPercent}
                   onChange={(e) => handleInputChange("taxPercent", e.target.value)}
@@ -560,10 +624,11 @@ export default function AddEditRentalPage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Security Deposit
+                  Security Deposit ($)
                 </Label>
                 <Input
                   type="number"
+                  step="0.01"
                   placeholder="0"
                   value={formData.securityDeposit}
                   onChange={(e) => handleInputChange("securityDeposit", e.target.value)}
@@ -571,6 +636,69 @@ export default function AddEditRentalPage() {
                 />
               </div>
             </div>
+          </div>
+
+          {/* Card 3: Dynamic Details & Specifications */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-[#0066d1]" />
+                  Dynamic Details & Custom Specifications
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Attach custom key-value specifications, inspection checkpoints, or contract attributes.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 pt-2">
+              <Input
+                placeholder="Property Key (e.g. MileageLimit, DeliveryLocation)"
+                value={newKey}
+                onChange={(e) => setNewKey(e.target.value)}
+                className="h-10 rounded-xl text-xs bg-slate-50 border-slate-200 w-1/2"
+              />
+              <Input
+                placeholder="Value (e.g. 500 km/day, Main Facility)"
+                value={newValue}
+                onChange={(e) => setNewValue(e.target.value)}
+                className="h-10 rounded-xl text-xs bg-slate-50 border-slate-200 w-1/2"
+              />
+              <Button
+                type="button"
+                onClick={handleAddDynamicField}
+                className="h-10 rounded-xl px-4 text-xs font-semibold bg-[#0066d1] hover:bg-[#0052a8] text-white shrink-0"
+              >
+                <Plus className="w-3.5 h-3.5 me-1" />
+                Add
+              </Button>
+            </div>
+
+            {dynamicFields.length > 0 && (
+              <div className="divide-y divide-slate-100 border border-slate-100 rounded-xl mt-3 overflow-hidden">
+                {dynamicFields.map((f, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between p-3 text-xs bg-slate-50/50 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-slate-700">{f.key}:</span>
+                      <span className="text-slate-600">{f.value}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveDynamicField(idx)}
+                      className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 rounded-lg"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -582,9 +710,9 @@ export default function AddEditRentalPage() {
 
           <div className="space-y-3.5 text-xs">
             <div className="flex items-center justify-between text-slate-600">
-              <span>Base Rate:</span>
+              <span>Base Rate ({formData.quantity} × ${Number(formData.rentalRate || 0).toFixed(2)}):</span>
               <span className="font-semibold text-slate-800">
-                ${calculations.unitsDay.toFixed(2)}
+                ${calculations.baseAmount.toFixed(2)}
               </span>
             </div>
 
@@ -610,7 +738,7 @@ export default function AddEditRentalPage() {
             </div>
 
             <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-slate-900 font-bold text-sm">
-              <span>Total:</span>
+              <span>Rental Total:</span>
               <span className="text-[#0066d1]">
                 ${calculations.total.toFixed(2)}
               </span>
