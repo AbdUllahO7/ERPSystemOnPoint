@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getAllUnitOfMeasurements, createProduct, createSimpleProductWithoutSpecs, updateSimpleProductWithoutSpecs, getProductById } from "@/lib/api";
+import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getAllUnitOfMeasurements, createProduct, createSimpleProductWithoutSpecs, updateSimpleProductWithoutSpecs, updateSimpleProductWithSpecs, getProductById } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -113,9 +113,11 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
       const units = unitData.map((u, i) => ({
         id: u.id,
+        variant_id: firstVariant.id || "",
+        unit_id: u.id || "",
         unitName: u.unitName || u.unit_Name || `Unit ${i + 1}`,
         unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || u.unitOfMeasurementId || "",
-        secondunit_Of_Measurement_Id: "",
+        secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || "",
         relative_factor: u.conversion_Factor ?? u.conversionFactor ?? u.relative_factor ?? 1,
         is_Default_Selling: u.is_Default_Selling ?? u.isDefaultSelling ?? false,
         is_Default_Purchasing: u.is_Default_Purchasing ?? u.isDefaultPurchasing ?? false,
@@ -248,7 +250,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   });
 
   const updateMutation = useMutation({
-    mutationFn: updateSimpleProductWithoutSpecs,
+    mutationFn: updateSimpleProductWithSpecs,
     onSuccess: () => {
       toast.success("Product updated successfully");
       navigate("/dashboard/inventory/items-management/items");
@@ -257,7 +259,6 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       toast.error(error.message || "Failed to update product");
     }
   });
-  console.log(id)
 
   const onSubmit = (data) => {
     const isFinalStep = (thereAreUnits && currentStep === 4) || (!thereAreUnits && currentStep === 2);
@@ -269,7 +270,14 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         payload.product_Units = [];
       }
       if (isEdit) {
-        updateMutation.mutate({ ...payload, id });
+        updateMutation.mutate({
+          ...payload,
+          id,
+          variant_id: productRes?.data?.variants?.[0]?.id,
+          unit_id: productRes?.data?.variants?.[0]?.productUnitDtos?.[0]?.id,
+          variants: productRes?.data?.variants,
+          raw: productRes?.data,
+        });
       } else {
         createMutation.mutate(payload);
       }

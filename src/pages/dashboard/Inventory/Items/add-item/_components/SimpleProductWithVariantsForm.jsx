@@ -179,6 +179,8 @@ export default function SimpleProductWithVariantsForm({
           const attrs = v.variantValues || [];
           return {
             id: v.id,
+            variant_id: v.id,
+            unit_id: uDto.id || "",
             minimum_Alert_Level: v.minimum_Alert_Level || 0,
             maximum_Stock_Level: v.maximum_Stock_Level || 0,
             barcode_Option: "Manual",
@@ -305,7 +307,9 @@ export default function SimpleProductWithVariantsForm({
         });
 
         combinations.push({
-          id: existingMatch?.id || undefined,
+          id: existingMatch?.id || existingMatch?.variant_id || undefined,
+          variant_id: existingMatch?.variant_id || existingMatch?.id || undefined,
+          unit_id: existingMatch?.unit_id || undefined,
           minimum_Alert_Level: existingMatch?.minimum_Alert_Level || 0,
           maximum_Stock_Level: existingMatch?.maximum_Stock_Level || 0,
           barcode_Option: existingMatch?.barcode_Option || "Manual",
@@ -430,7 +434,12 @@ export default function SimpleProductWithVariantsForm({
           return rest;
         });
 
-        updateMutation.mutate({ ...payload, id });
+        updateMutation.mutate({
+          ...payload,
+          id,
+          variants: productRes?.data?.variants,
+          raw: productRes?.data,
+        });
       } else {
         createMutation.mutate(data);
       }

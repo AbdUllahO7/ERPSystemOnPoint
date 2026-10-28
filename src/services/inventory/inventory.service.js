@@ -211,28 +211,56 @@ export function buildUpdateProductComponentDto(c = {}) {
   };
 }
 
-export function buildUpdateFlatProductVariantCardDto(v = {}) {
+export function buildUpdateFlatProductVariantCardDto(v = {}, fallbackData = {}) {
   const uDto = Array.isArray(v.productUnitDtos) && v.productUnitDtos.length > 0 ? v.productUnitDtos[0] : {};
+  const defaultGuid = "00000000-0000-0000-0000-000000000000";
+
+  const variantId =
+    toGuidOrNull(
+      v.variant_id ||
+      v.variantId ||
+      v.id ||
+      fallbackData.variant_id ||
+      fallbackData.variantId ||
+      fallbackData.variants?.[0]?.id ||
+      fallbackData.raw?.variants?.[0]?.id ||
+      fallbackData.id
+    ) || defaultGuid;
+
+  const unitId =
+    toGuidOrNull(
+      v.unit_id ||
+      v.unitId ||
+      (v.id !== variantId ? v.id : null) ||
+      uDto.id ||
+      fallbackData.unit_id ||
+      fallbackData.unitId ||
+      fallbackData.variants?.[0]?.productUnitDtos?.[0]?.id ||
+      fallbackData.raw?.variants?.[0]?.productUnitDtos?.[0]?.id
+    ) || defaultGuid;
+
   return {
-    variant_id: toGuidOrNull(v.variant_id || v.variantId || v.id),
-    unit_id: toGuidOrNull(v.unit_id || v.unitId || uDto.id),
-    minimum_Alert_Level: Number(v.minimum_Alert_Level ?? v.minimumAlertLevel ?? uDto.minimum_Alert_Level ?? 0) || 0,
-    maximum_Stock_Level: Number(v.maximum_Stock_Level ?? v.maximumStockLevel ?? uDto.maximum_Stock_Level ?? 0) || 0,
-    barcode_Option: v.barcode_Option || v.barcodeOption || uDto.barcode_Option || "Manual",
-    barcode: v.barcode || uDto.barcode || null,
-    qr_Code: v.qr_Code || v.qrCode || uDto.qr_Code || uDto.qr_code || null,
-    cost_Price: Number(v.cost_Price ?? v.costPrice ?? uDto.cost_Price ?? 0) || 0,
-    consumer_Price: Number(v.consumer_Price ?? v.consumerPrice ?? uDto.consumer_Price ?? 0) || 0,
-    wholesale_Price: Number(v.wholesale_Price ?? v.wholesalePrice ?? uDto.wholesale_Price ?? 0) || 0,
-    last_Purchase_Price: Number(v.last_Purchase_Price ?? v.lastPurchasePrice ?? uDto.last_Purchase_Price ?? 0) || 0,
-    average_Purchase_Price: Number(v.average_Purchase_Price ?? v.averagePurchasePrice ?? uDto.average_Purchase_Price ?? 0) || 0,
+    variant_id: variantId,
+    unit_id: unitId,
+    minimum_Alert_Level: Number(v.minimum_Alert_Level ?? v.minimumAlertLevel ?? uDto.minimum_Alert_Level ?? fallbackData.minimum_Alert_Level ?? 0) || 0,
+    maximum_Stock_Level: Number(v.maximum_Stock_Level ?? v.maximumStockLevel ?? uDto.maximum_Stock_Level ?? fallbackData.maximum_Stock_Level ?? 0) || 0,
+    barcode_Option: v.barcode_Option || v.barcodeOption || uDto.barcode_Option || fallbackData.barcode_Option || "Manual",
+    barcode: v.barcode || uDto.barcode || fallbackData.barcode || null,
+    qr_Code: v.qr_Code || v.qrCode || uDto.qr_Code || uDto.qr_code || fallbackData.qr_Code || null,
+    cost_Price: Number(v.cost_Price ?? v.costPrice ?? uDto.cost_Price ?? fallbackData.cost_Price ?? 0) || 0,
+    consumer_Price: Number(v.consumer_Price ?? v.consumerPrice ?? uDto.consumer_Price ?? fallbackData.consumer_Price ?? 0) || 0,
+    wholesale_Price: Number(v.wholesale_Price ?? v.wholesalePrice ?? uDto.wholesale_Price ?? fallbackData.wholesale_Price ?? 0) || 0,
+    last_Purchase_Price: Number(v.last_Purchase_Price ?? v.lastPurchasePrice ?? uDto.last_Purchase_Price ?? fallbackData.last_Purchase_Price ?? 0) || 0,
+    average_Purchase_Price: Number(v.average_Purchase_Price ?? v.averagePurchasePrice ?? uDto.average_Purchase_Price ?? fallbackData.average_Purchase_Price ?? 0) || 0,
     unit_Of_Measurement_Id: toGuidOrNull(
       v.unit_Of_Measurement_Id ||
       v.unitOfMeasurementId ||
       uDto.unit_Of_Measurement_Id ||
       uDto.unitOfMeasurementId ||
+      fallbackData.unit_Of_Measurement_Id ||
+      fallbackData.variants?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id ||
       "33333333-3333-3333-3333-333333333333"
-    ),
+    ) || "33333333-3333-3333-3333-333333333333",
     secondunit_Of_Measurement_Id: toGuidOrNull(
       v.secondunit_Of_Measurement_Id ||
       v.secondunitId ||
@@ -421,7 +449,145 @@ export function buildUpdateBundleDto(data = {}) {
 }
 
 export function buildUpdateProductInventoryWithSpecsDto(data = {}) {
-  const variants = data.updateProductvariants || data.createProductvariants || data.variants || [];
+  let rawVariants = data.updateProductvariants || data.createProductvariants;
+
+  const defaultVariantId =
+    toGuidOrNull(
+      data.variant_id ||
+      data.variantId ||
+      data.variants?.[0]?.id ||
+      data.raw?.variants?.[0]?.id ||
+      data.id
+    ) || "00000000-0000-0000-0000-000000000000";
+
+  const defaultUnitId =
+    toGuidOrNull(
+      data.unit_id ||
+      data.unitId ||
+      data.variants?.[0]?.productUnitDtos?.[0]?.id ||
+      data.raw?.variants?.[0]?.productUnitDtos?.[0]?.id
+    ) || "00000000-0000-0000-0000-000000000000";
+
+  // If updateProductvariants / createProductvariants not provided, but product_Units is provided
+  if (!rawVariants && Array.isArray(data.product_Units) && data.product_Units.length > 0) {
+    rawVariants = data.product_Units.map((u, idx) => {
+      const uId =
+        toGuidOrNull(
+          u.unit_id ||
+          u.unitId ||
+          u.id ||
+          data.variants?.[0]?.productUnitDtos?.[idx]?.id ||
+          data.raw?.variants?.[0]?.productUnitDtos?.[idx]?.id
+        ) || defaultUnitId;
+
+      const vId =
+        toGuidOrNull(
+          u.variant_id ||
+          u.variantId ||
+          data.variants?.[0]?.id ||
+          data.raw?.variants?.[0]?.id
+        ) || defaultVariantId;
+
+      return {
+        variant_id: vId,
+        unit_id: uId,
+        minimum_Alert_Level: Number(u.minimum_Alert_Level ?? data.minimum_Alert_Level ?? data.variants?.[0]?.minimum_Alert_Level ?? 0) || 0,
+        maximum_Stock_Level: Number(u.maximum_Stock_Level ?? data.maximum_Stock_Level ?? data.variants?.[0]?.maximum_Stock_Level ?? 0) || 0,
+        barcode_Option: u.barcode_Option || data.barcode_Option || "Manual",
+        barcode: u.barcode || (idx === 0 ? data.barcode : null) || null,
+        qr_Code: u.qr_Code || u.qrCode || (idx === 0 ? data.qr_Code : null) || null,
+        cost_Price: Number(u.cost_Price ?? (idx === 0 ? data.cost_Price : 0) ?? 0) || 0,
+        consumer_Price: Number(u.consumer_Price ?? (idx === 0 ? data.consumer_Price : 0) ?? 0) || 0,
+        wholesale_Price: Number(u.wholesale_Price ?? (idx === 0 ? data.wholesale_Price : 0) ?? 0) || 0,
+        last_Purchase_Price: Number(u.last_Purchase_Price ?? (idx === 0 ? data.last_Purchase_Price : 0) ?? 0) || 0,
+        average_Purchase_Price: Number(u.average_Purchase_Price ?? (idx === 0 ? data.average_Purchase_Price : 0) ?? 0) || 0,
+        unit_Of_Measurement_Id: toGuidOrNull(
+          u.unit_Of_Measurement_Id ||
+          u.unitOfMeasurementId ||
+          (idx === 0 ? data.unit_Of_Measurement_Id : null) ||
+          data.variants?.[0]?.productUnitDtos?.[idx]?.unit_Of_Measurement_Id ||
+          "33333333-3333-3333-3333-333333333333"
+        ) || "33333333-3333-3333-3333-333333333333",
+        secondunit_Of_Measurement_Id: toGuidOrNull(u.secondunit_Of_Measurement_Id || u.secondunitId),
+        relative_factor: Number(u.relative_factor ?? u.conversion_Factor ?? 0) || 0,
+        variant_Values: [],
+      };
+    });
+  }
+
+  // If still not provided, check backend data.variants
+  if (!rawVariants && Array.isArray(data.variants) && data.variants.length > 0) {
+    const flattened = [];
+    data.variants.forEach((v) => {
+      const vUnits = Array.isArray(v.productUnitDtos) && v.productUnitDtos.length > 0 ? v.productUnitDtos : [{}];
+      vUnits.forEach((uDto) => {
+        flattened.push({
+          variant_id: toGuidOrNull(v.id) || defaultVariantId,
+          unit_id: toGuidOrNull(uDto.id) || defaultUnitId,
+          minimum_Alert_Level: Number(v.minimum_Alert_Level ?? data.minimum_Alert_Level ?? 0) || 0,
+          maximum_Stock_Level: Number(v.maximum_Stock_Level ?? data.maximum_Stock_Level ?? 0) || 0,
+          barcode_Option: uDto.barcode_Option || data.barcode_Option || "Manual",
+          barcode: uDto.barcode || data.barcode || null,
+          qr_Code: uDto.qr_code || uDto.qrCode || data.qr_Code || null,
+          cost_Price: Number(uDto.cost_Price ?? data.cost_Price ?? 0) || 0,
+          consumer_Price: Number(uDto.consumer_Price ?? data.consumer_Price ?? 0) || 0,
+          wholesale_Price: Number(uDto.wholesale_Price ?? data.wholesale_Price ?? 0) || 0,
+          last_Purchase_Price: Number(uDto.last_Purchase_Price ?? data.last_Purchase_Price ?? 0) || 0,
+          average_Purchase_Price: Number(uDto.average_Purchase_Price ?? data.average_Purchase_Price ?? 0) || 0,
+          unit_Of_Measurement_Id: toGuidOrNull(
+            uDto.unit_Of_Measurement_Id ||
+            data.unit_Of_Measurement_Id ||
+            "33333333-3333-3333-3333-333333333333"
+          ) || "33333333-3333-3333-3333-333333333333",
+          secondunit_Of_Measurement_Id: toGuidOrNull(uDto.secondunit_Of_Measurement_Id),
+          relative_factor: Number(uDto.conversion_Factor ?? uDto.relative_factor ?? 0) || 0,
+          variant_Values: Array.isArray(v.variantValues)
+            ? v.variantValues
+                .map((val) => ({
+                  productAttributeValueId: toGuidOrNull(val.product_Attribute_Value_Id || val.productAttributeValueId),
+                }))
+                .filter((vv) => Boolean(vv.productAttributeValueId))
+            : [],
+        });
+      });
+    });
+    rawVariants = flattened;
+  }
+
+  // If still empty (e.g. single item with no units array), build single variant entry
+  if (!rawVariants || rawVariants.length === 0) {
+    rawVariants = [
+      {
+        variant_id: defaultVariantId,
+        unit_id: defaultUnitId,
+        minimum_Alert_Level: Number(data.minimum_Alert_Level ?? 0) || 0,
+        maximum_Stock_Level: Number(data.maximum_Stock_Level ?? 0) || 0,
+        barcode_Option: data.barcode_Option || "Manual",
+        barcode: data.barcode || null,
+        qr_Code: data.qr_Code || null,
+        cost_Price: Number(data.cost_Price ?? 0) || 0,
+        consumer_Price: Number(data.consumer_Price ?? 0) || 0,
+        wholesale_Price: Number(data.wholesale_Price ?? 0) || 0,
+        last_Purchase_Price: Number(data.last_Purchase_Price ?? 0) || 0,
+        average_Purchase_Price: Number(data.average_Purchase_Price ?? 0) || 0,
+        unit_Of_Measurement_Id: toGuidOrNull(
+          data.unit_Of_Measurement_Id ||
+          data.variants?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id ||
+          "33333333-3333-3333-3333-333333333333"
+        ) || "33333333-3333-3333-3333-333333333333",
+        secondunit_Of_Measurement_Id: toGuidOrNull(data.secondunit_Of_Measurement_Id),
+        relative_factor: 0,
+        variant_Values: [],
+      },
+    ];
+  }
+
+  const mappedVariants = Array.isArray(rawVariants)
+    ? rawVariants
+        .map((v) => buildUpdateFlatProductVariantCardDto(v, data))
+        .filter((v) => Boolean(v.unit_Of_Measurement_Id))
+    : [];
+
   return {
     id: toGuidOrNull(data.id),
     name_Product: (data.name_Product || data.name || "").trim(),
@@ -430,15 +596,11 @@ export function buildUpdateProductInventoryWithSpecsDto(data = {}) {
     is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? data.isTrackingInventory ?? true),
     category_Id: toGuidOrNull(data.category_Id || data.categoryId || data.category),
     requires_Shipping: Boolean(data.requires_Shipping ?? data.requiresShipping ?? false),
-    there_Are_Units: Boolean(data.there_Are_Units ?? data.thereAreUnits ?? false),
+    there_Are_Units: Boolean(data.there_Are_Units ?? data.thereAreUnits ?? (mappedVariants.length > 1)),
     revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
     expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
     inventory_Account_Id: toGuidOrNull(data.inventory_Account_Id || data.inventoryAccountId || data.inventoryAccount),
-    updateProductvariants: Array.isArray(variants)
-      ? variants
-          .map(buildUpdateFlatProductVariantCardDto)
-          .filter((v) => Boolean(v.unit_Of_Measurement_Id))
-      : [],
+    updateProductvariants: mappedVariants,
   };
 }
 

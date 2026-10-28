@@ -7,7 +7,7 @@ export const inventoryApi = {
     getAll: inventoryService.getAllProducts,
     getById: inventoryService.getProductById,
     create: inventoryService.createProduct,
-    update: inventoryService.updateSimpleProductWithoutSpecs,
+    update: inventoryService.updateSimpleProductWithSpecs,
     delete: inventoryService.toggleProductStatus,
   },
   warehouses: {
