@@ -70,13 +70,13 @@ export default function FollowUpsPage() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteCustomerFollowUp(id),
-    onSuccess: () => {
-      toast.success("Follow-up deleted successfully");
+    onSuccess: (res) => {
+      toast.success(res?.message || "Follow-up deleted successfully");
       queryClient.invalidateQueries({ queryKey: ["follow-ups-timeline"] });
       setDeleteDialog({ isOpen: false, id: null });
     },
     onError: (err) => {
-      toast.error(err?.message || "Failed to delete follow-up");
+      toast.error(err?.response?.data?.message || err?.message || "Failed to delete follow-up");
       setDeleteDialog({ isOpen: false, id: null });
     },
   });
@@ -437,8 +437,15 @@ export default function FollowUpsPage() {
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog
         isOpen={deleteDialog.isOpen}
+        open={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, id: null })}
-        onConfirm={() => deleteDialog.id && deleteMutation.mutate(deleteDialog.id)}
+        onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false, id: null })}
+        onConfirm={() => {
+          if (deleteDialog.id) {
+            deleteMutation.mutate(deleteDialog.id);
+          }
+        }}
+        isLoading={deleteMutation.isPending}
         title="Delete Follow-Up"
         description="Are you sure you want to delete this follow-up record? This action cannot be undone."
       />

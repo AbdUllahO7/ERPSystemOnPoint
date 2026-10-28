@@ -304,8 +304,10 @@ export async function completeOrCancelCustomerFollowUp(data) {
 }
 
 export async function deleteCustomerFollowUp(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
   return apiHandler({
-    endPoint: `crm/FollowUpCustomer/delete/${id}`,
+    endPoint: `crm/FollowUpCustomer/delete${normalizedId}`,
     method: "POST",
   });
 }
@@ -409,8 +411,10 @@ export async function updateFollowUpLead(data) {
 }
 
 export async function deleteFollowUpLead(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
   return apiHandler({
-    endPoint: `crm/FollowUpLead/delete/${id}`,
+    endPoint: `crm/FollowUpLead/delete${normalizedId}`,
     method: "POST",
   });
 }
