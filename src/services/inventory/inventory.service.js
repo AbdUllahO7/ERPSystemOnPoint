@@ -513,6 +513,14 @@ export async function searchMaterialsForInvoice(params) {
   });
 }
 
+export async function getInventoryPricingLookup(params) {
+  return apiHandler({
+    endPoint: "HR/Lookups/GetInventoryPricing/GetInventoryPricing",
+    method: "GET",
+    params,
+  });
+}
+
 export async function getAllUnitOfMeasurements(params) {
   return apiHandler({
     endPoint: "Inventory/UnitOfMeasurements/GetAllUnitOfMeasurements",

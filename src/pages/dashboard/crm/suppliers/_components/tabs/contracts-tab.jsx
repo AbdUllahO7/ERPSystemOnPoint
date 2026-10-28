@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "react-hot-toast";
-import { Pencil, FileText, Plus, RefreshCw } from "lucide-react";
+import { Pencil, FileText, Plus, RefreshCw, Receipt } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +26,7 @@ import {
   updateSupplierContract,
   changeSupplierContractStatus 
 } from "@/lib/api";
+import { CreateContractPurchaseInvoiceDialog } from "./create-contract-purchase-invoice-dialog";
 
 export function ContractsTab({ supplierId }) {
   const queryClient = useQueryClient();
@@ -38,6 +39,7 @@ export function ContractsTab({ supplierId }) {
   const [editContract, setEditContract] = useState(null);
   const [statusContract, setStatusContract] = useState(null);
   const [newStatus, setNewStatus] = useState("");
+  const [invoicingContract, setInvoicingContract] = useState(null);
 
   const [formData, setFormData] = useState({
     contractName: "",
@@ -218,11 +220,33 @@ export function ContractsTab({ supplierId }) {
         );
       },
     },
+    {
+      key: "actions",
+      label: "Invoice",
+      render: (row) => (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 gap-1.5 text-xs text-blue-700 border-blue-200 hover:bg-blue-50 font-medium"
+          onClick={() => setInvoicingContract(row)}
+          title="Create Purchase Invoice linked to this contract"
+        >
+          <Receipt className="w-3.5 h-3.5 text-blue-600" />
+          Issue Invoice
+        </Button>
+      ),
+    },
   ];
 
   const rowActionsMenu = [
     {
       items: [
+        {
+          key: 'issueInvoice',
+          label: 'Create Purchase Invoice',
+          icon: Receipt,
+          onClick: (row) => setInvoicingContract(row),
+        },
         {
           key: 'edit',
           label: 'Edit',
@@ -275,28 +299,17 @@ export function ContractsTab({ supplierId }) {
         </div>
       </div>
 
-      {/* Rules Callout from Specification */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-3.5 bg-teal-50/80 border-r-4 border-teal-600 rounded-lg text-xs space-y-1">
-          <p className="font-bold text-teal-900">
-            تصحيح أساسي (Core Accounting Rule):
-          </p>
-          <p className="text-teal-800 leading-relaxed">
-            ConsumedAmount ليس المبلغ المدفوع. قد تستهلك فاتورة شراء 2,000 من عقد قيمته 10,000 بينما تكون الفاتورة آجلة ولم تدفع منها شيئاً. المتبقي من العقد يصبح 8,000، أما المدفوع فيبقى صفراً.
-          </p>
-        </div>
-
-        <div className="p-3.5 bg-amber-50/80 border-r-4 border-amber-500 rounded-lg text-xs space-y-1">
-          <p className="font-bold text-amber-900">
-            الحالة والمدة والسقف (Status & Duration):
-          </p>
-          <p className="text-amber-800 leading-relaxed">
-            انتهاء مدة العقد، وإلغاؤه، واستهلاك كامل قيمته حالات مختلفة. لا يُعد العقد منتهياً زمنياً لمجرد استهلاك سقفه؛ كما أن متابعات العملاء لا تنطبق تلقائياً على الموردين.
-          </p>
-        </div>
-      </div>
-
-      <div className="flex justify-end mb-2">
+      
+      <div className="flex justify-end gap-3 mb-2">
+        <Button
+          variant="outline"
+          className="gap-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+          onClick={() => setInvoicingContract(items[0] || { id: "" })}
+          disabled={items.length === 0}
+        >
+          <Receipt className="w-4 h-4" />
+          Create Purchase Invoice
+        </Button>
         <Dialog open={isAddModalOpen} onOpenChange={(open) => {
           if (!open) closeModal();
           else setIsAddModalOpen(true);
@@ -421,6 +434,18 @@ export function ContractsTab({ supplierId }) {
           </form>
         </DialogContent>
       </Dialog>
+
+      {invoicingContract && (
+        <CreateContractPurchaseInvoiceDialog
+          contract={invoicingContract}
+          contracts={items}
+          supplierId={supplierId}
+          open={!!invoicingContract}
+          onOpenChange={(open) => {
+            if (!open) setInvoicingContract(null);
+          }}
+        />
+      )}
     </div>
   );
 }
