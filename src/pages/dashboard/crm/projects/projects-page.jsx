@@ -41,11 +41,16 @@ export default function ProjectsPage() {
     mutationFn: (id) => deleteCustomerProject(id),
     onSuccess: () => {
       toast.success("Project deleted successfully");
-      queryClient.invalidateQueries(["allCustomerProjects"]);
+      queryClient.invalidateQueries({ queryKey: ["allCustomerProjects"] });
       setDeleteId(null);
     },
-    onError: () => {
-      toast.error("Failed to delete project");
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to delete project";
+      toast.error(msg, { duration: 6000 });
       setDeleteId(null);
     },
   });

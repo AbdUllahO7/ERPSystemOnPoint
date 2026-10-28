@@ -23,9 +23,16 @@ export default function ProjectDetails() {
     mutationFn: (data) => updateProjectPercentage(data),
     onSuccess: () => {
       toast.success("Progress updated successfully");
-      queryClient.invalidateQueries(["projectDetails", id]);
+      queryClient.invalidateQueries({ queryKey: ["projectDetails", id] });
     },
-    onError: () => toast.error("Failed to update progress"),
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to update progress";
+      toast.error(msg);
+    },
   });
 
   if (isLoading) {

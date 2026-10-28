@@ -65,8 +65,13 @@ export function ProjectsTab({ customerId: propCustomerId }) {
       queryClient.invalidateQueries({ queryKey: ["customer-projects", customerId] });
       setDeleteProjectId(null);
     },
-    onError: () => {
-      toast.error("Failed to delete project");
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to delete project";
+      toast.error(msg, { duration: 6000 });
       setDeleteProjectId(null);
     },
   });
