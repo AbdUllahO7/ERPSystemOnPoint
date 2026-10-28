@@ -19,6 +19,7 @@ import {
   createAppointment,
   updateAppointment,
   getAppointmentLookups,
+  getAppointmentPricingLookup,
 } from "@/services/appointments";
 
 export default function AddEditAppointment() {
@@ -43,11 +44,18 @@ export default function AddEditAppointment() {
     serviceProviderName: "",
   });
 
-  // Fetch Lookups
+  // Fetch Lookups (Customers, Providers, Statuses, and default Services)
   const { data: lookupsData, isLoading: isLoadingLookups } = useQuery({
     queryKey: ["appointmentLookups"],
     queryFn: getAppointmentLookups,
   });
+
+  // Fetch Appointment Pricing Lookup (Direct Endpoint: /api/HR/Lookups/GetAppointmentPricing/GetAppointmentPricing)
+  const { data: pricingLookupData, isLoading: isLoadingPricing } = useQuery({
+    queryKey: ["appointmentPricingLookup"],
+    queryFn: getAppointmentPricingLookup,
+  });
+
   const lookups = lookupsData?.data || {
     customers: [],
     services: [],
@@ -69,7 +77,7 @@ export default function AddEditAppointment() {
     enabled: isEdit,
   });
 
-  const isPageLoading = isLoadingLookups || (isEdit && isLoadingDetails);
+  const isPageLoading = (isLoadingLookups && isLoadingPricing) || (isEdit && isLoadingDetails);
 
   useEffect(() => {
     if (isEdit && existingData) {
@@ -139,7 +147,37 @@ export default function AddEditAppointment() {
   }, [lookups.customers, formData.customerId, formData.customerName]);
 
   const serviceOptions = useMemo(() => {
-    const list = [...(lookups.services || [])];
+    // Priority 1: items from direct GetAppointmentPricing lookup
+    let items = [];
+    const directPricing = Array.isArray(pricingLookupData?.data)
+      ? pricingLookupData.data
+      : Array.isArray(pricingLookupData?.data?.data)
+      ? pricingLookupData.data.data
+      : null;
+
+    if (directPricing && directPricing.length > 0) {
+      items = directPricing.map((s) => {
+        const price = Number(s.consumerPrice ?? s.consumer_Price ?? 0);
+        const name = s.productName || s.name || "Unnamed Service";
+        const unitName = s.unitName || "خدمة مقطوعة";
+        return {
+          id: s.productVariantId,
+          value: s.productVariantId,
+          productVariantId: s.productVariantId,
+          name: name,
+          unitOfMeasurementId: s.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
+          unitName: unitName,
+          price: price,
+          consumerPrice: price,
+          label: price > 0 ? `${name} ($${price})` : name,
+          raw: s,
+        };
+      });
+    } else if (Array.isArray(lookups.services) && lookups.services.length > 0) {
+      items = [...lookups.services];
+    }
+
+    const list = [...items];
     if (
       formData.productVariantId &&
       !list.some(
@@ -154,10 +192,12 @@ export default function AddEditAppointment() {
         value: formData.productVariantId,
         productVariantId: formData.productVariantId,
         label: formData.serviceName || formData.productVariantId,
+        name: formData.serviceName || formData.productVariantId,
+        unitOfMeasurementId: formData.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
       });
     }
     return list;
-  }, [lookups.services, formData.productVariantId, formData.serviceName]);
+  }, [pricingLookupData, lookups.services, formData.productVariantId, formData.serviceName, formData.unitOfMeasurementId]);
 
   const providerOptions = useMemo(() => {
     const list = [...(lookups.providers || [])];
@@ -245,7 +285,7 @@ export default function AddEditAppointment() {
       startTime: formData.startTime || "09:00",
       endTime: formData.endTime || "09:30",
       deposit: Number(formData.deposit || 0),
-      unitOfMeasurementId: formData.unitOfMeasurementId || null,
+      unitOfMeasurementId: formData.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
       status: formData.status,
     };
 
@@ -344,14 +384,14 @@ export default function AddEditAppointment() {
                 value={formData.productVariantId || undefined}
                 onValueChange={(val) => {
                   const item = serviceOptions.find(
-                    (s) => s.value === val || s.id === val
+                    (s) => s.value === val || s.id === val || s.productVariantId === val
                   );
                   setFormData((prev) => ({
                     ...prev,
                     productVariantId: val,
-                    serviceName: item?.label || "",
+                    serviceName: item?.name || item?.label || "",
                     unitOfMeasurementId:
-                      item?.unitOfMeasurementId || prev.unitOfMeasurementId,
+                      item?.unitOfMeasurementId || prev.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
                   }));
                 }}
               >
