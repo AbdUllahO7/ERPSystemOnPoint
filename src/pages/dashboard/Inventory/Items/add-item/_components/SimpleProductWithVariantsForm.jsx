@@ -27,6 +27,8 @@ import {
   createSimpleProductWithSpecs,
   updateSimpleProductWithSpecs,
   getProductById,
+  isPieceUnit,
+  DEFAULT_PIECE_UNIT_ID,
 } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -371,7 +373,12 @@ export default function SimpleProductWithVariantsForm({
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to create product");
+      toast.error(
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to create product")
+      );
     },
   });
 
@@ -382,7 +389,11 @@ export default function SimpleProductWithVariantsForm({
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update product");
+      toast.error(
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to update product"
+      );
     },
   });
 
@@ -713,8 +724,14 @@ export default function SimpleProductWithVariantsForm({
                       `product_Units.${index}.unit_Of_Measurement_Id`,
                     )}
                     onChange={(e) => {
+                      const val = e.target.value;
+                      setValue(
+                        `product_Units.${index}.unit_Of_Measurement_Id`,
+                        val,
+                        { shouldValidate: true, shouldDirty: true },
+                      );
                       const sel = measurements.find(
-                        (m) => m.unit_Name_Id === e.target.value,
+                        (m) => m.unit_Name_Id === val,
                       );
                       if (sel)
                         setValue(
@@ -725,10 +742,12 @@ export default function SimpleProductWithVariantsForm({
                     disabled={unitsLoading}
                   >
                     <option value="">Select Unit</option>
-                    {measurements.map((m) => (
-                      <option key={m.unit_Name_Id} value={m.unit_Name_Id}>
-                        {m.unit_name}
-                      </option>
+                    {measurements
+                      .filter((m) => !isPieceUnit(m))
+                      .map((m) => (
+                        <option key={m.unit_Name_Id} value={m.unit_Name_Id}>
+                          {m.unit_name}
+                        </option>
                     ))}
                   </select>
                 )}
@@ -761,11 +780,14 @@ export default function SimpleProductWithVariantsForm({
                         {productUnitsWatch
                           .slice(0, index)
                           .map((pUnit, pIdx) => {
-                            if (!pUnit.unit_Of_Measurement_Id) return null;
+                            const uId =
+                              pUnit.unit_Of_Measurement_Id ||
+                              (pIdx === 0 ? DEFAULT_PIECE_UNIT_ID : "");
+                            if (!uId) return null;
                             return (
                               <option
                                 key={pIdx}
-                                value={pUnit.unit_Of_Measurement_Id}
+                                value={uId}
                               >
                                 {pUnit.unitName || `Unit ${pIdx + 1}`}
                               </option>

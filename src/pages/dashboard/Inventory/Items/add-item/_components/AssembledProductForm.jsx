@@ -6,7 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getInventoryPricingLookup, getAllUnitOfMeasurements, createProduct, createAssemblyWithoutSpecs, updateAssemblyWithoutSpecs, getProductById } from "@/lib/api";
+import {
+  getAllCategories,
+  getLeafAccounts,
+  searchMaterialsForInvoice,
+  getInventoryPricingLookup,
+  getAllUnitOfMeasurements,
+  createProduct,
+  createAssemblyWithoutSpecs,
+  updateAssemblyWithoutSpecs,
+  getProductById,
+  isPieceUnit,
+  DEFAULT_PIECE_UNIT_ID,
+} from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -231,7 +243,12 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to create assembled product");
+      toast.error(
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to create assembled product")
+      );
     }
   });
 
@@ -242,7 +259,11 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update assembled product");
+      toast.error(
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to update assembled product"
+      );
     }
   });
 
@@ -271,12 +292,7 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
         // Exclude base piece unit so only additional units are submitted
         payload.product_Units = (payload.product_Units || []).filter((u, idx) => {
           if (idx === 0) return false;
-          const uomId = u.unit_Of_Measurement_Id;
-          return (
-            uomId !== "55555555-5555-5555-5555-555555555555" &&
-            uomId !== "e7355714-9762-4403-8c61-d1dcf04d06ba" &&
-            u.unitName !== "قطعة"
-          );
+          return !isPieceUnit(u);
         });
         if (payload.product_Units.length === 0) {
           payload.there_Are_Units = false;
@@ -466,14 +482,18 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
                   className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
                   {...register(`product_Units.${index}.unit_Of_Measurement_Id`)}
                   onChange={(e) => {
-                    const sel = measurements.find(m => m.unit_Name_Id === e.target.value);
+                    const val = e.target.value;
+                    setValue(`product_Units.${index}.unit_Of_Measurement_Id`, val, { shouldValidate: true, shouldDirty: true });
+                    const sel = measurements.find(m => m.unit_Name_Id === val);
                     if (sel) setValue(`product_Units.${index}.unitName`, sel.unit_name);
                   }}
                   disabled={unitsLoading}
                 >
                   <option value="">Select Unit</option>
-                  {measurements.map(m => (
-                    <option key={m.unit_Name_Id} value={m.unit_Name_Id}>{m.unit_name}</option>
+                  {measurements
+                    .filter((m) => !isPieceUnit(m))
+                    .map(m => (
+                      <option key={m.unit_Name_Id} value={m.unit_Name_Id}>{m.unit_name}</option>
                   ))}
                 </select>
               )}
@@ -492,9 +512,10 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
                     >
                       <option value="">Select unit</option>
                       {productUnitsWatch.slice(0, index).map((pUnit, pIdx) => {
-                        if (!pUnit.unit_Of_Measurement_Id) return null;
+                        const uId = pUnit.unit_Of_Measurement_Id || (pIdx === 0 ? DEFAULT_PIECE_UNIT_ID : "");
+                        if (!uId) return null;
                         return (
-                          <option key={pIdx} value={pUnit.unit_Of_Measurement_Id}>
+                          <option key={pIdx} value={uId}>
                             {pUnit.unitName || `Unit ${pIdx + 1}`}
                           </option>
                         );

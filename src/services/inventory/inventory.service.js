@@ -188,12 +188,19 @@ export function isPieceUnit(unit = {}) {
   );
   if (
     uomId === "55555555-5555-5555-5555-555555555555" ||
-    uomId === "e7355714-9762-4403-8c61-d1dcf04d06ba"
+    uomId === "e7355714-9762-4403-8c61-d1dcf04d06ba" ||
+    uomId === "a819d257-6235-4c0b-b8f7-9a5cc4fdaf72"
   ) {
     return true;
   }
   const name = String(unit.unitName || unit.unit_name || unit.name || "").trim().toLowerCase();
-  if (name === "قطعة" || name === "قطعه" || name === "piece" || name.includes("حبة / قطعة")) {
+  if (
+    name === "قطعة" ||
+    name === "قطعه" ||
+    name === "piece" ||
+    name.includes("حبة / قطعة") ||
+    name.includes("قطعة / حبة")
+  ) {
     return true;
   }
   const sysCode = String(unit.system_code || unit.systemCode || "").trim().toUpperCase();
@@ -223,8 +230,15 @@ export function buildCreateProductUnitDto(unit = {}, fallbackData = {}) {
     barcodeOption = "AutoGenerate";
   }
 
+  const rawUomId = toGuidOrNull(
+    unit.unit_Of_Measurement_Id ||
+    unit.unitOfMeasurementId ||
+    unit.unit_Name_Id ||
+    unit.unitId
+  );
+
   return {
-    unit_Of_Measurement_Id: toGuidOrNull(unit.unit_Of_Measurement_Id || unit.unitOfMeasurementId || unit.unit_Name_Id || unit.unitId || fallbackData.unit_Of_Measurement_Id || fallbackData.unit_Name_Id),
+    unit_Of_Measurement_Id: rawUomId,
     secondunit_Of_Measurement_Id: toGuidOrNull(unit.secondunit_Of_Measurement_Id || unit.secondUnitId || unit.secondunitId) || DEFAULT_PIECE_UNIT_ID,
     barcode_Option: barcodeOption,
     barcode: barcode,
@@ -253,9 +267,16 @@ export function buildUpdateProductUnitDto(unit = {}, fallbackData = {}) {
     barcodeOption = "AutoGenerate";
   }
 
+  const rawUomId = toGuidOrNull(
+    unit.unit_Of_Measurement_Id ||
+    unit.unitOfMeasurementId ||
+    unit.unit_Name_Id ||
+    unit.unitId
+  );
+
   return {
     id: toGuidOrNull(unit.id) || "00000000-0000-0000-0000-000000000000",
-    unit_Of_Measurement_Id: toGuidOrNull(unit.unit_Of_Measurement_Id || unit.unitOfMeasurementId || unit.unit_Name_Id || unit.unitId || fallbackData.unit_Of_Measurement_Id || fallbackData.unit_Name_Id),
+    unit_Of_Measurement_Id: rawUomId,
     secondunit_Of_Measurement_Id: toGuidOrNull(unit.secondunit_Of_Measurement_Id || unit.secondUnitId || unit.secondunitId) || DEFAULT_PIECE_UNIT_ID,
     barcode_Option: barcodeOption,
     barcode: barcode,
@@ -413,12 +434,7 @@ export function buildUpdateProductInventoryWithoutSpecsDto(data = {}) {
 
   const requestedThereAreUnits = Boolean(data.there_Are_Units ?? data.thereAreUnits ?? false);
 
-  const additionalRawUnits = rawUnits.filter((u, idx) => {
-    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
-      return false;
-    }
-    return !isPieceUnit(u);
-  });
+  const additionalRawUnits = rawUnits.filter((u) => !isPieceUnit(u));
 
   let mappedUnits = [];
   if (requestedThereAreUnits && additionalRawUnits.length > 0) {
@@ -474,12 +490,7 @@ export function buildUpdateProductAssemblyWithoutSpecsDto(data = {}) {
     ? (data.product_Units || data.productUnits)
     : [];
 
-  const additionalRawUnits = rawUnits.filter((u, idx) => {
-    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
-      return false;
-    }
-    return !isPieceUnit(u);
-  });
+  const additionalRawUnits = rawUnits.filter((u) => !isPieceUnit(u));
 
   let mappedUnits = [];
   if (requestedThereAreUnits && additionalRawUnits.length > 0) {
@@ -812,12 +823,7 @@ export function buildCreateProductAssemblyWithoutSpecsDto(data = {}) {
     ? (data.product_Units || data.productUnits)
     : [];
 
-  const additionalRawUnits = rawUnits.filter((u, idx) => {
-    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
-      return false;
-    }
-    return !isPieceUnit(u);
-  });
+  const additionalRawUnits = rawUnits.filter((u) => !isPieceUnit(u));
 
   let mappedUnits = [];
   if (requestedThereAreUnits && additionalRawUnits.length > 0) {
@@ -977,12 +983,7 @@ export function buildCreateProductWithoutSpecsDto(data = {}) {
     ? (data.product_Units || data.productUnits)
     : [];
 
-  const additionalRawUnits = rawUnits.filter((u, idx) => {
-    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
-      return false;
-    }
-    return !isPieceUnit(u);
-  });
+  const additionalRawUnits = rawUnits.filter((u) => !isPieceUnit(u));
 
   let mappedUnits = [];
   if (requestedThereAreUnits && additionalRawUnits.length > 0) {
