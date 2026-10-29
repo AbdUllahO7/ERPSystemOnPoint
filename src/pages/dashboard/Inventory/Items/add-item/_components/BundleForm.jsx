@@ -208,9 +208,10 @@ export default function BundleForm({ currentStep, onNext }) {
     },
     onError: (error) => {
       toast.error(
-        error?.message && error.message !== "An unexpected error occurred"
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
           ? error.message
-          : "Failed to create bundle"
+          : "Failed to create bundle")
       );
     },
   });
@@ -224,9 +225,10 @@ export default function BundleForm({ currentStep, onNext }) {
     },
     onError: (error) => {
       toast.error(
-        error?.message && error.message !== "An unexpected error occurred"
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
           ? error.message
-          : "Failed to update bundle"
+          : "Failed to update bundle")
       );
     },
   });
