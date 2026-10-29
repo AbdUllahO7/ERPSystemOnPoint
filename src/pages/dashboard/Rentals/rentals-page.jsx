@@ -30,8 +30,10 @@ export default function RentalsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [deleteRowId, setDeleteRowId] = useState(null);
-  const [selectedService, setSelectedService] = useState("all");
+  const [selectedCustomer, setSelectedCustomer] = useState("all");
   const [selectedResource, setSelectedResource] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [settleContractRow, setSettleContractRow] = useState(null);
 
   const navigate = useNavigate();
@@ -39,6 +41,7 @@ export default function RentalsPage() {
   // Lookups Query via Feature Hook
   const { data: lookupsData } = useRentalLookups();
   const lookups = lookupsData?.data || {
+    customers: [],
     resources: [],
     services: [],
     costCenters: [],
@@ -51,17 +54,45 @@ export default function RentalsPage() {
   const { data: statsData } = useRentalStats();
   const stats = statsData?.data || [];
 
-  // Params for Rentals Query
+  // Params for Rentals Query (/api/Inventory/RentalContract/GetAll)
   const params = useMemo(
-    () => ({
-      PageNumber: page,
-      PageSize: 10,
-      SearchTerm: search || undefined,
-      Status: activeTab !== "all" ? activeTab : undefined,
-      Service: selectedService !== "all" ? selectedService : undefined,
-      Resource: selectedResource !== "all" ? selectedResource : undefined,
-    }),
-    [page, search, activeTab, selectedService, selectedResource]
+    () => {
+      const p = {
+        PageNumber: page,
+        PageSize: 10,
+      };
+
+      const q = search.trim();
+      if (q) {
+        p.SearchTerm = q;
+        p.Search = q;
+      }
+
+      if (["Paid", "PartiallyPaid", "Unpaid"].includes(activeTab)) {
+        p.Status = activeTab;
+      }
+      if (activeTab === "active") {
+        p.IsActive = true;
+      } else if (activeTab === "closed") {
+        p.IsActive = false;
+      }
+
+      if (selectedCustomer !== "all") {
+        p.CustomerId = selectedCustomer;
+      }
+      if (selectedResource !== "all") {
+        p.ResourceId = selectedResource;
+      }
+      if (fromDate) {
+        p.FromDate = fromDate;
+      }
+      if (toDate) {
+        p.ToDate = toDate;
+      }
+
+      return p;
+    },
+    [page, search, activeTab, selectedCustomer, selectedResource, fromDate, toDate]
   );
 
   // Rentals Query via Feature Hook
@@ -81,10 +112,16 @@ export default function RentalsPage() {
     const s = String(status || "").toLowerCase();
     switch (s) {
       case "active":
+      case "paid":
         return "bg-emerald-50 text-emerald-600";
+      case "partiallypaid":
+        return "bg-amber-50 text-amber-600";
+      case "unpaid":
+        return "bg-rose-50 text-rose-600";
       case "draft":
         return "bg-slate-100 text-slate-700";
       case "closed":
+      case "settled":
         return "bg-blue-50 text-[#0066d1]";
       case "canceled":
         return "bg-rose-50 text-rose-600";
@@ -139,7 +176,7 @@ export default function RentalsPage() {
             to={`/dashboard/rentals/${row.original.id}`}
             className="font-semibold text-[#0066d1] hover:underline text-xs"
           >
-            {row.original.id}
+            {row.original.contractNumber || row.original.id}
           </Link>
         ),
       },
@@ -312,23 +349,23 @@ export default function RentalsPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Service
+                Customer
               </Label>
               <Select
-                value={selectedService}
+                value={selectedCustomer}
                 onValueChange={(val) => {
-                  setSelectedService(val);
+                  setSelectedCustomer(val);
                   setPage(1);
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Service" />
+                  <SelectValue placeholder="Select Customer" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
-                  {(lookups.services || []).map((s) => (
-                    <SelectItem key={s.id} value={s.name}>
-                      {s.name}
+                  <SelectItem value="all">All Customers</SelectItem>
+                  {(lookups.customers || []).map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -352,7 +389,7 @@ export default function RentalsPage() {
                 <SelectContent>
                   <SelectItem value="all">All Resources</SelectItem>
                   {(lookups.resources || []).map((r) => (
-                    <SelectItem key={r.id} value={r.name}>
+                    <SelectItem key={r.id} value={r.id}>
                       {r.name}
                     </SelectItem>
                   ))}
@@ -360,13 +397,47 @@ export default function RentalsPage() {
               </Select>
             </div>
 
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  From Date
+                </Label>
+                <input
+                  type="date"
+                  value={fromDate}
+                  onChange={(e) => {
+                    setFromDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-600">
+                  To Date
+                </Label>
+                <input
+                  type="date"
+                  value={toDate}
+                  onChange={(e) => {
+                    setToDate(e.target.value);
+                    setPage(1);
+                  }}
+                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+              </div>
+            </div>
+
             <div className="pt-2 flex justify-end gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setSelectedService("all");
+                  setSelectedCustomer("all");
                   setSelectedResource("all");
+                  setFromDate("");
+                  setToDate("");
                   setPage(1);
                 }}
               >

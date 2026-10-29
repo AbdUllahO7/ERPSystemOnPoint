@@ -1,5 +1,6 @@
 import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
+import { toGuidOrNull } from "@/services/inventory/inventory.service";
 
 // ==========================================
 // Static Initial Fallback Data
@@ -43,9 +44,10 @@ export const INITIAL_RENTALS_STATS = [
 export const RENTAL_STATUS_TABS = [
   { id: "all", label: "All" },
   { id: "active", label: "Active" },
-  { id: "draft", label: "Draft" },
+  { id: "Paid", label: "Paid" },
+  { id: "PartiallyPaid", label: "Partially Paid" },
+  { id: "Unpaid", label: "Unpaid" },
   { id: "closed", label: "Closed" },
-  { id: "canceled", label: "Canceled" },
 ];
 
 export const INITIAL_RENTAL_CONTRACTS_LIST = [];
@@ -265,65 +267,135 @@ export async function getRentalsStats() {
 
 /**
  * Get Paginated & Filtered Rental Contracts List
- * Endpoint: GET /api/inventory/CustomerContracts/GetAllContracts
+ * Endpoint: GET /api/Inventory/RentalContract/GetAll
+ * Parameters:
+ *   SearchTerm, ContractId, CustomerId, ResourceId, Status (Unpaid | PartiallyPaid | Paid),
+ *   FromDate, ToDate, PageNumber, PageSize, Search, IsActive, SortBy, SortDirection
  */
 export async function getRentals(params = {}) {
   try {
     const queryParams = {
-      PageNumber: params.PageNumber || 1,
-      PageSize: params.PageSize || 10,
-      Search: params.SearchTerm || params.Search || undefined,
-      IsActive: params.IsActive !== undefined ? params.IsActive : undefined,
-      SortBy: params.SortBy || undefined,
-      SortDirection: params.SortDirection || undefined,
+      PageNumber: Number(params.PageNumber || params.pageNumber || 1),
+      PageSize: Number(params.PageSize || params.pageSize || 10),
     };
 
-    const res = await apiHandler({
-      endPoint: "inventory/CustomerContracts/GetAllContracts",
-      method: "GET",
-      params: queryParams,
-    });
+    const searchVal = (params.SearchTerm || params.Search || params.search || "").trim();
+    if (searchVal) {
+      queryParams.SearchTerm = searchVal;
+      queryParams.Search = searchVal;
+    }
+
+    const contractId = toGuidOrNull(params.ContractId || params.contractId);
+    if (contractId) queryParams.ContractId = contractId;
+
+    const customerId = toGuidOrNull(params.CustomerId || params.customerId);
+    if (customerId) queryParams.CustomerId = customerId;
+
+    const resourceId = toGuidOrNull(params.ResourceId || params.resourceId);
+    if (resourceId) queryParams.ResourceId = resourceId;
+
+    // Status enum in backend: 'Unpaid' | 'PartiallyPaid' | 'Paid'
+    const validStatuses = new Set(["Unpaid", "PartiallyPaid", "Paid"]);
+    if (params.Status && validStatuses.has(params.Status)) {
+      queryParams.Status = params.Status;
+    }
+
+    if (params.FromDate) {
+      queryParams.FromDate = new Date(params.FromDate).toISOString();
+    }
+    if (params.ToDate) {
+      queryParams.ToDate = new Date(params.ToDate).toISOString();
+    }
+
+    if (typeof params.IsActive === "boolean") {
+      queryParams.IsActive = params.IsActive;
+    } else if (params.Status === "active") {
+      queryParams.IsActive = true;
+    } else if (params.Status === "closed") {
+      queryParams.IsActive = false;
+    }
+
+    if (params.SortBy) queryParams.SortBy = params.SortBy;
+    if (params.SortDirection) queryParams.SortDirection = params.SortDirection;
+
+    let res;
+    try {
+      res = await apiHandler({
+        endPoint: "Inventory/RentalContract/GetAll",
+        method: "GET",
+        params: queryParams,
+      });
+    } catch (primaryErr) {
+      console.warn("Inventory/RentalContract/GetAll failed, trying fallback:", primaryErr);
+      res = await apiHandler({
+        endPoint: "inventory/CustomerContracts/GetAllContracts",
+        method: "GET",
+        params: {
+          PageNumber: queryParams.PageNumber,
+          PageSize: queryParams.PageSize,
+          Search: queryParams.SearchTerm,
+          IsActive: queryParams.IsActive,
+          SortBy: queryParams.SortBy,
+          SortDirection: queryParams.SortDirection,
+        },
+      });
+    }
 
     const raw = res?.data || res || {};
     const items = raw?.items || (Array.isArray(raw) ? raw : []);
-    const totalCount = raw?.totalCount || items.length;
-    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
+    const totalCount = raw?.totalCount ?? items.length;
+    const totalPages = raw?.totalPages ?? (Math.ceil(totalCount / (queryParams.PageSize || 10)) || 1);
 
     const mappedItems = items.map((c, idx) => {
-      const contractNum = c.contractNumber || c.code || `RC-${String(c.id || idx + 1).substring(0, 6)}`;
-      const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "";
-      const endDateStr = c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "";
+      const id = c.id || c.contractId || c.invoiceId || idx + 1;
+      const contractNum = c.contractNumber || c.invoiceNumber || c.number || c.code || `RC-${String(id).substring(0, 6)}`;
+      const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : (c.start_Date ? new Date(c.start_Date).toISOString().split("T")[0] : "");
+      const endDateStr = c.expectedEndDate
+        ? new Date(c.expectedEndDate).toISOString().split("T")[0]
+        : (c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : (c.end_Date ? new Date(c.end_Date).toISOString().split("T")[0] : ""));
       const period = startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A";
-      const totalAmount = c.totalAmount ?? c.total ?? 0;
+      const totalAmount = Number(c.totalAmount ?? c.total ?? c.amount ?? c.netAmount ?? 0);
+      const depositAmount = Number(c.securityDeposit ?? c.deposit ?? c.depositAmount ?? c.default_Deposit_Amount ?? 0);
+      const rateVal = Number(c.rentalRate ?? c.rate ?? c.dailyRentalCost ?? 0);
+      const rateTypeStr = c.rateType ? `/${String(c.rateType).toLowerCase()}` : "/day";
 
-      const firstItem = Array.isArray(c.items) && c.items.length > 0 ? c.items[0] : null;
-      const resourceName = firstItem?.custom_Item_Name || firstItem?.productVariantName || c.title || "Facility/Vehicle";
+      const firstItem = Array.isArray(c.items) && c.items.length > 0
+        ? c.items[0]
+        : (Array.isArray(c.contractItemsDtoInvoices) && c.contractItemsDtoInvoices.length > 0 ? c.contractItemsDtoInvoices[0] : null);
+      const resourceName = c.resourceName || c.resource || firstItem?.custom_Item_Name || firstItem?.customItemName || firstItem?.productVariantName || c.title || "Facility/Equipment";
+      const serviceName = c.serviceName || c.service || c.productVariantName || c.title || "Rental Contract";
+      const customerName = c.customerName || c.customer_Name || c.customer || "Customer";
 
       return {
-        id: c.id || idx + 1,
+        id,
+        raw: c,
         numericId: idx + 1,
         contractNumber: contractNum,
-        customer: c.customerName || c.customer_Name || "Customer",
-        customerName: c.customerName || c.customer_Name || "Customer",
-        customerId: c.customerId,
+        customer: customerName,
+        customerName: customerName,
+        customerId: c.customerId || c.customer_Id,
         resource: resourceName,
         resourceName: resourceName,
-        service: c.title || "Rental Contract",
-        serviceName: c.title || "Rental Contract",
+        resourceId: c.resourceId || c.resource_Id,
+        service: serviceName,
+        serviceName: serviceName,
+        productVariantId: c.productVariantId,
         period,
         startDate: startDateStr,
         endDate: endDateStr,
-        rate: `$${c.dailyRentalCost || 50}/day`,
-        rateType: "1=Day",
-        rentalPrice: c.dailyRentalCost || 50,
-        quantity: 1,
-        deposit: "$0",
-        numericDeposit: 0,
-        total: typeof totalAmount === "number" ? `$${totalAmount}` : `$${totalAmount}`,
+        expectedEndDate: endDateStr,
+        rate: rateVal ? `$${rateVal}${rateTypeStr}` : (c.rate || "$0/day"),
+        rateType: c.rateType || "Day",
+        rentalPrice: rateVal,
+        quantity: Number(c.quantity || 1),
+        deposit: `$${depositAmount}`,
+        numericDeposit: depositAmount,
+        total: `$${totalAmount}`,
         numericTotal: totalAmount,
-        status: c.status || (c.isActive ? "Active" : "Closed"),
+        paidAmount: Number(c.paidAmount ?? 0),
+        status: c.status || c.invoiceStatus || (c.isActive ? "Active" : "Closed"),
         isActive: c.isActive ?? true,
-        notes: c.terms_And_Conditions || c.description || "",
+        notes: c.notes || c.terms_And_Conditions || c.description || "",
       };
     });
 
@@ -333,8 +405,8 @@ export async function getRentals(params = {}) {
         items: mappedItems,
         totalCount,
         totalPages,
-        pageNumber: params.PageNumber || 1,
-        pageSize: params.PageSize || 10,
+        pageNumber: queryParams.PageNumber,
+        pageSize: queryParams.PageSize,
       },
     };
   } catch (error) {
@@ -354,32 +426,46 @@ export async function getRentals(params = {}) {
 
 /**
  * Get Rental Contract by ID
- * Endpoint: GET /api/inventory/CustomerContracts/GetContractById/{id}
+ * Endpoint: GET /api/Inventory/RentalContract/GetById/{invoiceId}
  */
 export async function getRentalById(id) {
   try {
-    const res = await apiHandler({
-      endPoint: `inventory/CustomerContracts/GetContractById/${id}`,
-      method: "GET",
-    });
+    let res;
+    try {
+      res = await apiHandler({
+        endPoint: `Inventory/RentalContract/GetById/${id}`,
+        method: "GET",
+      });
+    } catch (primaryErr) {
+      console.warn(`Inventory/RentalContract/GetById/${id} failed, trying fallback:`, primaryErr);
+      res = await apiHandler({
+        endPoint: `inventory/CustomerContracts/GetContractById/${id}`,
+        method: "GET",
+      });
+    }
+
     const c = res?.data || res || {};
 
-    const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : "";
-    const endDateStr = c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "";
-    const totalAmount = Number(c.totalAmount ?? 0);
-    const contractNum = c.contractNumber || `RC-${String(id).substring(0, 8)}`;
+    const startDateStr = c.startDate ? new Date(c.startDate).toISOString().split("T")[0] : (c.start_Date ? new Date(c.start_Date).toISOString().split("T")[0] : "");
+    const endDateStr = c.expectedEndDate
+      ? new Date(c.expectedEndDate).toISOString().split("T")[0]
+      : (c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : (c.end_Date ? new Date(c.end_Date).toISOString().split("T")[0] : ""));
+    const totalAmount = Number(c.totalAmount ?? c.total ?? c.amount ?? c.netAmount ?? 0);
+    const depositAmount = Number(c.securityDeposit ?? c.deposit ?? c.depositAmount ?? c.default_Deposit_Amount ?? 0);
+    const contractNum = c.contractNumber || c.invoiceNumber || c.number || `RC-${String(id).substring(0, 8)}`;
 
-    const items = (c.items || []).map((itm, idx) => {
+    const items = (c.items || c.contractItemsDtoInvoices || []).map((itm, idx) => {
       const q = Number(itm.quantity || 1);
       const p = Number(itm.unitPrice ?? itm.unit_Price ?? 0);
       const total = Number(itm.totalPrice ?? itm.total_Price ?? q * p);
+      const itemName = itm.customItemName || itm.custom_Item_Name || itm.name || itm.productVariantName || "Item";
       return {
-        id: itm.id || idx + 1,
+        id: itm.id || itm.contractItemId || idx + 1,
         productVariantId: itm.productVariantId || null,
         unitOfMeasurementId: itm.unitOfMeasurementId || null,
         unitOfMeasurementName: itm.unitOfMeasurementName || "N/A",
-        customItemName: itm.customItemName || itm.custom_Item_Name || itm.name || itm.productVariantName || "Item",
-        name: itm.customItemName || itm.custom_Item_Name || itm.name || itm.productVariantName || "Item",
+        customItemName: itemName,
+        name: itemName,
         description: itm.description || "",
         quantity: q,
         unitPrice: p,
@@ -401,27 +487,38 @@ export async function getRentalById(id) {
     return {
       status: 200,
       data: {
-        id: c.id || id,
+        id: c.id || c.contractId || c.invoiceId || id,
+        raw: c,
         contractNumber: contractNum,
-        customerId: c.customerId,
-        customer: c.customerName || "Customer",
-        customerName: c.customerName || "Customer",
+        customerId: c.customerId || c.customer_Id,
+        customer: c.customerName || c.customer_Name || "Customer",
+        customerName: c.customerName || c.customer_Name || "Customer",
+        resourceId: c.resourceId || c.resource_Id,
+        resourceName: c.resourceName || c.resource || items[0]?.customItemName || items[0]?.name || "Facility / Equipment",
+        resource: c.resourceName || c.resource || items[0]?.customItemName || items[0]?.name || "Facility / Equipment",
         title: c.title || "Rental Agreement",
-        serviceName: c.title || "Rental Agreement",
-        resourceName: items[0]?.customItemName || items[0]?.name || "Facility / Equipment",
+        serviceName: c.serviceName || c.service || c.title || "Rental Agreement",
+        service: c.serviceName || c.service || c.title || "Rental Agreement",
         startDate: startDateStr,
         endDate: endDateStr,
+        expectedEndDate: endDateStr,
         period: startDateStr && endDateStr ? `${startDateStr} - ${endDateStr}` : startDateStr || "N/A",
+        rentalRate: Number(c.rentalRate ?? c.rate ?? 0),
+        rateType: c.rateType || "Day",
+        securityDeposit: depositAmount,
+        deposit: `$${depositAmount}`,
         totalAmount,
         numericTotal: totalAmount,
         total: `$${totalAmount}`,
+        paidAmount: Number(c.paidAmount ?? 0),
         currencyId: c.currencyId || null,
         currencyCode: c.currencyCode || "USD",
-        status: c.status || (c.isActive ? "Active" : "Closed"),
+        currency: c.currencyCode || "USD",
+        status: c.status || c.invoiceStatus || (c.isActive ? "Active" : "Closed"),
         isActive: c.isActive ?? true,
         terms_And_Conditions: c.terms_And_Conditions || "",
         description: c.description || "",
-        notes: c.terms_And_Conditions || c.description || "",
+        notes: c.notes || c.terms_And_Conditions || c.description || "",
         items,
         installments,
         attachments: c.attachments || [],
@@ -440,6 +537,10 @@ export async function getRentalById(id) {
     throw error;
   }
 }
+
+export const getRentalContracts = getRentals;
+export const getAllRentalContracts = getRentals;
+export const getRentalContractById = getRentalById;
 
 /**
  * Create New Rental Contract
@@ -603,10 +704,34 @@ export async function deleteRental(id) {
   };
 }
 
-export async function cancelRentalContract({ id, cancellationReason }) {
+/**
+ * Cancel Rental Contract
+ * Endpoint: POST /api/Inventory/RentalContract/CancelContract/cancel-contract
+ */
+export async function cancelRentalContract(params) {
+  const contractId = toGuidOrNull(params.contractId || params.id);
+  const refundAccountId = toGuidOrNull(params.refundAccountId || params.refundAccount);
+
+  if (!contractId) {
+    throw new Error("Contract ID is required to cancel contract");
+  }
+
+  const payload = {
+    contractId,
+    refundAccountId: refundAccountId || "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    cancellationReason: params.cancellationReason || null,
+  };
+
+  const res = await apiHandler({
+    endPoint: "Inventory/RentalContract/CancelContract/cancel-contract",
+    method: "POST",
+    body: payload,
+  });
+
   return {
     status: 200,
-    message: "Contract canceled successfully",
+    data: res?.data || res,
+    message: res?.message || "Contract canceled successfully",
   };
 }
 
