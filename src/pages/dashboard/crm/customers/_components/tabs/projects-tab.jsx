@@ -65,8 +65,13 @@ export function ProjectsTab({ customerId: propCustomerId }) {
       queryClient.invalidateQueries({ queryKey: ["customer-projects", customerId] });
       setDeleteProjectId(null);
     },
-    onError: () => {
-      toast.error("Failed to delete project");
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to delete project";
+      toast.error(msg, { duration: 6000 });
       setDeleteProjectId(null);
     },
   });
@@ -129,7 +134,7 @@ export function ProjectsTab({ customerId: propCustomerId }) {
     },
     {
       key: "completionPercentage",
-      label: "Operational Progress (نسبة الإنجاز)",
+      label: "Operational Progress",
       render: (row) => {
         const perc = Number(row.completionPercentage || 0);
         return (
@@ -208,17 +213,7 @@ export function ProjectsTab({ customerId: propCustomerId }) {
 
   return (
     <div className="space-y-6">
-      {/* Guidance Callout from Spec */}
-      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          الفوترة ليست إنجازاً تشغيلياً (Operational Progress vs Billing):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. يتم ربط نسبة الإنجاز (CompletionPercentage) بتقدم المهام أو مراحل التنفيذ المعتمدة في الميدان، مع إظهار الفوترة كمؤشر مستقل.
-        </p>
-      </div>
-
+     
       <DataView
         data={filteredProjects}
         isLoading={isLoading}
@@ -295,7 +290,11 @@ function AddProjectDialog({ open, onOpenChange, customerId }) {
     enabled: !!customerId && open,
   });
 
-  const customerName = customerData?.data?.customerName || "Customer";
+  const customerName =
+    customerData?.data?.customerName ||
+    customerData?.customerName ||
+    customerData?.name ||
+    "Customer";
   const contracts = contractsData?.data?.items || [];
 
   const createMutation = useMutation({
@@ -375,7 +374,7 @@ function AddProjectDialog({ open, onOpenChange, customerId }) {
           <div className="space-y-2">
             <Label className="font-semibold text-sm">Project Name <span className="text-red-500">*</span></Label>
             <Input
-              placeholder="e.g. تجهيز قاعة لشركة"
+              placeholder="e.g. Office Hall Setup Project"
               value={formData.projectName}
               onChange={(e) =>
                 setFormData({ ...formData, projectName: e.target.value })
@@ -406,7 +405,7 @@ function AddProjectDialog({ open, onOpenChange, customerId }) {
                   <SelectValue placeholder="Select Contract" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                  <SelectItem value="none">No contract link</SelectItem>
                   {contracts.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.title || c.contractNumber || `Contract #${c.id.substring(0, 8)}`}
@@ -431,11 +430,11 @@ function AddProjectDialog({ open, onOpenChange, customerId }) {
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Planning">Planning (تخطيط)</SelectItem>
-                  <SelectItem value="InProgress">In Progress (قيد التنفيذ)</SelectItem>
-                  <SelectItem value="Pending">Pending (معلق)</SelectItem>
-                  <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled (ملغي)</SelectItem>
+                  <SelectItem value="Planning">Planning</SelectItem>
+                  <SelectItem value="InProgress">In Progress</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -474,7 +473,7 @@ function AddProjectDialog({ open, onOpenChange, customerId }) {
                 min="0"
                 max="100"
               />
-              <span className="text-[10px] text-muted-foreground block">مرتبط بتقدم المهام ومراحل التنفيذ</span>
+              <span className="text-[10px] text-muted-foreground block">Based on task delivery milestones</span>
             </div>
 
             <div className="space-y-2">
@@ -590,11 +589,11 @@ function EditProjectDialog({ open, onOpenChange, customerId, project }) {
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Planning">Planning (تخطيط)</SelectItem>
-                <SelectItem value="InProgress">In Progress (قيد التنفيذ)</SelectItem>
-                <SelectItem value="Pending">Pending (معلق)</SelectItem>
-                <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
-                <SelectItem value="Cancelled">Cancelled (ملغي)</SelectItem>
+                <SelectItem value="Planning">Planning</SelectItem>
+                <SelectItem value="InProgress">In Progress</SelectItem>
+                <SelectItem value="Pending">Pending</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+                <SelectItem value="Cancelled">Cancelled</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -614,7 +613,7 @@ function EditProjectDialog({ open, onOpenChange, customerId, project }) {
               required
             />
             <p className="text-[11px] text-muted-foreground">
-              نسبة تقدم المهام والمراحل التنفيذية (مستقلة عن نسبة الفوترة).
+              Operational delivery progress of tasks and project phases.
             </p>
           </div>
 

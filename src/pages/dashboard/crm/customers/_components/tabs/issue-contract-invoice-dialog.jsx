@@ -81,7 +81,7 @@ export function IssueContractInvoiceDialog({
   // Form State
   const [invoicePatternId, setInvoicePatternId] = useState("");
   const [warehouseId, setWarehouseId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Credit"); // Default to Credit (آجل) to safely allow partial payments
+  const [paymentMethod, setPaymentMethod] = useState("Credit"); // Default to Credit to safely allow partial payments
   const [paidAmount, setPaidAmount] = useState(0);
   const [invoiceDate, setInvoiceDate] = useState(
     new Date().toISOString().split("T")[0]
@@ -202,7 +202,7 @@ export function IssueContractInvoiceDialog({
     !hasSelectedInstallments || Math.abs(installmentDifference) < 0.01;
 
   // Payment Method Compatibility Rule (Image Page 6):
-  // Cash / Bank requires full payment, partial payment requires Credit (آجل)
+  // Cash / Bank requires full payment, partial payment requires Credit
   const isPaymentMethodIncompatible =
     (paymentMethod === "Cash" || paymentMethod === "Bank") &&
     Number(paidAmount) < Number(invoiceTotal) &&
@@ -394,7 +394,7 @@ export function IssueContractInvoiceDialog({
               </div>
               <div className="p-2.5 bg-white border rounded-lg">
                 <span className="font-bold text-purple-700 block mb-0.5">
-                  2. InstallmentIds (اختيارية):
+                  2. InstallmentIds (Optional):
                 </span>
                 <span className="text-slate-600">
                   تحدد الأقساط التي ستُربط بالفاتورة الناتجة، ويُشترط تطابق مجموعها مع قيمة الفاتورة بدقة.

@@ -1,3 +1,4 @@
+import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import {
@@ -16,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCategories,
   getLeafAccounts,
@@ -26,6 +27,8 @@ import {
   createSimpleProductWithSpecs,
   updateSimpleProductWithSpecs,
   getProductById,
+  isPieceUnit,
+  DEFAULT_PIECE_UNIT_ID,
 } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -38,6 +41,7 @@ export default function SimpleProductWithVariantsForm({
   customSpecs = [],
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -90,12 +94,12 @@ export default function SimpleProductWithVariantsForm({
     name: "createProductvariants",
   });
 
-  const { data: categoriesRes } = useQuery({
+  const { data: categoriesRes, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: () => getAllCategories({ PageNumber: 1, PageSize: 100 }),
   });
 
-  const { data: accountsRes } = useQuery({
+  const { data: accountsRes, isLoading: accountsLoading } = useQuery({
     queryKey: ["leaf-accounts"],
     queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 100 }),
   });
@@ -125,6 +129,10 @@ export default function SimpleProductWithVariantsForm({
   const productUnitsWatch = watch("product_Units");
   const selectedAttributesWatch = watch("selectedAttributes");
   const createProductvariantsWatch = watch("createProductvariants");
+  const categoryId = watch("category_Id");
+
+  const rawProduct = productRes?.data?.data || productRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
 
   useEffect(() => {
     if (measurements.length > 0 && !isEdit) {
@@ -146,7 +154,7 @@ export default function SimpleProductWithVariantsForm({
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
-      const bData = productRes.data;
+      const bData = productRes.data?.data || productRes.data;
 
       const attrMap = {};
       bData.variants?.forEach((v) => {
@@ -178,6 +186,8 @@ export default function SimpleProductWithVariantsForm({
           const attrs = v.variantValues || [];
           return {
             id: v.id,
+            variant_id: v.id,
+            unit_id: uDto.id || "",
             minimum_Alert_Level: v.minimum_Alert_Level || 0,
             maximum_Stock_Level: v.maximum_Stock_Level || 0,
             barcode_Option: "Manual",
@@ -229,6 +239,16 @@ export default function SimpleProductWithVariantsForm({
       });
     }
   }, [isEdit, productRes, reset]);
+
+  useEffect(() => {
+    if (isEdit && productRes?.data) {
+      const bData = productRes.data?.data || productRes.data;
+      if (bData.category_Id) setValue("category_Id", bData.category_Id, { shouldValidate: true });
+      if (bData.revenue_Account_Id) setValue("revenue_Account_Id", bData.revenue_Account_Id);
+      if (bData.expense_Account_Id) setValue("expense_Account_Id", bData.expense_Account_Id);
+      if (bData.inventory_Account_Id) setValue("inventory_Account_Id", bData.inventory_Account_Id);
+    }
+  }, [isEdit, productRes, categories, accounts, setValue]);
 
   const generateCombinations = () => {
     const attrs = selectedAttributesWatch.filter(
@@ -304,7 +324,9 @@ export default function SimpleProductWithVariantsForm({
         });
 
         combinations.push({
-          id: existingMatch?.id || undefined,
+          id: existingMatch?.id || existingMatch?.variant_id || undefined,
+          variant_id: existingMatch?.variant_id || existingMatch?.id || undefined,
+          unit_id: existingMatch?.unit_id || undefined,
           minimum_Alert_Level: existingMatch?.minimum_Alert_Level || 0,
           maximum_Stock_Level: existingMatch?.maximum_Stock_Level || 0,
           barcode_Option: existingMatch?.barcode_Option || "Manual",
@@ -337,78 +359,47 @@ export default function SimpleProductWithVariantsForm({
 
   const createMutation = useMutation({
     mutationFn: (data) => {
-      const productVariantDtos = (data.createProductvariants || []).map((v) => {
-        const unitId = v.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id;
-        return {
-          minimum_Alert_Level: Number(v.minimum_Alert_Level) || 0,
-          maximum_Stock_Level: Number(v.maximum_Stock_Level) || 0,
-          limit_Unit_Id: null,
-          variantValues: (v.variant_Values || []).map((val) => ({
-            productAttributeValueId: val.productAttributeValueId,
-          })),
-          product_Units: [
-            {
-              unit_Of_Measurement_Id: unitId,
-              secondunit_Of_Measurement_Id: v.secondunit_Of_Measurement_Id || null,
-              barcode_Option: v.barcode_Option || "Manual",
-              barcode: v.barcode || null,
-              qr_Code: v.qr_Code || null,
-              is_Default_Selling: true,
-              is_Default_Purchasing: true,
-              cost_Price: Number(v.cost_Price ?? 0),
-              wholesale_Price: Number(v.wholesale_Price ?? 0),
-              consumer_Price: Number(v.consumer_Price ?? 0),
-              last_Purchase_Price: Number(v.last_Purchase_Price ?? 0),
-              average_Purchase_Price: Number(v.average_Purchase_Price ?? 0),
-              relative_factor: Number(v.relative_factor ?? 1),
-            },
-          ],
-          product_Components: null,
-        };
-      });
-
-      const payload = {
-        name_Product: data.name_Product,
-        product_Number: data.product_Number || String(Math.floor(100000 + Math.random() * 900000)),
-        has_Specifications: true,
-        is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? true),
-        can_Be_Sold: true,
-        can_Be_Purchased: true,
-        requires_Shipping: Boolean(data.requires_Shipping ?? false),
-        requires_Contract: false,
-        requires_Scheduling: false,
-        has_Variants: true,
-        is_Fixed_Price: true,
-        revenue_Account_Id: data.revenue_Account_Id || null,
-        expense_Account_Id: data.expense_Account_Id || null,
-        inventory_Account_Id: data.inventory_Account_Id || null,
-        product_Type: "Inventory",
-        billing_Method: "FixedPrice",
-        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
-        origin_Id: data.origin_Id || data.item_Origin || null,
-        category_Id: data.category_Id || null,
-        productVariantDtos,
-      };
-
-      return createProduct(payload);
+      const payload = { ...data };
+      delete payload.selectedAttributes;
+      if (Array.isArray(payload.createProductvariants)) {
+        payload.createProductvariants = payload.createProductvariants.map((v) => {
+          const { _display_name, _attr_details, ...rest } = v;
+          return rest;
+        });
+      }
+      return createSimpleProductWithSpecs(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to create product");
+      toast.error(
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to create product")
+      );
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: updateSimpleProductWithSpecs,
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success("Product updated successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update product");
+      toast.error(
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to update product"
+      );
     },
   });
 
@@ -429,7 +420,12 @@ export default function SimpleProductWithVariantsForm({
           return rest;
         });
 
-        updateMutation.mutate({ ...payload, id });
+        updateMutation.mutate({
+          ...payload,
+          id,
+          variants: productRes?.data?.variants,
+          raw: productRes?.data,
+        });
       } else {
         createMutation.mutate(data);
       }
@@ -503,13 +499,20 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Item Category <span className="text-red-500">*</span></label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
-              {...register("category_Id", { required: true })}
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
+              disabled={categoriesLoading}
             >
-              <option value="">Item Category</option>
+              <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
-                  {cat.name}
+                  {cat.name || cat.name_Category || "Category"}
                 </option>
               ))}
             </select>
@@ -532,10 +535,11 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Revenue Account</label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
               {...register("revenue_Account_Id")}
+              disabled={accountsLoading}
             >
-              <option value="">Revenue Account</option>
+              <option value="">{accountsLoading ? "Loading accounts..." : "Revenue Account"}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_Name}
@@ -546,10 +550,11 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Expense Account</label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
               {...register("expense_Account_Id")}
+              disabled={accountsLoading}
             >
-              <option value="">Expense Account</option>
+              <option value="">{accountsLoading ? "Loading accounts..." : "Expense Account"}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_Name}
@@ -563,10 +568,11 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Inventory Account</label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
               {...register("inventory_Account_Id")}
+              disabled={accountsLoading}
             >
-              <option value="">Inventory Account</option>
+              <option value="">{accountsLoading ? "Loading accounts..." : "Inventory Account"}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_Name}
@@ -727,8 +733,14 @@ export default function SimpleProductWithVariantsForm({
                       `product_Units.${index}.unit_Of_Measurement_Id`,
                     )}
                     onChange={(e) => {
+                      const val = e.target.value;
+                      setValue(
+                        `product_Units.${index}.unit_Of_Measurement_Id`,
+                        val,
+                        { shouldValidate: true, shouldDirty: true },
+                      );
                       const sel = measurements.find(
-                        (m) => m.unit_Name_Id === e.target.value,
+                        (m) => m.unit_Name_Id === val,
                       );
                       if (sel)
                         setValue(
@@ -739,10 +751,12 @@ export default function SimpleProductWithVariantsForm({
                     disabled={unitsLoading}
                   >
                     <option value="">Select Unit</option>
-                    {measurements.map((m) => (
-                      <option key={m.unit_Name_Id} value={m.unit_Name_Id}>
-                        {m.unit_name}
-                      </option>
+                    {measurements
+                      .filter((m) => !isPieceUnit(m))
+                      .map((m) => (
+                        <option key={m.unit_Name_Id} value={m.unit_Name_Id}>
+                          {m.unit_name}
+                        </option>
                     ))}
                   </select>
                 )}
@@ -775,11 +789,14 @@ export default function SimpleProductWithVariantsForm({
                         {productUnitsWatch
                           .slice(0, index)
                           .map((pUnit, pIdx) => {
-                            if (!pUnit.unit_Of_Measurement_Id) return null;
+                            const uId =
+                              pUnit.unit_Of_Measurement_Id ||
+                              (pIdx === 0 ? DEFAULT_PIECE_UNIT_ID : "");
+                            if (!uId) return null;
                             return (
                               <option
                                 key={pIdx}
-                                value={pUnit.unit_Of_Measurement_Id}
+                                value={uId}
                               >
                                 {pUnit.unitName || `Unit ${pIdx + 1}`}
                               </option>
@@ -992,9 +1009,15 @@ export default function SimpleProductWithVariantsForm({
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-6"
     >
-      {currentStep === 2 && renderDetails()}
-      {currentStep === 3 && renderUnitsAndVariants()}
-      {currentStep === 4 && renderVariantProperties()}
+      <div className={cn("space-y-6", currentStep === 2 ? "block" : "hidden")}>
+        {renderDetails()}
+      </div>
+      <div className={cn("space-y-6", currentStep === 3 ? "block" : "hidden")}>
+        {renderUnitsAndVariants()}
+      </div>
+      <div className={cn("space-y-6", currentStep === 4 ? "block" : "hidden")}>
+        {renderVariantProperties()}
+      </div>
     </form>
   );
 }

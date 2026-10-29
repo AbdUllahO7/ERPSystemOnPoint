@@ -14,7 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { DynamicModal } from "@/components/common/dynamic-modal";
 import toast from "react-hot-toast";
 import {
   createRental,
@@ -29,49 +28,72 @@ export default function AddEditRentalPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Dynamic Custom Fields State
-  const [dynamicFields, setDynamicFields] = useState([]);
-  const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
-  const [newFieldName, setNewFieldName] = useState("");
-  const [newFieldValue, setNewFieldValue] = useState("");
-
-  // Form State
+  // Form State strictly conforming to Customer Contract API Schema
   const [formData, setFormData] = useState({
     contractNumber: "",
     customerId: "",
     customerName: "",
-    resource: "",
-    service: "",
-    costCenter: "",
-    currency: "USD",
-    startDate: "",
+    title: "",
+    description: "",
+    terms_And_Conditions: "",
+    startDate: new Date().toISOString().slice(0, 10),
     endDate: "",
     status: "Active",
-    paymentMethod: "Card",
-    notes: "",
-    rentalPrice: "0",
-    rateType: "1=Day",
-    quantity: "1",
-    discount: "0",
-    taxPercent: "0",
-    securityDeposit: "0",
+    currencyId: "",
+    currencyCode: "USD",
   });
 
+  // Contract Items State
+  const [items, setItems] = useState([
+    {
+      id: "item-1",
+      productVariantId: null,
+      customItemName: "",
+      description: "",
+      quantity: 1,
+      unitPrice: 0,
+      totalPrice: 0,
+    },
+  ]);
+
+  // Installments State
+  const [installments, setInstallments] = useState([
+    {
+      id: "inst-1",
+      installmentName: "Initial Installment",
+      amount: 0,
+      dueDate: new Date().toISOString().slice(0, 10),
+      status: "Pending",
+    },
+  ]);
+
   // Lookups Query
-  const { data: lookupsData } = useQuery({
+  const { data: lookupsData, isLoading: isLoadingLookups } = useQuery({
     queryKey: ["rentalLookups"],
     queryFn: getRentalLookups,
   });
   const lookups = lookupsData?.data || {
     customers: [],
-    resources: [],
-    services: [],
-    costCenters: [],
     currencies: [],
-    paymentMethods: [],
-    rateTypes: [],
-    statuses: [],
+    statuses: [
+      { id: "Active", name: "Active" },
+      { id: "Draft", name: "Draft" },
+      { id: "Closed", name: "Closed" },
+      { id: "Canceled", name: "Canceled" },
+    ],
   };
+
+  // Pre-select default currency if new contract
+  useEffect(() => {
+    if (!formData.currencyId && lookups.currencies?.length > 0) {
+      const defaultCurr = lookups.currencies[0];
+      setFormData((prev) => ({
+        ...prev,
+        currencyId: String(defaultCurr.id),
+        currencyCode: defaultCurr.code || defaultCurr.name || "USD",
+      }));
+    }
+  }, [lookups.currencies, formData.currencyId]);
 
   // Fetch contract if in edit mode
   const { data: contractData, isLoading: isFetching } = useQuery({
@@ -80,76 +102,186 @@ export default function AddEditRentalPage() {
     enabled: isEdit,
   });
 
+  // Prefill in Edit mode
   useEffect(() => {
     if (isEdit && contractData?.data) {
       const c = contractData.data;
       setFormData({
-        contractNumber: c.contractNumber || c.id || "",
-        customerId: c.customerId || "",
+        contractNumber: c.contractNumber || `CNT-${String(id).slice(0, 8)}`,
+        customerId: c.customerId ? String(c.customerId) : "",
         customerName: c.customerName || c.customer || "",
-        resource: c.resourceName || c.resource || "",
-        service: c.title || c.service || "",
-        costCenter: c.costCenter || "",
-        currency: c.currency || "USD",
-        startDate: c.startDate || "",
-        endDate: c.endDate || "",
+        title: c.title || "",
+        description: c.description || "",
+        terms_And_Conditions: c.terms_And_Conditions || c.notes || "",
+        startDate: c.startDate ? c.startDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
+        endDate: c.endDate ? c.endDate.slice(0, 10) : "",
         status: c.status || "Active",
-        paymentMethod: c.paymentMethod || "Card",
-        notes: c.notes || "",
-        rentalPrice: String(c.rentalPrice || c.totalAmount || 0),
-        rateType: c.rateType || "1=Day",
-        quantity: String(c.quantity || 1),
-        discount: String(c.discount || 0),
-        taxPercent: String(c.taxPercent || 0),
-        securityDeposit: String(c.numericDeposit || 0),
+        currencyId: c.currencyId ? String(c.currencyId) : "",
+        currencyCode: c.currencyCode || "USD",
       });
 
-      if (c.additionalData) {
-        const fields = Object.entries(c.additionalData).map(([key, val]) => ({
-          key,
-          value: val,
-        }));
-        setDynamicFields(fields);
+      if (Array.isArray(c.items) && c.items.length > 0) {
+        setItems(
+          c.items.map((itm, idx) => ({
+            id: itm.id || `item-${idx + 1}`,
+            productVariantId: itm.productVariantId || itm.productVariant_Id || null,
+            customItemName: itm.custom_Item_Name || itm.customItemName || itm.productName || itm.name || "",
+            description: itm.description || "",
+            quantity: Number(itm.quantity || 1),
+            unitPrice: Number(itm.unit_Price ?? itm.unitPrice ?? 0),
+            totalPrice: Number(itm.total_Price ?? itm.totalPrice ?? (Number(itm.quantity || 1) * Number(itm.unitPrice || 0))),
+          }))
+        );
+      }
+
+      if (Array.isArray(c.installments) && c.installments.length > 0) {
+        setInstallments(
+          c.installments.map((ins, idx) => ({
+            id: ins.id || `inst-${idx + 1}`,
+            installmentName: ins.installment_Name || ins.installmentName || ins.name || `Installment #${idx + 1}`,
+            amount: Number(ins.amount || 0),
+            dueDate: (ins.due_Date || ins.dueDate) ? (ins.due_Date || ins.dueDate).slice(0, 10) : new Date().toISOString().slice(0, 10),
+            status: ins.status || "Pending",
+          }))
+        );
       }
     }
-  }, [isEdit, contractData]);
+  }, [isEdit, contractData, id]);
 
-  // Calculations for Summary Card
+  // Effective Customers: guarantee selected customer is ALWAYS in list even if not in first lookup page
+  const effectiveCustomers = useMemo(() => {
+    const list = [...(lookups.customers || [])];
+    if (
+      formData.customerId &&
+      !list.some((c) => String(c.id).toLowerCase() === String(formData.customerId).toLowerCase())
+    ) {
+      list.unshift({
+        id: formData.customerId,
+        name: formData.customerName || "Selected Customer",
+      });
+    }
+    return list;
+  }, [lookups.customers, formData.customerId, formData.customerName]);
+
+  // Effective Currencies: guarantee selected currency is ALWAYS in list
+  const effectiveCurrencies = useMemo(() => {
+    const list = [...(lookups.currencies || [])];
+    if (
+      formData.currencyId &&
+      !list.some((curr) => String(curr.id).toLowerCase() === String(formData.currencyId).toLowerCase())
+    ) {
+      list.unshift({
+        id: formData.currencyId,
+        code: formData.currencyCode || "USD",
+        name: formData.currencyCode || "USD",
+      });
+    }
+    return list;
+  }, [lookups.currencies, formData.currencyId, formData.currencyCode]);
+
+  // Total Contract Calculations
   const calculations = useMemo(() => {
-    const price = Number(formData.rentalPrice) || 0;
-    const qty = Number(formData.quantity) || 1;
-    const discount = Number(formData.discount) || 0;
-    const taxRate = Number(formData.taxPercent) || 0;
-    const deposit = Number(formData.securityDeposit) || 0;
-
-    const subtotal = Math.max(0, price * qty - discount);
-    const taxAmount = (subtotal * taxRate) / 100;
-    const total = subtotal + taxAmount;
-    const collectedOnSigning = total + deposit;
+    const totalItemsAmount = items.reduce(
+      (sum, itm) => sum + (Number(itm.totalPrice) || 0),
+      0
+    );
+    const totalInstallmentsAmount = installments.reduce(
+      (sum, ins) => sum + (Number(ins.amount) || 0),
+      0
+    );
+    const difference = totalItemsAmount - totalInstallmentsAmount;
 
     return {
-      unitsDay: price * qty,
-      subtotal,
-      discount,
-      taxAmount,
-      taxRate,
-      total,
-      deposit,
-      collectedOnSigning,
+      totalItemsAmount,
+      totalInstallmentsAmount,
+      difference,
+      isBalanced: Math.abs(difference) < 0.01,
     };
-  }, [formData]);
+  }, [items, installments]);
 
-  // Mutation for saving
+  // Items Handlers
+  const handleItemChange = (index, field, value) => {
+    setItems((prev) => {
+      const updated = [...prev];
+      const target = { ...updated[index], [field]: value };
+      if (field === "quantity" || field === "unitPrice") {
+        const q = field === "quantity" ? Number(value) || 0 : Number(target.quantity) || 0;
+        const p = field === "unitPrice" ? Number(value) || 0 : Number(target.unitPrice) || 0;
+        target.totalPrice = q * p;
+      }
+      updated[index] = target;
+      return updated;
+    });
+  };
+
+  const handleAddItem = () => {
+    setItems((prev) => [
+      ...prev,
+      {
+        id: `item-${Date.now()}`,
+        productVariantId: null,
+        customItemName: "",
+        description: "",
+        quantity: 1,
+        unitPrice: 0,
+        totalPrice: 0,
+      },
+    ]);
+  };
+
+  const handleRemoveItem = (index) => {
+    if (items.length <= 1) {
+      toast.error("Contract must contain at least one item");
+      return;
+    }
+    setItems((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Installments Handlers
+  const handleInstallmentChange = (index, field, value) => {
+    setInstallments((prev) => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], [field]: value };
+      return updated;
+    });
+  };
+
+  const handleAddInstallment = () => {
+    setInstallments((prev) => [
+      ...prev,
+      {
+        id: `inst-${Date.now()}`,
+        installmentName: `Installment #${prev.length + 1}`,
+        amount: Math.max(0, calculations.difference),
+        dueDate: new Date().toISOString().slice(0, 10),
+        status: "Pending",
+      },
+    ]);
+  };
+
+  const handleRemoveInstallment = (index) => {
+    if (installments.length <= 1) {
+      toast.error("Contract must contain at least one installment");
+      return;
+    }
+    setInstallments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Save Mutation
   const saveMutation = useMutation({
     mutationFn: (data) =>
       isEdit ? updateRental(id, data) : createRental(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(["rentals"]);
-      toast.success(res?.message || (isEdit ? "Contract updated!" : "Contract created!"));
+      queryClient.invalidateQueries(["rental", id]);
+      toast.success(res?.message || (isEdit ? "Contract updated successfully!" : "Contract created successfully!"));
       navigate("/dashboard/rentals");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || (isEdit ? "Failed to update contract" : "Failed to create contract");
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        (isEdit ? "Failed to update contract" : "Failed to create contract");
       toast.error(msg);
     },
   });
@@ -158,44 +290,98 @@ export default function AddEditRentalPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAddDynamicField = () => {
-    if (!newFieldName.trim()) {
-      toast.error("Please enter variable name");
-      return;
-    }
-    setDynamicFields((prev) => [
-      ...prev,
-      { key: newFieldName.trim(), value: newFieldValue.trim() },
-    ]);
-    setNewFieldName("");
-    setNewFieldValue("");
-    setIsFieldModalOpen(false);
-  };
-
-  const handleRemoveDynamicField = (index) => {
-    setDynamicFields((prev) => prev.filter((_, i) => i !== index));
-  };
-
   const handleSubmit = (e) => {
     e?.preventDefault();
-    if (!formData.customerName && !formData.customerId) {
-      toast.error("Please enter or select a customer");
+
+    if (!formData.customerId) {
+      toast.error("Please select a customer");
       return;
     }
 
-    const dynamicDetails = dynamicFields.reduce((acc, curr) => {
-      acc[curr.key] = curr.value;
-      return acc;
-    }, {});
+    if (!formData.title?.trim()) {
+      toast.error("Please provide a contract title");
+      return;
+    }
 
-    saveMutation.mutate({
-      ...formData,
-      total: calculations.total,
-      dynamicDetails,
-    });
+    const hasEmptyItem = items.some(
+      (itm) => !(itm.customItemName || itm.custom_Item_Name || itm.name || "").trim()
+    );
+    if (hasEmptyItem) {
+      toast.error("Please enter an item/service name for all contract items");
+      return;
+    }
+
+    const hasEmptyInstallment = installments.some(
+      (ins) => !(ins.installmentName || ins.installment_Name || ins.name || "").trim()
+    );
+    if (hasEmptyInstallment) {
+      toast.error("Please enter a name for all installments");
+      return;
+    }
+
+    const payload = {
+      id: isEdit ? id : undefined,
+      customerId: formData.customerId,
+      contractNumber: formData.contractNumber || `CNT-${Date.now().toString().slice(-5)}`,
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      terms_And_Conditions: formData.terms_And_Conditions.trim(),
+      startDate: formData.startDate
+        ? new Date(formData.startDate).toISOString()
+        : new Date().toISOString(),
+      endDate: formData.endDate
+        ? new Date(formData.endDate).toISOString()
+        : new Date(Date.now() + 86400000 * 90).toISOString(),
+      totalAmount: calculations.totalItemsAmount,
+      currencyId: formData.currencyId || null,
+      status: formData.status,
+      items: items.map((itm) => {
+        const itemName = (
+          itm.custom_Item_Name ||
+          itm.customItemName ||
+          itm.name ||
+          formData.title ||
+          "Item"
+        ).trim();
+        const q = Number(itm.quantity || 1);
+        const p = Number(itm.unit_Price ?? itm.unitPrice ?? 0);
+        return {
+          productVariantId: itm.productVariantId || itm.productVariant_Id || null,
+          productVariant_Id: itm.productVariantId || itm.productVariant_Id || null,
+          custom_Item_Name: itemName,
+          customItemName: itemName,
+          description: itm.description || "",
+          quantity: q,
+          unit_Price: p,
+          unitPrice: p,
+          total_Price: Number(itm.totalPrice || q * p),
+          totalPrice: Number(itm.totalPrice || q * p),
+        };
+      }),
+      installments: installments.map((ins, idx) => {
+        const insName = (
+          ins.installment_Name ||
+          ins.installmentName ||
+          ins.name ||
+          `Installment #${idx + 1}`
+        ).trim();
+        const dateIso = ins.due_Date || ins.dueDate
+          ? new Date(ins.due_Date || ins.dueDate).toISOString()
+          : new Date().toISOString();
+        return {
+          installment_Name: insName,
+          installmentName: insName,
+          amount: Number(ins.amount || 0),
+          due_Date: dateIso,
+          dueDate: dateIso,
+        };
+      }),
+    };
+
+    saveMutation.mutate(payload);
   };
 
-  if (isFetching) {
+  if (isFetching || (isLoadingLookups && isEdit)) {
     return (
       <div className="flex h-64 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-[#0066d1]" />
@@ -213,29 +399,39 @@ export default function AddEditRentalPage() {
             { label: "Rental Contracts", href: "/dashboard/rentals" },
             { label: isEdit ? "Edit Contract" : "Add Contract" },
           ]}
-          infoTooltip="Create rental agreements, allocate equipment/units, configure rate terms, and add dynamic variables."
+          infoTooltip="Create or edit rental agreements, configure contract items and installment schedule matching API schema."
         />
 
-        <Button
-          type="submit"
-          disabled={saveMutation.isPending}
-          className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
-        >
-          {saveMutation.isPending && (
-            <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
-          )}
-          Save
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/dashboard/rentals")}
+            className="h-10 px-6 rounded-xl text-xs font-semibold"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            disabled={saveMutation.isPending}
+            className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
+          >
+            {saveMutation.isPending && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
+            )}
+            Save Contract
+          </Button>
+        </div>
       </div>
 
-      {/* Main Grid: Left 8 cols (Form Cards), Right 4 cols (Summary Card) */}
+      {/* Main Grid: Left 8 cols (Form Sections), Right 4 cols (Summary Card) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Form Cards (8 cols) */}
         <div className="lg:col-span-8 space-y-6">
-          {/* Card 1: Rental Info */}
+          {/* Card 1: Basic Contract Information */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-800">
-              Rental Info
+              Contract Information
             </h2>
 
             {/* Row 1: Contract Number, Customer */}
@@ -245,7 +441,7 @@ export default function AddEditRentalPage() {
                   Contract Number
                 </Label>
                 <Input
-                  placeholder="e.g. RC-1001"
+                  placeholder="e.g. CNT-2026-002"
                   value={formData.contractNumber}
                   onChange={(e) => handleInputChange("contractNumber", e.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -256,133 +452,72 @@ export default function AddEditRentalPage() {
                 <Label className="text-xs font-semibold text-slate-700">
                   Customer <span className="text-rose-500">*</span>
                 </Label>
-                {lookups.customers.length > 0 ? (
-                  <Select
-                    value={formData.customerId || "custom"}
-                    onValueChange={(val) => {
-                      if (val === "custom") {
-                        handleInputChange("customerId", "");
-                      } else {
-                        const cust = lookups.customers.find((c) => String(c.id) === String(val));
-                        handleInputChange("customerId", val);
-                        handleInputChange("customerName", cust?.name || "");
-                      }
-                    }}
-                  >
-                    <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                      <SelectValue placeholder={formData.customerName || "Select Customer"} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {lookups.customers.map((c) => (
-                        <SelectItem key={c.id} value={String(c.id)}>
-                          {c.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    placeholder="Customer Name"
-                    value={formData.customerName}
-                    onChange={(e) => handleInputChange("customerName", e.target.value)}
-                    className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Row 2: Resource, Service */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Resource / Equipment
-                </Label>
                 <Select
-                  value={formData.resource}
+                  key={`customer-${formData.customerId || "none"}`}
+                  value={formData.customerId || undefined}
                   onValueChange={(val) => {
-                    handleInputChange("resource", val);
-                    const selRes = lookups.resources.find((r) => r.name === val || String(r.id) === String(val));
-                    if (selRes && selRes.dailyRentalCost && Number(formData.rentalPrice) === 0) {
-                      handleInputChange("rentalPrice", String(selRes.dailyRentalCost));
-                    }
+                    const cust = effectiveCustomers.find((c) => String(c.id) === String(val));
+                    handleInputChange("customerId", val);
+                    handleInputChange("customerName", cust?.name || "");
                   }}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Select Resource" />
+                    <SelectValue placeholder="Select Customer">
+                      {effectiveCustomers.find((c) => String(c.id) === String(formData.customerId))?.name || formData.customerName || "Select Customer"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {lookups.resources.map((res) => (
-                      <SelectItem key={res.id} value={res.name}>
-                        {res.name} {res.dailyRentalCost ? `($${res.dailyRentalCost}/day)` : ""}
+                    {effectiveCustomers.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name} {c.phone ? `(${c.phone})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
+            {/* Row 2: Contract Title, Status */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Contract Title / Service
+                  Contract Title <span className="text-rose-500">*</span>
                 </Label>
                 <Input
-                  placeholder="e.g. Vehicle / Facility Rental"
-                  value={formData.service}
-                  onChange={(e) => handleInputChange("service", e.target.value)}
+                  placeholder="e.g. ERP System Development & Rental Agreement"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange("title", e.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
+                  required
                 />
               </div>
-            </div>
-
-            {/* Row 3: Cost Center Account, Currency */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Cost Center
-                </Label>
-                <Select
-                  value={formData.costCenter}
-                  onValueChange={(val) => handleInputChange("costCenter", val)}
-                >
-                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Select Cost Center" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {lookups.costCenters.map((cc) => (
-                      <SelectItem key={cc.id} value={cc.name}>
-                        {cc.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Currency
+                  Status
                 </Label>
                 <Select
-                  value={formData.currency}
-                  onValueChange={(val) => handleInputChange("currency", val)}
+                  value={formData.status}
+                  onValueChange={(val) => handleInputChange("status", val)}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Currency" />
+                    <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    {lookups.currencies.map((curr) => (
-                      <SelectItem key={curr.id} value={curr.id}>
-                        {curr.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Draft">Draft</SelectItem>
+                    <SelectItem value="Closed">Closed</SelectItem>
+                    <SelectItem value="Canceled">Canceled</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            {/* Row 4: Start Date, End Date */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            {/* Row 3: Start Date, End Date, Currency */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Start Date
+                  Start Date <span className="text-rose-500">*</span>
                 </Label>
                 <div className="relative">
                   <Input
@@ -390,6 +525,7 @@ export default function AddEditRentalPage() {
                     value={formData.startDate}
                     onChange={(e) => handleInputChange("startDate", e.target.value)}
                     className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] pe-9"
+                    required
                   />
                   <Calendar className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 </div>
@@ -409,46 +545,31 @@ export default function AddEditRentalPage() {
                   <Calendar className="pointer-events-none absolute end-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                 </div>
               </div>
-            </div>
-
-            {/* Row 5: Status, Payment Method */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Status
-                </Label>
-                <Select
-                  value={formData.status}
-                  onValueChange={(val) => handleInputChange("status", val)}
-                >
-                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {lookups.statuses.map((st) => (
-                      <SelectItem key={st.id} value={st.id}>
-                        {st.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Payment Method
+                  Currency
                 </Label>
                 <Select
-                  value={formData.paymentMethod}
-                  onValueChange={(val) => handleInputChange("paymentMethod", val)}
+                  key={`curr-${formData.currencyId || "none"}`}
+                  value={formData.currencyId || undefined}
+                  onValueChange={(val) => {
+                    const selCurr = effectiveCurrencies.find((curr) => String(curr.id) === String(val));
+                    handleInputChange("currencyId", val);
+                    if (selCurr) {
+                      handleInputChange("currencyCode", selCurr.code || selCurr.name || "USD");
+                    }
+                  }}
                 >
                   <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Payment Method" />
+                    <SelectValue placeholder="Select Currency">
+                      {effectiveCurrencies.find((curr) => String(curr.id) === String(formData.currencyId))?.code || formData.currencyCode || "USD"}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {lookups.paymentMethods.map((pm) => (
-                      <SelectItem key={pm.id} value={pm.id}>
-                        {pm.name}
+                    {effectiveCurrencies.map((curr) => (
+                      <SelectItem key={curr.id} value={String(curr.id)}>
+                        {curr.name} {curr.code ? `(${curr.code})` : ""}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -456,177 +577,258 @@ export default function AddEditRentalPage() {
               </div>
             </div>
 
-            {/* Row 6: Notes */}
+            {/* Row 4: Description */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Notes & Terms
+                Description
               </Label>
               <Textarea
-                rows={4}
-                placeholder="Contract guidelines, terms, or conditions..."
-                value={formData.notes}
-                onChange={(e) => handleInputChange("notes", e.target.value)}
+                rows={2}
+                placeholder="Brief summary of contract scope and deliverables..."
+                value={formData.description}
+                onChange={(e) => handleInputChange("description", e.target.value)}
+                className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
+              />
+            </div>
+
+            {/* Row 5: Terms and Conditions */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold text-slate-700">
+                Terms & Conditions
+              </Label>
+              <Textarea
+                rows={3}
+                placeholder="Payment obligations, termination clauses, and operational policies..."
+                value={formData.terms_And_Conditions}
+                onChange={(e) => handleInputChange("terms_And_Conditions", e.target.value)}
                 className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1] resize-none"
               />
             </div>
           </div>
 
-          {/* Card 2: Pricing & Terms */}
-          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
-            <h2 className="text-base font-bold text-slate-800">
-              Pricing & Rate Terms
-            </h2>
-
-            {/* Row 1: Rental Price, Rate Type */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Rental Price
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={formData.rentalPrice}
-                  onChange={(e) => handleInputChange("rentalPrice", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
+          {/* Card 2: Contract Items Table */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">
+                  Contract Items & Services
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Itemized modules, services, or equipment included in this contract.
+                </p>
               </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Rate Type
-                </Label>
-                <Select
-                  value={formData.rateType}
-                  onValueChange={(val) => handleInputChange("rateType", val)}
-                >
-                  <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                    <SelectValue placeholder="Rate Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {lookups.rateTypes.map((rt) => (
-                      <SelectItem key={rt.id} value={rt.id}>
-                        {rt.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <Button
+                type="button"
+                onClick={handleAddItem}
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl text-xs font-semibold gap-1 text-[#0066d1] border-blue-200 hover:bg-blue-50"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Item
+              </Button>
             </div>
 
-            {/* Row 2: Quantity, Discount */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Quantity
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="1"
-                  value={formData.quantity}
-                  onChange={(e) => handleInputChange("quantity", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-start">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-500 font-semibold">
+                    <th className="py-2.5 px-2 text-start w-[30%]">Item / Service Name</th>
+                    <th className="py-2.5 px-2 text-start w-[30%]">Description</th>
+                    <th className="py-2.5 px-2 text-start w-[12%]">Qty</th>
+                    <th className="py-2.5 px-2 text-start w-[15%]">Unit Price</th>
+                    <th className="py-2.5 px-2 text-start w-[13%]">Total</th>
+                    <th className="py-2.5 px-2 text-center w-[50px]"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {items.map((item, idx) => (
+                    <tr key={item.id} className="hover:bg-slate-50/50">
+                      <td className="py-2.5 px-2">
+                        <Input
+                          placeholder="e.g. Accounting Module"
+                          value={item.customItemName}
+                          onChange={(e) => handleItemChange(idx, "customItemName", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2">
+                        <Input
+                          placeholder="Deliverable details..."
+                          value={item.description}
+                          onChange={(e) => handleItemChange(idx, "description", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2">
+                        <Input
+                          type="number"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleItemChange(idx, "quantity", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={item.unitPrice}
+                          onChange={(e) => handleItemChange(idx, "unitPrice", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2 font-semibold text-slate-800">
+                        ${Number(item.totalPrice || 0).toLocaleString()}
+                      </td>
+                      <td className="py-2.5 px-2 text-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveItem(idx)}
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 rounded-lg"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Discount
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={formData.discount}
-                  onChange={(e) => handleInputChange("discount", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
+          {/* Card 3: Installments Table */}
+          <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-800">
+                  Payment Installments
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Milestone payments and due dates scheduled for this contract.
+                </p>
               </div>
+              <Button
+                type="button"
+                onClick={handleAddInstallment}
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-xl text-xs font-semibold gap-1 text-[#0066d1] border-blue-200 hover:bg-blue-50"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add Installment
+              </Button>
             </div>
 
-            {/* Row 3: Tax %, Security Deposit */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Tax %
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={formData.taxPercent}
-                  onChange={(e) => handleInputChange("taxPercent", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-xs font-semibold text-slate-700">
-                  Security Deposit
-                </Label>
-                <Input
-                  type="number"
-                  placeholder="0"
-                  value={formData.securityDeposit}
-                  onChange={(e) => handleInputChange("securityDeposit", e.target.value)}
-                  className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
-                />
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-start">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-500 font-semibold">
+                    <th className="py-2.5 px-2 text-start w-[40%]">Installment Name / Milestone</th>
+                    <th className="py-2.5 px-2 text-start w-[25%]">Amount</th>
+                    <th className="py-2.5 px-2 text-start w-[25%]">Due Date</th>
+                    <th className="py-2.5 px-2 text-center w-[10%]">Status</th>
+                    <th className="py-2.5 px-2 text-center w-[50px]"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {installments.map((ins, idx) => (
+                    <tr key={ins.id} className="hover:bg-slate-50/50">
+                      <td className="py-2.5 px-2">
+                        <Input
+                          placeholder="e.g. Advance Payment upon signing"
+                          value={ins.installmentName}
+                          onChange={(e) => handleInstallmentChange(idx, "installmentName", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2">
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={ins.amount}
+                          onChange={(e) => handleInstallmentChange(idx, "amount", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2">
+                        <Input
+                          type="date"
+                          value={ins.dueDate}
+                          onChange={(e) => handleInstallmentChange(idx, "dueDate", e.target.value)}
+                          className="h-9 rounded-lg text-xs border-slate-200"
+                        />
+                      </td>
+                      <td className="py-2.5 px-2 text-center">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium ${
+                          ins.status === "Invoiced" || ins.status === "Paid"
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-amber-50 text-amber-700"
+                        }`}>
+                          {ins.status || "Pending"}
+                        </span>
+                      </td>
+                      <td className="py-2.5 px-2 text-center">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveInstallment(idx)}
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-rose-600 rounded-lg"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
 
         {/* Right Column: Calculations Summary Card (4 cols) */}
-        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
+        <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5 sticky top-6">
           <h2 className="text-base font-bold text-slate-800">
-            Summary
+            Contract Financial Summary
           </h2>
 
           <div className="space-y-3.5 text-xs">
             <div className="flex items-center justify-between text-slate-600">
-              <span>Base Rate:</span>
+              <span>Items Total ({items.length} items):</span>
               <span className="font-semibold text-slate-800">
-                ${calculations.unitsDay.toFixed(2)}
+                ${calculations.totalItemsAmount.toLocaleString()}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-slate-600">
-              <span>Discount:</span>
+              <span>Scheduled Installments ({installments.length}):</span>
               <span className="font-semibold text-slate-800">
-                -${calculations.discount.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between text-slate-600">
-              <span>Subtotal:</span>
-              <span className="font-semibold text-slate-800">
-                ${calculations.subtotal.toFixed(2)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between text-slate-600">
-              <span>Tax ({calculations.taxRate}%):</span>
-              <span className="font-semibold text-slate-800">
-                ${calculations.taxAmount.toFixed(2)}
+                ${calculations.totalInstallmentsAmount.toLocaleString()}
               </span>
             </div>
 
             <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-slate-900 font-bold text-sm">
-              <span>Total:</span>
-              <span className="text-[#0066d1]">
-                ${calculations.total.toFixed(2)}
+              <span>Total Contract Amount:</span>
+              <span className="text-[#0066d1] text-base">
+                ${calculations.totalItemsAmount.toLocaleString()}
               </span>
             </div>
 
-            <div className="flex items-center justify-between text-slate-600 pt-1">
-              <span>Security Deposit:</span>
-              <span className="font-semibold text-slate-800">
-                ${calculations.deposit.toFixed(2)}
+            <div className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
+              calculations.isBalanced
+                ? "bg-emerald-50/70 border-emerald-100 text-emerald-800"
+                : "bg-amber-50/70 border-amber-100 text-amber-800"
+            }`}>
+              <span className="font-medium">
+                {calculations.isBalanced ? "Installments fully allocated" : "Unallocated Balance:"}
               </span>
-            </div>
-
-            <div className="bg-blue-50/70 border border-blue-100 p-3.5 rounded-xl flex items-center justify-between text-slate-800 font-bold text-xs mt-2">
-              <span>Collected on Signing:</span>
-              <span className="text-[#0066d1] text-sm">
-                ${calculations.collectedOnSigning.toFixed(2)}
+              <span className="font-bold">
+                ${Math.abs(calculations.difference).toLocaleString()}
               </span>
             </div>
           </div>

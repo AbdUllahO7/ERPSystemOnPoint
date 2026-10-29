@@ -37,17 +37,17 @@ export default function CustomerDetails() {
     enabled: !!id,
   });
 
-  const customer = customerData?.data || {};
+  const customer = customerData?.data?.data || customerData?.data || customerData || {};
 
   const MOCK_CUSTOMER = {
     id: id,
-    name: customer.customerName || "-",
-    initials: customer.customerName?.substring(0, 2).toUpperCase() || "--",
-    type: customer.customerType || "-",
+    name: customer.customerName || customer.name || "-",
+    initials: (customer.customerName || customer.name)?.substring(0, 2).toUpperCase() || "--",
+    type: customer.customerType || customer.customer_Type || customer.type || "-",
     sector: customer.sector || "-",
     email: customer.email || "-",
-    phone: customer.phone || "-",
-    website: customer.website || "-",
+    phone: customer.phone || customer.phone_Number || "-",
+    website: customer.website || customer.webSite || "-",
     address: customer.address || "-",
     createdAt: customer.createdAt ? new Date(customer.createdAt).toLocaleDateString() : "-",
     status: customer.status || "New",

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getReservations,
   getReservationsStats,
@@ -50,6 +51,7 @@ function formatDate(dateStr) {
 }
 
 export default function ReservationsPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
@@ -131,13 +133,13 @@ export default function ReservationsPage() {
         items: [
           {
             key: "view",
-            label: "View Details (عرض التفاصيل)",
+            label: t?.reservationsModule?.viewDetails || "View Details",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/reservations/${row.id}`),
           },
           {
             key: "delete",
-            label: "Cancel Reservation (إلغاء الحجز)",
+            label: t?.reservationsModule?.cancelReservation || "Cancel Reservation",
             icon: Trash2,
             variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
@@ -300,7 +302,7 @@ export default function ReservationsPage() {
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Reservations & Bookings (حجوزات الفعاليات)"
+        title={t?.reservationsModule?.title || "Reservations & Bookings"}
         infoTooltip="إدارة حجوزات العملاء في الفعاليات، متابعة المقاعد، وتفاصيل الفواتير."
       />
 
@@ -381,7 +383,7 @@ export default function ReservationsPage() {
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Customer (العميل)
+                {t?.reservationsModule?.customer || "Customer"}
               </Label>
               <Select
                 value={selectedCustomer}
@@ -394,7 +396,7 @@ export default function ReservationsPage() {
                   <SelectValue placeholder="All Customers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Customers (جميع العملاء)</SelectItem>
+                  <SelectItem value="all">{t?.reservationsModule?.allCustomers || "All Customers"}</SelectItem>
                   {lookups.customers?.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.name}
@@ -406,7 +408,7 @@ export default function ReservationsPage() {
 
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Booking Event (الحدث)
+                {t?.reservationsModule?.event || "Booking Event"}
               </Label>
               <Select
                 value={selectedEvent}
@@ -419,7 +421,7 @@ export default function ReservationsPage() {
                   <SelectValue placeholder="All Events" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Events (جميع الأحداث)</SelectItem>
+                  <SelectItem value="all">{t?.reservationsModule?.allEvents || "All Events"}</SelectItem>
                   {lookups.events?.map((e) => (
                     <SelectItem key={e.id} value={String(e.id)}>
                       {e.name}

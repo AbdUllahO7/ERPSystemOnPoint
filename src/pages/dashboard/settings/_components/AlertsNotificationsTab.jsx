@@ -7,11 +7,11 @@ import { getAlertSettings, updateAlertSettings } from "@/lib/api";
 import toast from "react-hot-toast";
 
 const DEFAULT_ALERT_ITEMS = [
-  { id: "1", title: "New sales invoice created (فاتورة مبيعات جديدة)" },
-  { id: "2", title: "Low inventory stock warning (تنبيه نقص المخزون)" },
-  { id: "3", title: "Contract expiration reminder (تنبيه قرب انتهاء العقد)" },
-  { id: "4", title: "New employee leave request (طلب إجازة موظف)" },
-  { id: "5", title: "Appointment booked or rescheduled (حجز موعد جديد)" },
+  { id: "1", title: "New sales invoice created" },
+  { id: "2", title: "Low inventory stock warning" },
+  { id: "3", title: "Contract expiration reminder" },
+  { id: "4", title: "New employee leave request" },
+  { id: "5", title: "Appointment booked or rescheduled" },
 ];
 
 export default function AlertsNotificationsTab() {

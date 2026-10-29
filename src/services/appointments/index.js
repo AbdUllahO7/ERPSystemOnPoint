@@ -27,6 +27,7 @@ import {
   createAppointment,
   updateAppointment,
   getAppointmentLookups,
+  getAppointmentPricingLookup,
 } from "./appointment-form.service";
 import {
   getServices,
@@ -54,6 +55,7 @@ export const appointmentsApi = {
   getAppointmentById,
   getStats: getAppointmentStats,
   getLookups: getAppointmentLookups,
+  getAppointmentPricingLookup,
   createAppointment,
   updateAppointment,
   changeStatus: (arg1, arg2) => {

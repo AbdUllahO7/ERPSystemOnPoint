@@ -230,6 +230,64 @@ export async function createSalesReturnInvoice(data) {
 }
 
 // ==========================================
+// INVOICE INSTALLMENTS / PAYMENT SCHEDULES
+// ==========================================
+
+/**
+ * جلب جميع أقساط الفواتير (Payment Schedules)
+ * GET /api/accounting/Invoices/getallInstallment/getAll-installment
+ * Parameters (all optional):
+ * - InvoiceId: string($uuid)
+ * - Status: string
+ * - FromDueDate: string
+ * - ToDueDate: string
+ * - PageNumber: number
+ * - PageSize: number
+ * - Search: string
+ * - IsActive: boolean
+ * - SortBy: string
+ * - SortDirection: string
+ */
+export async function getAllInstallments(params = {}) {
+  return apiHandler({
+    endPoint: "accounting/Invoices/getallInstallment/getAll-installment",
+    method: "GET",
+    params,
+  });
+}
+
+/**
+ * جلب تفاصيل القسط بالمعرف
+ * GET /api/accounting/Invoices/GetInstallmentById/{id}
+ */
+export async function getInstallmentById(id) {
+  return apiHandler({
+    endPoint: `accounting/Invoices/GetInstallmentById/${id}`,
+    method: "GET",
+  });
+}
+
+/**
+ * تسديد قسط فاتورة
+ * POST /api/accounting/Invoices/PayInstallment/pay-installment
+ * Body:
+ * {
+ *   scheduleId: UUID,
+ *   amountPaid: number,
+ *   paymentAccountId: UUID,
+ *   paymentDate: string (ISO),
+ *   notes: string
+ * }
+ */
+export async function payInstallment(data) {
+  return apiHandler({
+    endPoint: "accounting/Invoices/PayInstallment/pay-installment",
+    method: "POST",
+    body: data,
+  });
+}
+
+// ==========================================
 // ACCOUNTING CURRENCIES
 // ==========================================
 

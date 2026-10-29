@@ -17,6 +17,8 @@ export const rentalsApi = {
   settleRentalContract: rentalService.settleRentalContract,
   updateRental: rentalService.updateRental,
   deleteRental: rentalService.deleteRental,
+  createRentalProduct: rentalService.createRentalProduct,
+  updateRentalProduct: rentalService.updateRentalProduct,
 
   invoices: {
     getInvoices: rentalInvoiceService.getRentalInvoices,

@@ -19,7 +19,26 @@ import {
   createAppointment,
   updateAppointment,
   getAppointmentLookups,
+  getAppointmentPricingLookup,
+  getServiceProviderLookups,
+  getServiceProviders,
 } from "@/services/appointments";
+
+const isGenericProviderName = (val) => {
+  if (!val || typeof val !== "string") return true;
+  const s = val.trim().toLowerCase();
+  return (
+    s === "" ||
+    s === "service provider" ||
+    s === "provider" ||
+    s === "unnamed provider" ||
+    s === "unnamed" ||
+    s === "null" ||
+    s === "undefined" ||
+    s === "n/a" ||
+    s === "—"
+  );
+};
 
 export default function AddEditAppointment() {
   const { id } = useParams();
@@ -43,11 +62,30 @@ export default function AddEditAppointment() {
     serviceProviderName: "",
   });
 
-  // Fetch Lookups
+  // Fetch Lookups (Customers, Providers, Statuses, and default Services)
   const { data: lookupsData, isLoading: isLoadingLookups } = useQuery({
     queryKey: ["appointmentLookups"],
     queryFn: getAppointmentLookups,
   });
+
+  // Fetch Appointment Pricing Lookup (Direct Endpoint: /api/HR/Lookups/GetAppointmentPricing/GetAppointmentPricing)
+  const { data: pricingLookupData, isLoading: isLoadingPricing } = useQuery({
+    queryKey: ["appointmentPricingLookup"],
+    queryFn: getAppointmentPricingLookup,
+  });
+
+  // Fetch Provider Lookups (HR Employees) to guarantee provider names always resolve
+  const { data: providerEmployeesData } = useQuery({
+    queryKey: ["serviceProviderLookups"],
+    queryFn: getServiceProviderLookups,
+  });
+
+  // Direct fetch of service providers as a primary / fallback source
+  const { data: directProvidersData } = useQuery({
+    queryKey: ["allServiceProvidersDirect"],
+    queryFn: () => getServiceProviders({ PageSize: 100 }),
+  });
+
   const lookups = lookupsData?.data || {
     customers: [],
     services: [],
@@ -69,7 +107,7 @@ export default function AddEditAppointment() {
     enabled: isEdit,
   });
 
-  const isPageLoading = isLoadingLookups || (isEdit && isLoadingDetails);
+  const isPageLoading = (isLoadingLookups && isLoadingPricing) || (isEdit && isLoadingDetails);
 
   useEffect(() => {
     if (isEdit && existingData) {
@@ -139,7 +177,37 @@ export default function AddEditAppointment() {
   }, [lookups.customers, formData.customerId, formData.customerName]);
 
   const serviceOptions = useMemo(() => {
-    const list = [...(lookups.services || [])];
+    // Priority 1: items from direct GetAppointmentPricing lookup
+    let items = [];
+    const directPricing = Array.isArray(pricingLookupData?.data)
+      ? pricingLookupData.data
+      : Array.isArray(pricingLookupData?.data?.data)
+      ? pricingLookupData.data.data
+      : null;
+
+    if (directPricing && directPricing.length > 0) {
+      items = directPricing.map((s) => {
+        const price = Number(s.consumerPrice ?? s.consumer_Price ?? 0);
+        const name = s.productName || s.name || "Unnamed Service";
+        const unitName = s.unitName || "خدمة مقطوعة";
+        return {
+          id: s.productVariantId,
+          value: s.productVariantId,
+          productVariantId: s.productVariantId,
+          name: name,
+          unitOfMeasurementId: s.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
+          unitName: unitName,
+          price: price,
+          consumerPrice: price,
+          label: price > 0 ? `${name} ($${price})` : name,
+          raw: s,
+        };
+      });
+    } else if (Array.isArray(lookups.services) && lookups.services.length > 0) {
+      items = [...lookups.services];
+    }
+
+    const list = [...items];
     if (
       formData.productVariantId &&
       !list.some(
@@ -154,29 +222,107 @@ export default function AddEditAppointment() {
         value: formData.productVariantId,
         productVariantId: formData.productVariantId,
         label: formData.serviceName || formData.productVariantId,
+        name: formData.serviceName || formData.productVariantId,
+        unitOfMeasurementId: formData.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
       });
     }
     return list;
-  }, [lookups.services, formData.productVariantId, formData.serviceName]);
+  }, [pricingLookupData, lookups.services, formData.productVariantId, formData.serviceName, formData.unitOfMeasurementId]);
 
   const providerOptions = useMemo(() => {
-    const list = [...(lookups.providers || [])];
+    // 1. Build employee map with case-insensitive / trimmed keys
+    const employees = providerEmployeesData?.data?.employees || [];
+    const empMap = new Map();
+    employees.forEach((e) => {
+      const name =
+        e.fullName ||
+        `${e.first_Name || e.firstName || ""} ${e.last_Name || e.lastName || ""}`.trim() ||
+        e.name ||
+        e.employeeName ||
+        e.user_Name ||
+        e.userName ||
+        "";
+      const code = e.jobNumber || e.employee_Code || e.employeeCode || "";
+      const display = name ? (code ? `${name} (#${code})` : name) : (code ? `Employee #${code}` : "");
+
+      if (e.id) {
+        empMap.set(String(e.id).toLowerCase().trim(), { name, code, display });
+      }
+      if (e.jobNumber) {
+        empMap.set(String(e.jobNumber).toLowerCase().trim(), { name, code, display });
+      }
+    });
+
+    // 2. Base list of providers: from direct fetch or lookups
+    const directList = directProvidersData?.data?.items || [];
+    const lookupList = lookups.providers || [];
+    const baseList = directList.length > 0 ? directList : lookupList;
+
+    const list = baseList.map((p, idx) => {
+      const raw = p.raw || p;
+      const rawEmpId = p.hrEmployeeId || raw.hrEmployeeId || raw.employeeId || raw.hr_Employee_Id;
+      const normalizedEmpId = rawEmpId ? String(rawEmpId).toLowerCase().trim() : null;
+      const matchedEmp = normalizedEmpId ? empMap.get(normalizedEmpId) : null;
+      const directMatch = p.id ? empMap.get(String(p.id).toLowerCase().trim()) : null;
+      const empInfo = matchedEmp || directMatch;
+
+      const candidates = [
+        empInfo?.display,
+        empInfo?.name,
+        p.employeeName,
+        raw.employeeName,
+        p.fullName,
+        raw.fullName,
+        p.name,
+        raw.name,
+        p.label,
+      ];
+      const validName = candidates.find((c) => !isGenericProviderName(c));
+
+      const fallback = rawEmpId
+        ? `Employee (${String(rawEmpId).slice(0, 8)})`
+        : p.id
+        ? `Provider #${String(p.id).slice(0, 8).toUpperCase()}`
+        : `Provider ${idx + 1}`;
+
+      const finalLabel = validName || fallback;
+
+      return {
+        ...p,
+        id: p.id,
+        value: p.id,
+        label: finalLabel,
+        name: finalLabel,
+        hrEmployeeId: rawEmpId || null,
+        raw,
+      };
+    });
+
+    // 3. Ensure currently selected provider in edit mode is always present
     if (
       formData.serviceProviderId &&
       !list.some(
         (p) =>
-          p.value === formData.serviceProviderId ||
-          p.id === formData.serviceProviderId
+          String(p.value).toLowerCase() === String(formData.serviceProviderId).toLowerCase() ||
+          String(p.id).toLowerCase() === String(formData.serviceProviderId).toLowerCase()
       )
     ) {
+      const selKey = String(formData.serviceProviderId).toLowerCase().trim();
+      const emp = empMap.get(selKey);
+      const customLabel = !isGenericProviderName(formData.serviceProviderName)
+        ? formData.serviceProviderName
+        : emp?.display || emp?.name || `Provider #${String(formData.serviceProviderId).slice(0, 8).toUpperCase()}`;
+
       list.unshift({
         id: formData.serviceProviderId,
         value: formData.serviceProviderId,
-        label: formData.serviceProviderName || formData.serviceProviderId,
+        label: customLabel,
+        name: customLabel,
       });
     }
+
     return list;
-  }, [lookups.providers, formData.serviceProviderId, formData.serviceProviderName]);
+  }, [directProvidersData, lookups.providers, providerEmployeesData, formData.serviceProviderId, formData.serviceProviderName]);
 
   const statusOptions = useMemo(() => {
     const list = [...(lookups.statuses || [])].filter((st) => st !== "All");
@@ -245,7 +391,7 @@ export default function AddEditAppointment() {
       startTime: formData.startTime || "09:00",
       endTime: formData.endTime || "09:30",
       deposit: Number(formData.deposit || 0),
-      unitOfMeasurementId: formData.unitOfMeasurementId || null,
+      unitOfMeasurementId: formData.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
       status: formData.status,
     };
 
@@ -344,14 +490,14 @@ export default function AddEditAppointment() {
                 value={formData.productVariantId || undefined}
                 onValueChange={(val) => {
                   const item = serviceOptions.find(
-                    (s) => s.value === val || s.id === val
+                    (s) => s.value === val || s.id === val || s.productVariantId === val
                   );
                   setFormData((prev) => ({
                     ...prev,
                     productVariantId: val,
-                    serviceName: item?.label || "",
+                    serviceName: item?.name || item?.label || "",
                     unitOfMeasurementId:
-                      item?.unitOfMeasurementId || prev.unitOfMeasurementId,
+                      item?.unitOfMeasurementId || prev.unitOfMeasurementId || "33333333-3333-3333-3333-333333333333",
                   }));
                 }}
               >
@@ -390,7 +536,7 @@ export default function AddEditAppointment() {
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select Provider">
-                    {formData.serviceProviderName || providerOptions.find((p) => p.value === formData.serviceProviderId)?.label}
+                    {providerOptions.find((p) => String(p.value).toLowerCase() === String(formData.serviceProviderId).toLowerCase() || String(p.id).toLowerCase() === String(formData.serviceProviderId).toLowerCase())?.label || (!isGenericProviderName(formData.serviceProviderName) ? formData.serviceProviderName : "")}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>

@@ -1,20 +1,35 @@
+import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Upload, Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHorizontal, QrCode, ScanBarcode, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getAllUnitOfMeasurements, createProduct, createAssemblyWithoutSpecs, updateAssemblyWithoutSpecs, getProductById } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getAllCategories,
+  getLeafAccounts,
+  searchMaterialsForInvoice,
+  getInventoryPricingLookup,
+  getAllUnitOfMeasurements,
+  createProduct,
+  createAssemblyWithoutSpecs,
+  updateAssemblyWithoutSpecs,
+  getProductById,
+  isPieceUnit,
+  DEFAULT_PIECE_UNIT_ID,
+} from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function AssembledProductForm({ currentStep, onNext, thereAreUnits, setThereAreUnits }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
     const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+    shouldUnregister: false,
     defaultValues: {
       name_Product: "",
       product_Number: "",
@@ -23,7 +38,7 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       category_Id: "",
       item_Origin: "",
       requires_Shipping: false,
-      there_Are_Units: thereAreUnits,
+      there_Are_Units: Boolean(thereAreUnits),
       minimum_Alert_Level: 0,
       maximum_Stock_Level: 0,
       revenue_Account_Id: "",
@@ -59,6 +74,10 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     }
   }, [watchThereAreUnits, thereAreUnits, setThereAreUnits]);
 
+  useEffect(() => {
+    setValue("there_Are_Units", Boolean(thereAreUnits));
+  }, [thereAreUnits, setValue]);
+
   const { fields: unitFields, append: appendUnit, remove: removeUnit } = useFieldArray({
     control,
     name: "product_Units",
@@ -81,6 +100,11 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 100 }),
   });
 
+  const { data: pricingRes } = useQuery({
+    queryKey: ["getInventoryPricingLookup"],
+    queryFn: () => getInventoryPricingLookup(),
+  });
+
   const { data: productsRes, isLoading: productsLoading } = useQuery({
     queryKey: ["materials-for-invoice"],
     queryFn: () => searchMaterialsForInvoice({ PageNumber: 1, PageSize: 1000 }),
@@ -99,8 +123,27 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
 
   const categories = categoriesRes?.data?.items || [];
   const accounts = accountsRes?.data?.items || [];
-  const products = productsRes?.data?.items || [];
+  const products = (() => {
+    const pList = pricingRes?.data?.items || pricingRes?.data || [];
+    if (Array.isArray(pList) && pList.length > 0) {
+      return pList.map((p) => ({
+        productVariantId: p.productVariantId || p.variantId || p.id,
+        productName: p.productName || p.name_Product || p.name,
+        availableUnits: p.unitOfMeasurementId
+          ? [{ productUnitId: p.unitOfMeasurementId, unitOfMesuranse_Id: p.unitOfMeasurementId, unitName: p.unitName || "Unit" }]
+          : [],
+        availableQuantity: p.availableQuantity || 0,
+        price: p.consumerPrice || 0,
+      }));
+    }
+    const mList = productsRes?.data?.items || productsRes?.data || [];
+    return Array.isArray(mList) ? mList : [];
+  })();
   const measurements = unitsRes?.data?.items || [];
+  const categoryId = watch("category_Id");
+
+  const rawProduct = assemblyRes?.data?.data || assemblyRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
   const productComponentsWatch = watch("product_Components");
   const productUnitsWatch = watch("product_Units");
 
@@ -128,16 +171,18 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       }
 
       const components = recipes.map((r) => ({
-        component_Variant_Id: r.raw_Material_Variant_Id || "",
-        unit_Of_Measurement_Id: r.unit_Of_Measurement_Id || "",
+        id: r.id || undefined,
+        component_Variant_Id: r.raw_Material_Variant_Id || r.component_Variant_Id || r.componentVariantId || "",
+        unit_Of_Measurement_Id: r.unit_Of_Measurement_Id || r.unitOfMeasurementId || "",
         quantity: r.quantity || 0,
         notes: r.notes || "",
       }));
 
       const units = unitData.map((u, i) => ({
+        id: u.id || undefined,
         unitName: u.unitName || `Unit ${i + 1}`,
         unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || "",
-        secondunit_Of_Measurement_Id: "",
+        secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || "",
         relative_factor: u.conversion_Factor || 1,
         is_Default_Selling: u.is_Default_Selling || false,
         is_Default_Purchasing: u.is_Default_Purchasing || false,
@@ -182,100 +227,49 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     }
   }, [isEdit, assemblyRes, reset, setThereAreUnits]);
 
+  useEffect(() => {
+    if (isEdit && assemblyRes?.data) {
+      const bData = assemblyRes.data?.data || assemblyRes.data;
+      if (bData.category_Id) setValue("category_Id", bData.category_Id, { shouldValidate: true });
+      if (bData.revenue_Account_Id) setValue("revenue_Account_Id", bData.revenue_Account_Id);
+      if (bData.expense_Account_Id) setValue("expense_Account_Id", bData.expense_Account_Id);
+      if (bData.inventory_Account_Id) setValue("inventory_Account_Id", bData.inventory_Account_Id);
+    }
+  }, [isEdit, assemblyRes, categories, accounts, setValue]);
+
   const createMutation = useMutation({
-    mutationFn: (data) => {
-      const units = (data.there_Are_Units && data.product_Units?.length > 0)
-        ? data.product_Units.map((u, idx) => ({
-            unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id,
-            secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || null,
-            barcode_Option: u.barcode_Option || data.barcode_Option || "Manual",
-            barcode: u.barcode || data.barcode || null,
-            qr_Code: u.qr_Code || data.qr_Code || null,
-            is_Default_Selling: Boolean(u.is_Default_Selling ?? (idx === 0)),
-            is_Default_Purchasing: Boolean(u.is_Default_Purchasing ?? (idx === 0)),
-            cost_Price: Number(u.cost_Price ?? data.cost_Price ?? 0),
-            wholesale_Price: Number(u.wholesale_Price ?? data.wholesale_Price ?? 0),
-            consumer_Price: Number(u.consumer_Price ?? data.consumer_Price ?? 0),
-            last_Purchase_Price: Number(u.last_Purchase_Price ?? data.last_Purchase_Price ?? 0),
-            average_Purchase_Price: Number(u.average_Purchase_Price ?? data.average_Purchase_Price ?? 0),
-            relative_factor: Number(u.relative_factor ?? 1),
-          }))
-        : [
-            {
-              unit_Of_Measurement_Id: data.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id,
-              secondunit_Of_Measurement_Id: null,
-              barcode_Option: data.barcode_Option || "Manual",
-              barcode: data.barcode || null,
-              qr_Code: data.qr_Code || null,
-              is_Default_Selling: true,
-              is_Default_Purchasing: true,
-              cost_Price: Number(data.cost_Price ?? 0),
-              wholesale_Price: Number(data.wholesale_Price ?? 0),
-              consumer_Price: Number(data.consumer_Price ?? 0),
-              last_Purchase_Price: Number(data.last_Purchase_Price ?? 0),
-              average_Purchase_Price: Number(data.average_Purchase_Price ?? 0),
-              relative_factor: 1,
-            },
-          ];
-
-      const validComponents = (data.product_Components || []).filter(c => c.component_Variant_Id && c.unit_Of_Measurement_Id);
-
-      const payload = {
-        name_Product: data.name_Product,
-        product_Number: data.product_Number || String(Math.floor(100000 + Math.random() * 900000)),
-        has_Specifications: false,
-        is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? true),
-        can_Be_Sold: true,
-        can_Be_Purchased: true,
-        requires_Shipping: Boolean(data.requires_Shipping ?? false),
-        requires_Contract: false,
-        requires_Scheduling: false,
-        has_Variants: false,
-        is_Fixed_Price: true,
-        revenue_Account_Id: data.revenue_Account_Id || null,
-        expense_Account_Id: data.expense_Account_Id || null,
-        inventory_Account_Id: data.inventory_Account_Id || null,
-        product_Type: "Assembly",
-        billing_Method: "FixedPrice",
-        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
-        origin_Id: data.origin_Id || data.item_Origin || null,
-        category_Id: data.category_Id || null,
-        productVariantDtos: [
-          {
-            minimum_Alert_Level: Number(data.minimum_Alert_Level) || 0,
-            maximum_Stock_Level: Number(data.maximum_Stock_Level) || 0,
-            limit_Unit_Id: data.limit_Unit_Id || null,
-            variantValues: [],
-            product_Units: units,
-            product_Components: validComponents.map((c) => ({
-              component_Variant_Id: c.component_Variant_Id,
-              quantity: Number(c.quantity) || 1,
-              unit_Of_Measurement_Id: c.unit_Of_Measurement_Id,
-              notes: c.notes || null,
-            })),
-          },
-        ],
-      };
-
-      return createProduct(payload);
-    },
-    onSuccess: () => {
+    mutationFn: (data) => createAssemblyWithoutSpecs(data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Assembled product created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to create assembled product");
+      toast.error(
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to create assembled product")
+      );
     }
   });
 
   const updateMutation = useMutation({
     mutationFn: updateAssemblyWithoutSpecs,
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success("Assembled product updated successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update assembled product");
+      toast.error(
+        error?.response?.data?.message ||
+        error.message ||
+        "Failed to update assembled product"
+      );
     }
   });
 
@@ -284,14 +278,37 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     if (!isFinalStep) {
       onNext();
     } else {
-      if (isEdit) {
-        const payload = { ...data };
-        if (!payload.there_Are_Units) {
-          payload.product_Units = [];
+      const payload = { ...data };
+
+      // Synchronize root price / barcode fields if modified on unit[0]
+      if (payload.product_Units?.[0]) {
+        const u0 = payload.product_Units[0];
+        if (u0.barcode && !payload.barcode) payload.barcode = u0.barcode;
+        if (u0.qr_Code && !payload.qr_Code) payload.qr_Code = u0.qr_Code;
+        if (Number(u0.cost_Price) && !Number(payload.cost_Price)) payload.cost_Price = u0.cost_Price;
+        if (Number(u0.consumer_Price) && !Number(payload.consumer_Price)) payload.consumer_Price = u0.consumer_Price;
+        if (Number(u0.wholesale_Price) && !Number(payload.wholesale_Price)) payload.wholesale_Price = u0.wholesale_Price;
+        if (Number(u0.last_Purchase_Price) && !Number(payload.last_Purchase_Price)) payload.last_Purchase_Price = u0.last_Purchase_Price;
+        if (Number(u0.average_Purchase_Price) && !Number(payload.average_Purchase_Price)) payload.average_Purchase_Price = u0.average_Purchase_Price;
+      }
+
+      if (!payload.there_Are_Units) {
+        payload.product_Units = [];
+      } else {
+        // Exclude base piece unit so only additional units are submitted
+        payload.product_Units = (payload.product_Units || []).filter((u, idx) => {
+          if (idx === 0) return false;
+          return !isPieceUnit(u);
+        });
+        if (payload.product_Units.length === 0) {
+          payload.there_Are_Units = false;
         }
+      }
+
+      if (isEdit) {
         updateMutation.mutate({ ...payload, id });
       } else {
-        createMutation.mutate(data);
+        createMutation.mutate(payload);
       }
     }
   };
@@ -345,12 +362,18 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
             <label className="text-sm font-semibold text-foreground leading-none">Item Category <span className="text-red-500">*</span></label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-              {...register("category_Id", { required: true })}
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
               disabled={categoriesLoading}
             >
               <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>{cat.name || cat.name_Category || "Category"}</option>
               ))}
             </select>
             {errors.category_Id && <span className="text-red-500 text-xs">Required</span>}
@@ -465,14 +488,18 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
                   className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
                   {...register(`product_Units.${index}.unit_Of_Measurement_Id`)}
                   onChange={(e) => {
-                    const sel = measurements.find(m => m.unit_Name_Id === e.target.value);
+                    const val = e.target.value;
+                    setValue(`product_Units.${index}.unit_Of_Measurement_Id`, val, { shouldValidate: true, shouldDirty: true });
+                    const sel = measurements.find(m => m.unit_Name_Id === val);
                     if (sel) setValue(`product_Units.${index}.unitName`, sel.unit_name);
                   }}
                   disabled={unitsLoading}
                 >
                   <option value="">Select Unit</option>
-                  {measurements.map(m => (
-                    <option key={m.unit_Name_Id} value={m.unit_Name_Id}>{m.unit_name}</option>
+                  {measurements
+                    .filter((m) => !isPieceUnit(m))
+                    .map(m => (
+                      <option key={m.unit_Name_Id} value={m.unit_Name_Id}>{m.unit_name}</option>
                   ))}
                 </select>
               )}
@@ -491,9 +518,10 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
                     >
                       <option value="">Select unit</option>
                       {productUnitsWatch.slice(0, index).map((pUnit, pIdx) => {
-                        if (!pUnit.unit_Of_Measurement_Id) return null;
+                        const uId = pUnit.unit_Of_Measurement_Id || (pIdx === 0 ? DEFAULT_PIECE_UNIT_ID : "");
+                        if (!uId) return null;
                         return (
-                          <option key={pIdx} value={pUnit.unit_Of_Measurement_Id}>
+                          <option key={pIdx} value={uId}>
                             {pUnit.unitName || `Unit ${pIdx + 1}`}
                           </option>
                         );
@@ -569,9 +597,14 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
                       </select>
                     </td>
                     <td className="px-4 py-4 min-w-[150px]">
-                      <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50" {...register(`product_Components.${index}.unit_Of_Measurement_Id`)} disabled={!currentVariantId || availableUnits.length === 0}>
+                      <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 text-sm" {...register(`product_Components.${index}.unit_Of_Measurement_Id`)}>
                         <option value="">Unit</option>
-                        {availableUnits.map((u) => <option key={u.productUnitId} value={u.unitOfMesuranse_Id}>{u.unitName}</option>)}
+                        {(availableUnits.length > 0
+                          ? availableUnits.map((u) => ({ id: u.unitOfMesuranse_Id || u.productUnitId, name: u.unitName }))
+                          : measurements.map((m) => ({ id: m.unit_Name_Id || m.id, name: m.unit_name || m.name }))
+                        ).map((u) => (
+                          <option key={u.id} value={u.id}>{u.name}</option>
+                        ))}
                       </select>
                     </td>
                     <td className="px-4 py-4 min-w-[120px]">
@@ -677,10 +710,22 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
 
   return (
     <form id="assembled-product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {currentStep === 2 && renderDetails()}
-      {currentStep === 3 && thereAreUnits && renderUnits()}
-      {currentStep === (thereAreUnits ? 4 : 3) && renderBundleComponents()}
-      {currentStep === 5 && thereAreUnits && renderVariantProperties()}
+      <div className={cn("space-y-6", currentStep === 2 ? "block" : "hidden")}>
+        {renderDetails()}
+      </div>
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 3 ? "block" : "hidden")}>
+          {renderUnits()}
+        </div>
+      )}
+      <div className={cn("space-y-6", currentStep === (thereAreUnits ? 4 : 3) ? "block" : "hidden")}>
+        {renderBundleComponents()}
+      </div>
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 5 ? "block" : "hidden")}>
+          {renderVariantProperties()}
+        </div>
+      )}
     </form>
   );
 }

@@ -187,11 +187,33 @@ export async function createCustomerProject(data) {
   });
 }
 
-export async function updateCustomerProject(data) {
+export async function updateCustomerProject(idOrData, maybeData) {
+  let id;
+  let body;
+
+  if (maybeData !== undefined) {
+    id = idOrData;
+    body = { ...maybeData, id };
+  } else if (typeof idOrData === "object" && idOrData !== null) {
+    id = idOrData.id;
+    body = { ...idOrData };
+  } else {
+    id = idOrData;
+    body = { id };
+  }
+
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
+
   return apiHandler({
-    endPoint: "inventory/CustomerProjects/UpdateProject/update",
+    endPoint: `inventory/CustomerProjects/UpdateProject/Update/${normalizedId}`,
     method: "POST",
-    body: data,
+    body: {
+      ...body,
+      id: normalizedId,
+      projectValue: Number(body.value || body.projectValue || 0),
+      value: Number(body.value || body.projectValue || 0),
+    },
   });
 }
 
@@ -304,8 +326,10 @@ export async function completeOrCancelCustomerFollowUp(data) {
 }
 
 export async function deleteCustomerFollowUp(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
   return apiHandler({
-    endPoint: `crm/FollowUpCustomer/delete/${id}`,
+    endPoint: `crm/FollowUpCustomer/delete${normalizedId}`,
     method: "POST",
   });
 }
@@ -350,6 +374,15 @@ export async function changeLeadStatus(data) {
     endPoint: "crm/Lead/ChangeStatus",
     method: "POST",
     body: data,
+  });
+}
+
+export async function deleteLead(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
+  return apiHandler({
+    endPoint: `crm/Lead/delete${normalizedId}`,
+    method: "POST",
   });
 }
 
@@ -409,8 +442,10 @@ export async function updateFollowUpLead(data) {
 }
 
 export async function deleteFollowUpLead(id) {
+  const cleanId = typeof id === "object" ? (id?.id || id?.original?.id) : id;
+  const normalizedId = String(cleanId || "").replace(/^\/+/, "");
   return apiHandler({
-    endPoint: `crm/FollowUpLead/delete/${id}`,
+    endPoint: `crm/FollowUpLead/delete${normalizedId}`,
     method: "POST",
   });
 }

@@ -18,6 +18,7 @@ import {
 import { PageTitle } from "@/components/common/page-title";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import { getServiceProviderById, FULL_DAYS_OF_WEEK } from "@/services/appointments";
 
 const DAY_TRANSLATIONS = {
@@ -45,6 +46,7 @@ function formatDisplayTime(timeStr) {
 export default function ServiceProviderDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { locale } = useI18n();
   const [copiedKey, setCopiedKey] = useState(null);
 
   const {
@@ -364,12 +366,7 @@ export default function ServiceProviderDetails() {
                             isOff ? "text-slate-400" : "text-[#0066d1]"
                           }`}
                         />
-                        <span>{schedule.dayOfWeek}</span>
-                        {arabicDay && (
-                          <span className="text-xs text-slate-400 font-normal">
-                            ({arabicDay})
-                          </span>
-                        )}
+                        <span>{locale === "ar" ? (DAY_TRANSLATIONS[schedule.dayOfWeek] || schedule.dayOfWeek) : schedule.dayOfWeek}</span>
                       </div>
                     </td>
 
@@ -382,7 +379,7 @@ export default function ServiceProviderDetails() {
                             : "bg-emerald-50 text-emerald-600 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
                         }`}
                       >
-                        {isOff ? "Day Off (عطلة)" : "Working Day (عمل)"}
+                        {isOff ? (locale === "ar" ? "عطلة" : "Day Off") : (locale === "ar" ? "يوم عمل" : "Working Day")}
                       </span>
                     </td>
 

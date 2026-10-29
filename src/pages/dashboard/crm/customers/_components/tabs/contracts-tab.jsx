@@ -44,8 +44,10 @@ import {
 } from "@/components/ui/dialog";
 import { IssueContractInvoiceDialog } from "./issue-contract-invoice-dialog";
 import { toast } from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 export function ContractsTab({ customerId: propCustomerId }) {
+  const { t } = useI18n();
   const params = useParams();
   const customerId = propCustomerId || params.id;
   const queryClient = useQueryClient();
@@ -123,7 +125,7 @@ export function ContractsTab({ customerId: propCustomerId }) {
     },
     {
       key: "itemsBreakdown",
-      label: "Items & Quantities (بنود العقد)",
+      label: t?.customerContracts?.itemsAndQuantities || "Items & Quantities",
       render: (row) => {
         const items = row.items || [];
         const firstItem = items[0];
@@ -149,7 +151,7 @@ export function ContractsTab({ customerId: propCustomerId }) {
     },
     {
       key: "financials",
-      label: "Contract Value & Advance (القيمة والعربون)",
+      label: t?.customerContracts?.contractValueAndAdvance || "Contract Value & Advance",
       render: (row) => {
         const total = Number(row.totalAmount || row.total || 0);
         const advance = Number(row.advancePayment || row.securityDeposit || 0);
@@ -237,7 +239,7 @@ export function ContractsTab({ customerId: propCustomerId }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-4 border rounded-xl bg-blue-50/50 border-blue-200">
           <span className="text-xs text-blue-700 font-semibold block uppercase">
-            Total Contract Value (قيمة العقود)
+            {t?.customerContracts?.totalContractValue || "Total Contract Value"}
           </span>
           <span className="text-2xl font-bold text-blue-900 mt-1 block">
             ${totalAgreedValue.toLocaleString()}
@@ -246,7 +248,7 @@ export function ContractsTab({ customerId: propCustomerId }) {
         </div>
         <div className="p-4 border rounded-xl bg-emerald-50/50 border-emerald-200">
           <span className="text-xs text-emerald-700 font-semibold block uppercase">
-            Advance Received (العربون المستلم)
+            {t?.customerContracts?.advanceReceived || "Advance Received"}
           </span>
           <span className="text-2xl font-bold text-emerald-900 mt-1 block">
             ${totalAdvanceCollected.toLocaleString()}
@@ -255,7 +257,7 @@ export function ContractsTab({ customerId: propCustomerId }) {
         </div>
         <div className="p-4 border rounded-xl bg-purple-50/50 border-purple-200">
           <span className="text-xs text-purple-700 font-semibold block uppercase">
-            Remaining to Collect (المتبقي للتحصيل)
+            {t?.customerContracts?.remainingToCollect || "Remaining to Collect"}
           </span>
           <span className="text-2xl font-bold text-purple-900 mt-1 block">
             ${totalRemainingToCollect.toLocaleString()}
@@ -373,6 +375,7 @@ export function ContractsTab({ customerId: propCustomerId }) {
 }
 
 function AddContractDialog({ open, onOpenChange, customerId }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   // Load Projects belonging strictly to this customer ("فحص مهم: انتماء المشروع إلى العميل نفسه")
@@ -388,7 +391,11 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
     enabled: !!customerId && open,
   });
 
-  const customerName = customerData?.data?.customerName || "Customer";
+  const customerName =
+    customerData?.data?.customerName ||
+    customerData?.customerName ||
+    customerData?.name ||
+    "Customer";
   const projects = customerProjectsData?.data?.items || [];
 
   const [formData, setFormData] = useState({
@@ -596,7 +603,7 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
             </div>
             <div>
               <DialogTitle className="text-lg font-bold">
-                Add Customer Contract & Items (عقد العميل وبنوده)
+                {t?.customerContracts?.addContract || "Add Customer Contract & Items"}
               </DialogTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Define services/goods, quantities, advance payment, and installment schedule
@@ -622,12 +629,12 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="font-semibold text-xs">Customer (العميل)</Label>
+                <Label className="font-semibold text-xs">{t?.customerContracts?.customer || "Customer"}</Label>
                 <Input value={customerName} disabled className="h-9 bg-slate-50" />
               </div>
               <div className="space-y-1.5">
                 <Label className="font-semibold text-xs">
-                  Link Project (انتماء المشروع للعميل نفسه)
+                  {t?.customerContracts?.linkProject || "Link Project"}
                 </Label>
                 <Select
                   value={formData.projectName || "none"}
@@ -639,7 +646,7 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
                     <SelectValue placeholder="Select Customer Project" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">No project link (بدون ربط بمشروع)</SelectItem>
+                    <SelectItem value="none">{t?.customerContracts?.noProjectLink || "No project link"}</SelectItem>
                     {projects.map((p) => (
                       <SelectItem key={p.id} value={p.projectName}>
                         {p.projectName} (${Number(p.projectValue || p.value || 0).toLocaleString()})
@@ -653,7 +660,7 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="font-semibold text-xs">
-                  Contract Title (عنوان العقد) <span className="text-red-500">*</span>
+                  {t?.customerContracts?.contractTitle || "Contract Title"} <span className="text-red-500">*</span>
                 </Label>
                 <Input
                   placeholder="e.g. عقد تقديم خدمات استشارية / تجهيز"
@@ -697,7 +704,7 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
             </div>
           </div>
 
-          {/* Section 2: Items Table (بنود العقد والكميات والوحدات والأسعار) */}
+          {/* Section 2: Items Table */}
           <div className="space-y-3">
             <div className="flex items-center justify-between border-b pb-1">
               <h4 className="font-bold text-sm text-foreground flex items-center gap-1.5">
@@ -753,8 +760,8 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Service">Service (خدمة)</SelectItem>
-                              <SelectItem value="Inventory">Stock (مخزون)</SelectItem>
+                              <SelectItem value="Service">{t?.customerContracts?.service || "Service"}</SelectItem>
+                              <SelectItem value="Inventory">{t?.customerContracts?.stock || "Stock"}</SelectItem>
                             </SelectContent>
                           </Select>
                         </td>
@@ -813,7 +820,7 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
             <div className="grid grid-cols-2 gap-4 bg-purple-50/50 p-3 rounded-xl border border-purple-200">
               <div className="space-y-1.5">
                 <Label className="font-semibold text-xs text-purple-950">
-                  Advance Payment / العربون المستلم ($)
+                  {t?.customerContracts?.advancePayment || "Advance Payment"} ($)
                 </Label>
                 <Input
                   type="number"
@@ -982,7 +989,9 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
 
           {/* Section 4: Terms and Conditions */}
           <div className="space-y-2">
-            <Label className="font-semibold text-xs">Terms & Conditions (الشروط والأحكام)</Label>
+            <Label className="font-semibold text-xs">
+              {t?.customerContracts?.termsAndConditions || "Terms & Conditions"}
+            </Label>
             <Textarea
               placeholder="Contractual obligations, handover dates, cancellation terms..."
               value={formData.terms_And_Conditions}
@@ -1011,6 +1020,7 @@ function AddContractDialog({ open, onOpenChange, customerId }) {
 }
 
 function ContractBreakdownDialog({ contract, open, onOpenChange, onIssueInvoice }) {
+  const { t } = useI18n();
   const items = contract.items || [];
   const installments = contract.installments || [];
   const total = Number(contract.totalAmount || contract.total || 0);
@@ -1050,12 +1060,14 @@ function ContractBreakdownDialog({ contract, open, onOpenChange, onIssueInvoice 
               <span className="font-bold text-blue-600 text-sm">${total.toLocaleString()}</span>
             </div>
             <div>
-              <span className="text-muted-foreground block text-[11px]">Advance (العربون)</span>
+              <span className="text-muted-foreground block text-[11px]">
+                {t?.customerContracts?.advance || "Advance"}
+              </span>
               <span className="font-bold text-emerald-600 text-sm">${advance.toLocaleString()}</span>
             </div>
             <div>
               <span className="text-muted-foreground block text-[11px]">
-                Remaining to Collect (المتبقي)
+                {t?.customerContracts?.remainingToCollect || "Remaining to Collect"}
               </span>
               <span className="font-bold text-purple-700 text-sm">
                 ${remaining.toLocaleString()}
@@ -1107,7 +1119,9 @@ function ContractBreakdownDialog({ contract, open, onOpenChange, onIssueInvoice 
 
           {/* Installments Schedule */}
           <div className="space-y-2">
-            <h4 className="font-bold text-foreground">Installments Schedule (مواعيد الاستحقاق)</h4>
+            <h4 className="font-bold text-foreground">
+              {t?.customerContracts?.installmentsSchedule || "Installments Schedule"}
+            </h4>
             <div className="border rounded-xl overflow-hidden">
               <table className="w-full text-left">
                 <thead className="bg-slate-50 border-b text-[11px] font-semibold text-slate-700">

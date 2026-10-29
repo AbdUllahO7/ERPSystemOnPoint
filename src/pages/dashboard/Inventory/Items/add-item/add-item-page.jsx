@@ -7,6 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getProductById } from "@/lib/api";
 import StepItemType from "./_components/step-item-type";
 import ServiceForm from "./_components/ServiceForm";
+import RentalForm from "./_components/RentalForm";
 import BundleForm from "./_components/BundleForm";
 import AssembledProductForm from "./_components/AssembledProductForm";
 import SimpleProductForm from "./_components/SimpleProductForm";
@@ -23,7 +24,7 @@ export default function AddItemPage() {
   const [productType, setProductType] = useState("simple");
   const [hasCustomSpecs, setHasCustomSpecs] = useState("no");
   const [customSpecs, setCustomSpecs] = useState([]);
-  const [thereAreUnits, setThereAreUnits] = useState(true);
+  const [thereAreUnits, setThereAreUnits] = useState(false);
 
   const { data: productRes } = useQuery({
     queryKey: ["product", id],
@@ -34,9 +35,14 @@ export default function AddItemPage() {
   useEffect(() => {
     if (isEdit && productRes?.data) {
       setCurrentStep(2);
-      const pData = productRes.data;
-      if (pData.product_Type === "Service") {
+      const pData = productRes.data?.data || productRes.data;
+      if (pData.has_Multiple_Units !== undefined) {
+        setThereAreUnits(Boolean(pData.has_Multiple_Units));
+      }
+      if (pData.product_Type === "Service" || pData.product_Type === "Appointment" || pData.product_Type === "Reservation") {
         setItemType("service");
+      } else if (pData.product_Type === "Rental") {
+        setItemType("rental");
       } else if (pData.product_Type === "Bundle") {
         setItemType("bundle");
       } else if (pData.product_Type === "Assembly") {
@@ -219,6 +225,10 @@ export default function AddItemPage() {
               <Button type="submit" form="service-form" className="flex-1 h-12 text-base">
                 Finish & Add
               </Button>
+            ) : itemType === "rental" ? (
+              <Button type="submit" form="rental-form" className="flex-1 h-12 text-base">
+                Finish & Add
+              </Button>
             ) : itemType === "bundle" ? (
               <Button type="submit" form="bundle-form" className="flex-1 h-12 text-base">
                 {currentStep === steps.length ? "Finish & Add" : "Next"}
@@ -260,6 +270,10 @@ export default function AddItemPage() {
 
           {currentStep === 2 && itemType === "service" && (
             <ServiceForm />
+          )}
+
+          {currentStep === 2 && itemType === "rental" && (
+            <RentalForm />
           )}
 
           {currentStep > 1 && itemType === "bundle" && (

@@ -331,9 +331,9 @@ export default function AddEditRentalInvoicePage() {
                       <SelectValue placeholder="Payment Method" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Credit">Credit / آجل (تسمح بالتحصيل الجزئي)</SelectItem>
-                      <SelectItem value="Cash">Cash / نقدي (تتطلب السداد الكامل)</SelectItem>
-                      <SelectItem value="Bank">Bank Transfer / بنكي (تتطلب السداد الكامل)</SelectItem>
+                      <SelectItem value="Credit">Credit</SelectItem>
+                      <SelectItem value="Cash">Cash</SelectItem>
+                      <SelectItem value="Bank">Bank Transfer</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

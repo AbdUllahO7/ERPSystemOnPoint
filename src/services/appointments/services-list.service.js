@@ -4,6 +4,9 @@ import {
   updateAssemblyWithoutSpecs,
   updateBundleWithoutSpecs,
   updateSimpleProductWithSpecs,
+  updateAppointmentProduct,
+  updateReservationProduct,
+  updateRentalProduct,
 } from "@/services/inventory/inventory.service";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
@@ -61,11 +64,11 @@ export const VALID_BILLING_METHODS = [
 ];
 
 export const BILLING_METHODS = [
-  { label: "Fixed Price (سعر ثابت)", value: "FixedPrice" },
-  { label: "Hourly (بالساعة)", value: "Hourly" },
-  { label: "Daily (باليوم)", value: "Daily" },
-  { label: "Monthly (شهري)", value: "Monthly" },
-  { label: "Quantity Based (حسب الكمية)", value: "QuantityBased" },
+  { label: "Fixed Price", labelAr: "سعر ثابت", value: "FixedPrice" },
+  { label: "Hourly", labelAr: "بالساعة", value: "Hourly" },
+  { label: "Daily", labelAr: "باليوم", value: "Daily" },
+  { label: "Monthly", labelAr: "شهري", value: "Monthly" },
+  { label: "Quantity Based", labelAr: "حسب الكمية", value: "QuantityBased" },
 ];
 
 const UUID_REGEX = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
@@ -355,7 +358,6 @@ export async function createService(payload) {
 export async function updateService(id, payload = {}) {
   try {
     const pType = payload.product_Type || payload.productType;
-    const hasSpecs = Boolean(payload.has_Specifications ?? payload.hasSpecifications ?? payload.hasVariants);
 
     if (pType === "Assembly") {
       return updateAssemblyWithoutSpecs({ id, ...payload });
@@ -363,13 +365,18 @@ export async function updateService(id, payload = {}) {
     if (pType === "Bundle") {
       return updateBundleWithoutSpecs({ id, ...payload });
     }
-    if (pType === "InventoryWithSpecs" || (pType === "Inventory" && hasSpecs)) {
-      return updateSimpleProductWithSpecs({ id, ...payload });
+    if (pType === "Rental") {
+      return updateRentalProduct(id, payload);
+    }
+    if (pType === "Reservation") {
+      return updateReservationProduct({ id, ...payload });
+    }
+    if (pType === "Appointment") {
+      return updateAppointmentProduct({ id, ...payload });
     }
 
-    // Default for Service & items without specs:
-    // POST /api/Inventory/Product/UpdateProductInventoryWithoutSpecifications/inventory-without-specifications
-    return updateSimpleProductWithoutSpecs({ id, ...payload });
+    // Default for Appointment / Service:
+    return updateAppointmentProduct({ id, ...payload });
   } catch (err) {
     console.error(`Failed to update service ${id}:`, err);
     throw err;

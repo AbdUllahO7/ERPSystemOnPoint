@@ -23,9 +23,16 @@ export default function ProjectDetails() {
     mutationFn: (data) => updateProjectPercentage(data),
     onSuccess: () => {
       toast.success("Progress updated successfully");
-      queryClient.invalidateQueries(["projectDetails", id]);
+      queryClient.invalidateQueries({ queryKey: ["projectDetails", id] });
     },
-    onError: () => toast.error("Failed to update progress"),
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to update progress";
+      toast.error(msg);
+    },
   });
 
   if (isLoading) {
@@ -132,16 +139,7 @@ export default function ProjectDetails() {
         </div>
       </div>
 
-      {/* Guidance Callout */}
-      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          الفوترة ليست إنجازاً تشغيلياً (Operational Execution vs Billing):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. ترتبط نسبة الإنجاز (CompletionPercentage) بتقدم المهام أو مراحل التنفيذ المعتمدة في الميدان، مع إظهار الفوترة كمؤشر مستقل.
-        </p>
-      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Scope and Deliverables */}

@@ -118,7 +118,7 @@ export default function AccountingSettingsTab() {
               <SelectContent>
                 <SelectItem value="FIFO">FIFO (First In, First Out)</SelectItem>
                 <SelectItem value="LIFO">LIFO (Last In, First Out)</SelectItem>
-                <SelectItem value="WeightedAverage">Weighted Average (المتوسط المرجح)</SelectItem>
+                <SelectItem value="WeightedAverage">Weighted Average</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -135,8 +135,8 @@ export default function AccountingSettingsTab() {
                 <SelectValue placeholder="Select Entitlement Basis" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Accrual">Accrual Basis (أساس الاستحقاق)</SelectItem>
-                <SelectItem value="Cash">Cash Basis (الأساس النقدي)</SelectItem>
+                <SelectItem value="Accrual">Accrual Basis</SelectItem>
+                <SelectItem value="Cash">Cash Basis</SelectItem>
               </SelectContent>
             </Select>
           </div>

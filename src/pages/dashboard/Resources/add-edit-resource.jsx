@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   createResource,
   updateResource,
@@ -28,6 +29,7 @@ import {
 } from "@/services/resources";
 
 export default function AddEditResourcePage() {
+  const { t } = useI18n();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -205,7 +207,11 @@ export default function AddEditResourcePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageTitle
-          title={isEdit ? "Edit Resource (تعديل المورد)" : "Add Resource (إضافة مورد)"}
+          title={
+            isEdit
+              ? t?.resourcesModule?.editResource || "Edit Resource"
+              : t?.resourcesModule?.addResource || "Add Resource"
+          }
           breadcrumbLinks={[
             { label: "Resources", href: "/dashboard/resources" },
             { label: isEdit ? "Edit Resource" : "Add Resource" },
@@ -230,7 +236,7 @@ export default function AddEditResourcePage() {
             {saveMutation.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
             )}
-            Save Resource (حفظ المورد)
+            {t?.resourcesModule?.saveResource || "Save Resource"}
           </Button>
         </div>
       </div>
@@ -324,8 +330,8 @@ export default function AddEditResourcePage() {
                 <SelectValue placeholder="اختر نموذج الملكية" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Owned">Owned (مملوك للشركة)</SelectItem>
-                <SelectItem value="Leased">Leased (مستأجر من جهة خارجية)</SelectItem>
+                <SelectItem value="Owned">{t?.resourcesModule?.owned || "Owned"}</SelectItem>
+                <SelectItem value="Leased">{t?.resourcesModule?.leased || "Leased"}</SelectItem>
               </SelectContent>
             </Select>
           </div>

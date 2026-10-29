@@ -6,8 +6,10 @@ import { getAllInvoices } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Receipt, DollarSign, Wallet, CheckCircle2, Filter, ShieldCheck } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function InvoicesTab({ customerId: propCustomerId }) {
+  const { t } = useI18n();
   const params = useParams();
   const customerId = propCustomerId || params.id;
   const [search, setSearch] = useState("");
@@ -69,7 +71,7 @@ export function InvoicesTab({ customerId: propCustomerId }) {
     },
     {
       key: "contractRef",
-      label: "Contract Ref (مرجع العقد)",
+      label: t?.customerInvoices?.contractRef || "Contract Ref",
       render: (row) => {
         const contractNum =
           row.contractNumber ||
@@ -100,7 +102,7 @@ export function InvoicesTab({ customerId: propCustomerId }) {
     },
     {
       key: "total_Amount",
-      label: "Invoice Amount (القيمة)",
+      label: t?.customerInvoices?.invoiceAmount || "Invoice Amount",
       render: (row) => (
         <span className="font-bold text-foreground">
           ${Number(row.total_Amount || 0).toLocaleString()}
@@ -109,7 +111,7 @@ export function InvoicesTab({ customerId: propCustomerId }) {
     },
     {
       key: "paid_Amount",
-      label: "Paid (المدفوع)",
+      label: t?.customerInvoices?.paid || "Paid",
       render: (row) => (
         <span className="font-semibold text-emerald-600">
           ${Number(row.paid_Amount || 0).toLocaleString()}
@@ -118,7 +120,7 @@ export function InvoicesTab({ customerId: propCustomerId }) {
     },
     {
       key: "remaining_Amount",
-      label: "Remaining (المتبقي عليه)",
+      label: t?.customerInvoices?.remaining || "Remaining",
       render: (row) => {
         const total = Number(row.total_Amount || 0);
         const paid = Number(row.paid_Amount || 0);
@@ -150,21 +152,27 @@ export function InvoicesTab({ customerId: propCustomerId }) {
       {/* Financial Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="p-4 border rounded-xl bg-blue-50/50 border-blue-200">
-          <span className="text-xs text-blue-700 font-semibold block uppercase">Total Invoiced (إجمالي الفواتير)</span>
+          <span className="text-xs text-blue-700 font-semibold block uppercase">
+            {t?.customerInvoices?.totalInvoiced || "Total Invoiced"}
+          </span>
           <span className="text-2xl font-bold text-blue-900 mt-1 block">
             ${totalInvoiced.toLocaleString()}
           </span>
           <p className="text-[11px] text-blue-700 mt-0.5">Sum of all billed sales invoices</p>
         </div>
         <div className="p-4 border rounded-xl bg-emerald-50/50 border-emerald-200">
-          <span className="text-xs text-emerald-700 font-semibold block uppercase">Total Paid (المدفوعات)</span>
+          <span className="text-xs text-emerald-700 font-semibold block uppercase">
+            {t?.customerInvoices?.totalPaid || "Total Paid"}
+          </span>
           <span className="text-2xl font-bold text-emerald-900 mt-1 block">
             ${totalPaid.toLocaleString()}
           </span>
           <p className="text-[11px] text-emerald-700 mt-0.5">Total cash collected from customer</p>
         </div>
         <div className="p-4 border rounded-xl bg-rose-50/50 border-rose-200">
-          <span className="text-xs text-rose-700 font-semibold block uppercase">Outstanding Balance (المتبقي عليه)</span>
+          <span className="text-xs text-rose-700 font-semibold block uppercase">
+            {t?.customerInvoices?.outstandingBalance || "Outstanding Balance"}
+          </span>
           <span className="text-2xl font-bold text-rose-900 mt-1 block">
             ${totalRemaining.toLocaleString()}
           </span>
@@ -172,16 +180,6 @@ export function InvoicesTab({ customerId: propCustomerId }) {
         </div>
       </div>
 
-      {/* Guidance Callout */}
-      <div className="p-3.5 bg-teal-50/80 border-r-4 border-teal-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-teal-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-teal-600" />
-          الفواتير والمالية وعلاقتها بالعقود (Customer Invoices & Contract Linkage):
-        </p>
-        <p className="text-teal-900 leading-relaxed">
-          عرض فواتير العميل مع مرجع العقد المنظم (Contract Reference). تذكير: حالة القسط «مفوتر» لا تعني «مدفوع»، ويتم تسجيل التحصيل الفعلي في خانة المدفوع فقط لمنع التضارب المحاسبي.
-        </p>
-      </div>
 
       {/* Filter Menu */}
       <div className="flex items-center justify-between gap-4">

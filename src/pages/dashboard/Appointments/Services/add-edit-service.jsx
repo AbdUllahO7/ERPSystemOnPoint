@@ -16,22 +16,46 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getServiceById,
   createService,
   getServiceLookups,
 } from "@/services/appointments";
 import {
+  toGuidOrNull,
   updateSimpleProductWithoutSpecs,
   updateAssemblyWithoutSpecs,
   updateBundleWithoutSpecs,
   updateSimpleProductWithSpecs,
+  updateAppointmentProduct,
+  updateReservationProduct,
+  createRentalProduct,
+  updateRentalProduct,
 } from "@/services/inventory/inventory.service";
 
 export default function AddEditService() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, locale } = useI18n();
+  const sT = (typeof t === "object" || typeof t === "function") && t?.services ? t.services : {};
+
+  const tr = (path, fallback = "") => {
+    if (typeof t === "function") {
+      const val = t(path, fallback);
+      if (val !== undefined && val !== null && val !== path) return val;
+    }
+    const key = path.startsWith("services.") ? path.slice("services.".length) : path;
+    const parts = key.split(".");
+    let cur = sT;
+    for (const p of parts) {
+      if (!cur) break;
+      cur = cur[p];
+    }
+    return (cur !== undefined && cur !== null) ? cur : fallback;
+  };
+
   const isEdit = Boolean(id);
 
   const [formData, setFormData] = useState({
@@ -115,7 +139,10 @@ export default function AddEditService() {
   }, [lookups.categories, formData.category, formData.categoryName]);
 
   const billingMethodOptions = useMemo(() => {
-    const list = [...(lookups.billingMethods || [])];
+    const list = (lookups.billingMethods || []).map((bm) => ({
+      value: bm.value,
+      label: locale === "ar" ? (bm.labelAr || bm.label) : (bm.label || bm.value),
+    }));
     if (formData.billingMethod) {
       const exists = list.some(
         (bm) => bm.value?.toLowerCase() === formData.billingMethod?.toLowerCase() ||
@@ -129,7 +156,7 @@ export default function AddEditService() {
       }
     }
     return list;
-  }, [lookups.billingMethods, formData.billingMethod]);
+  }, [lookups.billingMethods, formData.billingMethod, locale]);
 
   const revenueAccountOptions = useMemo(() => {
     const list = [...(lookups.revenueAccounts || [])];
@@ -163,91 +190,139 @@ export default function AddEditService() {
 
   // Mutations
   const createMutation = useMutation({
-    mutationFn: (data) => createService(data),
+    mutationFn: (data) => {
+      if (data.productType === "Rental") {
+        return createRentalProduct(data);
+      }
+      return createService(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries(["services"]);
-      toast.success("Service created successfully!");
+      toast.success(tr("services.createdSuccess") || "Service created successfully!");
       navigate("/dashboard/appointments/services");
     },
-    onError: () => toast.error("Failed to create service"),
+    onError: () => toast.error(tr("services.createError") || "Failed to create service"),
   });
 
   const updateMutation = useMutation({
     mutationFn: (data) => {
       const raw = existingData?.data?.raw || {};
 
-      const rawUnits =
-        Array.isArray(raw.product_Units) && raw.product_Units.length > 0
-          ? raw.product_Units
-          : Array.isArray(raw.variants?.[0]?.productUnitDtos) && raw.variants[0].productUnitDtos.length > 0
-          ? raw.variants[0].productUnitDtos
-          : Array.isArray(raw.productVariantDtos?.[0]?.productUnitDtos) && raw.productVariantDtos[0].productUnitDtos.length > 0
-          ? raw.productVariantDtos[0].productUnitDtos
+      const rawVariants =
+        Array.isArray(raw.variants) && raw.variants.length > 0
+          ? raw.variants
+          : Array.isArray(raw.productVariantDtos) && raw.productVariantDtos.length > 0
+          ? raw.productVariantDtos
           : [];
 
-      const preparedUnits =
-        rawUnits.length > 0
-          ? rawUnits.map((u, idx) => ({
-              ...u,
-              cost_Price: idx === 0 ? Number(data.costPrice ?? u.cost_Price ?? 0) : Number(u.cost_Price ?? 0),
-              consumer_Price: idx === 0 ? Number(data.consumerPrice ?? u.consumer_Price ?? 0) : Number(u.consumer_Price ?? 0),
-            }))
-          : [
-              {
-                id: raw.variants?.[0]?.productUnitDtos?.[0]?.id || null,
-                unit_Of_Measurement_Id: raw.unit_Of_Measurement_Id || "33333333-3333-3333-3333-333333333333",
-                secondunit_Of_Measurement_Id: null,
-                barcode_Option: "Manual",
-                barcode: null,
-                qr_Code: null,
-                is_Default_Selling: true,
-                is_Default_Purchasing: true,
-                cost_Price: Number(data.costPrice || 0),
-                wholesale_Price: 0,
-                consumer_Price: Number(data.consumerPrice || 0),
-                last_Purchase_Price: 0,
-                average_Purchase_Price: 0,
-                relative_factor: 1,
-              },
-            ];
+      const fallbackUomId =
+        toGuidOrNull(
+          raw.unit_Of_Measurement_Id ||
+          raw.variants?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id ||
+          raw.productVariantDtos?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id ||
+          raw.product_Units?.[0]?.unit_Of_Measurement_Id
+        ) || "33333333-3333-3333-3333-333333333333";
 
-      const merged = {
-        ...raw,
-        ...data,
-        id,
-        name_Product: data.name,
-        product_Number: data.productNumber,
-        category_Id: data.category,
-        revenue_Account_Id: data.revenueAccount,
-        expense_Account_Id: data.expenseAccount,
-        cost_Price: Number(data.costPrice ?? 0),
-        consumer_Price: Number(data.consumerPrice ?? 0),
-        product_Units: preparedUnits,
+      let updateProductvariants = [];
+
+      if (rawVariants.length > 0) {
+        updateProductvariants = rawVariants.map((v, idx) => {
+          const uDto = Array.isArray(v.productUnitDtos) && v.productUnitDtos.length > 0 ? v.productUnitDtos[0] : {};
+          const attrs = Array.isArray(v.variantValues)
+            ? v.variantValues
+            : Array.isArray(v.variant_Values)
+            ? v.variant_Values
+            : [];
+
+          return {
+            variant_id: toGuidOrNull(v.id || v.variant_id || v.variantId),
+            unit_id: toGuidOrNull(uDto.id || v.unit_id || v.unitId || raw.product_Units?.[0]?.id),
+            minimum_Alert_Level: Number(v.minimum_Alert_Level ?? 0) || 0,
+            maximum_Stock_Level: Number(v.maximum_Stock_Level ?? 0) || 0,
+            barcode_Option: v.barcode_Option || uDto.barcode_Option || "Manual",
+            barcode: v.barcode || uDto.barcode || null,
+            qr_Code: v.qr_Code || v.qrCode || uDto.qr_Code || uDto.qr_code || null,
+            cost_Price: idx === 0 ? Number(data.costPrice ?? uDto.cost_Price ?? v.cost_Price ?? 0) : Number(uDto.cost_Price ?? v.cost_Price ?? 0),
+            consumer_Price: idx === 0 ? Number(data.consumerPrice ?? uDto.consumer_Price ?? v.consumer_Price ?? 0) : Number(uDto.consumer_Price ?? v.consumer_Price ?? 0),
+            wholesale_Price: Number(v.wholesale_Price ?? uDto.wholesale_Price ?? 0) || 0,
+            last_Purchase_Price: Number(v.last_Purchase_Price ?? uDto.last_Purchase_Price ?? 0) || 0,
+            average_Purchase_Price: Number(v.average_Purchase_Price ?? uDto.average_Purchase_Price ?? 0) || 0,
+            unit_Of_Measurement_Id: toGuidOrNull(uDto.unit_Of_Measurement_Id || v.unit_Of_Measurement_Id || fallbackUomId),
+            secondunit_Of_Measurement_Id: toGuidOrNull(uDto.secondunit_Of_Measurement_Id || v.secondunit_Of_Measurement_Id),
+            relative_factor: Number(v.relative_factor ?? uDto.relative_factor ?? uDto.conversion_Factor ?? 0) || 0,
+            variant_Values: attrs
+              .map((val) => ({
+                productAttributeValueId: toGuidOrNull(
+                  val.productAttributeValueId || val.product_Attribute_Value_Id || val.id || val.attribute_Value_Id
+                ),
+              }))
+              .filter((vv) => Boolean(vv.productAttributeValueId)),
+          };
+        });
+      } else {
+        updateProductvariants = [
+          {
+            variant_id: toGuidOrNull(raw.variant_id || raw.variantId),
+            unit_id: toGuidOrNull(raw.product_Units?.[0]?.id || raw.unit_id || raw.unitId),
+            minimum_Alert_Level: 0,
+            maximum_Stock_Level: 0,
+            barcode_Option: "Manual",
+            barcode: null,
+            qr_Code: null,
+            cost_Price: Number(data.costPrice ?? 0),
+            consumer_Price: Number(data.consumerPrice ?? 0),
+            wholesale_Price: 0,
+            last_Purchase_Price: 0,
+            average_Purchase_Price: 0,
+            unit_Of_Measurement_Id: toGuidOrNull(fallbackUomId),
+            secondunit_Of_Measurement_Id: null,
+            relative_factor: 0,
+            variant_Values: [],
+          },
+        ];
+      }
+
+      const payload = {
+        id: toGuidOrNull(id || data.id),
+        name_Product: (data.name || data.name_Product || "").trim(),
+        product_Number: (data.productNumber || data.product_Number || raw.product_Number || "").trim(),
+        has_Expiry_Date: Boolean(data.hasExpiryDate ?? data.has_Expiry_Date ?? raw.has_Expiry_Date ?? false),
+        is_Tracking_Inventory: Boolean(raw.is_Tracking_Inventory ?? false),
+        category_Id: toGuidOrNull(data.category || data.category_Id || raw.category_Id),
+        requires_Shipping: Boolean(raw.requires_Shipping ?? false),
+        there_Are_Units: Boolean(raw.there_Are_Units ?? true),
+        revenue_Account_Id: toGuidOrNull(data.revenueAccount || data.revenue_Account_Id || raw.revenue_Account_Id),
+        expense_Account_Id: toGuidOrNull(data.expenseAccount || data.expense_Account_Id || raw.expense_Account_Id),
+        inventory_Account_Id: toGuidOrNull(raw.inventory_Account_Id),
+        updateProductvariants,
       };
 
-      // Dedicated endpoint routing according to product type
-      if (data.productType === "Assembly") {
-        return updateAssemblyWithoutSpecs(merged);
+      if (data.productType === "Assembly" || raw.product_Type === "Assembly") {
+        return updateAssemblyWithoutSpecs({ ...raw, ...data, id });
       }
-      if (data.productType === "Bundle") {
-        return updateBundleWithoutSpecs(merged);
+      if (data.productType === "Bundle" || raw.product_Type === "Bundle") {
+        return updateBundleWithoutSpecs({ ...raw, ...data, id });
       }
-      if (data.productType === "InventoryWithSpecs") {
-        return updateSimpleProductWithSpecs(merged);
+      if (data.productType === "Rental" || raw.product_Type === "Rental") {
+        return updateRentalProduct(id, { ...raw, ...data, id });
+      }
+      if (data.productType === "Reservation" || raw.product_Type === "Reservation") {
+        return updateReservationProduct({ ...raw, ...data, id });
       }
 
-      // Default (Service / Inventory without specifications):
-      // POST /api/Inventory/Product/UpdateProductInventoryWithoutSpecifications/inventory-without-specifications
-      return updateSimpleProductWithoutSpecs(merged);
+      // Default for Appointment / Service:
+      // POST /api/Inventory/Product/UpdateAppointment/UpdateAppointment
+      return updateAppointmentProduct({ ...raw, ...data, id });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["services"]);
-      queryClient.invalidateQueries(["serviceDetail", id]);
-      toast.success("Updated successfully!");
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["services"] });
+      await queryClient.invalidateQueries({ queryKey: ["serviceDetail", id] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success(tr("services.updatedSuccess") || "Updated successfully!");
       navigate("/dashboard/appointments/services");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || err?.message || "Failed to update";
+      const msg = err?.response?.data?.message || err?.message || (tr("services.updateError") || "Failed to update");
       toast.error(msg);
     },
   });
@@ -259,7 +334,7 @@ export default function AddEditService() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name?.trim()) {
-      toast.error("Please enter a service name");
+      toast.error(tr("services.enterName") || "Please enter a service name");
       return;
     }
 
@@ -276,11 +351,11 @@ export default function AddEditService() {
     <form onSubmit={handleSubmit} className="space-y-6 pb-12">
       {/* Page Header */}
       <PageTitle
-        title={isEdit ? "Edit Service" : "Add Service"}
-        infoText="Configure service details, duration, pricing, and accounting rules"
+        title={isEdit ? (tr("services.titleEdit") || "Edit Service") : (tr("services.titleAdd") || "Add Service")}
+        infoText={tr("services.infoText") || "Configure service details, duration, pricing, and accounting rules"}
         breadcrumbs={[
-          { label: "Services", href: "/dashboard/appointments/services" },
-          { label: isEdit ? "Edit Service" : "Add Service" },
+          { label: tr("services.breadcrumbList") || "Services", href: "/dashboard/appointments/services" },
+          { label: isEdit ? (tr("services.titleEdit") || "Edit Service") : (tr("services.titleAdd") || "Add Service") },
         ]}
         actions={
           <div className="flex items-center gap-2.5">
@@ -289,11 +364,11 @@ export default function AddEditService() {
               variant="outline"
               onClick={() => navigate("/dashboard/appointments/services")}
             >
-              Cancel
+              {tr("services.cancel") || "Cancel"}
             </Button>
             <Button type="submit" disabled={isSaving || isPageLoading} className="gap-2">
               <Save className="h-4 w-4" />
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? (tr("services.saving") || "Saving...") : (tr("services.save") || "Save")}
             </Button>
           </div>
         }
@@ -304,8 +379,8 @@ export default function AddEditService() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-sm font-medium">
             {isEdit
-              ? "Loading service details & lookups..."
-              : "Loading form data..."}
+              ? (tr("services.loadingDetails") || "Loading service details & lookups...")
+              : (tr("services.loadingForm") || "Loading form data...")}
           </p>
         </div>
       ) : (
@@ -316,7 +391,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Item Type (نوع الصنف / الخدمة)
+                  {tr("services.itemType") || "Item Type"}
                 </Label>
                 <Select
                   value={formData.productType}
@@ -332,42 +407,47 @@ export default function AddEditService() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Type" />
+                    <SelectValue placeholder={tr("services.itemType") || "Select Type"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Service">Service (خدمة مواعيد)</SelectItem>
-                    <SelectItem value="Inventory">Inventory without specs (منتج مخزني بدون مواصفات)</SelectItem>
-                    <SelectItem value="InventoryWithSpecs">Inventory with specs (منتج مخزني بمواصفات)</SelectItem>
-                    <SelectItem value="Assembly">Assembly (منتج مجمع بدون مواصفات)</SelectItem>
-                    <SelectItem value="Bundle">Bundle (حزمة بدون مواصفات)</SelectItem>
+                    <SelectItem value="Service">{tr("services.types.service") || "Service"}</SelectItem>
+                    <SelectItem value="Rental">{tr("services.types.rental") || "Rental"}</SelectItem>
+                    <SelectItem value="Inventory">{tr("services.types.inventory") || "Inventory without specs"}</SelectItem>
+                    <SelectItem value="InventoryWithSpecs">{tr("services.types.inventoryWithSpecs") || "Inventory with specs"}</SelectItem>
+                    <SelectItem value="Assembly">{tr("services.types.assembly") || "Assembly"}</SelectItem>
+                    <SelectItem value="Bundle">{tr("services.types.bundle") || "Bundle"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-foreground">Service Name *</Label>
+                <Label className="text-xs font-medium text-foreground">
+                  {tr("services.serviceName") || "Service Name"} *
+                </Label>
                 <Input
                   value={formData.name}
                   onChange={(e) => handleChange("name", e.target.value)}
-                  placeholder="e.g. Dental Consultation"
+                  placeholder={locale === "ar" ? "مثال: استشارة طبية" : "e.g. Dental Consultation"}
                   className="w-full"
                   required
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-foreground">Product Number</Label>
+                <Label className="text-xs font-medium text-foreground">
+                  {tr("services.productNumber") || "Product Number"}
+                </Label>
                 <Input
                   value={formData.productNumber}
                   onChange={(e) => handleChange("productNumber", e.target.value)}
-                  placeholder="e.g. SRV-1001 (auto if empty)"
+                  placeholder={tr("services.productNumberPlaceholder") || "e.g. SRV-1001 (auto if empty)"}
                   className="w-full"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Category
+                  {tr("services.category") || "Category"}
                 </Label>
                 <Select
                   key={formData.category || "cat-select"}
@@ -375,7 +455,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("category", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Category" />
+                    <SelectValue placeholder={tr("services.selectCategory") || "Select Category"} />
                   </SelectTrigger>
                   <SelectContent>
                     {categoryOptions.map((c) => (
@@ -392,7 +472,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Billing Method
+                  {tr("services.billingMethod") || "Billing Method"}
                 </Label>
                 <Select
                   key={formData.billingMethod || "bm-select"}
@@ -400,7 +480,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("billingMethod", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Billing Method" />
+                    <SelectValue placeholder={tr("services.selectBillingMethod") || "Select Billing Method"} />
                   </SelectTrigger>
                   <SelectContent>
                     {billingMethodOptions.map((bm) => (
@@ -414,7 +494,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Default Duration (min)
+                  {tr("services.defaultDuration") || "Default Duration (min)"}
                 </Label>
                 <Input
                   type="number"
@@ -430,7 +510,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Default Deposit Amount
+                  {tr("services.defaultDepositAmount") || "Default Deposit Amount"}
                 </Label>
                 <Input
                   type="number"
@@ -450,7 +530,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Cost Price ($)
+                  {tr("services.costPrice") || "Cost Price"}
                 </Label>
                 <Input
                   type="number"
@@ -467,7 +547,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Consumer Price ($)
+                  {tr("services.consumerPrice") || "Consumer Price"}
                 </Label>
                 <Input
                   type="number"
@@ -484,7 +564,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Revenue Account
+                  {tr("services.revenueAccount") || "Revenue Account"}
                 </Label>
                 <Select
                   key={formData.revenueAccount || "rev-select"}
@@ -492,7 +572,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("revenueAccount", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Revenue Account" />
+                    <SelectValue placeholder={tr("services.selectRevenueAccount") || "Select Revenue Account"} />
                   </SelectTrigger>
                   <SelectContent>
                     {revenueAccountOptions.map((ra) => (
@@ -509,7 +589,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Expense Account
+                  {tr("services.expenseAccount") || "Expense Account"}
                 </Label>
                 <Select
                   key={formData.expenseAccount || "exp-select"}
@@ -517,7 +597,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("expenseAccount", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Expense Account" />
+                    <SelectValue placeholder={tr("services.selectExpenseAccount") || "Select Expense Account"} />
                   </SelectTrigger>
                   <SelectContent>
                     {expenseAccountOptions.map((ea) => (
@@ -549,7 +629,7 @@ export default function AddEditService() {
                     formData.canBeSold ? "text-primary" : "text-foreground"
                   )}
                 >
-                  Can Be Sold
+                  {tr("services.canBeSold") || "Can Be Sold"}
                 </span>
                 <Switch
                   checked={formData.canBeSold}
@@ -572,7 +652,7 @@ export default function AddEditService() {
                     formData.requiresContract ? "text-primary font-semibold" : "text-foreground"
                   )}
                 >
-                  Requires contract
+                  {tr("services.requiresContract") || "Requires contract"}
                 </span>
                 <Switch
                   checked={formData.requiresContract}
@@ -595,7 +675,7 @@ export default function AddEditService() {
                     formData.hasExpiryDate ? "text-primary font-semibold" : "text-foreground"
                   )}
                 >
-                  Has Expiry Date
+                  {tr("services.hasExpiryDate") || "Has Expiry Date"}
                 </span>
                 <Switch
                   checked={formData.hasExpiryDate}
@@ -618,7 +698,7 @@ export default function AddEditService() {
                     formData.isActive ? "text-primary" : "text-foreground"
                   )}
                 >
-                  Active
+                  {tr("services.active") || "Active"}
                 </span>
                 <Switch
                   checked={formData.isActive}

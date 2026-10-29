@@ -40,28 +40,37 @@ export default function AddEditLead() {
   });
 
   useEffect(() => {
-    if (data?.data) {
-      const lead = data.data;
-      console.log(lead?.status)
+    if (data) {
+      const lead = data?.data?.data || data?.data || data;
+      if (!lead || typeof lead !== "object") return;
+
+      const rawStatus = lead.status || "New";
+      const validStatuses = ["New", "Contacted", "Qualified", "Quotation", "Converted", "Lost"];
+      const matchedStatus =
+        validStatuses.find((s) => s.toLowerCase() === rawStatus.toLowerCase()) || rawStatus;
+
       setFormData({
         name: lead.name || "",
         company: lead.company || "",
         email: lead.email || "",
         phoneNumber: lead.phone || lead.phoneNumber || "",
-        status: lead.status || "",
-        expectedValue: lead.expectedValue || "",
+        status: matchedStatus,
+        expectedValue:
+          lead.expectedValue !== undefined && lead.expectedValue !== null
+            ? String(lead.expectedValue)
+            : "",
         responsible: lead.responsibleId || null,
         note: lead.notes || lead.note || "",
       });
     }
   }, [data]);
-  console.log(formData.status)
 
   const mutation = useMutation({
-    mutationFn: (payload) => isEdit ? updateLead(payload) : createLead(payload),
+    mutationFn: (payload) => (isEdit ? updateLead(payload) : createLead(payload)),
     onSuccess: () => {
       toast.success(isEdit ? "Lead updated successfully" : "Lead added successfully");
-      queryClient.invalidateQueries(["leads"]);
+      queryClient.invalidateQueries({ queryKey: ["leads"] });
+      queryClient.invalidateQueries({ queryKey: ["lead", id] });
       navigate("/dashboard/crm/leads");
     },
     onError: () => {
@@ -82,8 +91,13 @@ export default function AddEditLead() {
     e.preventDefault();
     const payload = {
       ...formData,
+      phone: formData.phoneNumber,
+      phoneNumber: formData.phoneNumber,
+      notes: formData.note,
+      note: formData.note,
       expectedValue: Number(formData.expectedValue) || 0,
-      responsible: null, // As requested: ابعن دي responsible ب null
+      responsible: null,
+      responsibleId: null,
     };
 
     if (isEdit) {
@@ -170,7 +184,7 @@ export default function AddEditLead() {
           <div className="space-y-2">
             <Label htmlFor="status" className="text-sm font-semibold text-foreground">Status</Label>
             <Select 
-              key={formData.status} // Force re-render when data arrives to avoid Radix UI desync
+              key={formData.status || "status-select"}
               value={formData.status || "New"} 
               onValueChange={(val) => handleSelectChange("status", val)}
               disabled={!isEdit || formData.status === "Converted"} // Disable changing status when creating or if already converted

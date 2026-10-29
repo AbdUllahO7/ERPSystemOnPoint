@@ -117,15 +117,7 @@ export function ConvertToCustomerDialog({ isOpen, onClose, lead }) {
               </div>
             </div>
 
-            {/* Guidance Callout */}
-            <div className="p-3 bg-teal-50/70 border-r-4 border-teal-600 rounded-lg text-xs space-y-1">
-              <p className="font-semibold text-teal-800">
-                What happens upon conversion? (ما الذي يحدث عند التحويل؟)
-              </p>
-              <p className="text-teal-700 leading-relaxed">
-                In this flow, an accounting account, customer, and customer project are created. The project value must reflect the approved final agreement value (the expected opportunity value is merely an initial estimate).
-              </p>
-            </div>
+          
 
             <div className="flex items-center gap-2 py-1">
               <input 

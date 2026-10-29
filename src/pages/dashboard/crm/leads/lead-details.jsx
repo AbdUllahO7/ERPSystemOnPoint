@@ -50,8 +50,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useI18n } from "@/context/translate-api";
 
 export default function LeadDetails() {
+  const { t } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -86,7 +88,7 @@ export default function LeadDetails() {
     enabled: !!id,
   });
 
-  const lead = data?.data;
+  const lead = data?.data?.data || data?.data || data;
   const isConverted = lead?.status === "Converted" || !!lead?.customerId;
 
   // Mutations
@@ -215,7 +217,12 @@ export default function LeadDetails() {
   if (isLoading) return <div className="p-6">Loading lead details...</div>;
   if (isError || !lead) return <div className="p-6 text-red-500">Error loading lead details.</div>;
 
-  const documents = docsData?.data?.items || docsData?.data || [];
+  const documents =
+    (docsData?.data?.items && docsData.data.items.length > 0)
+      ? docsData.data.items
+      : (Array.isArray(docsData?.data) && docsData.data.length > 0)
+      ? docsData.data
+      : (lead?.leadDoucumentDtos || lead?.leadDocumentDtos || []);
 
   const getInitials = (name) => (name ? name.substring(0, 2).toUpperCase() : "LD");
 
@@ -312,7 +319,7 @@ export default function LeadDetails() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-                  Resulting Customer Reference (مرجع العميل الناتج)
+                  {t?.leads?.resultingCustomerRef || "Resulting Customer Reference"}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[11px] bg-emerald-200 text-emerald-900 font-bold">
                   Converted
@@ -377,38 +384,38 @@ export default function LeadDetails() {
                     onClick={() => handleLeadStatusChange("New")}
                     className="cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 font-medium py-2 rounded-md"
                   >
-                    New (فرصة جديدة)
+                    {t?.leads?.statuses?.new || "New"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Contacted")}
                     className="cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium py-2 rounded-md"
                   >
-                    Contacted (بدأ التواصل)
+                    {t?.leads?.statuses?.contacted || "Contacted"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Qualified")}
                     className="cursor-pointer bg-teal-50 text-teal-700 hover:bg-teal-100 font-medium py-2 rounded-md"
                   >
-                    Qualified (فرصة مناسبة)
+                    {t?.leads?.statuses?.qualified || "Qualified"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Quotation")}
                     className="cursor-pointer bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium py-2 rounded-md"
                   >
-                    Quotation (مرحلة عرض السعر)
+                    {t?.leads?.statuses?.quotation || "Quotation"}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Converted")}
                     disabled={isConverted}
                     className="cursor-pointer bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium py-2 rounded-md disabled:opacity-50"
                   >
-                    {isConverted ? "Converted (Already Converted)" : "Converted (تحويل إلى عميل)"}
+                    {isConverted ? "Converted" : (t?.leads?.statuses?.converted || "Converted")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Lost")}
                     className="cursor-pointer bg-red-50 text-red-700 hover:bg-red-100 font-medium py-2 rounded-md"
                   >
-                    Lost (أغلقت دون نجاح)
+                    {t?.leads?.statuses?.lost || "Lost"}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -471,7 +478,7 @@ export default function LeadDetails() {
                   <h3 className="text-lg font-bold">Attached Documents (LeadDocument)</h3>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Attach documents such as customer request or requirement file (مثل طلب العميل أو ملف احتياجاته)
+                  Attach documents such as customer request or requirement file.
                 </p>
               </div>
               <Button onClick={() => setIsDocModalOpen(true)} className="gap-2 shrink-0">
@@ -765,7 +772,7 @@ export default function LeadDetails() {
 
           <form onSubmit={handleExecutionSubmit} className="space-y-4 pt-2">
             <div className="p-3 bg-slate-50 border rounded-lg text-xs space-y-1">
-              <p className="font-semibold text-slate-700">Workflow Step 3 (تسلسل العمل):</p>
+              <p className="font-semibold text-slate-700">Workflow Step 3:</p>
               <p className="text-slate-600">
                 بعد التنفيذ تُسجل النتيجة في ExecutionNote وتصبح المتابعة مكتملة أو ملغاة.
               </p>
@@ -773,7 +780,7 @@ export default function LeadDetails() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">
-                Execution Note / Outcome Result (ExecutionNote) <span className="text-rose-500">*</span>
+                Execution Note / Outcome Result <span className="text-rose-500">*</span>
               </Label>
               <Textarea
                 placeholder="Enter call outcome, meeting discussion notes, or cancellation reason..."

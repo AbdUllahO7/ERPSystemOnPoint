@@ -24,7 +24,7 @@ export function StatsCards({ cards = [] }) {
   if (!cards.length) return null;
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       {cards.map((card) => {
         const Icon = card.icon;
         const iconClass = iconColorMap[card.color ?? "blue"] ?? iconColorMap.blue;
@@ -32,35 +32,35 @@ export function StatsCards({ cards = [] }) {
         return (
           <article
             key={card.id ?? card.title}
-            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-4 shadow-sm"
+            className="flex items-center justify-between gap-3 rounded-xl sm:rounded-2xl border border-slate-100/90 bg-white px-3.5 sm:px-4 py-3 sm:py-4 shadow-sm"
           >
-            <div className="flex min-w-0 items-center gap-3">
+            <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
               {Icon && (
                 <div
                   className={cn(
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                    "flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl",
                     iconClass,
                   )}
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-4 sm:size-5" />
                 </div>
               )}
               <div className="min-w-0">
-                <p className="truncate text-sm text-muted-foreground">{card.title}</p>
-                <p className="text-2xl font-bold text-foreground">{card.value}</p>
+                <p className="truncate text-xs sm:text-sm text-slate-500">{card.title}</p>
+                <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{card.value}</p>
               </div>
             </div>
             {card.trend != null && card.trend !== "" && (
               <div
                 className={cn(
-                  "flex shrink-0 items-center gap-0.5 text-sm font-medium",
+                  "flex shrink-0 items-center gap-0.5 text-xs sm:text-sm font-medium",
                   card.trendUp ? "text-emerald-600" : "text-destructive",
                 )}
               >
                 {card.trendUp ? (
-                  <TrendingUp className="size-4" />
+                  <TrendingUp className="size-3.5 sm:size-4" />
                 ) : (
-                  <TrendingDown className="size-4" />
+                  <TrendingDown className="size-3.5 sm:size-4" />
                 )}
                 <span>{card.trend}</span>
               </div>

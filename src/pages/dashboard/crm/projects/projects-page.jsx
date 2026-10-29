@@ -41,11 +41,16 @@ export default function ProjectsPage() {
     mutationFn: (id) => deleteCustomerProject(id),
     onSuccess: () => {
       toast.success("Project deleted successfully");
-      queryClient.invalidateQueries(["allCustomerProjects"]);
+      queryClient.invalidateQueries({ queryKey: ["allCustomerProjects"] });
       setDeleteId(null);
     },
-    onError: () => {
-      toast.error("Failed to delete project");
+    onError: (err) => {
+      const msg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message ||
+        "Failed to delete project";
+      toast.error(msg, { duration: 6000 });
       setDeleteId(null);
     },
   });
@@ -89,14 +94,14 @@ export default function ProjectsPage() {
       icon: FolderKanban,
     },
     {
-      title: "In Progress (قيد التنفيذ)",
+      title: "In Progress",
       value: inProgressCount.toString(),
       sub: "Currently executing",
       color: "bg-amber-500",
       icon: Clock,
     },
     {
-      title: "Completed (مكتمل)",
+      title: "Completed",
       value: completedCount.toString(),
       sub: "Handed over successfully",
       color: "bg-emerald-500",
@@ -124,7 +129,7 @@ export default function ProjectsPage() {
     },
     {
       key: "customerName",
-      label: "Customer (العميل)",
+      label: "Customer",
       render: (row) => (
         <span className="font-medium text-foreground">
           {row.customerName || (row.customerId ? `Customer #${row.customerId.substring(0, 8)}` : "-")}
@@ -153,7 +158,7 @@ export default function ProjectsPage() {
     },
     {
       key: "completionPercentage",
-      label: "Progress (نسبة الإنجاز)",
+      label: "Progress",
       render: (row) => {
         const perc = Number(row.completionPercentage || 0);
         return (
@@ -229,7 +234,7 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Customer Projects (المشاريع)</h2>
+          <h2 className="text-xl font-bold text-foreground">Customer Projects</h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Manage client scopes of work, contractual milestones, and execution progress
           </p>
@@ -264,16 +269,7 @@ export default function ProjectsPage() {
         ))}
       </div>
 
-      {/* Guidance Alert */}
-      <div className="p-3.5 bg-blue-50/80 border-r-4 border-blue-600 rounded-lg text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          الفوترة ليست إنجازاً تشغيلياً (Operational Progress vs Invoicing):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل. ترتبط نسبة الإنجاز (CompletionPercentage) بتقدم المهام ومراحل التنفيذ المعتمدة، مع إظهار الفوترة كمؤشر مستقل.
-        </p>
-      </div>
+     
 
       {/* Status Tabs */}
       <div className="flex items-center gap-6 border-b border-border overflow-x-auto bg-white px-2 pt-2 rounded-t-xl">

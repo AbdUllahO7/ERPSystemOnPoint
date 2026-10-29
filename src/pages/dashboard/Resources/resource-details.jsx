@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getResourceById,
   changeResourceStatus,
@@ -38,6 +39,7 @@ import {
 import { getEvents } from "@/services/events";
 
 export default function ResourceDetailsPage() {
+  const { t } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -168,12 +170,12 @@ export default function ResourceDetailsPage() {
             {resource.isActive ? (
               <>
                 <PowerOff className="w-3.5 h-3.5" />
-                Deactivate (إيقاف)
+                {t?.resourcesModule?.deactivate || "Deactivate"}
               </>
             ) : (
               <>
                 <Power className="w-3.5 h-3.5" />
-                Reactivate (إعادة تفعيل)
+                {t?.resourcesModule?.reactivate || "Reactivate"}
               </>
             )}
           </Button>
@@ -203,7 +205,7 @@ export default function ResourceDetailsPage() {
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
               <Building2 className="w-4 h-4 text-[#0066d1]" />
-              Resource Specifications (بيانات ومواصفات المورد)
+              {t?.resourcesModule?.specifications || "Resource Specifications"}
             </h2>
             <span className="text-xs font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
               Ref: {resource.code || resource.referenceNumber || "N/A"}
@@ -212,14 +214,14 @@ export default function ResourceDetailsPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div>
-              <p className="text-xs font-semibold text-slate-800">Resource Name (اسم المورد)</p>
+              <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.resourceName || "Resource Name"}</p>
               <p className="text-xs text-slate-600 mt-1">
                 {resource.name || resource.fullName || "Unnamed Resource"}
               </p>
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Max Capacity (السعة القصوى)</p>
+              <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.maxCapacity || "Max Capacity"}</p>
               <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
                 <Users className="w-3.5 h-3.5 text-slate-400" />
                 <span className="font-semibold">{resource.maxCapacity ?? resource.capacity ?? 0}</span> مقعد / وحدة
@@ -227,7 +229,7 @@ export default function ResourceDetailsPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Ownership Model (نموذج الملكية)</p>
+              <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.ownershipModel || "Ownership Model"}</p>
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold mt-1 border ${
                   resource.ownership === "Leased"
@@ -235,7 +237,9 @@ export default function ResourceDetailsPage() {
                     : "bg-teal-50 text-teal-700 border-teal-200"
                 }`}
               >
-                {resource.ownership === "Leased" ? "Leased (مستأجر)" : "Owned (مملوك للشركة)"}
+                {resource.ownership === "Leased"
+                  ? t?.resourcesModule?.leased || "Leased"
+                  : t?.resourcesModule?.owned || "Owned"}
               </span>
             </div>
           </div>
@@ -243,7 +247,9 @@ export default function ResourceDetailsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2 border-t border-slate-50">
             <div>
               <p className="text-xs font-semibold text-slate-800">
-                {resource.ownership === "Leased" ? "Lessor / Supplier (المورد المؤجر)" : "Fixed Asset (الأصل الثابت)"}
+                {resource.ownership === "Leased"
+                  ? t?.resourcesModule?.lessor || "Lessor / Supplier"
+                  : t?.resourcesModule?.fixedAsset || "Fixed Asset"}
               </p>
               <p className="text-xs text-slate-600 mt-1">
                 {resource.ownership === "Leased"
@@ -253,7 +259,7 @@ export default function ResourceDetailsPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Daily Rental Cost (تكلفة الاستئجار)</p>
+              <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.dailyRentalCost || "Daily Rental Cost"}</p>
               <p className="text-xs text-slate-600 mt-1 flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-slate-400" />
                 <span className="font-semibold">${Number(resource.dailyRentalCost || 0).toLocaleString()}</span> / يوم
@@ -262,7 +268,7 @@ export default function ResourceDetailsPage() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-slate-800">Reference Number (الرقم المرجعي)</p>
+              <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.referenceNumber || "Reference Number"}</p>
               <p className="text-xs font-mono text-slate-600 mt-1 font-medium">
                 {resource.referenceNumber || resource.code || "N/A"}
               </p>
@@ -272,7 +278,7 @@ export default function ResourceDetailsPage() {
           {resource.ownership === "Leased" && (resource.contractStartDate || resource.contractEndDate) && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2 border-t border-slate-50 bg-slate-50/50 p-3.5 rounded-xl">
               <div>
-                <p className="text-xs font-semibold text-slate-800">Contract Start (بداية العقد)</p>
+                <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.contractStart || "Contract Start"}</p>
                 <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   {resource.contractStartDate || "N/A"}
@@ -280,10 +286,10 @@ export default function ResourceDetailsPage() {
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-slate-800">Contract End (نهاية العقد)</p>
+                <p className="text-xs font-semibold text-slate-800">{t?.resourcesModule?.contractEnd || "Contract End"}</p>
                 <p className="text-xs text-slate-600 mt-1 flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                  {resource.contractEndDate || "مستمر (Ongoing)"}
+                  {resource.contractEndDate || "Ongoing"}
                 </p>
               </div>
             </div>
@@ -299,7 +305,7 @@ export default function ResourceDetailsPage() {
           <div className="space-y-4">
             <div>
               <p className="text-xs font-semibold text-slate-800 mb-1.5">
-                Current Status (الحالة التشغيلية)
+                {t?.resourcesModule?.operationalStatus || "Operational Status"}
               </p>
               <span
                 className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${getStatusBadge(
@@ -315,19 +321,19 @@ export default function ResourceDetailsPage() {
 
             <div>
               <p className="text-xs font-semibold text-slate-800 mb-1.5">
-                System Activation (is_Active)
+                System Activation
               </p>
               <div className="flex items-center gap-2">
                 <span className={`w-2.5 h-2.5 rounded-full ${resource.isActive ? "bg-emerald-500" : "bg-slate-300"}`} />
                 <span className="text-xs font-medium text-slate-700">
-                  {resource.isActive ? "مفعل في النظام (Active Record)" : "معطل أو غير مفعل (Inactive Record)"}
+                  {resource.isActive ? "Active" : "Inactive"}
                 </span>
               </div>
             </div>
 
             <div>
               <p className="text-xs font-semibold text-slate-800 mb-1.5">
-                Notes & Specifications (ملاحظات ومواصفات)
+                {t?.resourcesModule?.notes || "Notes & Specifications"}
               </p>
               <p className="text-xs text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl border border-slate-100">
                 {resource.notes || "لا توجد مواصفات إضافية مسجلة لهذا المورد."}
@@ -374,9 +380,9 @@ export default function ResourceDetailsPage() {
                 <tr>
                   <th className="py-2.5 px-3">Event Code</th>
                   <th className="py-2.5 px-3">Title / Activity</th>
-                  <th className="py-2.5 px-3">Dates (التاريخ)</th>
-                  <th className="py-2.5 px-3">Time (التوقيت)</th>
-                  <th className="py-2.5 px-3">Event Price (BookingEvent.Price)</th>
+                  <th className="py-2.5 px-3">{t?.resourcesModule?.dates || "Dates"}</th>
+                  <th className="py-2.5 px-3">{t?.resourcesModule?.time || "Time"}</th>
+                  <th className="py-2.5 px-3">Event Price</th>
                   <th className="py-2.5 px-3">Provider / Host</th>
                   <th className="py-2.5 px-3">Status</th>
                 </tr>
@@ -415,11 +421,11 @@ export default function ResourceDetailsPage() {
         )}
       </div>
 
-      {/* Change Status Modal (Page 6: شرط الخروج من حالة «مؤجر») */}
+      {/* Change Status Modal */}
       <DynamicModal
         open={isStatusModalOpen}
         onOpenChange={setIsStatusModalOpen}
-        title="تغيير الحالة التشغيلية للمورد (Change Operational Status)"
+        title={t?.resourcesModule?.operationalStatus || "Change Operational Status"}
         icon={RefreshCcw}
         showDefaultFooter={false}
         size="md"
@@ -432,7 +438,7 @@ export default function ResourceDetailsPage() {
               <div>
                 <strong>شرط الخروج من حالة «مؤجر»:</strong>
                 <p className="text-[11px] text-amber-700 mt-0.5">
-                  المورد حالياً مؤجر لعميل. يمكنك تحويله إلى «متاح (Active)» أو «تحت الصيانة (Under Maintenance)» أو «خارج الخدمة» لتحريره أو إيقافه.
+                  المورد حالياً مؤجر لعميل. يمكنك تحويله إلى «متاح» أو «تحت الصيانة» أو «خارج الخدمة» لتحريره أو إيقافه.
                 </p>
               </div>
             </div>
@@ -440,17 +446,17 @@ export default function ResourceDetailsPage() {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Select New Operational Status (الحالة الجديدة)
+              {t?.resourcesModule?.operationalStatus || "Operational Status"}
             </Label>
             <Select value={newStatus} onValueChange={setNewStatus}>
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active (متاح للتشغيل)</SelectItem>
-                <SelectItem value="UnderMaintenance">Under Maintenance (تحت الصيانة)</SelectItem>
-                <SelectItem value="OutOfService">Out of Service (خارج الخدمة)</SelectItem>
-                <SelectItem value="Rented">Rented (مؤجر لعميل)</SelectItem>
+                <SelectItem value="Active">{t?.resourcesModule?.statuses?.active || "Active"}</SelectItem>
+                <SelectItem value="UnderMaintenance">{t?.resourcesModule?.statuses?.underMaintenance || "Under Maintenance"}</SelectItem>
+                <SelectItem value="OutOfService">{t?.resourcesModule?.statuses?.outOfService || "Out of Service"}</SelectItem>
+                <SelectItem value="Rented">{t?.resourcesModule?.statuses?.rented || "Rented"}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-[11px] text-slate-400 leading-tight">

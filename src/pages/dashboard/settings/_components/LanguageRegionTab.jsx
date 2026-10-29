@@ -117,8 +117,8 @@ export default function LanguageRegionTab() {
                 <SelectValue placeholder="Select default language" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ar">Arabic (العربية)</SelectItem>
-                <SelectItem value="en">English (الإنجليزية)</SelectItem>
+                <SelectItem value="ar">Arabic</SelectItem>
+                <SelectItem value="en">English</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -133,8 +133,8 @@ export default function LanguageRegionTab() {
                 <SelectValue placeholder="Select System direction" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="rtl">Right to Left (RTL - من اليمين لليسار)</SelectItem>
-                <SelectItem value="ltr">Left to Right (LTR - من اليسار لليمين)</SelectItem>
+                <SelectItem value="rtl">Right to Left (RTL)</SelectItem>
+                <SelectItem value="ltr">Left to Right (LTR)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -149,8 +149,8 @@ export default function LanguageRegionTab() {
                 <SelectValue placeholder="Select Calendar" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Gregorian">Gregorian (ميلادي)</SelectItem>
-                <SelectItem value="Hijri">Hijri (هجري)</SelectItem>
+                <SelectItem value="Gregorian">Gregorian</SelectItem>
+                <SelectItem value="Hijri">Hijri</SelectItem>
               </SelectContent>
             </Select>
           </div>

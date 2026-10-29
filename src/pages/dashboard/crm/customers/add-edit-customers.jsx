@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { createCustomer, updateCustomer, getCustomerById } from "@/lib/api";
@@ -39,16 +40,28 @@ export default function AddEditCustomers() {
   });
 
   useEffect(() => {
-    if (customerData?.data) {
-      const data = customerData.data;
+    if (customerData) {
+      const data = customerData?.data?.data || customerData?.data || customerData;
+      if (!data || typeof data !== "object") return;
+
+      const rawType = data.customerType || data.customer_Type || data.type || "";
+      let normalizedType = rawType;
+      if (rawType.toLowerCase() === "company") normalizedType = "Company";
+      else if (rawType.toLowerCase() === "individual") normalizedType = "Individual";
+
+      const rawStatus = data.status || "";
+      const validStatuses = ["Active", "Distinct", "Old", "Unacceptable", "Unreliable"];
+      const matchedStatus =
+        validStatuses.find((s) => s.toLowerCase() === rawStatus.toLowerCase()) || rawStatus;
+
       setFormData({
-        name: data.customerName || data.name || "",
-        type: data.customer_Type || data.type || "",
+        name: data.customerName || data.name || data.customer_Name || "",
+        type: normalizedType,
         sector: data.sector || "",
-        status: data.status || "",
+        status: matchedStatus,
         email: data.email || "",
-        phone: data.phone_Number || data.phone || "",
-        website: data.webSite || data.website || "",
+        phone: data.phone || data.phone_Number || data.phoneNumber || "",
+        website: data.website || data.webSite || "",
         address: data.address || "",
       });
     }
@@ -67,7 +80,8 @@ export default function AddEditCustomers() {
     mutationFn: createCustomer,
     onSuccess: () => {
       toast.success("Customer added successfully!");
-      queryClient.invalidateQueries(["customers"]);
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["allCustomersList"] });
       navigate("/dashboard/crm/customers");
     },
     onError: (error) => {
@@ -79,7 +93,9 @@ export default function AddEditCustomers() {
     mutationFn: updateCustomer,
     onSuccess: () => {
       toast.success("Customer updated successfully!");
-      queryClient.invalidateQueries(["customers"]);
+      queryClient.invalidateQueries({ queryKey: ["customers"] });
+      queryClient.invalidateQueries({ queryKey: ["allCustomersList"] });
+      queryClient.invalidateQueries({ queryKey: ["customer", id] });
       navigate("/dashboard/crm/customers");
     },
     onError: (error) => {
@@ -89,35 +105,58 @@ export default function AddEditCustomers() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.name?.trim()) {
+      toast.error("Customer name is required");
+      return;
+    }
+
     if (isEdit) {
       updateMutation.mutate({
         id,
         customer_Name: formData.name,
+        customerName: formData.name,
+        name: formData.name,
         phone_Number: formData.phone,
+        phoneNumber: formData.phone,
+        phone: formData.phone,
         address: formData.address,
         email: formData.email,
         status: formData.status,
-        // include other fields just in case they are accepted
         customer_Type: formData.type,
+        customerType: formData.type,
+        type: formData.type,
         sector: formData.sector,
         webSite: formData.website,
+        website: formData.website,
       });
     } else {
       addMutation.mutate({
         customer_Name: formData.name,
+        customerName: formData.name,
+        name: formData.name,
         customer_Type: formData.type || "Individual",
+        customerType: formData.type || "Individual",
+        type: formData.type || "Individual",
         sector: formData.sector,
         status: formData.status || "Active",
         email: formData.email,
         phone_Number: formData.phone,
+        phoneNumber: formData.phone,
+        phone: formData.phone,
         webSite: formData.website,
+        website: formData.website,
         address: formData.address,
       });
     }
   };
 
   if (isFetching) {
-    return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] gap-2 text-muted-foreground">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-sm">Loading customer details...</p>
+      </div>
+    );
   }
 
   const isLoading = addMutation.isPending || updateMutation.isPending;
@@ -157,7 +196,11 @@ export default function AddEditCustomers() {
 
           <div className="space-y-2">
             <Label htmlFor="type" className="text-sm font-semibold text-foreground">Type</Label>
-            <Select value={formData.type} onValueChange={(val) => handleSelectChange("type", val)}>
+            <Select
+              key={formData.type || "type-select"}
+              value={formData.type}
+              onValueChange={(val) => handleSelectChange("type", val)}
+            >
               <SelectTrigger className="!h-11 w-full bg-transparent">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
@@ -182,7 +225,11 @@ export default function AddEditCustomers() {
 
           <div className="space-y-2">
             <Label htmlFor="status" className="text-sm font-semibold text-foreground">Status</Label>
-            <Select value={formData.status} onValueChange={(val) => handleSelectChange("status", val)}>
+            <Select
+              key={formData.status || "status-select"}
+              value={formData.status}
+              onValueChange={(val) => handleSelectChange("status", val)}
+            >
               <SelectTrigger className="!h-11 w-full bg-transparent">
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>

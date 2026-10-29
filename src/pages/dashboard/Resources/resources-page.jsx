@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getResources,
   getResourcesStats,
@@ -38,6 +39,7 @@ import {
 } from "@/services/resources";
 
 export default function ResourcesPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -165,25 +167,28 @@ export default function ResourcesPage() {
         items: [
           {
             key: "view",
-            label: "View Details (عرض التفاصيل)",
+            label: t?.resourcesModule?.viewDetails || "View Details",
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/resources/${row.id}`),
           },
           {
             key: "edit",
-            label: "Edit Resource (تعديل المورد)",
+            label: t?.resourcesModule?.editResource || "Edit Resource",
             icon: Pencil,
             onClick: (row) => navigate(`/dashboard/resources/edit/${row.id}`),
           },
           {
             key: "toggleActive",
-            label: (row) => (row.isActive ? "Deactivate (إيقاف)" : "Reactivate (إعادة تفعيل)"),
+            label: (row) =>
+              row.isActive
+                ? t?.resourcesModule?.deactivate || "Deactivate"
+                : t?.resourcesModule?.reactivate || "Reactivate",
             icon: (row) => (row.isActive ? PowerOff : Power),
             onClick: (row) => toggleActiveMutation.mutate(row.id),
           },
           {
             key: "delete",
-            label: "Archive (أرشفة)",
+            label: t?.resourcesModule?.archive || "Archive",
             icon: Trash2,
             variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
@@ -266,7 +271,9 @@ export default function ResourcesPage() {
                     : "bg-teal-50 text-teal-700 border-teal-200"
                 }`}
               >
-                {isLeased ? "Leased (مستأجر)" : "Owned (مملوك)"}
+                {isLeased
+                  ? t?.resourcesModule?.leased || "Leased"
+                  : t?.resourcesModule?.owned || "Owned"}
               </span>
               <p className="text-[10px] text-slate-500 mt-0.5 truncate max-w-[150px]">
                 {isLeased
@@ -279,7 +286,7 @@ export default function ResourcesPage() {
       },
       {
         accessorKey: "dailyRentalCost",
-        header: "Daily Cost (تكلفة)",
+        header: t?.resourcesModule?.dailyRentalCost || "Daily Cost",
         cell: ({ row }) => {
           const cost = Number(row.original.dailyRentalCost) || 0;
           return (
@@ -423,7 +430,7 @@ export default function ResourcesPage() {
             {/* Ownership Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Ownership Model (نموذج الملكية)
+                {t?.resourcesModule?.ownershipModel || "Ownership Model"}
               </Label>
               <Select
                 value={selectedOwnership}
@@ -436,9 +443,9 @@ export default function ResourcesPage() {
                   <SelectValue placeholder="All Ownerships" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Ownerships (الكل)</SelectItem>
-                  <SelectItem value="Owned">Owned (مملوك للشركة)</SelectItem>
-                  <SelectItem value="Leased">Leased (مستأجر من جهة خارجية)</SelectItem>
+                  <SelectItem value="all">{t?.resourcesModule?.allOwnerships || "All Ownerships"}</SelectItem>
+                  <SelectItem value="Owned">{t?.resourcesModule?.owned || "Owned"}</SelectItem>
+                  <SelectItem value="Leased">{t?.resourcesModule?.leased || "Leased"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -446,7 +453,7 @@ export default function ResourcesPage() {
             {/* Operational Status Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                Operational Status (الحالة التشغيلية)
+                {t?.resourcesModule?.operationalStatus || "Operational Status"}
               </Label>
               <Select
                 value={selectedStatus}
@@ -459,19 +466,19 @@ export default function ResourcesPage() {
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Statuses (جميع الحالات)</SelectItem>
-                  <SelectItem value="Active">Active (متاح)</SelectItem>
-                  <SelectItem value="UnderMaintenance">Under Maintenance (تحت الصيانة)</SelectItem>
-                  <SelectItem value="OutOfService">Out of Service (خارج الخدمة)</SelectItem>
-                  <SelectItem value="Rented">Rented (مؤجر لعميل)</SelectItem>
+                  <SelectItem value="all">{t?.resourcesModule?.allStatuses || "All Statuses"}</SelectItem>
+                  <SelectItem value="Active">{t?.resourcesModule?.statuses?.active || "Active"}</SelectItem>
+                  <SelectItem value="UnderMaintenance">{t?.resourcesModule?.statuses?.underMaintenance || "Under Maintenance"}</SelectItem>
+                  <SelectItem value="OutOfService">{t?.resourcesModule?.statuses?.outOfService || "Out of Service"}</SelectItem>
+                  <SelectItem value="Rented">{t?.resourcesModule?.statuses?.rented || "Rented"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {/* System Active Filter (Page 6 requirement: إتاحة إعادة التفعيل عند استخدام فلاتر تخفي السجلات غير المفعلة) */}
+            {/* System Active Filter */}
             <div className="space-y-2">
               <Label className="text-xs font-medium text-slate-600">
-                System Status (حالة التفعيل بالنظام is_Active)
+                System Status
               </Label>
               <Select
                 value={selectedActive}
@@ -484,9 +491,9 @@ export default function ResourcesPage() {
                   <SelectValue placeholder="All Records" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Records (جميع السجلات)</SelectItem>
-                  <SelectItem value="active">Active Only (المفعلة فقط)</SelectItem>
-                  <SelectItem value="inactive">Inactive Only (غير المفعلة / لإعادة التفعيل)</SelectItem>
+                  <SelectItem value="all">{t?.resourcesModule?.allRecords || "All Records"}</SelectItem>
+                  <SelectItem value="active">{t?.resourcesModule?.activeOnly || "Active Only"}</SelectItem>
+                  <SelectItem value="inactive">{t?.resourcesModule?.inactiveOnly || "Inactive Only"}</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-slate-400 leading-tight">

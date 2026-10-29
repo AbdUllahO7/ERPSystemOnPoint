@@ -145,10 +145,10 @@ export default function FiscalYearTab() {
                 <SelectValue placeholder="Select Type of periods" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Monthly">Monthly (شهري)</SelectItem>
-                <SelectItem value="Quarterly">Quarterly (ربع سنوي)</SelectItem>
-                <SelectItem value="SemiAnnual">Semi-Annual (نصف سنوي)</SelectItem>
-                <SelectItem value="Annual">Annual (سنوي)</SelectItem>
+                <SelectItem value="Monthly">Monthly</SelectItem>
+                <SelectItem value="Quarterly">Quarterly</SelectItem>
+                <SelectItem value="SemiAnnual">Semi-Annual</SelectItem>
+                <SelectItem value="Annual">Annual</SelectItem>
               </SelectContent>
             </Select>
           </div>

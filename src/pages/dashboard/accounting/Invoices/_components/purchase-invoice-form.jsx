@@ -23,10 +23,13 @@ import {
   getAllSuppliers,
   getSupplierContracts,
 } from "../../../../../lib/api";
+import { useI18n } from "@/context/translate-api";
 
 export default function PurchaseInvoiceForm() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
+  const invT = t?.invoices || {};
 
   const {
     register,
@@ -129,8 +132,26 @@ export default function PurchaseInvoiceForm() {
   }, [selectedContract]);
 
   const selectedPattern = useMemo(() => {
-    return invoicePatterns.find(p => p.id === watchInvoicePatternId) || null;
+    return invoicePatterns.find((p) => p.id === watchInvoicePatternId) || null;
   }, [watchInvoicePatternId, invoicePatterns]);
+
+  const isCashPattern = useMemo(() => {
+    if (!selectedPattern) return false;
+    const pay = (selectedPattern.paymentPay || selectedPattern.payment_Pay || "").toLowerCase();
+    if (pay === "cash") return true;
+    if (pay === "credit") return false;
+    const name = (selectedPattern.pattern_Name || "").toLowerCase();
+    return name.includes("cash") || name.includes("نقدي");
+  }, [selectedPattern]);
+
+  const isCreditPattern = useMemo(() => {
+    if (!selectedPattern) return false;
+    const pay = (selectedPattern.paymentPay || selectedPattern.payment_Pay || "").toLowerCase();
+    if (pay === "credit") return true;
+    if (pay === "cash") return false;
+    const name = (selectedPattern.pattern_Name || "").toLowerCase();
+    return name.includes("credit") || name.includes("آجل") || name.includes("اجل");
+  }, [selectedPattern]);
 
   React.useEffect(() => {
     if (selectedPattern) {
@@ -140,16 +161,26 @@ export default function PurchaseInvoiceForm() {
       if (selectedPattern.costCenter_id) {
         setValue("costCenter_Id", selectedPattern.costCenter_id, { shouldValidate: true });
       }
-      if (selectedPattern.paymentPay) {
-        setValue("payment_Method", selectedPattern.paymentPay, { shouldValidate: true });
+
+      if (isCashPattern) {
+        setValue("payment_Method", "Cash", { shouldValidate: true });
+        setValue("payInInstallments", false);
+        setValue("paymentSchedules", []);
+      } else if (isCreditPattern) {
+        setValue("payment_Method", "Credit", { shouldValidate: true });
+        setValue("payInInstallments", true);
+      } else {
+        const pay = selectedPattern.paymentPay || selectedPattern.payment_Pay;
+        if (pay) setValue("payment_Method", pay, { shouldValidate: true });
       }
     }
-  }, [selectedPattern, setValue]);
+  }, [selectedPattern, isCashPattern, isCreditPattern, setValue]);
 
   const createMutation = useMutation({
     mutationFn: (data) => createPurchaseInvoice(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(["getAllInvoices"]);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["getAllInvoices"] });
+      await queryClient.invalidateQueries({ queryKey: ["invoices"] });
       navigate("/dashboard/accounting/invoices");
     },
   });
@@ -157,17 +188,51 @@ export default function PurchaseInvoiceForm() {
   const onSubmit = (data) => {
     const payload = { ...data };
     payload.invoice_Date = new Date(payload.invoice_Date).toISOString();
-    
-    if (payload.payInInstallments && payload.paymentSchedules?.length > 0) {
-      payload.paymentSchedules = payload.paymentSchedules.map(sch => ({
-        ...sch,
-        dueDate: new Date(sch.dueDate).toISOString(),
-        amountDue: Number(sch.amountDue) || 0
-      }));
-    } else {
+
+    const isCash = isCashPattern || payload.payment_Method === "Cash";
+    if (isCash) {
+      payload.payment_Method = "Cash";
+      payload.paid_Amount = Number(summary.total) || 0;
       payload.paymentSchedules = [];
+    } else {
+      payload.payment_Method = "Credit";
+      payload.paid_Amount = Number(payload.paid_Amount) || 0;
+      if (payload.payInInstallments && payload.paymentSchedules?.length > 0) {
+        payload.paymentSchedules = payload.paymentSchedules.map((sch) => ({
+          description: sch.description || "",
+          amountDue: Number(sch.amountDue) || 0,
+          dueDate: new Date(sch.dueDate).toISOString(),
+        }));
+      } else {
+        payload.paymentSchedules = [];
+      }
     }
     delete payload.payInInstallments;
+
+    // Strict item normalization for CreateInvoiceDetailDto
+    payload.createInvoiceDetailsDto = (payload.createInvoiceDetailsDto || []).map((item) => {
+      const qty = Number(item.quantity) || 0;
+      const unitPrice = Number(item.unit_Price) || 0;
+      const discPct = Number(item.discount_Percentage) || 0;
+      const taxPct = Number(item.tax_Percentage) || 0;
+      const lineTotal = qty * unitPrice;
+      const discAmt = Number(item.discount_Amount) || (lineTotal * (discPct / 100));
+      const lineAfterDisc = lineTotal - discAmt;
+      const taxAmt = Number(item.tax_Amount) || (lineAfterDisc * (taxPct / 100));
+
+      return {
+        productVariant_Id: item.productVariant_Id || null,
+        quantity: qty,
+        unitOfMeasurement_Id: item.unitOfMeasurement_Id || null,
+        unit_Price: unitPrice,
+        discount_Percentage: discPct,
+        discount_Amount: discAmt,
+        tax_Percentage: taxPct,
+        tax_Amount: taxAmt,
+        barcode: item.barcode || null,
+        is_Service_Item: Boolean(item.is_Service_Item),
+      };
+    });
 
     Object.keys(payload).forEach((key) => {
       if (payload[key] === "") payload[key] = null;
@@ -287,7 +352,7 @@ export default function PurchaseInvoiceForm() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <label className="text-sm font-semibold">Supplier Contract (عقد المورد)</label>
+              <label className="text-sm font-semibold">{invT.supplierContract || "Supplier Contract"}</label>
               <span className="text-[11px] text-muted-foreground">Optional Contract Link</span>
             </div>
             <Controller
@@ -304,7 +369,7 @@ export default function PurchaseInvoiceForm() {
                     <SelectValue placeholder={!watchSupplierId ? "Select a supplier first" : supplierContracts.length === 0 ? "No active contracts found" : "Link to Supplier Contract (Optional)"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                    <SelectItem value="none">{invT.noContractLink || "No contract link"}</SelectItem>
                     {supplierContracts.map((c) => {
                       const rem = Math.max(0, Number(c.totalValue || 0) - Number(c.consumedAmount || 0));
                       return (
@@ -515,72 +580,113 @@ export default function PurchaseInvoiceForm() {
         </div>
         <div className="bg-card p-6 rounded-xl border shadow-sm space-y-4">
           <h3 className="font-semibold text-sm">Payment Method</h3>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { id: "Cash", icon: Banknote },
-              { id: "Card", icon: CreditCard },
-              { id: "Bank", icon: Landmark },
-              { id: "Wallet", icon: Wallet }
-            ].map(method => {
-              const isPatternDisabled = !!selectedPattern?.paymentPay;
-              const isSelected = paymentMethod === method.id;
-              
-              return (
-                <button
-                  key={method.id}
-                  type="button"
-                  onClick={() => setValue("payment_Method", method.id)}
-                  disabled={isPatternDisabled}
-                  className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-all ${
-                    isSelected 
-                      ? 'border-primary bg-primary/5 text-primary' 
-                      : 'border-input hover:bg-muted/50'
-                  } ${isPatternDisabled && !isSelected ? 'opacity-50 cursor-not-allowed' : ''} ${isPatternDisabled ? 'cursor-not-allowed' : ''}`}
-                >
-                  <method.icon className="w-4 h-4" />
-                  {method.id}
-                </button>
-              );
-            })}
-          </div>
           
-          <div className="flex items-center justify-between pt-4 border-t mt-4">
-            <div>
-              <div className="text-sm font-semibold">Pay in Installments</div>
-              <div className="text-xs text-muted-foreground">Allowed for this configuration</div>
+          {isCashPattern ? (
+            <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-lg flex items-center gap-2.5 text-blue-700 text-sm font-semibold">
+              <Banknote className="w-5 h-5 text-blue-600 shrink-0" />
+              <span>Cash (نقدي)</span>
             </div>
-            <Switch 
-              checked={payInInstallments} 
-              onCheckedChange={(checked) => setValue("payInInstallments", checked)} 
-            />
-          </div>
+          ) : isCreditPattern ? (
+            <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-lg flex items-center gap-2.5 text-purple-700 text-sm font-semibold">
+              <CreditCard className="w-5 h-5 text-purple-600 shrink-0" />
+              <span>Credit (آجل)</span>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { id: "Cash", label: "Cash", icon: Banknote },
+                { id: "Credit", label: "Credit", icon: CreditCard },
+              ].map((method) => {
+                const isSelected = paymentMethod === method.id;
+                return (
+                  <button
+                    key={method.id}
+                    type="button"
+                    onClick={() => setValue("payment_Method", method.id)}
+                    className={`flex items-center gap-2 p-3 rounded-lg border text-sm transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/5 text-primary font-medium"
+                        : "border-input hover:bg-muted/50"
+                    }`}
+                  >
+                    <method.icon className="w-4 h-4" />
+                    {method.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-          {payInInstallments && (
-            <div className="pt-4 border-t space-y-3">
-              <div className="flex items-center justify-between">
-                <h4 className="text-sm font-semibold">Schedules</h4>
-                <Button type="button" size="sm" variant="outline" className="h-7 text-xs" onClick={() => appendSchedule({ description: "", amountDue: 0, dueDate: new Date().toISOString().split("T")[0] })}>
-                  + Add Schedule
-                </Button>
+          {/* Show Paid Amount and Installments only if Credit */}
+          {(isCreditPattern || (!isCashPattern && paymentMethod === "Credit")) && (
+            <>
+              <div className="space-y-1.5 pt-2 border-t">
+                <label className="text-xs font-semibold flex items-center justify-between">
+                  <span>Paid Amount</span>
+                  <span className="text-[11px] text-muted-foreground font-normal">
+                    Remaining Debt: ${(Math.max(0, summary.total - (Number(watch("paid_Amount")) || 0))).toFixed(2)}
+                  </span>
+                </label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="h-9 bg-transparent font-semibold"
+                  {...register("paid_Amount")}
+                />
               </div>
-              
-              {scheduleFields.length > 0 ? (
-                <div className="space-y-2">
-                  {scheduleFields.map((field, index) => (
-                    <div key={field.id} className="grid grid-cols-[1fr_80px_120px_auto] gap-2 items-center">
-                      <Input placeholder="Desc" className="h-8 text-xs" {...register(`paymentSchedules.${index}.description`)} />
-                      <Input type="number" placeholder="Amount" className="h-8 text-xs" {...register(`paymentSchedules.${index}.amountDue`)} />
-                      <Input type="date" className="h-8 text-xs" {...register(`paymentSchedules.${index}.dueDate`)} />
-                      <button type="button" onClick={() => removeSchedule(index)} className="text-red-500 hover:text-red-700">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
+
+              <div className="flex items-center justify-between pt-4 border-t mt-4">
+                <div>
+                  <div className="text-sm font-semibold">Pay in Installments</div>
+                  <div className="text-xs text-muted-foreground">Allowed for credit configuration</div>
                 </div>
-              ) : (
-                <div className="text-xs text-muted-foreground text-center py-2">No schedules added.</div>
+                <Switch 
+                  checked={payInInstallments} 
+                  onCheckedChange={(checked) => setValue("payInInstallments", checked)} 
+                />
+              </div>
+
+              {payInInstallments && (
+                <div className="pt-4 border-t space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold">Schedules</h4>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs"
+                      onClick={() =>
+                        appendSchedule({
+                          description: "",
+                          amountDue: 0,
+                          dueDate: new Date().toISOString().split("T")[0],
+                        })
+                      }
+                    >
+                      + Add Schedule
+                    </Button>
+                  </div>
+                  
+                  {scheduleFields.length > 0 ? (
+                    <div className="space-y-2">
+                      {scheduleFields.map((field, index) => (
+                        <div key={field.id} className="grid grid-cols-[1fr_80px_120px_auto] gap-2 items-center">
+                          <Input placeholder="Desc" className="h-8 text-xs" {...register(`paymentSchedules.${index}.description`)} />
+                          <Input type="number" placeholder="Amount" className="h-8 text-xs" {...register(`paymentSchedules.${index}.amountDue`)} />
+                          <Input type="date" className="h-8 text-xs" {...register(`paymentSchedules.${index}.dueDate`)} />
+                          <button type="button" onClick={() => removeSchedule(index)} className="text-red-500 hover:text-red-700">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-xs text-muted-foreground text-center py-2">No schedules added.</div>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </div>
 

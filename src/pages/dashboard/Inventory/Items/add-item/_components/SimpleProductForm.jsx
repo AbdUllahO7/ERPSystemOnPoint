@@ -1,20 +1,35 @@
+import { cn } from "@/lib/utils";
 import { useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Upload, Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHorizontal, QrCode, ScanBarcode, Edit2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, searchMaterialsForInvoice, getAllUnitOfMeasurements, createProduct, createSimpleProductWithoutSpecs, updateSimpleProductWithoutSpecs, getProductById } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  getAllCategories,
+  getLeafAccounts,
+  searchMaterialsForInvoice,
+  getAllUnitOfMeasurements,
+  createProduct,
+  createSimpleProductWithoutSpecs,
+  updateSimpleProductWithoutSpecs,
+  updateSimpleProductWithSpecs,
+  getProductById,
+  isPieceUnit,
+  DEFAULT_PIECE_UNIT_ID,
+} from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, setThereAreUnits }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
     const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
+    shouldUnregister: false,
     defaultValues: {
       name_Product: "",
       product_Number: "",
@@ -23,7 +38,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       category_Id: "",
       item_Origin: "",
       requires_Shipping: false,
-      there_Are_Units: thereAreUnits,
+      there_Are_Units: Boolean(thereAreUnits),
       minimum_Alert_Level: 0,
       maximum_Stock_Level: 0,
       revenue_Account_Id: "",
@@ -56,6 +71,10 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
     }
   }, [watchThereAreUnits, thereAreUnits, setThereAreUnits]);
 
+  useEffect(() => {
+    setValue("there_Are_Units", Boolean(thereAreUnits));
+  }, [thereAreUnits, setValue]);
+
   const { fields: unitFields, append: appendUnit, remove: removeUnit } = useFieldArray({
     control,
     name: "product_Units",
@@ -86,9 +105,13 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   const accounts = accountsRes?.data?.items || accountsRes?.data || [];
   const measurements = unitsRes?.data?.items || unitsRes?.data || [];
   const productUnitsWatch = watch("product_Units");
+  const categoryId = watch("category_Id");
   const revenueAccountId = watch("revenue_Account_Id");
   const expenseAccountId = watch("expense_Account_Id");
   const inventoryAccountId = watch("inventory_Account_Id");
+
+  const rawProduct = productRes?.data?.data || productRes?.data || {};
+  const productCategoryName = rawProduct.category_Name || rawProduct.category_name || rawProduct.categoryName || "";
 
   useEffect(() => {
     if (measurements.length > 0 && !isEdit) {
@@ -103,17 +126,32 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
-      const bData = productRes.data;
-      const unitData = bData.variants?.[0]?.productUnitDtos || bData.variants?.[0]?.productUnits || bData.productUnitDtos || bData.productUnits || [];
+      const bData = productRes.data?.data || productRes.data;
+      if (!bData) return;
+
+      const variantList = Array.isArray(bData.variants) ? bData.variants : [];
+      const primaryVariant = variantList[0] || {};
+      const unitData = (Array.isArray(primaryVariant.productUnitDtos) && primaryVariant.productUnitDtos.length > 0)
+        ? primaryVariant.productUnitDtos
+        : (Array.isArray(primaryVariant.productUnits) && primaryVariant.productUnits.length > 0)
+        ? primaryVariant.productUnits
+        : (Array.isArray(bData.productUnitDtos) && bData.productUnitDtos.length > 0)
+        ? bData.productUnitDtos
+        : (Array.isArray(bData.productUnits) && bData.productUnits.length > 0)
+        ? bData.productUnits
+        : [];
+      const firstUnit = unitData[0] || {};
 
       const hasUnits = Boolean(bData.has_Multiple_Units ?? bData.hasMultipleUnits);
       setThereAreUnits(hasUnits);
 
       const units = unitData.map((u, i) => ({
         id: u.id,
-        unitName: u.unitName || u.unit_Name || `Unit ${i + 1}`,
+        variant_id: primaryVariant.id || "",
+        unit_id: u.id || "",
+        unitName: u.unitName || u.unit_Name || u.unit_name || `Unit ${i + 1}`,
         unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || u.unitOfMeasurementId || "",
-        secondunit_Of_Measurement_Id: "",
+        secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || "",
         relative_factor: u.conversion_Factor ?? u.conversionFactor ?? u.relative_factor ?? 1,
         is_Default_Selling: u.is_Default_Selling ?? u.isDefaultSelling ?? false,
         is_Default_Purchasing: u.is_Default_Purchasing ?? u.isDefaultPurchasing ?? false,
@@ -126,7 +164,6 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         average_Purchase_Price: u.average_Purchase_Price ?? u.averagePurchasePrice ?? 0
       }));
 
-      const firstVariant = bData.variants?.[0] || {};
       reset({
         id: id,
         name_Product: bData.name_Product || bData.nameProduct || bData.name || "",
@@ -134,22 +171,24 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
         has_Expiry_Date: bData.has_Expiry_Date ?? bData.hasExpiryDate ?? false,
         is_Tracking_Inventory: bData.is_Tracking_Inventory ?? bData.isTrackingInventory ?? true,
         category_Id: bData.category_Id || bData.categoryId || "",
-        item_Origin: bData.item_Origin || bData.itemOrigin || "",
+        item_Origin: bData.origin_Id || bData.originId || bData.item_Origin || bData.itemOrigin || "",
         requires_Shipping: bData.requires_Shipping ?? bData.requiresShipping ?? false,
+        requires_Contract: bData.requires_Contract ?? bData.requiresContract ?? false,
+        requires_Scheduling: bData.requires_Scheduling ?? bData.requiresScheduling ?? false,
         there_Are_Units: hasUnits,
-        minimum_Alert_Level: firstVariant.minimum_Alert_Level ?? firstVariant.minimumAlertLevel ?? bData.minimum_Alert_Level ?? bData.minimumAlertLevel ?? 0,
-        maximum_Stock_Level: firstVariant.maximum_Stock_Level ?? firstVariant.maximumStockLevel ?? bData.maximum_Stock_Level ?? bData.maximumStockLevel ?? 0,
+        minimum_Alert_Level: primaryVariant.minimum_Alert_Level ?? primaryVariant.minimumAlertLevel ?? bData.minimum_Alert_Level ?? bData.minimumAlertLevel ?? 0,
+        maximum_Stock_Level: primaryVariant.maximum_Stock_Level ?? primaryVariant.maximumStockLevel ?? bData.maximum_Stock_Level ?? bData.maximumStockLevel ?? 0,
         revenue_Account_Id: bData.revenue_Account_Id || bData.revenueAccountId || "",
         expense_Account_Id: bData.expense_Account_Id || bData.expenseAccountId || "",
         inventory_Account_Id: bData.inventory_Account_Id || bData.inventoryAccountId || "",
-        barcode_Option: "Manual",
-        barcode: units[0]?.barcode || firstVariant.barcode || bData.barcode || "",
-        qr_Code: units[0]?.qr_Code || firstVariant.qr_Code || firstVariant.qrCode || bData.qr_Code || bData.qrCode || "",
-        cost_Price: units[0]?.cost_Price ?? firstVariant.cost_Price ?? firstVariant.costPrice ?? bData.cost_Price ?? bData.costPrice ?? 0,
-        consumer_Price: units[0]?.consumer_Price ?? firstVariant.consumer_Price ?? firstVariant.consumerPrice ?? bData.consumer_Price ?? bData.consumerPrice ?? 0,
-        wholesale_Price: units[0]?.wholesale_Price ?? firstVariant.wholesale_Price ?? firstVariant.wholesalePrice ?? bData.wholesale_Price ?? bData.wholesalePrice ?? 0,
-        last_Purchase_Price: units[0]?.last_Purchase_Price ?? firstVariant.last_Purchase_Price ?? firstVariant.lastPurchasePrice ?? bData.last_Purchase_Price ?? bData.lastPurchasePrice ?? 0,
-        average_Purchase_Price: units[0]?.average_Purchase_Price ?? firstVariant.average_Purchase_Price ?? firstVariant.averagePurchasePrice ?? bData.average_Purchase_Price ?? bData.averagePurchasePrice ?? 0,
+        barcode_Option: firstUnit.barcode_Option || primaryVariant.barcode_Option || "Manual",
+        barcode: firstUnit.barcode || primaryVariant.barcode || bData.barcode || "",
+        qr_Code: firstUnit.qr_code || firstUnit.qrCode || primaryVariant.qr_code || primaryVariant.qrCode || bData.qr_code || bData.qr_Code || "",
+        cost_Price: firstUnit.cost_Price ?? primaryVariant.cost_Price ?? bData.cost_Price ?? 0,
+        consumer_Price: firstUnit.consumer_Price ?? primaryVariant.consumer_Price ?? bData.consumer_Price ?? 0,
+        wholesale_Price: firstUnit.wholesale_Price ?? primaryVariant.wholesale_Price ?? bData.wholesale_Price ?? 0,
+        last_Purchase_Price: firstUnit.last_Purchase_Price ?? primaryVariant.last_Purchase_Price ?? bData.last_Purchase_Price ?? 0,
+        average_Purchase_Price: firstUnit.average_Purchase_Price ?? primaryVariant.average_Purchase_Price ?? bData.average_Purchase_Price ?? 0,
         product_Units: units.length > 0 ? units : [
           { unitName: "قطعة", relative_factor: 1, is_Default_Selling: true, is_Default_Purchasing: true }
         ],
@@ -159,103 +198,51 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   useEffect(() => {
     if (isEdit && productRes?.data) {
-      if (productRes.data.revenue_Account_Id) setValue("revenue_Account_Id", productRes.data.revenue_Account_Id);
-      if (productRes.data.expense_Account_Id) setValue("expense_Account_Id", productRes.data.expense_Account_Id);
-      if (productRes.data.inventory_Account_Id) setValue("inventory_Account_Id", productRes.data.inventory_Account_Id);
+      const bData = productRes.data?.data || productRes.data;
+      if (bData.category_Id) setValue("category_Id", bData.category_Id, { shouldValidate: true });
+      if (bData.revenue_Account_Id) setValue("revenue_Account_Id", bData.revenue_Account_Id);
+      if (bData.expense_Account_Id) setValue("expense_Account_Id", bData.expense_Account_Id);
+      if (bData.inventory_Account_Id) setValue("inventory_Account_Id", bData.inventory_Account_Id);
     }
-  }, [isEdit, productRes, accounts, setValue]);
+  }, [isEdit, productRes, categories, accounts, setValue]);
 
-  // Create Product Mutation using POST /api/Inventory/Product/CreateProduct/Create
+  // Create Product Mutation using POST /api/Inventory/Product/CreateSimpleProductWithoutSpecs
   const createMutation = useMutation({
-    mutationFn: (data) => {
-      const units = (data.there_Are_Units && data.product_Units?.length > 0)
-        ? data.product_Units.map((u, idx) => ({
-            unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id,
-            secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || null,
-            barcode_Option: u.barcode_Option || data.barcode_Option || "Manual",
-            barcode: u.barcode || data.barcode || null,
-            qr_Code: u.qr_Code || data.qr_Code || null,
-            is_Default_Selling: Boolean(u.is_Default_Selling ?? (idx === 0)),
-            is_Default_Purchasing: Boolean(u.is_Default_Purchasing ?? (idx === 0)),
-            cost_Price: Number(u.cost_Price ?? data.cost_Price ?? 0),
-            wholesale_Price: Number(u.wholesale_Price ?? data.wholesale_Price ?? 0),
-            consumer_Price: Number(u.consumer_Price ?? data.consumer_Price ?? 0),
-            last_Purchase_Price: Number(u.last_Purchase_Price ?? data.last_Purchase_Price ?? 0),
-            average_Purchase_Price: Number(u.average_Purchase_Price ?? data.average_Purchase_Price ?? 0),
-            relative_factor: Number(u.relative_factor ?? 1),
-          }))
-        : [
-            {
-              unit_Of_Measurement_Id: data.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id,
-              secondunit_Of_Measurement_Id: null,
-              barcode_Option: data.barcode_Option || "Manual",
-              barcode: data.barcode || null,
-              qr_Code: data.qr_Code || null,
-              is_Default_Selling: true,
-              is_Default_Purchasing: true,
-              cost_Price: Number(data.cost_Price ?? 0),
-              wholesale_Price: Number(data.wholesale_Price ?? 0),
-              consumer_Price: Number(data.consumer_Price ?? 0),
-              last_Purchase_Price: Number(data.last_Purchase_Price ?? 0),
-              average_Purchase_Price: Number(data.average_Purchase_Price ?? 0),
-              relative_factor: 1,
-            },
-          ];
-
-      const payload = {
-        name_Product: data.name_Product,
-        product_Number: data.product_Number || String(Math.floor(100000 + Math.random() * 900000)),
-        has_Specifications: false,
-        is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? true),
-        can_Be_Sold: Boolean(data.can_Be_Sold ?? true),
-        can_Be_Purchased: Boolean(data.can_Be_Purchased ?? true),
-        requires_Shipping: Boolean(data.requires_Shipping ?? false),
-        requires_Contract: Boolean(data.requires_Contract ?? false),
-        requires_Scheduling: Boolean(data.requires_Scheduling ?? false),
-        has_Variants: false,
-        is_Fixed_Price: Boolean(data.is_Fixed_Price ?? true),
-        revenue_Account_Id: data.revenue_Account_Id || null,
-        expense_Account_Id: data.expense_Account_Id || null,
-        inventory_Account_Id: data.inventory_Account_Id || null,
-        product_Type: "Inventory",
-        billing_Method: "FixedPrice",
-        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
-        origin_Id: data.origin_Id || data.item_Origin || null,
-        category_Id: data.category_Id || null,
-        productVariantDtos: [
-          {
-            minimum_Alert_Level: Number(data.minimum_Alert_Level) || 0,
-            maximum_Stock_Level: Number(data.maximum_Stock_Level) || 0,
-            limit_Unit_Id: data.limit_Unit_Id || null,
-            variantValues: [],
-            product_Units: units,
-            product_Components: null,
-          },
-        ],
-      };
-
-      return createProduct(payload);
-    },
-    onSuccess: () => {
+    mutationFn: (data) => createSimpleProductWithoutSpecs(data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to create product");
+      toast.error(
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to create product")
+      );
     }
   });
 
   const updateMutation = useMutation({
-    mutationFn: updateSimpleProductWithoutSpecs,
-    onSuccess: () => {
+    mutationFn: (data) => updateSimpleProductWithoutSpecs(data),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success("Product updated successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || "Failed to update product");
+      toast.error(
+        error?.response?.data?.message ||
+        (error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : "Failed to update product")
+      );
     }
   });
-  console.log(id)
 
   const onSubmit = (data) => {
     const isFinalStep = (thereAreUnits && currentStep === 4) || (!thereAreUnits && currentStep === 2);
@@ -263,11 +250,41 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       onNext();
     } else {
       const payload = { ...data };
+
+      // Synchronize root price / barcode fields if modified on unit[0]
+      if (payload.product_Units?.[0]) {
+        const u0 = payload.product_Units[0];
+        if (u0.barcode && !payload.barcode) payload.barcode = u0.barcode;
+        if (u0.qr_Code && !payload.qr_Code) payload.qr_Code = u0.qr_Code;
+        if (Number(u0.cost_Price) && !Number(payload.cost_Price)) payload.cost_Price = u0.cost_Price;
+        if (Number(u0.consumer_Price) && !Number(payload.consumer_Price)) payload.consumer_Price = u0.consumer_Price;
+        if (Number(u0.wholesale_Price) && !Number(payload.wholesale_Price)) payload.wholesale_Price = u0.wholesale_Price;
+        if (Number(u0.last_Purchase_Price) && !Number(payload.last_Purchase_Price)) payload.last_Purchase_Price = u0.last_Purchase_Price;
+        if (Number(u0.average_Purchase_Price) && !Number(payload.average_Purchase_Price)) payload.average_Purchase_Price = u0.average_Purchase_Price;
+      }
+
       if (!payload.there_Are_Units) {
         payload.product_Units = [];
+      } else {
+        // Exclude base piece unit so only additional units are submitted
+        payload.product_Units = (payload.product_Units || []).filter((u, idx) => {
+          if (idx === 0) return false;
+          return !isPieceUnit(u);
+        });
+        if (payload.product_Units.length === 0) {
+          payload.there_Are_Units = false;
+        }
       }
+
       if (isEdit) {
-        updateMutation.mutate({ ...payload, id });
+        updateMutation.mutate({
+          ...payload,
+          id,
+          variant_id: productRes?.data?.variants?.[0]?.id,
+          unit_id: productRes?.data?.variants?.[0]?.productUnitDtos?.[0]?.id,
+          variants: productRes?.data?.variants,
+          raw: productRes?.data,
+        });
       } else {
         createMutation.mutate(payload);
       }
@@ -275,7 +292,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   };
 
   const renderDetails = () => (
-    <div className="space-y-6 border border-red-500 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-card p-6 rounded-xl border shadow-sm flex items-center gap-6">
         <div className="flex items-center gap-4">
           <div className="w-24 h-24 border-2 border-dashed rounded-xl flex flex-col items-center justify-center text-muted-foreground bg-muted/20">
@@ -293,7 +310,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       </div>
 
       <div className="bg-card p-6 rounded-xl border shadow-sm">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <span className="text-sm font-medium text-muted-foreground">Requires Shipping</span>
             <Switch checked={watch("requires_Shipping")} onCheckedChange={(val) => setValue("requires_Shipping", val)} />
@@ -301,6 +318,14 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <span className="text-sm font-medium text-muted-foreground">There Are Units</span>
             <Switch checked={watchThereAreUnits} onCheckedChange={(val) => setValue("there_Are_Units", val)} />
+          </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+            <span className="text-sm font-medium text-muted-foreground">Has Expiry Date</span>
+            <Switch checked={watch("has_Expiry_Date")} onCheckedChange={(val) => setValue("has_Expiry_Date", val)} />
+          </div>
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
+            <span className="text-sm font-medium text-muted-foreground">Tracking Inventory</span>
+            <Switch checked={watch("is_Tracking_Inventory")} onCheckedChange={(val) => setValue("is_Tracking_Inventory", val)} />
           </div>
         </div>
       </div>
@@ -320,12 +345,18 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
             <label className="text-sm font-semibold text-foreground leading-none">Item Category <span className="text-red-500">*</span></label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
-              {...register("category_Id", { required: true })}
+              value={categoryId || ""}
+              onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
               disabled={categoriesLoading}
             >
               <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
+                <option value={categoryId}>
+                  {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
+                </option>
+              )}
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                <option key={cat.id} value={cat.id}>{cat.name || cat.name_Category || "Category"}</option>
               ))}
             </select>
             {errors.category_Id && <span className="text-red-500 text-xs">Required</span>}
@@ -470,14 +501,18 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
                   className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
                   {...register(`product_Units.${index}.unit_Of_Measurement_Id`)}
                   onChange={(e) => {
-                    const sel = measurements.find(m => m.unit_Name_Id === e.target.value);
+                    const val = e.target.value;
+                    setValue(`product_Units.${index}.unit_Of_Measurement_Id`, val, { shouldValidate: true, shouldDirty: true });
+                    const sel = measurements.find(m => m.unit_Name_Id === val);
                     if (sel) setValue(`product_Units.${index}.unitName`, sel.unit_name);
                   }}
                   disabled={unitsLoading}
                 >
                   <option value="">Select Unit</option>
-                  {measurements.map(m => (
-                    <option key={m.unit_Name_Id} value={m.unit_Name_Id}>{m.unit_name}</option>
+                  {measurements
+                    .filter((m) => !isPieceUnit(m))
+                    .map(m => (
+                      <option key={m.unit_Name_Id} value={m.unit_Name_Id}>{m.unit_name}</option>
                   ))}
                 </select>
               )}
@@ -496,9 +531,10 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
                     >
                       <option value="">Select unit</option>
                       {productUnitsWatch.slice(0, index).map((pUnit, pIdx) => {
-                        if (!pUnit.unit_Of_Measurement_Id) return null;
+                        const uId = pUnit.unit_Of_Measurement_Id || (pIdx === 0 ? DEFAULT_PIECE_UNIT_ID : "");
+                        if (!uId) return null;
                         return (
-                          <option key={pIdx} value={pUnit.unit_Of_Measurement_Id}>
+                          <option key={pIdx} value={uId}>
                             {pUnit.unitName || `Unit ${pIdx + 1}`}
                           </option>
                         );
@@ -586,9 +622,19 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
   return (
     <form id="simple-product-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {currentStep === 2 && renderDetails()}
-      {thereAreUnits && currentStep === 3 && renderUnits()}
-      {thereAreUnits && currentStep === 4 && renderVariantProperties()}
+      <div className={cn("space-y-6", currentStep === 2 ? "block" : "hidden")}>
+        {renderDetails()}
+      </div>
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 3 ? "block" : "hidden")}>
+          {renderUnits()}
+        </div>
+      )}
+      {thereAreUnits && (
+        <div className={cn("space-y-6", currentStep === 4 ? "block" : "hidden")}>
+          {renderVariantProperties()}
+        </div>
+      )}
     </form>
   );
 }

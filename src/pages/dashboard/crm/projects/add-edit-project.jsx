@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -86,14 +87,19 @@ export default function AddEditProject() {
 
   const saveMutation = useMutation({
     mutationFn: (data) =>
-      isEdit ? updateCustomerProject({ ...data, id }) : createCustomerProject(data),
+      isEdit ? updateCustomerProject(id, data) : createCustomerProject(data),
     onSuccess: () => {
       toast.success(isEdit ? "Project updated successfully" : "Project created successfully");
-      queryClient.invalidateQueries(["allCustomerProjects"]);
+      queryClient.invalidateQueries({ queryKey: ["allCustomerProjects"] });
+      queryClient.invalidateQueries({ queryKey: ["projectDetails", id] });
       navigate("/dashboard/crm/projects");
     },
     onError: (err) => {
-      toast.error(err?.message || (isEdit ? "Failed to update project" : "Failed to create project"));
+      toast.error(
+        err?.response?.data?.message ||
+        err?.message ||
+        (isEdit ? "Failed to update project" : "Failed to create project")
+      );
     },
   });
 
@@ -120,6 +126,7 @@ export default function AddEditProject() {
       description: formData.description,
       completionPercentage: Number(formData.completionPercentage) || 0,
       value: Number(formData.value) || 0,
+      projectValue: Number(formData.value) || 0,
       status: formData.status,
       startDate: formData.startDate
         ? new Date(formData.startDate).toISOString()
@@ -178,16 +185,7 @@ export default function AddEditProject() {
         </div>
       </div>
 
-      {/* Guidance Callout */}
-      <div className="p-4 bg-blue-50/80 border-r-4 border-blue-600 rounded-xl text-xs space-y-1">
-        <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
-          <CheckCircle2 className="w-4 h-4 text-blue-600" />
-          قواعد ربط المشروع والفوترة (Project & Progress Rules):
-        </p>
-        <p className="text-blue-900 leading-relaxed">
-          يتضمن المشروع العميل والاسم والوصف والفترة والقيمة والحالة ونسبة الإنجاز، مع إمكانية ربطه بعقد. تذكر أن إصدار فاتورة بقيمة 50% من المشروع لا يثبت إنجاز 50% من العمل؛ لذلك تُقاس نسبة الإنجاز بتقدم المهام ومراحل التنفيذ الفعلي المعتمدة.
-        </p>
-      </div>
+    
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground rounded-2xl border shadow-sm p-6 space-y-6 min-h-[300px]">
@@ -202,11 +200,11 @@ export default function AddEditProject() {
           <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
             <Label className="text-sm font-semibold">
-              Project Name (اسم المشروع) <span className="text-red-500">*</span>
+              Project Name <span className="text-red-500">*</span>
             </Label>
             <Input
               name="projectName"
-              placeholder="e.g. مشروع تجهيز قاعة لشركة"
+              placeholder="e.g. Office Hall Setup Project"
               value={formData.projectName}
               onChange={handleChange}
               required
@@ -217,7 +215,7 @@ export default function AddEditProject() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label className="text-sm font-semibold">
-                Customer (العميل) <span className="text-red-500">*</span>
+                Customer <span className="text-red-500">*</span>
               </Label>
               <Select
                 key={formData.customerId || "customer-select"}
@@ -237,7 +235,7 @@ export default function AddEditProject() {
                   )}
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
-                      {c.customerName || c.customer_Name || `Customer #${c.id.substring(0, 8)}`}
+                      {c.name || c.customerName || c.customer_Name || `Customer #${c.id.substring(0, 8)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -245,7 +243,7 @@ export default function AddEditProject() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Linked Contract (عقد العميل - اختياري)</Label>
+              <Label className="text-sm font-semibold">Linked Contract (Optional)</Label>
               <Select
                 key={formData.contractId || "contract-select"}
                 value={formData.contractId || "none"}
@@ -266,7 +264,7 @@ export default function AddEditProject() {
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">No contract link (بدون ربط بعقد)</SelectItem>
+                  <SelectItem value="none">No contract link</SelectItem>
                   {contracts.map((c) => (
                     <SelectItem key={c.id} value={String(c.id)}>
                       {c.title || c.contractNumber || `Contract #${c.id.substring(0, 8)}`}
@@ -279,7 +277,7 @@ export default function AddEditProject() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Status (الحالة)</Label>
+              <Label className="text-sm font-semibold">Status</Label>
               <Select
                 key={formData.status || "status-select"}
                 value={formData.status}
@@ -289,17 +287,17 @@ export default function AddEditProject() {
                   <SelectValue placeholder="Select Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Planning">Planning (تخطيط)</SelectItem>
-                  <SelectItem value="InProgress">In Progress (قيد التنفيذ)</SelectItem>
-                  <SelectItem value="Pending">Pending (معلق)</SelectItem>
-                  <SelectItem value="Completed">Completed (مكتمل)</SelectItem>
-                  <SelectItem value="Cancelled">Cancelled (ملغي)</SelectItem>
+                  <SelectItem value="Planning">Planning</SelectItem>
+                  <SelectItem value="InProgress">In Progress</SelectItem>
+                  <SelectItem value="Pending">Pending</SelectItem>
+                  <SelectItem value="Completed">Completed</SelectItem>
+                  <SelectItem value="Cancelled">Cancelled</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Contractual Value ($) (القيمة)</Label>
+              <Label className="text-sm font-semibold">Contractual Value ($)</Label>
               <Input
                 type="number"
                 name="value"
@@ -313,7 +311,7 @@ export default function AddEditProject() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <Label className="text-sm font-semibold">Progress (%) (نسبة الإنجاز)</Label>
+                <Label className="text-sm font-semibold">Progress (%)</Label>
                 <span className="text-xs text-blue-600 font-bold">{formData.completionPercentage}%</span>
               </div>
               <Input
@@ -327,14 +325,14 @@ export default function AddEditProject() {
                 className="h-11"
               />
               <span className="text-[10px] text-muted-foreground block">
-                مبني على إنجاز المهام وليس الفوترة
+                Based on task delivery milestones, not invoicing.
               </span>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">Start Date (تاريخ البداية)</Label>
+              <Label className="text-sm font-semibold">Start Date</Label>
               <Input
                 type="date"
                 name="startDate"
@@ -346,7 +344,7 @@ export default function AddEditProject() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold">End Date (تاريخ النهاية)</Label>
+              <Label className="text-sm font-semibold">End Date</Label>
               <Input
                 type="date"
                 name="endDate"
@@ -359,7 +357,7 @@ export default function AddEditProject() {
           </div>
 
           <div className="space-y-2">
-            <Label className="text-sm font-semibold">Project Scope & Notes (الوصف ونطاق العمل)</Label>
+            <Label className="text-sm font-semibold">Project Scope & Notes</Label>
             <Textarea
               name="description"
               placeholder="Detailed description of the project deliverables, milestones, and client agreements..."
