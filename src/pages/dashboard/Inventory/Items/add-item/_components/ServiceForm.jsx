@@ -56,13 +56,15 @@ export default function ServiceForm() {
     if (isEdit && serviceRes?.data) {
       const sData = serviceRes.data?.data || serviceRes.data;
       const unitData = sData.variants?.[0]?.productUnitDtos?.[0] || {};
+      const cost = unitData.cost_Price ?? sData.variants?.[0]?.cost_Price ?? sData.cost_Price ?? 0;
+      const consumer = unitData.consumer_Price ?? sData.variants?.[0]?.consumer_Price ?? sData.consumer_Price ?? 0;
       reset({
         name_Product: sData.name_Product || "",
         product_Number: sData.product_Number || "",
         category_Id: sData.category_Id || "",
         billing_Method: sData.billing_Method || "",
-        cost_Price: unitData.cost_Price || 0,
-        consumer_Price: unitData.consumer_Price || 0,
+        cost_Price: cost,
+        consumer_Price: consumer,
         revenue_Account_Id: sData.revenue_Account_Id || "",
         expense_Account_Id: sData.expense_Account_Id || "",
         requires_Contract: sData.requires_Contract ?? false,
@@ -88,7 +90,11 @@ export default function ServiceForm() {
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
-      toast.error(error.message || (isEdit ? "Failed to update service" : "Failed to create service"));
+      toast.error(
+        error?.response?.data?.message ||
+        error?.message ||
+        (isEdit ? "Failed to update service" : "Failed to create service")
+      );
     }
   });
 
