@@ -5,7 +5,7 @@ import { Upload, Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHor
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCategories,
   getLeafAccounts,
@@ -24,6 +24,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 export default function AssembledProductForm({ currentStep, onNext, thereAreUnits, setThereAreUnits }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -238,7 +239,8 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
 
   const createMutation = useMutation({
     mutationFn: (data) => createAssemblyWithoutSpecs(data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Assembled product created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
@@ -254,7 +256,11 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
 
   const updateMutation = useMutation({
     mutationFn: updateAssemblyWithoutSpecs,
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success("Assembled product updated successfully");
       navigate("/dashboard/inventory/items-management/items");
     },

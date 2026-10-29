@@ -4,7 +4,7 @@ import { Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHorizontal 
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCategories,
   getLeafAccounts,
@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 
 export default function BundleForm({ currentStep, onNext }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -202,7 +203,8 @@ export default function BundleForm({ currentStep, onNext }) {
   // Create Bundle Mutation (POST /api/Inventory/Product/CreateBundleWithoutSpecs)
   const createMutation = useMutation({
     mutationFn: (data) => createBundleWithoutSpecs(data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Bundle created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
@@ -219,7 +221,11 @@ export default function BundleForm({ currentStep, onNext }) {
   // Update Bundle Mutation (POST /api/Inventory/Product/UpdateProductBundle/bundle)
   const updateMutation = useMutation({
     mutationFn: (data) => updateBundleWithoutSpecs({ ...data, id }),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success("Bundle updated successfully");
       navigate("/dashboard/inventory/items-management/items");
     },

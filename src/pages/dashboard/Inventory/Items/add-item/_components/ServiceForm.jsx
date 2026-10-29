@@ -3,13 +3,14 @@ import { useForm } from "react-hook-form";
 import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllCategories, getLeafAccounts, createService, updateService, getProductById } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function ServiceForm() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -85,7 +86,11 @@ export default function ServiceForm() {
 
   const mutation = useMutation({
     mutationFn: (data) => isEdit ? updateService({ id, ...data }) : createService(data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success(isEdit ? "Service updated successfully" : "Service created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },

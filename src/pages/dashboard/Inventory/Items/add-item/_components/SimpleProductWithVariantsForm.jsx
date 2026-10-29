@@ -17,7 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCategories,
   getLeafAccounts,
@@ -41,6 +41,7 @@ export default function SimpleProductWithVariantsForm({
   customSpecs = [],
 }) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
 
@@ -368,7 +369,8 @@ export default function SimpleProductWithVariantsForm({
       }
       return createSimpleProductWithSpecs(payload);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success("Product created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
@@ -384,7 +386,11 @@ export default function SimpleProductWithVariantsForm({
 
   const updateMutation = useMutation({
     mutationFn: updateSimpleProductWithSpecs,
-    onSuccess: () => {
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      if (id) {
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
+      }
       toast.success("Product updated successfully");
       navigate("/dashboard/inventory/items-management/items");
     },

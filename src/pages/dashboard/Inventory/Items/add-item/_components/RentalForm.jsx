@@ -163,11 +163,11 @@ export default function RentalForm() {
   const mutation = useMutation({
     mutationFn: (data) =>
       isEdit ? updateRentalProduct(id, data) : createRentalProduct(data),
-    onSuccess: (res) => {
-      queryClient.invalidateQueries(["products"]);
-      queryClient.invalidateQueries(["items"]);
+    onSuccess: async (res) => {
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      await queryClient.invalidateQueries({ queryKey: ["items"] });
       if (id) {
-        queryClient.invalidateQueries(["product", id]);
+        await queryClient.invalidateQueries({ queryKey: ["product", id] });
       }
       toast.success(
         res?.message ||

@@ -86,7 +86,7 @@ export default function ItemsPage() {
     mutationFn: (id) => toggleProductStatus(id),
     onSuccess: () => {
       toast.success("Item status updated successfully.");
-      queryClient.invalidateQueries(["products"]);
+      queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteRowId(null);
     },
     onError: (error) => {
@@ -153,6 +153,8 @@ export default function ItemsPage() {
   } = useQuery({
     queryKey: ["products", params],
     queryFn: () => getAllProducts(params),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const productsData =
