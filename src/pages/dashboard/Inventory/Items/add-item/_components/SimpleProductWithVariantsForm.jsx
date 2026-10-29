@@ -94,12 +94,12 @@ export default function SimpleProductWithVariantsForm({
     name: "createProductvariants",
   });
 
-  const { data: categoriesRes } = useQuery({
+  const { data: categoriesRes, isLoading: categoriesLoading } = useQuery({
     queryKey: ["categories"],
     queryFn: () => getAllCategories({ PageNumber: 1, PageSize: 100 }),
   });
 
-  const { data: accountsRes } = useQuery({
+  const { data: accountsRes, isLoading: accountsLoading } = useQuery({
     queryKey: ["leaf-accounts"],
     queryFn: () => getLeafAccounts({ PageNumber: 1, PageSize: 100 }),
   });
@@ -535,10 +535,11 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Revenue Account</label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
               {...register("revenue_Account_Id")}
+              disabled={accountsLoading}
             >
-              <option value="">Revenue Account</option>
+              <option value="">{accountsLoading ? "Loading accounts..." : "Revenue Account"}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_Name}
@@ -549,10 +550,11 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Expense Account</label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
               {...register("expense_Account_Id")}
+              disabled={accountsLoading}
             >
-              <option value="">Expense Account</option>
+              <option value="">{accountsLoading ? "Loading accounts..." : "Expense Account"}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_Name}
@@ -566,10 +568,11 @@ export default function SimpleProductWithVariantsForm({
           <div className="space-y-2">
             <label className="text-sm font-semibold">Inventory Account</label>
             <select
-              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm"
+              className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 text-sm disabled:opacity-50"
               {...register("inventory_Account_Id")}
+              disabled={accountsLoading}
             >
-              <option value="">Inventory Account</option>
+              <option value="">{accountsLoading ? "Loading accounts..." : "Inventory Account"}</option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
                   {acc.account_Name}
