@@ -731,6 +731,103 @@ export function buildCreateProductServiceDto(data = {}) {
   };
 }
 
+export function normalizeBillingMethod(val) {
+  if (!val) return "FixedPrice";
+  const str = String(val).trim();
+  const lower = str.toLowerCase();
+
+  if (
+    lower === "fixedprice" ||
+    lower === "fixed" ||
+    lower === "per-visit" ||
+    lower === "package" ||
+    lower === "project" ||
+    lower.includes("مقطوع") ||
+    lower.includes("ثابت")
+  ) {
+    return "FixedPrice";
+  }
+  if (lower === "hourly" || lower === "hour" || lower.includes("ساعة")) {
+    return "Hourly";
+  }
+  if (lower === "daily" || lower === "day" || lower.includes("يوم")) {
+    return "Daily";
+  }
+  if (lower === "monthly" || lower === "month" || lower.includes("شهر")) {
+    return "Monthly";
+  }
+  if (lower === "quantitybased" || lower === "quantity" || lower.includes("كمية")) {
+    return "QuantityBased";
+  }
+  return "FixedPrice";
+}
+
+export function buildUpdateProductAppointmentDto(data = {}) {
+  const cost = Number(data.cost_Price ?? data.costPrice ?? 0) || 0;
+  const consumer = Number(data.consumer_Price ?? data.consumerPrice ?? 0) || 0;
+  const deposit = Number(data.default_Deposit_Amount ?? data.defaultInsuranceQty ?? data.deposit ?? 0) || 0;
+  const duration = Math.round(Number(data.default_Duration_Minutes ?? data.defaultDuration ?? 0)) || 0;
+
+  return {
+    id: toGuidOrNull(data.id),
+    name_Product: (data.name_Product || data.name || "").trim(),
+    product_Number: (data.product_Number || data.productNumber || "").trim(),
+    has_Expiry_Date: Boolean(data.has_Expiry_Date ?? data.hasExpiryDate ?? false),
+    category_Id: toGuidOrNull(data.category_Id || data.categoryId || data.category),
+    billing_Method: normalizeBillingMethod(data.billing_Method || data.billingMethod),
+    can_Be_Sold: Boolean(data.can_Be_Sold ?? data.canBeSold ?? true),
+    requires_Contract: Boolean(data.requires_Contract ?? data.requiresContract ?? false),
+    revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
+    expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
+    cost_Price: cost,
+    consumer_Price: consumer,
+    default_Deposit_Amount: deposit,
+    default_Duration_Minutes: duration,
+  };
+}
+
+export async function updateAppointmentProduct(data) {
+  const cleanDto = buildUpdateProductAppointmentDto(data);
+  return apiHandler({
+    endPoint: "Inventory/Product/UpdateAppointment/UpdateAppointment",
+    method: "POST",
+    body: cleanDto,
+  });
+}
+
+export function buildUpdateProductReservationDto(data = {}) {
+  const cost = Number(data.cost_Price ?? data.costPrice ?? 0) || 0;
+  const consumer = Number(data.consumer_Price ?? data.consumerPrice ?? 0) || 0;
+  const deposit = Number(data.default_Deposit_Amount ?? data.defaultInsuranceQty ?? data.deposit ?? 0) || 0;
+  const duration = Math.round(Number(data.default_Duration_Minutes ?? data.defaultDuration ?? 0)) || 0;
+
+  return {
+    id: toGuidOrNull(data.id),
+    name_Product: (data.name_Product || data.name || "").trim(),
+    product_Number: (data.product_Number || data.productNumber || "").trim(),
+    has_Expiry_Date: Boolean(data.has_Expiry_Date ?? data.hasExpiryDate ?? false),
+    category_Id: toGuidOrNull(data.category_Id || data.categoryId || data.category),
+    billing_Method: normalizeBillingMethod(data.billing_Method || data.billingMethod),
+    can_Be_Sold: Boolean(data.can_Be_Sold ?? data.canBeSold ?? true),
+    requires_Contract: Boolean(data.requires_Contract ?? data.requiresContract ?? false),
+    revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
+    expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
+    cost_Price: cost,
+    consumer_Price: consumer,
+    default_Deposit_Amount: deposit,
+    default_Duration_Minutes: duration,
+  };
+}
+
+export async function updateReservationProduct(data) {
+  const cleanDto = buildUpdateProductReservationDto(data);
+  return apiHandler({
+    endPoint: "Inventory/Product/UpdateReservation/UpdateReservation",
+    method: "POST",
+    body: cleanDto,
+  });
+}
+
 export function buildUpdateProductServiceDto(data = {}) {
   const cost = Number(data.cost_Price ?? data.costPrice ?? 0) || 0;
   const consumer = Number(data.consumer_Price ?? data.consumerPrice ?? 0) || 0;
@@ -740,7 +837,7 @@ export function buildUpdateProductServiceDto(data = {}) {
     name_Product: (data.name_Product || data.name || "").trim(),
     product_Number: (data.product_Number || data.productNumber || "").trim(),
     has_Expiry_Date: Boolean(data.has_Expiry_Date ?? data.hasExpiryDate ?? false),
-    billing_Method: data.billing_Method || data.billingMethod || "FixedPrice",
+    billing_Method: normalizeBillingMethod(data.billing_Method || data.billingMethod),
     can_Be_Sold: Boolean(data.can_Be_Sold ?? data.canBeSold ?? true),
     requires_Contract: Boolean(data.requires_Contract ?? data.requiresContract ?? false),
     requires_Scheduling: Boolean(data.requires_Scheduling ?? data.requiresScheduling ?? false),
@@ -753,12 +850,33 @@ export function buildUpdateProductServiceDto(data = {}) {
 }
 
 export async function updateService(data) {
-  const cleanDto = buildUpdateProductServiceDto(data);
-  return apiHandler({
-    endPoint: "Inventory/Product/UpdateProductService/service",
-    method: "POST",
-    body: cleanDto,
-  });
+  const pType = data.product_Type || data.productType;
+  if (pType === "Reservation") {
+    return updateReservationProduct(data);
+  }
+  if (pType === "Appointment") {
+    return updateAppointmentProduct(data);
+  }
+  if (pType === "Assembly") {
+    return updateAssemblyWithoutSpecs(data);
+  }
+  if (pType === "Bundle") {
+    return updateBundleWithoutSpecs(data);
+  }
+  if (pType === "Rental") {
+    return updateRentalProduct(data.id, data);
+  }
+
+  try {
+    return await updateAppointmentProduct(data);
+  } catch {
+    const cleanDto = buildUpdateProductServiceDto(data);
+    return apiHandler({
+      endPoint: "Inventory/Product/UpdateProductService/service",
+      method: "POST",
+      body: cleanDto,
+    });
+  }
 }
 
 export function buildCreateBundleDto(data = {}) {

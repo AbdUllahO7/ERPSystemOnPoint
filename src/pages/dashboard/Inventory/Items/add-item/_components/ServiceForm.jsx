@@ -4,7 +4,7 @@ import { Upload, Trash2, Image as ImageIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getAllCategories, getLeafAccounts, createService, updateService, getProductById } from "@/lib/api";
+import { getAllCategories, getLeafAccounts, createService, updateService, updateAppointmentProduct, updateReservationProduct, getProductById } from "@/lib/api";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -19,7 +19,7 @@ export default function ServiceForm() {
       name_Product: "",
       product_Number: "",
       category_Id: "",
-      billing_Method: "",
+      billing_Method: "FixedPrice",
       cost_Price: 0,
       consumer_Price: 0,
       revenue_Account_Id: "",
@@ -27,6 +27,10 @@ export default function ServiceForm() {
       requires_Contract: false,
       requires_Scheduling: false,
       requires_Shipping: false,
+      default_Deposit_Amount: 0,
+      default_Duration_Minutes: 0,
+      has_Expiry_Date: false,
+      can_Be_Sold: true,
     },
   });
 
@@ -63,7 +67,7 @@ export default function ServiceForm() {
         name_Product: sData.name_Product || "",
         product_Number: sData.product_Number || "",
         category_Id: sData.category_Id || "",
-        billing_Method: sData.billing_Method || "",
+        billing_Method: sData.billing_Method || "FixedPrice",
         cost_Price: cost,
         consumer_Price: consumer,
         revenue_Account_Id: sData.revenue_Account_Id || "",
@@ -71,6 +75,10 @@ export default function ServiceForm() {
         requires_Contract: sData.requires_Contract ?? false,
         requires_Scheduling: sData.requires_Scheduling ?? false,
         requires_Shipping: sData.requires_Shipping ?? false,
+        default_Deposit_Amount: sData.default_Deposit_Amount ?? 0,
+        default_Duration_Minutes: sData.default_Duration_Minutes ?? 0,
+        has_Expiry_Date: sData.has_Expiry_Date ?? false,
+        can_Be_Sold: sData.can_Be_Sold ?? true,
       });
     }
   }, [isEdit, serviceRes, reset]);
@@ -85,13 +93,26 @@ export default function ServiceForm() {
   }, [isEdit, serviceRes, categories, accounts, setValue]);
 
   const mutation = useMutation({
-    mutationFn: (data) => isEdit ? updateService({ id, ...data }) : createService(data),
+    mutationFn: (data) => {
+      if (isEdit) {
+        const merged = { ...rawProduct, ...data, id };
+        const pType = merged.product_Type || rawProduct.product_Type;
+        if (pType === "Reservation") {
+          return updateReservationProduct(merged);
+        }
+        if (pType === "Appointment") {
+          return updateAppointmentProduct(merged);
+        }
+        return updateService(merged);
+      }
+      return createService(data);
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["products"] });
       if (id) {
         await queryClient.invalidateQueries({ queryKey: ["product", id] });
       }
-      toast.success(isEdit ? "Service updated successfully" : "Service created successfully");
+      toast.success(isEdit ? "Updated successfully" : "Created successfully");
       navigate("/dashboard/inventory/items-management/items");
     },
     onError: (error) => {
@@ -287,6 +308,39 @@ export default function ServiceForm() {
               placeholder="0"
               className="h-11 bg-transparent"
               {...register("consumer_Price")}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <label
+              htmlFor="default_Duration_Minutes"
+              className="text-sm font-semibold text-foreground leading-none"
+            >
+              Default Duration (Minutes)
+            </label>
+            <Input
+              id="default_Duration_Minutes"
+              type="number"
+              placeholder="30"
+              className="h-11 bg-transparent"
+              {...register("default_Duration_Minutes")}
+            />
+          </div>
+          <div className="space-y-2">
+            <label
+              htmlFor="default_Deposit_Amount"
+              className="text-sm font-semibold text-foreground leading-none"
+            >
+              Default Deposit Amount
+            </label>
+            <Input
+              id="default_Deposit_Amount"
+              type="number"
+              placeholder="0"
+              className="h-11 bg-transparent"
+              {...register("default_Deposit_Amount")}
             />
           </div>
         </div>

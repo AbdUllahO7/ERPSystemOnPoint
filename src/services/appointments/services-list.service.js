@@ -4,6 +4,9 @@ import {
   updateAssemblyWithoutSpecs,
   updateBundleWithoutSpecs,
   updateSimpleProductWithSpecs,
+  updateAppointmentProduct,
+  updateReservationProduct,
+  updateRentalProduct,
 } from "@/services/inventory/inventory.service";
 import { Building2, Users as UsersIcon } from "lucide-react";
 
@@ -362,10 +365,18 @@ export async function updateService(id, payload = {}) {
     if (pType === "Bundle") {
       return updateBundleWithoutSpecs({ id, ...payload });
     }
+    if (pType === "Rental") {
+      return updateRentalProduct(id, payload);
+    }
+    if (pType === "Reservation") {
+      return updateReservationProduct({ id, ...payload });
+    }
+    if (pType === "Appointment") {
+      return updateAppointmentProduct({ id, ...payload });
+    }
 
-    // Default for Service & items:
-    // POST /api/Inventory/Product/UpdateProductInventoryWithSpecifications/inventory-with-specifications
-    return updateSimpleProductWithSpecs({ id, ...payload });
+    // Default for Appointment / Service:
+    return updateAppointmentProduct({ id, ...payload });
   } catch (err) {
     console.error(`Failed to update service ${id}:`, err);
     throw err;

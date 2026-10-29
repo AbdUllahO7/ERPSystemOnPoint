@@ -28,6 +28,8 @@ import {
   updateAssemblyWithoutSpecs,
   updateBundleWithoutSpecs,
   updateSimpleProductWithSpecs,
+  updateAppointmentProduct,
+  updateReservationProduct,
   createRentalProduct,
   updateRentalProduct,
 } from "@/services/inventory/inventory.service";
@@ -278,23 +280,27 @@ export default function AddEditService() {
         updateProductvariants,
       };
 
-      if (data.productType === "Assembly") {
+      if (data.productType === "Assembly" || raw.product_Type === "Assembly") {
         return updateAssemblyWithoutSpecs({ ...raw, ...data, id });
       }
-      if (data.productType === "Bundle") {
+      if (data.productType === "Bundle" || raw.product_Type === "Bundle") {
         return updateBundleWithoutSpecs({ ...raw, ...data, id });
       }
       if (data.productType === "Rental" || raw.product_Type === "Rental") {
         return updateRentalProduct(id, { ...raw, ...data, id });
       }
+      if (data.productType === "Reservation" || raw.product_Type === "Reservation") {
+        return updateReservationProduct({ ...raw, ...data, id });
+      }
 
-      // Default (Service / Inventory with specifications):
-      // POST /api/Inventory/Product/UpdateProductInventoryWithSpecifications/inventory-with-specifications
-      return updateSimpleProductWithSpecs(payload);
+      // Default for Appointment / Service:
+      // POST /api/Inventory/Product/UpdateAppointment/UpdateAppointment
+      return updateAppointmentProduct({ ...raw, ...data, id });
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries(["services"]);
-      queryClient.invalidateQueries(["serviceDetail", id]);
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["services"] });
+      await queryClient.invalidateQueries({ queryKey: ["serviceDetail", id] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
       toast.success(t("services.updatedSuccess") || "Updated successfully!");
       navigate("/dashboard/appointments/services");
     },
