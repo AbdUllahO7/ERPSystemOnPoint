@@ -1237,6 +1237,7 @@ export default {
     active: "نشط",
     types: {
       service: "خدمة مواعيد",
+      rental: "تأجير",
       inventory: "منتج مخزني بدون مواصفات",
       inventoryWithSpecs: "منتج مخزني بمواصفات",
       assembly: "منتج مجمع بدون مواصفات",

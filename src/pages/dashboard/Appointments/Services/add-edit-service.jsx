@@ -39,6 +39,23 @@ export default function AddEditService() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { t, locale } = useI18n();
+  const sT = (typeof t === "object" || typeof t === "function") && t?.services ? t.services : {};
+
+  const tr = (path, fallback = "") => {
+    if (typeof t === "function") {
+      const val = t(path, fallback);
+      if (val !== undefined && val !== null && val !== path) return val;
+    }
+    const key = path.startsWith("services.") ? path.slice("services.".length) : path;
+    const parts = key.split(".");
+    let cur = sT;
+    for (const p of parts) {
+      if (!cur) break;
+      cur = cur[p];
+    }
+    return (cur !== undefined && cur !== null) ? cur : fallback;
+  };
+
   const isEdit = Boolean(id);
 
   const [formData, setFormData] = useState({
@@ -181,10 +198,10 @@ export default function AddEditService() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries(["services"]);
-      toast.success(t("services.createdSuccess") || "Service created successfully!");
+      toast.success(tr("services.createdSuccess") || "Service created successfully!");
       navigate("/dashboard/appointments/services");
     },
-    onError: () => toast.error(t("services.createError") || "Failed to create service"),
+    onError: () => toast.error(tr("services.createError") || "Failed to create service"),
   });
 
   const updateMutation = useMutation({
@@ -301,11 +318,11 @@ export default function AddEditService() {
       await queryClient.invalidateQueries({ queryKey: ["services"] });
       await queryClient.invalidateQueries({ queryKey: ["serviceDetail", id] });
       await queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success(t("services.updatedSuccess") || "Updated successfully!");
+      toast.success(tr("services.updatedSuccess") || "Updated successfully!");
       navigate("/dashboard/appointments/services");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || err?.message || (t("services.updateError") || "Failed to update");
+      const msg = err?.response?.data?.message || err?.message || (tr("services.updateError") || "Failed to update");
       toast.error(msg);
     },
   });
@@ -317,7 +334,7 @@ export default function AddEditService() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.name?.trim()) {
-      toast.error(t("services.enterName") || "Please enter a service name");
+      toast.error(tr("services.enterName") || "Please enter a service name");
       return;
     }
 
@@ -334,11 +351,11 @@ export default function AddEditService() {
     <form onSubmit={handleSubmit} className="space-y-6 pb-12">
       {/* Page Header */}
       <PageTitle
-        title={isEdit ? (t("services.titleEdit") || "Edit Service") : (t("services.titleAdd") || "Add Service")}
-        infoText={t("services.infoText") || "Configure service details, duration, pricing, and accounting rules"}
+        title={isEdit ? (tr("services.titleEdit") || "Edit Service") : (tr("services.titleAdd") || "Add Service")}
+        infoText={tr("services.infoText") || "Configure service details, duration, pricing, and accounting rules"}
         breadcrumbs={[
-          { label: t("services.breadcrumbList") || "Services", href: "/dashboard/appointments/services" },
-          { label: isEdit ? (t("services.titleEdit") || "Edit Service") : (t("services.titleAdd") || "Add Service") },
+          { label: tr("services.breadcrumbList") || "Services", href: "/dashboard/appointments/services" },
+          { label: isEdit ? (tr("services.titleEdit") || "Edit Service") : (tr("services.titleAdd") || "Add Service") },
         ]}
         actions={
           <div className="flex items-center gap-2.5">
@@ -347,11 +364,11 @@ export default function AddEditService() {
               variant="outline"
               onClick={() => navigate("/dashboard/appointments/services")}
             >
-              {t("services.cancel") || "Cancel"}
+              {tr("services.cancel") || "Cancel"}
             </Button>
             <Button type="submit" disabled={isSaving || isPageLoading} className="gap-2">
               <Save className="h-4 w-4" />
-              {isSaving ? (t("services.saving") || "Saving...") : (t("services.save") || "Save")}
+              {isSaving ? (tr("services.saving") || "Saving...") : (tr("services.save") || "Save")}
             </Button>
           </div>
         }
@@ -362,8 +379,8 @@ export default function AddEditService() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-sm font-medium">
             {isEdit
-              ? (t("services.loadingDetails") || "Loading service details & lookups...")
-              : (t("services.loadingForm") || "Loading form data...")}
+              ? (tr("services.loadingDetails") || "Loading service details & lookups...")
+              : (tr("services.loadingForm") || "Loading form data...")}
           </p>
         </div>
       ) : (
@@ -374,7 +391,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.itemType") || "Item Type"}
+                  {tr("services.itemType") || "Item Type"}
                 </Label>
                 <Select
                   value={formData.productType}
@@ -390,22 +407,22 @@ export default function AddEditService() {
                   }}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("services.itemType") || "Select Type"} />
+                    <SelectValue placeholder={tr("services.itemType") || "Select Type"} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Service">{t("services.types.service") || "Service"}</SelectItem>
-                    <SelectItem value="Rental">{t("services.types.rental") || "Rental"}</SelectItem>
-                    <SelectItem value="Inventory">{t("services.types.inventory") || "Inventory without specs"}</SelectItem>
-                    <SelectItem value="InventoryWithSpecs">{t("services.types.inventoryWithSpecs") || "Inventory with specs"}</SelectItem>
-                    <SelectItem value="Assembly">{t("services.types.assembly") || "Assembly"}</SelectItem>
-                    <SelectItem value="Bundle">{t("services.types.bundle") || "Bundle"}</SelectItem>
+                    <SelectItem value="Service">{tr("services.types.service") || "Service"}</SelectItem>
+                    <SelectItem value="Rental">{tr("services.types.rental") || "Rental"}</SelectItem>
+                    <SelectItem value="Inventory">{tr("services.types.inventory") || "Inventory without specs"}</SelectItem>
+                    <SelectItem value="InventoryWithSpecs">{tr("services.types.inventoryWithSpecs") || "Inventory with specs"}</SelectItem>
+                    <SelectItem value="Assembly">{tr("services.types.assembly") || "Assembly"}</SelectItem>
+                    <SelectItem value="Bundle">{tr("services.types.bundle") || "Bundle"}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.serviceName") || "Service Name"} *
+                  {tr("services.serviceName") || "Service Name"} *
                 </Label>
                 <Input
                   value={formData.name}
@@ -418,19 +435,19 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.productNumber") || "Product Number"}
+                  {tr("services.productNumber") || "Product Number"}
                 </Label>
                 <Input
                   value={formData.productNumber}
                   onChange={(e) => handleChange("productNumber", e.target.value)}
-                  placeholder={t("services.productNumberPlaceholder") || "e.g. SRV-1001 (auto if empty)"}
+                  placeholder={tr("services.productNumberPlaceholder") || "e.g. SRV-1001 (auto if empty)"}
                   className="w-full"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.category") || "Category"}
+                  {tr("services.category") || "Category"}
                 </Label>
                 <Select
                   key={formData.category || "cat-select"}
@@ -438,7 +455,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("category", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("services.selectCategory") || "Select Category"} />
+                    <SelectValue placeholder={tr("services.selectCategory") || "Select Category"} />
                   </SelectTrigger>
                   <SelectContent>
                     {categoryOptions.map((c) => (
@@ -455,7 +472,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.billingMethod") || "Billing Method"}
+                  {tr("services.billingMethod") || "Billing Method"}
                 </Label>
                 <Select
                   key={formData.billingMethod || "bm-select"}
@@ -463,7 +480,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("billingMethod", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("services.selectBillingMethod") || "Select Billing Method"} />
+                    <SelectValue placeholder={tr("services.selectBillingMethod") || "Select Billing Method"} />
                   </SelectTrigger>
                   <SelectContent>
                     {billingMethodOptions.map((bm) => (
@@ -477,7 +494,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.defaultDuration") || "Default Duration (min)"}
+                  {tr("services.defaultDuration") || "Default Duration (min)"}
                 </Label>
                 <Input
                   type="number"
@@ -493,7 +510,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.defaultDepositAmount") || "Default Deposit Amount"}
+                  {tr("services.defaultDepositAmount") || "Default Deposit Amount"}
                 </Label>
                 <Input
                   type="number"
@@ -513,7 +530,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.costPrice") || "Cost Price"}
+                  {tr("services.costPrice") || "Cost Price"}
                 </Label>
                 <Input
                   type="number"
@@ -530,7 +547,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.consumerPrice") || "Consumer Price"}
+                  {tr("services.consumerPrice") || "Consumer Price"}
                 </Label>
                 <Input
                   type="number"
@@ -547,7 +564,7 @@ export default function AddEditService() {
 
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.revenueAccount") || "Revenue Account"}
+                  {tr("services.revenueAccount") || "Revenue Account"}
                 </Label>
                 <Select
                   key={formData.revenueAccount || "rev-select"}
@@ -555,7 +572,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("revenueAccount", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("services.selectRevenueAccount") || "Select Revenue Account"} />
+                    <SelectValue placeholder={tr("services.selectRevenueAccount") || "Select Revenue Account"} />
                   </SelectTrigger>
                   <SelectContent>
                     {revenueAccountOptions.map((ra) => (
@@ -572,7 +589,7 @@ export default function AddEditService() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  {t("services.expenseAccount") || "Expense Account"}
+                  {tr("services.expenseAccount") || "Expense Account"}
                 </Label>
                 <Select
                   key={formData.expenseAccount || "exp-select"}
@@ -580,7 +597,7 @@ export default function AddEditService() {
                   onValueChange={(val) => handleChange("expenseAccount", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder={t("services.selectExpenseAccount") || "Select Expense Account"} />
+                    <SelectValue placeholder={tr("services.selectExpenseAccount") || "Select Expense Account"} />
                   </SelectTrigger>
                   <SelectContent>
                     {expenseAccountOptions.map((ea) => (
@@ -612,7 +629,7 @@ export default function AddEditService() {
                     formData.canBeSold ? "text-primary" : "text-foreground"
                   )}
                 >
-                  {t("services.canBeSold") || "Can Be Sold"}
+                  {tr("services.canBeSold") || "Can Be Sold"}
                 </span>
                 <Switch
                   checked={formData.canBeSold}
@@ -635,7 +652,7 @@ export default function AddEditService() {
                     formData.requiresContract ? "text-primary font-semibold" : "text-foreground"
                   )}
                 >
-                  {t("services.requiresContract") || "Requires contract"}
+                  {tr("services.requiresContract") || "Requires contract"}
                 </span>
                 <Switch
                   checked={formData.requiresContract}
@@ -658,7 +675,7 @@ export default function AddEditService() {
                     formData.hasExpiryDate ? "text-primary font-semibold" : "text-foreground"
                   )}
                 >
-                  {t("services.hasExpiryDate") || "Has Expiry Date"}
+                  {tr("services.hasExpiryDate") || "Has Expiry Date"}
                 </span>
                 <Switch
                   checked={formData.hasExpiryDate}
@@ -681,7 +698,7 @@ export default function AddEditService() {
                     formData.isActive ? "text-primary" : "text-foreground"
                   )}
                 >
-                  {t("services.active") || "Active"}
+                  {tr("services.active") || "Active"}
                 </span>
                 <Switch
                   checked={formData.isActive}

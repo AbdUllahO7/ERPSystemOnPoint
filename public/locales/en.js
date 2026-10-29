@@ -1190,6 +1190,7 @@ export default {
     active: "Active",
     types: {
       service: "Service",
+      rental: "Rental",
       inventory: "Inventory without specs",
       inventoryWithSpecs: "Inventory with specs",
       assembly: "Assembly",
