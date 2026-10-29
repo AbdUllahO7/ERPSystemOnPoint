@@ -14,6 +14,7 @@ import {
   updateRentalProduct,
   getProductById,
 } from "@/lib/api";
+import { getDefaultRentalUnitId } from "@/services/inventory/inventory.service";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -23,9 +24,7 @@ export default function RentalForm() {
   const isEdit = Boolean(id);
   const queryClient = useQueryClient();
 
-  const [units, setUnits] = useState([
-    { unitOfMeasurmentId: "", cost_Price: 0, consumer_Price: 0 },
-  ]);
+  const [units, setUnits] = useState([]);
 
   const {
     register,
@@ -45,7 +44,7 @@ export default function RentalForm() {
       default_Deposit_Amount: 0,
       revenue_Account_Id: "",
       expense_Account_Id: "",
-      billing_Method: "FixedPrice",
+      billing_Method: "Daily",
       cost_Price: 0,
       consumer_Price: 0,
     },
@@ -80,10 +79,16 @@ export default function RentalForm() {
   const costPrice = watch("cost_Price");
   const consumerPrice = watch("consumer_Price");
 
+  const billingMethod = watch("billing_Method") || "Daily";
+  const defaultUnitId = getDefaultRentalUnitId(billingMethod);
+
   // Load existing rental product when in edit mode
   useEffect(() => {
     if (isEdit && productRes?.data) {
       const p = productRes.data?.data || productRes.data;
+      const bMethod = p.billing_Method || p.billingMethod || "Daily";
+      const defUomId = getDefaultRentalUnitId(bMethod);
+
       reset({
         name_Product: p.name_Product || p.name || "",
         product_Number: p.product_Number || p.productNumber || "",
@@ -94,50 +99,45 @@ export default function RentalForm() {
         default_Deposit_Amount: p.default_Deposit_Amount ?? p.defaultDepositAmount ?? 0,
         revenue_Account_Id: p.revenue_Account_Id || p.revenueAccountId || "",
         expense_Account_Id: p.expense_Account_Id || p.expenseAccountId || "",
-        billing_Method: p.billing_Method || p.billingMethod || "FixedPrice",
+        billing_Method: bMethod,
         cost_Price: p.cost_Price ?? p.variants?.[0]?.productUnitDtos?.[0]?.cost_Price ?? 0,
         consumer_Price: p.consumer_Price ?? p.variants?.[0]?.productUnitDtos?.[0]?.consumer_Price ?? 0,
       });
 
-      // Parse rental units
-      const existingUnits =
+      // Parse additional rental units (exclude default unit)
+      const rawUnits =
         p.productUnitrental ||
         p.product_Unit_Rental ||
         (Array.isArray(p.variants) && p.variants[0]?.productUnitDtos
-          ? p.variants[0].productUnitDtos.map((u) => ({
-              unitOfMeasurmentId: u.unit_Of_Measurement_Id || u.unitOfMeasurementId,
-              cost_Price: u.cost_Price || 0,
-              consumer_Price: u.consumer_Price || 0,
-            }))
+          ? p.variants[0].productUnitDtos
           : []);
 
-      if (existingUnits.length > 0) {
-        setUnits(
-          existingUnits.map((u) => ({
-            unitOfMeasurmentId: u.unitOfMeasurmentId || u.unit_Of_Measurement_Id || "",
+      if (rawUnits.length > 0) {
+        const additional = rawUnits
+          .filter((u) => {
+            const uom = u.unit_Of_Measurement_Id || u.unitOfMeasurementId || u.unitOfMeasurmentId;
+            return (
+              uom &&
+              uom.toLowerCase() !== defUomId.toLowerCase() &&
+              !u.is_Default_Selling
+            );
+          })
+          .map((u) => ({
+            unitOfMeasurmentId: u.unit_Of_Measurement_Id || u.unitOfMeasurementId || u.unitOfMeasurmentId || "",
             cost_Price: Number(u.cost_Price) || 0,
             consumer_Price: Number(u.consumer_Price) || 0,
-          }))
-        );
+          }));
+
+        setUnits(additional);
       }
     }
   }, [isEdit, productRes, reset]);
 
-  // Set default unit when uomList loads if none selected
-  useEffect(() => {
-    if (!isEdit && uomList.length > 0 && units.length === 1 && !units[0].unitOfMeasurmentId) {
-      setUnits([
-        {
-          unitOfMeasurmentId: String(uomList[0].unit_Name_Id || uomList[0].id || ""),
-          cost_Price: Number(costPrice) || 0,
-          consumer_Price: Number(consumerPrice) || 0,
-        },
-      ]);
-    }
-  }, [uomList, isEdit, costPrice, consumerPrice]);
-
   const handleAddUnit = () => {
-    const firstUomId = uomList[0]?.unit_Name_Id || uomList[0]?.id || "";
+    const candidateUoms = uomList.filter(
+      (u) => (u.unit_Name_Id || u.id)?.toLowerCase() !== defaultUnitId.toLowerCase()
+    );
+    const firstUomId = candidateUoms[0]?.unit_Name_Id || candidateUoms[0]?.id || "";
     setUnits((prev) => [
       ...prev,
       {
@@ -149,10 +149,6 @@ export default function RentalForm() {
   };
 
   const handleRemoveUnit = (index) => {
-    if (units.length <= 1) {
-      toast.error("At least one rental unit is required");
-      return;
-    }
     setUnits((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -191,21 +187,20 @@ export default function RentalForm() {
   });
 
   const onSubmit = (data) => {
+    const targetBillingMethod = data.billing_Method || "Daily";
+    const currentDefaultUnitId = getDefaultRentalUnitId(targetBillingMethod);
+
     const validUnits = units
-      .filter((u) => Boolean(u.unitOfMeasurmentId))
+      .filter(
+        (u) =>
+          Boolean(u.unitOfMeasurmentId) &&
+          u.unitOfMeasurmentId.toLowerCase() !== currentDefaultUnitId.toLowerCase()
+      )
       .map((u) => ({
         unitOfMeasurmentId: u.unitOfMeasurmentId,
         cost_Price: Number(u.cost_Price) || 0,
         consumer_Price: Number(u.consumer_Price) || 0,
       }));
-
-    if (validUnits.length === 0 && uomList.length > 0) {
-      validUnits.push({
-        unitOfMeasurmentId: String(uomList[0].id),
-        cost_Price: Number(data.cost_Price) || 0,
-        consumer_Price: Number(data.consumer_Price) || 0,
-      });
-    }
 
     const payload = {
       name_Product: (data.name_Product || "").trim(),
@@ -217,7 +212,7 @@ export default function RentalForm() {
       default_Deposit_Amount: Number(data.default_Deposit_Amount) || 0,
       revenue_Account_Id: data.revenue_Account_Id,
       expense_Account_Id: data.expense_Account_Id,
-      billing_Method: data.billing_Method || "FixedPrice",
+      billing_Method: targetBillingMethod,
       cost_Price: Number(data.cost_Price) || 0,
       consumer_Price: Number(data.consumer_Price) || 0,
       productUnitrental: validUnits,
@@ -400,12 +395,9 @@ export default function RentalForm() {
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               {...register("billing_Method", { required: true })}
             >
-              <option value="FixedPrice">Fixed Price</option>
-              <option value="Hourly">Hourly</option>
               <option value="Daily">Daily</option>
-              <option value="Weekly">Weekly</option>
+              <option value="Hourly">Hourly</option>
               <option value="Monthly">Monthly</option>
-              <option value="QuantityBased">Quantity Based</option>
             </select>
           </div>
 
@@ -509,10 +501,10 @@ export default function RentalForm() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-foreground">
-              Rental Measurement Units & Pricing
+              Additional Rental Units & Pricing
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Specify rate units (e.g. Hour, Day, Month, Piece) with dedicated cost and consumer rental prices.
+              Specify additional rate units (e.g. Hour, Day, Month) beyond the primary billing method.
             </p>
           </div>
           <Button
@@ -528,80 +520,92 @@ export default function RentalForm() {
         </div>
 
         <div className="space-y-3 pt-2">
-          {units.map((unit, idx) => (
-            <div
-              key={idx}
-              className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3.5 rounded-xl border bg-muted/20"
-            >
-              <div className="sm:col-span-5 space-y-1">
-                <Label className="text-xs text-muted-foreground">
-                  Measurement Unit <span className="text-red-500">*</span>
-                </Label>
-                <select
-                  value={unit.unitOfMeasurmentId}
-                  onChange={(e) =>
-                    handleUnitChange(idx, "unitOfMeasurmentId", e.target.value)
-                  }
-                  className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-xs"
-                >
-                  <option value="">Select Unit</option>
-                  {uomList.map((uom, uIdx) => {
-                    const uomVal = uom.unit_Name_Id || uom.id || "";
-                    return (
-                      <option key={uomVal || uIdx} value={String(uomVal)}>
-                        {uom.unit_name || uom.unit_Name || uom.name || "Unit"}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-
-              <div className="sm:col-span-3 space-y-1">
-                <Label className="text-xs text-muted-foreground">
-                  Cost Price ($)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0"
-                  value={unit.cost_Price}
-                  onChange={(e) =>
-                    handleUnitChange(idx, "cost_Price", e.target.value)
-                  }
-                  className="h-10 text-xs bg-card"
-                />
-              </div>
-
-              <div className="sm:col-span-3 space-y-1">
-                <Label className="text-xs text-muted-foreground">
-                  Rental Price ($)
-                </Label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  placeholder="0"
-                  value={unit.consumer_Price}
-                  onChange={(e) =>
-                    handleUnitChange(idx, "consumer_Price", e.target.value)
-                  }
-                  className="h-10 text-xs bg-card"
-                />
-              </div>
-
-              <div className="sm:col-span-1 flex justify-end pt-5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveUnit(idx)}
-                  className="h-9 w-9 p-0 text-muted-foreground hover:text-red-600 rounded-lg"
-                  disabled={units.length <= 1}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
+          {units.length === 0 ? (
+            <div className="text-center py-6 border border-dashed rounded-xl bg-muted/10 text-muted-foreground">
+              <p className="text-xs">
+                No additional rental units configured. The default rate is defined by the billing method above.
+              </p>
             </div>
-          ))}
+          ) : (
+            units.map((unit, idx) => (
+              <div
+                key={idx}
+                className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center p-3.5 rounded-xl border bg-muted/20"
+              >
+                <div className="sm:col-span-5 space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Measurement Unit <span className="text-red-500">*</span>
+                  </Label>
+                  <select
+                    value={unit.unitOfMeasurmentId}
+                    onChange={(e) =>
+                      handleUnitChange(idx, "unitOfMeasurmentId", e.target.value)
+                    }
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-xs"
+                  >
+                    <option value="">Select Unit</option>
+                    {uomList
+                      .filter((uom) => {
+                        const uomVal = String(uom.unit_Name_Id || uom.id || "").toLowerCase();
+                        return uomVal !== defaultUnitId.toLowerCase();
+                      })
+                      .map((uom, uIdx) => {
+                        const uomVal = uom.unit_Name_Id || uom.id || "";
+                        return (
+                          <option key={uomVal || uIdx} value={String(uomVal)}>
+                            {uom.unit_name || uom.unit_Name || uom.name || "Unit"}
+                          </option>
+                        );
+                      })}
+                  </select>
+                </div>
+
+                <div className="sm:col-span-3 space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Cost Price ($)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0"
+                    value={unit.cost_Price}
+                    onChange={(e) =>
+                      handleUnitChange(idx, "cost_Price", e.target.value)
+                    }
+                    className="h-10 text-xs bg-card"
+                  />
+                </div>
+
+                <div className="sm:col-span-3 space-y-1">
+                  <Label className="text-xs text-muted-foreground">
+                    Rental Price ($)
+                  </Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="0"
+                    value={unit.consumer_Price}
+                    onChange={(e) =>
+                      handleUnitChange(idx, "consumer_Price", e.target.value)
+                    }
+                    className="h-10 text-xs bg-card"
+                  />
+                </div>
+
+                <div className="sm:col-span-1 flex justify-end pt-5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleRemoveUnit(idx)}
+                    className="h-9 w-9 p-0 text-muted-foreground hover:text-red-600 rounded-lg"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </form>

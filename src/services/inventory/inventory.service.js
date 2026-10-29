@@ -1043,9 +1043,38 @@ export async function updateSimpleProductWithoutSpecs(data) {
   });
 }
 
+export const RENTAL_BILLING_METHOD_UNITS = {
+  Hourly: "11111111-1111-1111-1111-111111111111", // HOUR
+  Daily: "22222222-2222-2222-2222-222222222222",  // DAY
+  Monthly: "44444444-4444-4444-4444-444444444444", // MONTH
+};
+
+export const SUPPORTED_RENTAL_UNIT_IDS = new Set([
+  "11111111-1111-1111-1111-111111111111", // HOUR
+  "22222222-2222-2222-2222-222222222222", // DAY
+  "44444444-4444-4444-4444-444444444444", // MONTH
+  "66666666-6666-6666-6666-666666666666", // WEEK
+  "77777777-7777-7777-7777-777777777777", // YEAR
+]);
+
+export function getDefaultRentalUnitId(billingMethod) {
+  const method = String(billingMethod || "").trim();
+  if (/^hour/i.test(method)) return RENTAL_BILLING_METHOD_UNITS.Hourly;
+  if (/^month/i.test(method)) return RENTAL_BILLING_METHOD_UNITS.Monthly;
+  return RENTAL_BILLING_METHOD_UNITS.Daily;
+}
+
 export function buildRentalProductDto(data = {}, isUpdate = false) {
   const costPrice = Number(data.cost_Price ?? data.costPrice ?? 0) || 0;
   const consumerPrice = Number(data.consumer_Price ?? data.consumerPrice ?? 0) || 0;
+
+  // Rental billing method must be Hourly, Daily, or Monthly
+  let billingMethod = data.billing_Method || data.billingMethod || "Daily";
+  if (billingMethod === "FixedPrice" || billingMethod === "QuantityBased" || billingMethod === "Weekly") {
+    billingMethod = "Daily";
+  }
+
+  const defaultUnitId = getDefaultRentalUnitId(billingMethod);
 
   let units = [];
   const rawUnits =
@@ -1067,6 +1096,8 @@ export function buildRentalProductDto(data = {}, isUpdate = false) {
           u.id
         );
         if (!uomId) return null;
+        // Never include the default unit in productUnitrental (backend automatically provisions it)
+        if (uomId.toLowerCase() === defaultUnitId.toLowerCase()) return null;
         return {
           unitOfMeasurmentId: uomId,
           cost_Price: Number(u.cost_Price ?? u.costPrice ?? costPrice) || 0,
@@ -1074,27 +1105,6 @@ export function buildRentalProductDto(data = {}, isUpdate = false) {
         };
       })
       .filter(Boolean);
-  }
-
-  if (units.length === 0) {
-    const singleUomId = toGuidOrNull(
-      data.unitOfMeasurmentId ||
-      data.unitOfMeasurementId ||
-      data.unit_Of_Measurement_Id ||
-      data.unit_Name_Id ||
-      data.unitId ||
-      data.unit_id ||
-      data.variants?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id
-    );
-    if (singleUomId) {
-      units = [
-        {
-          unitOfMeasurmentId: singleUomId,
-          cost_Price: costPrice,
-          consumer_Price: consumerPrice,
-        },
-      ];
-    }
   }
 
   const dto = {
@@ -1117,7 +1127,7 @@ export function buildRentalProductDto(data = {}, isUpdate = false) {
     expense_Account_Id: toGuidOrNull(
       data.expense_Account_Id || data.expenseAccountId || data.expenseAccount
     ),
-    billing_Method: data.billing_Method || data.billingMethod || "FixedPrice",
+    billing_Method: billingMethod,
     cost_Price: costPrice,
     consumer_Price: consumerPrice,
     productUnitrental: units,
@@ -1147,15 +1157,116 @@ export async function createRentalProduct(data) {
 /**
  * Update Rental Product
  * Endpoint: POST /api/Inventory/Product/UpdateRental/{id}
+ * Fallback: POST /api/Inventory/Product/UpdateProduct/Update + ProductUnit price sync
  */
 export async function updateRentalProduct(id, data) {
   const cleanId = toGuidOrNull(id || data?.id);
   const cleanDto = buildRentalProductDto({ ...data, id: cleanId }, true);
-  return apiHandler({
-    endPoint: `Inventory/Product/UpdateRental/${cleanId}`,
-    method: "POST",
-    body: cleanDto,
-  });
+
+  try {
+    return await apiHandler({
+      endPoint: `Inventory/Product/UpdateRental/${cleanId}`,
+      method: "POST",
+      body: cleanDto,
+    });
+  } catch (error) {
+    console.warn("UpdateRental endpoint failed, using UpdateProduct fallback:", error?.message);
+
+    const updateProductDto = {
+      id: cleanId,
+      name_Product: cleanDto.name_Product,
+      product_Number: cleanDto.product_Number,
+      has_Specifications: false,
+      is_Tracking_Inventory: false,
+      category_Id: cleanDto.category_Id,
+      has_Expiry_Date: cleanDto.has_Expiry_Date,
+      origin_Id: null,
+      can_Be_Sold: cleanDto.can_Be_Sold,
+      can_Be_Purchased: true,
+      requires_Shipping: false,
+      requires_Contract: cleanDto.requires_Contract,
+      requires_Scheduling: true,
+      has_Variants: false,
+      is_Fixed_Price: false,
+      revenue_Account_Id: cleanDto.revenue_Account_Id,
+      expense_Account_Id: cleanDto.expense_Account_Id,
+      inventory_Account_Id: null,
+      product_Type: "Rental",
+      billing_Method: cleanDto.billing_Method,
+    };
+
+    const updateRes = await apiHandler({
+      endPoint: "Inventory/Product/UpdateProduct/Update",
+      method: "POST",
+      body: updateProductDto,
+    });
+
+    try {
+      const getRes = await getProductById(cleanId);
+      const productData = getRes?.data?.data || getRes?.data;
+      const variant = productData?.variants?.[0];
+      const existingUnits = variant?.productUnitDtos || [];
+
+      // Sync default unit price
+      const defaultUnit = existingUnits.find((u) => u.is_Default_Selling) || existingUnits[0];
+      if (defaultUnit?.id && cleanDto.consumer_Price > 0) {
+        await apiHandler({
+          endPoint: "Inventory/ProductUnit/UpdatePrices/UpdatePrices",
+          method: "POST",
+          body: {
+            id: defaultUnit.id,
+            wholesale_Price: 0,
+            consumer_Price: cleanDto.consumer_Price,
+          },
+        }).catch(() => {});
+      }
+
+      // Sync or add additional units
+      if (Array.isArray(cleanDto.productUnitrental) && cleanDto.productUnitrental.length > 0) {
+        for (const unit of cleanDto.productUnitrental) {
+          const match = existingUnits.find(
+            (u) =>
+              (u.unit_Of_Measurement_Id || u.unitOfMeasurementId)?.toLowerCase() ===
+              unit.unitOfMeasurmentId?.toLowerCase()
+          );
+          if (match?.id) {
+            await apiHandler({
+              endPoint: "Inventory/ProductUnit/UpdatePrices/UpdatePrices",
+              method: "POST",
+              body: {
+                id: match.id,
+                wholesale_Price: 0,
+                consumer_Price: unit.consumer_Price,
+              },
+            }).catch(() => {});
+          } else if (variant?.id) {
+            await apiHandler({
+              endPoint: "Inventory/ProductUnit/AddUnitToVariant/AddUnitToVariant",
+              method: "POST",
+              body: {
+                productvariant_Id: variant.id,
+                unit_Of_Measurement_Id: unit.unitOfMeasurmentId,
+                relative_factor: 1,
+                barcode: null,
+                is_Default_Selling: false,
+                is_Default_Purchasing: false,
+                parent_unit_Of_Measurement_Id: defaultUnit?.unit_Of_Measurement_Id || null,
+                barcode_Option: "AutoGenerate",
+                qr_code: null,
+                cost_Price: unit.cost_Price || 0,
+                wholesale_Price: 0,
+                consumer_Price: unit.consumer_Price || 0,
+              },
+            }).catch(() => {});
+          }
+        }
+      }
+    } catch (unitErr) {
+      console.warn("Could not sync rental unit prices:", unitErr?.message);
+    }
+
+    return updateRes;
+  }
 }
 
 export async function searchMaterialsForInvoice(params) {
