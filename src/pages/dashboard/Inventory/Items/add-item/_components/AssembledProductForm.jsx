@@ -25,7 +25,7 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       category_Id: "",
       item_Origin: "",
       requires_Shipping: false,
-      there_Are_Units: thereAreUnits,
+      there_Are_Units: Boolean(thereAreUnits),
       minimum_Alert_Level: 0,
       maximum_Stock_Level: 0,
       revenue_Account_Id: "",
@@ -60,6 +60,10 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       setThereAreUnits(watchThereAreUnits);
     }
   }, [watchThereAreUnits, thereAreUnits, setThereAreUnits]);
+
+  useEffect(() => {
+    setValue("there_Are_Units", Boolean(thereAreUnits));
+  }, [thereAreUnits, setValue]);
 
   const { fields: unitFields, append: appendUnit, remove: removeUnit } = useFieldArray({
     control,
@@ -247,14 +251,42 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
     if (!isFinalStep) {
       onNext();
     } else {
-      if (isEdit) {
-        const payload = { ...data };
-        if (!payload.there_Are_Units) {
-          payload.product_Units = [];
+      const payload = { ...data };
+
+      // Synchronize root price / barcode fields if modified on unit[0]
+      if (payload.product_Units?.[0]) {
+        const u0 = payload.product_Units[0];
+        if (u0.barcode && !payload.barcode) payload.barcode = u0.barcode;
+        if (u0.qr_Code && !payload.qr_Code) payload.qr_Code = u0.qr_Code;
+        if (Number(u0.cost_Price) && !Number(payload.cost_Price)) payload.cost_Price = u0.cost_Price;
+        if (Number(u0.consumer_Price) && !Number(payload.consumer_Price)) payload.consumer_Price = u0.consumer_Price;
+        if (Number(u0.wholesale_Price) && !Number(payload.wholesale_Price)) payload.wholesale_Price = u0.wholesale_Price;
+        if (Number(u0.last_Purchase_Price) && !Number(payload.last_Purchase_Price)) payload.last_Purchase_Price = u0.last_Purchase_Price;
+        if (Number(u0.average_Purchase_Price) && !Number(payload.average_Purchase_Price)) payload.average_Purchase_Price = u0.average_Purchase_Price;
+      }
+
+      if (!payload.there_Are_Units) {
+        payload.product_Units = [];
+      } else {
+        // Exclude base piece unit so only additional units are submitted
+        payload.product_Units = (payload.product_Units || []).filter((u, idx) => {
+          if (idx === 0) return false;
+          const uomId = u.unit_Of_Measurement_Id;
+          return (
+            uomId !== "55555555-5555-5555-5555-555555555555" &&
+            uomId !== "e7355714-9762-4403-8c61-d1dcf04d06ba" &&
+            u.unitName !== "قطعة"
+          );
+        });
+        if (payload.product_Units.length === 0) {
+          payload.there_Are_Units = false;
         }
+      }
+
+      if (isEdit) {
         updateMutation.mutate({ ...payload, id });
       } else {
-        createMutation.mutate(data);
+        createMutation.mutate(payload);
       }
     }
   };

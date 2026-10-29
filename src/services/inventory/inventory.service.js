@@ -176,6 +176,33 @@ export async function createService(data) {
   });
 }
 
+export const DEFAULT_PIECE_UNIT_ID = "55555555-5555-5555-5555-555555555555";
+
+export function isPieceUnit(unit = {}) {
+  const uomId = toGuidOrNull(
+    unit.unit_Of_Measurement_Id ||
+    unit.unitOfMeasurementId ||
+    unit.unit_Name_Id ||
+    unit.unitId ||
+    unit.id
+  );
+  if (
+    uomId === "55555555-5555-5555-5555-555555555555" ||
+    uomId === "e7355714-9762-4403-8c61-d1dcf04d06ba"
+  ) {
+    return true;
+  }
+  const name = String(unit.unitName || unit.unit_name || unit.name || "").trim().toLowerCase();
+  if (name === "قطعة" || name === "قطعه" || name === "piece" || name.includes("حبة / قطعة")) {
+    return true;
+  }
+  const sysCode = String(unit.system_code || unit.systemCode || "").trim().toUpperCase();
+  if (sysCode === "PIECE") {
+    return true;
+  }
+  return false;
+}
+
 export function toGuidOrNull(val) {
   if (!val || val === "none" || val === "null" || val === "undefined") return null;
   const str = String(val).trim();
@@ -190,14 +217,20 @@ export function buildCreateProductUnitDto(unit = {}, fallbackData = {}) {
   const lastPurchase = Number(unit.last_Purchase_Price ?? unit.lastPurchasePrice ?? fallbackData.last_Purchase_Price ?? fallbackData.lastPurchasePrice ?? 0) || 0;
   const avgPurchase = Number(unit.average_Purchase_Price ?? unit.averagePurchasePrice ?? fallbackData.average_Purchase_Price ?? fallbackData.averagePurchasePrice ?? 0) || 0;
 
+  let barcodeOption = unit.barcode_Option || unit.barcodeOption || fallbackData.barcode_Option || "Manual";
+  const barcode = (unit.barcode || fallbackData.barcode || "").trim() || null;
+  if (!barcode && barcodeOption === "Manual") {
+    barcodeOption = "AutoGenerate";
+  }
+
   return {
     unit_Of_Measurement_Id: toGuidOrNull(unit.unit_Of_Measurement_Id || unit.unitOfMeasurementId || unit.unit_Name_Id || unit.unitId || fallbackData.unit_Of_Measurement_Id || fallbackData.unit_Name_Id),
-    secondunit_Of_Measurement_Id: toGuidOrNull(unit.secondunit_Of_Measurement_Id || unit.secondUnitId || unit.secondunitId),
-    barcode_Option: unit.barcode_Option || unit.barcodeOption || fallbackData.barcode_Option || "Manual",
-    barcode: unit.barcode || fallbackData.barcode || null,
+    secondunit_Of_Measurement_Id: toGuidOrNull(unit.secondunit_Of_Measurement_Id || unit.secondUnitId || unit.secondunitId) || DEFAULT_PIECE_UNIT_ID,
+    barcode_Option: barcodeOption,
+    barcode: barcode,
     qr_Code: unit.qr_Code || unit.qrCode || fallbackData.qr_Code || null,
-    is_Default_Selling: Boolean(unit.is_Default_Selling ?? unit.isDefaultSelling ?? true),
-    is_Default_Purchasing: Boolean(unit.is_Default_Purchasing ?? unit.isDefaultPurchasing ?? true),
+    is_Default_Selling: Boolean(unit.is_Default_Selling ?? unit.isDefaultSelling ?? false),
+    is_Default_Purchasing: Boolean(unit.is_Default_Purchasing ?? unit.isDefaultPurchasing ?? false),
     cost_Price: cost,
     wholesale_Price: wholesale,
     consumer_Price: consumer,
@@ -214,15 +247,21 @@ export function buildUpdateProductUnitDto(unit = {}, fallbackData = {}) {
   const lastPurchase = Number(unit.last_Purchase_Price ?? unit.lastPurchasePrice ?? fallbackData.last_Purchase_Price ?? fallbackData.lastPurchasePrice ?? 0) || 0;
   const avgPurchase = Number(unit.average_Purchase_Price ?? unit.averagePurchasePrice ?? fallbackData.average_Purchase_Price ?? fallbackData.averagePurchasePrice ?? 0) || 0;
 
+  let barcodeOption = unit.barcode_Option || unit.barcodeOption || fallbackData.barcode_Option || "Manual";
+  const barcode = (unit.barcode || fallbackData.barcode || "").trim() || null;
+  if (!barcode && barcodeOption === "Manual") {
+    barcodeOption = "AutoGenerate";
+  }
+
   return {
     id: toGuidOrNull(unit.id) || "00000000-0000-0000-0000-000000000000",
     unit_Of_Measurement_Id: toGuidOrNull(unit.unit_Of_Measurement_Id || unit.unitOfMeasurementId || unit.unit_Name_Id || unit.unitId || fallbackData.unit_Of_Measurement_Id || fallbackData.unit_Name_Id),
-    secondunit_Of_Measurement_Id: toGuidOrNull(unit.secondunit_Of_Measurement_Id || unit.secondUnitId || unit.secondunitId),
-    barcode_Option: unit.barcode_Option || unit.barcodeOption || fallbackData.barcode_Option || "Manual",
-    barcode: unit.barcode || fallbackData.barcode || null,
+    secondunit_Of_Measurement_Id: toGuidOrNull(unit.secondunit_Of_Measurement_Id || unit.secondUnitId || unit.secondunitId) || DEFAULT_PIECE_UNIT_ID,
+    barcode_Option: barcodeOption,
+    barcode: barcode,
     qr_Code: unit.qr_Code || unit.qrCode || fallbackData.qr_Code || null,
-    is_Default_Selling: Boolean(unit.is_Default_Selling ?? unit.isDefaultSelling ?? true),
-    is_Default_Purchasing: Boolean(unit.is_Default_Purchasing ?? unit.isDefaultPurchasing ?? true),
+    is_Default_Selling: Boolean(unit.is_Default_Selling ?? unit.isDefaultSelling ?? false),
+    is_Default_Purchasing: Boolean(unit.is_Default_Purchasing ?? unit.isDefaultPurchasing ?? false),
     cost_Price: cost,
     wholesale_Price: wholesale,
     consumer_Price: consumer,
@@ -362,49 +401,33 @@ export function buildUpdateProductInventoryWithoutSpecsDto(data = {}) {
 
   const costPrice = Number(data.cost_Price ?? data.costPrice ?? 0) || 0;
   const consumerPrice = Number(data.consumer_Price ?? data.consumerPrice ?? 0) || 0;
+  const wholesalePrice = Number(data.wholesale_Price ?? data.wholesalePrice ?? 0) || 0;
+  const lastPurchasePrice = Number(data.last_Purchase_Price ?? data.lastPurchasePrice ?? 0) || 0;
+  const averagePurchasePrice = Number(data.average_Purchase_Price ?? data.averagePurchasePrice ?? 0) || 0;
 
-  let mappedUnits = rawUnits
-    .map(buildUpdateProductUnitDto)
-    .filter((u) => Boolean(u.unit_Of_Measurement_Id));
-
-  if (mappedUnits.length === 0) {
-    const fallbackUnitId = toGuidOrNull(
-      data.unit_Of_Measurement_Id ||
-      data.unitOfMeasurementId ||
-      data.unit_id ||
-      data.unitId ||
-      data.raw?.unit_Of_Measurement_Id ||
-      data.raw?.unitOfMeasurementId ||
-      "33333333-3333-3333-3333-333333333333"
-    );
-    if (fallbackUnitId) {
-      mappedUnits = [
-        buildUpdateProductUnitDto({
-          id: toGuidOrNull(data.unit_id || data.unitId || data.variants?.[0]?.productUnitDtos?.[0]?.id),
-          unit_Of_Measurement_Id: fallbackUnitId,
-          barcode_Option: data.barcode_Option || "Manual",
-          barcode: data.barcode || null,
-          qr_Code: data.qr_Code || null,
-          is_Default_Selling: true,
-          is_Default_Purchasing: true,
-          cost_Price: costPrice,
-          wholesale_Price: Number(data.wholesale_Price ?? data.wholesalePrice ?? 0) || 0,
-          consumer_Price: consumerPrice,
-          last_Purchase_Price: Number(data.last_Purchase_Price ?? data.lastPurchasePrice ?? 0) || 0,
-          average_Purchase_Price: Number(data.average_Purchase_Price ?? data.averagePurchasePrice ?? 0) || 0,
-          relative_factor: 1,
-        }),
-      ];
-    }
-  } else {
-    // Synchronize price adjustments from root form
-    if (costPrice > 0 && mappedUnits[0].cost_Price === 0) {
-      mappedUnits[0].cost_Price = costPrice;
-    }
-    if (consumerPrice > 0 && mappedUnits[0].consumer_Price === 0) {
-      mappedUnits[0].consumer_Price = consumerPrice;
-    }
+  let barcodeOption = data.barcode_Option || data.barcodeOption || "Manual";
+  const barcode = (data.barcode || "").trim() || null;
+  if (!barcode && barcodeOption === "Manual") {
+    barcodeOption = "AutoGenerate";
   }
+
+  const requestedThereAreUnits = Boolean(data.there_Are_Units ?? data.thereAreUnits ?? false);
+
+  const additionalRawUnits = rawUnits.filter((u, idx) => {
+    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
+      return false;
+    }
+    return !isPieceUnit(u);
+  });
+
+  let mappedUnits = [];
+  if (requestedThereAreUnits && additionalRawUnits.length > 0) {
+    mappedUnits = additionalRawUnits
+      .map(buildUpdateProductUnitDto)
+      .filter((u) => Boolean(u.unit_Of_Measurement_Id) && !isPieceUnit(u));
+  }
+
+  const finalThereAreUnits = mappedUnits.length > 0;
 
   return {
     id: toGuidOrNull(data.id),
@@ -414,20 +437,20 @@ export function buildUpdateProductInventoryWithoutSpecsDto(data = {}) {
     is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? data.isTrackingInventory ?? true),
     category_Id: toGuidOrNull(data.category_Id || data.categoryId || data.category),
     requires_Shipping: Boolean(data.requires_Shipping ?? data.requiresShipping ?? false),
-    there_Are_Units: Boolean(data.there_Are_Units ?? data.thereAreUnits ?? (mappedUnits.length > 0)),
+    there_Are_Units: finalThereAreUnits,
     revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
     expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
     inventory_Account_Id: toGuidOrNull(data.inventory_Account_Id || data.inventoryAccountId || data.inventoryAccount),
     minimum_Alert_Level: Number(data.minimum_Alert_Level ?? data.minimumAlertLevel ?? 0) || 0,
     maximum_Stock_Level: Number(data.maximum_Stock_Level ?? data.maximumStockLevel ?? 0) || 0,
-    barcode_Option: data.barcode_Option || data.barcodeOption || "Manual",
-    barcode: data.barcode || null,
+    barcode_Option: barcodeOption,
+    barcode: barcode,
     qr_Code: data.qr_Code || data.qrCode || null,
     cost_Price: costPrice,
     consumer_Price: consumerPrice,
-    wholesale_Price: Number(data.wholesale_Price ?? data.wholesalePrice ?? 0) || 0,
-    last_Purchase_Price: Number(data.last_Purchase_Price ?? data.lastPurchasePrice ?? 0) || 0,
-    average_Purchase_Price: Number(data.average_Purchase_Price ?? data.averagePurchasePrice ?? 0) || 0,
+    wholesale_Price: wholesalePrice,
+    last_Purchase_Price: lastPurchasePrice,
+    average_Purchase_Price: averagePurchasePrice,
     product_Units: mappedUnits,
   };
 }
@@ -439,45 +462,33 @@ export function buildUpdateProductAssemblyWithoutSpecsDto(data = {}) {
   const lastPurchasePrice = Number(data.last_Purchase_Price ?? data.lastPurchasePrice ?? 0) || 0;
   const averagePurchasePrice = Number(data.average_Purchase_Price ?? data.averagePurchasePrice ?? 0) || 0;
 
+  let barcodeOption = data.barcode_Option || data.barcodeOption || "Manual";
+  const barcode = (data.barcode || "").trim() || null;
+  if (!barcode && barcodeOption === "Manual") {
+    barcodeOption = "AutoGenerate";
+  }
+
+  const requestedThereAreUnits = Boolean(data.there_Are_Units ?? data.thereAreUnits ?? false);
+
   let rawUnits = Array.isArray(data.product_Units || data.productUnits)
     ? (data.product_Units || data.productUnits)
     : [];
 
-  let mappedUnits = rawUnits
-    .map(buildUpdateProductUnitDto)
-    .filter((u) => Boolean(u.unit_Of_Measurement_Id));
+  const additionalRawUnits = rawUnits.filter((u, idx) => {
+    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
+      return false;
+    }
+    return !isPieceUnit(u);
+  });
 
-  if (mappedUnits.length === 0) {
-    const fallbackUnitId = toGuidOrNull(
-      data.unit_Of_Measurement_Id ||
-      data.unitOfMeasurementId ||
-      data.unit_Name_Id ||
-      data.unit_id ||
-      data.unitId ||
-      data.raw?.unit_Of_Measurement_Id ||
-      data.raw?.unitOfMeasurementId ||
-      data.variants?.[0]?.productUnitDtos?.[0]?.unit_Of_Measurement_Id ||
-      "33333333-3333-3333-3333-333333333333"
-    ) || "33333333-3333-3333-3333-333333333333";
-
-    mappedUnits = [
-      buildUpdateProductUnitDto({
-        id: toGuidOrNull(data.unit_id || data.unitId || data.variants?.[0]?.productUnitDtos?.[0]?.id),
-        unit_Of_Measurement_Id: fallbackUnitId,
-        barcode_Option: data.barcode_Option || "Manual",
-        barcode: data.barcode || null,
-        qr_Code: data.qr_Code || null,
-        is_Default_Selling: true,
-        is_Default_Purchasing: true,
-        cost_Price: costPrice,
-        wholesale_Price: wholesalePrice,
-        consumer_Price: consumerPrice,
-        last_Purchase_Price: lastPurchasePrice,
-        average_Purchase_Price: averagePurchasePrice,
-        relative_factor: 1,
-      }),
-    ];
+  let mappedUnits = [];
+  if (requestedThereAreUnits && additionalRawUnits.length > 0) {
+    mappedUnits = additionalRawUnits
+      .map(buildUpdateProductUnitDto)
+      .filter((u) => Boolean(u.unit_Of_Measurement_Id) && !isPieceUnit(u));
   }
+
+  const finalThereAreUnits = mappedUnits.length > 0;
 
   const components = Array.isArray(data.product_Components || data.productComponents)
     ? (data.product_Components || data.productComponents)
@@ -495,11 +506,11 @@ export function buildUpdateProductAssemblyWithoutSpecsDto(data = {}) {
     requires_Shipping: Boolean(data.requires_Shipping ?? data.requiresShipping ?? false),
     revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
     expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
-    there_Are_Units: Boolean(data.there_Are_Units ?? data.thereAreUnits ?? (mappedUnits.length > 1)),
+    there_Are_Units: finalThereAreUnits,
     minimum_Alert_Level: Number(data.minimum_Alert_Level ?? data.minimumAlertLevel ?? 0) || 0,
     maximum_Stock_Level: Number(data.maximum_Stock_Level ?? data.maximumStockLevel ?? 0) || 0,
-    barcode_Option: data.barcode_Option || data.barcodeOption || "Manual",
-    barcode: data.barcode || null,
+    barcode_Option: barcodeOption,
+    barcode: barcode,
     qr_Code: data.qr_Code || data.qrCode || null,
     cost_Price: costPrice,
     consumer_Price: consumerPrice,
@@ -789,40 +800,39 @@ export function buildCreateProductAssemblyWithoutSpecsDto(data = {}) {
   const lastPurchasePrice = Number(data.last_Purchase_Price ?? data.lastPurchasePrice ?? 0) || 0;
   const averagePurchasePrice = Number(data.average_Purchase_Price ?? data.averagePurchasePrice ?? 0) || 0;
 
+  let barcodeOption = data.barcode_Option || data.barcodeOption || "Manual";
+  const barcode = (data.barcode || "").trim() || null;
+  if (!barcode && barcodeOption === "Manual") {
+    barcodeOption = "AutoGenerate";
+  }
+
+  const requestedThereAreUnits = Boolean(data.there_Are_Units ?? data.thereAreUnits ?? false);
+
   let rawUnits = Array.isArray(data.product_Units || data.productUnits)
     ? (data.product_Units || data.productUnits)
     : [];
 
-  let mappedUnits = rawUnits
-    .map((u) => buildCreateProductUnitDto(u, data))
-    .filter((u) => Boolean(u.unit_Of_Measurement_Id));
+  const additionalRawUnits = rawUnits.filter((u, idx) => {
+    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
+      return false;
+    }
+    return !isPieceUnit(u);
+  });
 
-  if (mappedUnits.length === 0) {
-    const singleUomId = toGuidOrNull(
-      data.unit_Of_Measurement_Id ||
-      data.unitOfMeasurementId ||
-      data.unit_Name_Id ||
-      data.unitId ||
-      "33333333-3333-3333-3333-333333333333"
-    ) || "33333333-3333-3333-3333-333333333333";
-
-    mappedUnits = [
-      buildCreateProductUnitDto(
-        {
-          unit_Of_Measurement_Id: singleUomId,
-          is_Default_Selling: true,
-          is_Default_Purchasing: true,
-          relative_factor: 1,
-          cost_Price: costPrice,
-          consumer_Price: consumerPrice,
-          wholesale_Price: wholesalePrice,
-          last_Purchase_Price: lastPurchasePrice,
-          average_Purchase_Price: averagePurchasePrice,
-        },
-        data
-      ),
-    ];
+  let mappedUnits = [];
+  if (requestedThereAreUnits && additionalRawUnits.length > 0) {
+    mappedUnits = additionalRawUnits
+      .map((u) => {
+        const dto = buildCreateProductUnitDto(u, data);
+        if (!dto.secondunit_Of_Measurement_Id) {
+          dto.secondunit_Of_Measurement_Id = DEFAULT_PIECE_UNIT_ID;
+        }
+        return dto;
+      })
+      .filter((u) => Boolean(u.unit_Of_Measurement_Id) && !isPieceUnit(u));
   }
+
+  const finalThereAreUnits = mappedUnits.length > 0;
 
   const components = Array.isArray(data.product_Components || data.productComponents)
     ? (data.product_Components || data.productComponents)
@@ -839,11 +849,11 @@ export function buildCreateProductAssemblyWithoutSpecsDto(data = {}) {
     requires_Shipping: Boolean(data.requires_Shipping ?? data.requiresShipping ?? false),
     revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
     expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
-    there_Are_Units: Boolean(data.there_Are_Units ?? data.thereAreUnits ?? (mappedUnits.length > 1)),
+    there_Are_Units: finalThereAreUnits,
     minimum_Alert_Level: Number(data.minimum_Alert_Level ?? data.minimumAlertLevel ?? 0) || 0,
     maximum_Stock_Level: Number(data.maximum_Stock_Level ?? data.maximumStockLevel ?? 0) || 0,
-    barcode_Option: data.barcode_Option || data.barcodeOption || "Manual",
-    barcode: data.barcode || null,
+    barcode_Option: barcodeOption,
+    barcode: barcode,
     qr_Code: data.qr_Code || data.qrCode || null,
     cost_Price: costPrice,
     consumer_Price: consumerPrice,
@@ -877,11 +887,17 @@ export async function updateAssemblyWithoutSpecs(data) {
 export function buildCreateProductWithSpecsDto(data = {}) {
   const rawVariants = data.createProductvariants || data.variants || [];
   const mappedVariants = rawVariants.map((v) => {
+    let bOption = v.barcode_Option || data.barcode_Option || "Manual";
+    const bCode = (v.barcode || "").trim() || null;
+    if (!bCode && bOption === "Manual") {
+      bOption = "AutoGenerate";
+    }
+
     return {
       minimum_Alert_Level: Number(v.minimum_Alert_Level ?? data.minimum_Alert_Level ?? 0) || 0,
       maximum_Stock_Level: Number(v.maximum_Stock_Level ?? data.maximumStockLevel ?? 0) || 0,
-      barcode_Option: v.barcode_Option || data.barcode_Option || "Manual",
-      barcode: v.barcode || null,
+      barcode_Option: bOption,
+      barcode: bCode,
       qr_Code: v.qr_Code || null,
       cost_Price: Number(v.cost_Price ?? data.cost_Price ?? 0) || 0,
       consumer_Price: Number(v.consumer_Price ?? data.consumer_Price ?? 0) || 0,
@@ -893,7 +909,7 @@ export function buildCreateProductWithSpecsDto(data = {}) {
         v.unitOfMeasurementId ||
         v.unit_Name_Id ||
         data.unit_Of_Measurement_Id
-      ) || "33333333-3333-3333-3333-333333333333",
+      ) || DEFAULT_PIECE_UNIT_ID,
       secondunit_Of_Measurement_Id: toGuidOrNull(v.secondunit_Of_Measurement_Id),
       relative_factor: Number(v.relative_factor ?? 1) || 1,
       variant_Values: Array.isArray(v.variant_Values || v.variantValues)
@@ -949,40 +965,39 @@ export function buildCreateProductWithoutSpecsDto(data = {}) {
   const lastPurchasePrice = Number(data.last_Purchase_Price ?? data.lastPurchasePrice ?? 0) || 0;
   const averagePurchasePrice = Number(data.average_Purchase_Price ?? data.averagePurchasePrice ?? 0) || 0;
 
+  let barcodeOption = data.barcode_Option || data.barcodeOption || "Manual";
+  const barcode = (data.barcode || "").trim() || null;
+  if (!barcode && barcodeOption === "Manual") {
+    barcodeOption = "AutoGenerate";
+  }
+
+  const requestedThereAreUnits = Boolean(data.there_Are_Units ?? data.thereAreUnits ?? false);
+
   let rawUnits = Array.isArray(data.product_Units || data.productUnits)
     ? (data.product_Units || data.productUnits)
     : [];
 
-  let mappedUnits = rawUnits
-    .map((u) => buildCreateProductUnitDto(u, data))
-    .filter((u) => Boolean(u.unit_Of_Measurement_Id));
+  const additionalRawUnits = rawUnits.filter((u, idx) => {
+    if (idx === 0 && (isPieceUnit(u) || !u.secondunit_Of_Measurement_Id)) {
+      return false;
+    }
+    return !isPieceUnit(u);
+  });
 
-  if (mappedUnits.length === 0) {
-    const singleUomId = toGuidOrNull(
-      data.unit_Of_Measurement_Id ||
-      data.unitOfMeasurementId ||
-      data.unit_Name_Id ||
-      data.unitId ||
-      "33333333-3333-3333-3333-333333333333"
-    ) || "33333333-3333-3333-3333-333333333333";
-
-    mappedUnits = [
-      buildCreateProductUnitDto(
-        {
-          unit_Of_Measurement_Id: singleUomId,
-          is_Default_Selling: true,
-          is_Default_Purchasing: true,
-          relative_factor: 1,
-          cost_Price: costPrice,
-          consumer_Price: consumerPrice,
-          wholesale_Price: wholesalePrice,
-          last_Purchase_Price: lastPurchasePrice,
-          average_Purchase_Price: averagePurchasePrice,
-        },
-        data
-      ),
-    ];
+  let mappedUnits = [];
+  if (requestedThereAreUnits && additionalRawUnits.length > 0) {
+    mappedUnits = additionalRawUnits
+      .map((u) => {
+        const dto = buildCreateProductUnitDto(u, data);
+        if (!dto.secondunit_Of_Measurement_Id) {
+          dto.secondunit_Of_Measurement_Id = DEFAULT_PIECE_UNIT_ID;
+        }
+        return dto;
+      })
+      .filter((u) => Boolean(u.unit_Of_Measurement_Id) && !isPieceUnit(u));
   }
+
+  const finalThereAreUnits = mappedUnits.length > 0;
 
   return {
     name_Product: (data.name_Product || data.name || "").trim(),
@@ -991,14 +1006,14 @@ export function buildCreateProductWithoutSpecsDto(data = {}) {
     is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? data.isTrackingInventory ?? true),
     category_Id: toGuidOrNull(data.category_Id || data.categoryId || data.category),
     requires_Shipping: Boolean(data.requires_Shipping ?? data.requiresShipping ?? false),
-    there_Are_Units: Boolean(data.there_Are_Units ?? data.thereAreUnits ?? (mappedUnits.length > 1)),
+    there_Are_Units: finalThereAreUnits,
     revenue_Account_Id: toGuidOrNull(data.revenue_Account_Id || data.revenueAccountId || data.revenueAccount),
     expense_Account_Id: toGuidOrNull(data.expense_Account_Id || data.expenseAccountId || data.expenseAccount),
     inventory_Account_Id: toGuidOrNull(data.inventory_Account_Id || data.inventoryAccountId || data.inventoryAccount),
     minimum_Alert_Level: Number(data.minimum_Alert_Level ?? data.minimumAlertLevel ?? 0) || 0,
     maximum_Stock_Level: Number(data.maximum_Stock_Level ?? data.maximumStockLevel ?? 0) || 0,
-    barcode_Option: data.barcode_Option || data.barcodeOption || "Manual",
-    barcode: data.barcode || null,
+    barcode_Option: barcodeOption,
+    barcode: barcode,
     qr_Code: data.qr_Code || data.qrCode || null,
     cost_Price: costPrice,
     consumer_Price: consumerPrice,

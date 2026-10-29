@@ -24,7 +24,7 @@ export default function AddItemPage() {
   const [productType, setProductType] = useState("simple");
   const [hasCustomSpecs, setHasCustomSpecs] = useState("no");
   const [customSpecs, setCustomSpecs] = useState([]);
-  const [thereAreUnits, setThereAreUnits] = useState(true);
+  const [thereAreUnits, setThereAreUnits] = useState(false);
 
   const { data: productRes } = useQuery({
     queryKey: ["product", id],
