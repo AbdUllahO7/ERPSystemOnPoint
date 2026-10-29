@@ -1,5 +1,6 @@
 import { apiHandler } from "@/lib/api-handler";
 import { Building2, Users as UsersIcon } from "lucide-react";
+import { getRentals, getRentalById } from "./rentals.service";
 
 // ==========================================
 // Static Initial Fallback Data
@@ -52,70 +53,12 @@ export async function getRentalInvoicesStats() {
 }
 
 /**
- * Get Paginated Rental Invoices / Installment Receipts
- * Pulls active contracts and extracts invoices
+ * Get Paginated Rental Invoices / Contracts
+ * Endpoint: GET /api/Inventory/RentalContract/GetAll
  */
 export async function getRentalInvoices(params = {}) {
   try {
-    const res = await apiHandler({
-      endPoint: "inventory/CustomerContracts/GetAllContracts",
-      method: "GET",
-      params: {
-        PageNumber: params.PageNumber || 1,
-        PageSize: params.PageSize || 10,
-        Search: params.SearchTerm || params.Search || undefined,
-      },
-    });
-
-    const raw = res?.data || res || {};
-    const items = raw?.items || (Array.isArray(raw) ? raw : []);
-    const totalCount = raw?.totalCount || items.length;
-    const totalPages = raw?.totalPages || Math.ceil(totalCount / (params.PageSize || 10)) || 1;
-
-    const invoiceItems = items.map((c, idx) => {
-      const contractNum = c.contractNumber || `RC-${String(c.id || idx + 1).substring(0, 6)}`;
-      const totalNum = c.totalAmount || 300;
-      const firstItem = Array.isArray(c.items) && c.items.length > 0 ? c.items[0] : null;
-
-      return {
-        id: c.id || idx + 1,
-        numericId: idx + 1,
-        invoiceNumber: `INV-RNT-${String(c.id || idx + 1).substring(0, 5)}`,
-        contractId: c.id,
-        contractNumber: contractNum,
-        customer: c.customerName || "Customer",
-        customerName: c.customerName || "Customer",
-        resource: firstItem?.custom_Item_Name || c.title || "Facility/Vehicle",
-        resourceName: firstItem?.custom_Item_Name || c.title || "Facility/Vehicle",
-        rate: "Rate",
-        rateText: `$${c.dailyRentalCost || 50}/day`,
-        returnDate: c.endDate ? new Date(c.endDate).toISOString().split("T")[0] : "N/A",
-        mode: "Card",
-        damage: "$0",
-        damageAmount: 0,
-        total: `$${totalNum}`,
-        numericTotal: totalNum,
-        due: "$0",
-        numericDue: 0,
-        paid: `$${totalNum}`,
-        numericPaid: totalNum,
-        status: "Paid",
-        notes: c.terms_And_Conditions || "Rental invoice processed against contract agreement.",
-        returnedBy: c.customerName || "Customer",
-        returnedByName: c.customerName || "Customer",
-      };
-    });
-
-    return {
-      status: 200,
-      data: {
-        items: invoiceItems,
-        totalCount,
-        totalPages,
-        pageNumber: params.PageNumber || 1,
-        pageSize: params.PageSize || 10,
-      },
-    };
+    return await getRentals(params);
   } catch (error) {
     console.error("Error fetching rental invoices:", error);
     return {
