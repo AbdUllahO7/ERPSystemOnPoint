@@ -36,7 +36,10 @@ export default function AddItemPage() {
     if (isEdit && productRes?.data) {
       setCurrentStep(2);
       const pData = productRes.data?.data || productRes.data;
-      if (pData.product_Type === "Service") {
+      if (pData.has_Multiple_Units !== undefined) {
+        setThereAreUnits(Boolean(pData.has_Multiple_Units));
+      }
+      if (pData.product_Type === "Service" || pData.product_Type === "Appointment" || pData.product_Type === "Reservation") {
         setItemType("service");
       } else if (pData.product_Type === "Rental") {
         setItemType("rental");

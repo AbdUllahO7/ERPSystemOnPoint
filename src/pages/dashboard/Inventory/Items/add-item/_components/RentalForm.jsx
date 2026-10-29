@@ -128,7 +128,7 @@ export default function RentalForm() {
     if (!isEdit && uomList.length > 0 && units.length === 1 && !units[0].unitOfMeasurmentId) {
       setUnits([
         {
-          unitOfMeasurmentId: String(uomList[0].id),
+          unitOfMeasurmentId: String(uomList[0].unit_Name_Id || uomList[0].id || ""),
           cost_Price: Number(costPrice) || 0,
           consumer_Price: Number(consumerPrice) || 0,
         },
@@ -137,10 +137,11 @@ export default function RentalForm() {
   }, [uomList, isEdit, costPrice, consumerPrice]);
 
   const handleAddUnit = () => {
+    const firstUomId = uomList[0]?.unit_Name_Id || uomList[0]?.id || "";
     setUnits((prev) => [
       ...prev,
       {
-        unitOfMeasurmentId: uomList[0]?.id ? String(uomList[0].id) : "",
+        unitOfMeasurmentId: firstUomId ? String(firstUomId) : "",
         cost_Price: Number(costPrice) || 0,
         consumer_Price: Number(consumerPrice) || 0,
       },
@@ -544,11 +545,14 @@ export default function RentalForm() {
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-xs"
                 >
                   <option value="">Select Unit</option>
-                  {uomList.map((uom) => (
-                    <option key={uom.id} value={String(uom.id)}>
-                      {uom.name || uom.unit_Name || "Unit"}
-                    </option>
-                  ))}
+                  {uomList.map((uom, uIdx) => {
+                    const uomVal = uom.unit_Name_Id || uom.id || "";
+                    return (
+                      <option key={uomVal || uIdx} value={String(uomVal)}>
+                        {uom.unit_name || uom.unit_Name || uom.name || "Unit"}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 

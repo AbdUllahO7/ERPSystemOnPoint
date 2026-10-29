@@ -356,60 +356,15 @@ export default function SimpleProductWithVariantsForm({
 
   const createMutation = useMutation({
     mutationFn: (data) => {
-      const productVariantDtos = (data.createProductvariants || []).map((v) => {
-        const unitId = v.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id;
-        return {
-          minimum_Alert_Level: Number(v.minimum_Alert_Level) || 0,
-          maximum_Stock_Level: Number(v.maximum_Stock_Level) || 0,
-          limit_Unit_Id: null,
-          variantValues: (v.variant_Values || []).map((val) => ({
-            productAttributeValueId: val.productAttributeValueId,
-          })),
-          product_Units: [
-            {
-              unit_Of_Measurement_Id: unitId,
-              secondunit_Of_Measurement_Id: v.secondunit_Of_Measurement_Id || null,
-              barcode_Option: v.barcode_Option || "Manual",
-              barcode: v.barcode || null,
-              qr_Code: v.qr_Code || null,
-              is_Default_Selling: true,
-              is_Default_Purchasing: true,
-              cost_Price: Number(v.cost_Price ?? 0),
-              wholesale_Price: Number(v.wholesale_Price ?? 0),
-              consumer_Price: Number(v.consumer_Price ?? 0),
-              last_Purchase_Price: Number(v.last_Purchase_Price ?? 0),
-              average_Purchase_Price: Number(v.average_Purchase_Price ?? 0),
-              relative_factor: Number(v.relative_factor ?? 1),
-            },
-          ],
-          product_Components: null,
-        };
-      });
-
-      const payload = {
-        name_Product: data.name_Product,
-        product_Number: data.product_Number || String(Math.floor(100000 + Math.random() * 900000)),
-        has_Specifications: true,
-        is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? true),
-        can_Be_Sold: true,
-        can_Be_Purchased: true,
-        requires_Shipping: Boolean(data.requires_Shipping ?? false),
-        requires_Contract: false,
-        requires_Scheduling: false,
-        has_Variants: true,
-        is_Fixed_Price: true,
-        revenue_Account_Id: data.revenue_Account_Id || null,
-        expense_Account_Id: data.expense_Account_Id || null,
-        inventory_Account_Id: data.inventory_Account_Id || null,
-        product_Type: "Inventory",
-        billing_Method: "FixedPrice",
-        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
-        origin_Id: data.origin_Id || data.item_Origin || null,
-        category_Id: data.category_Id || null,
-        productVariantDtos,
-      };
-
-      return createProduct(payload);
+      const payload = { ...data };
+      delete payload.selectedAttributes;
+      if (Array.isArray(payload.createProductvariants)) {
+        payload.createProductvariants = payload.createProductvariants.map((v) => {
+          const { _display_name, _attr_details, ...rest } = v;
+          return rest;
+        });
+      }
+      return createSimpleProductWithSpecs(payload);
     },
     onSuccess: () => {
       toast.success("Product created successfully");

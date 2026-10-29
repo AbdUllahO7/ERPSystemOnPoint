@@ -11,7 +11,7 @@ import {
   searchMaterialsForInvoice,
   getInventoryPricingLookup,
   getAllUnitOfMeasurements,
-  createProduct,
+  createBundleWithoutSpecs,
   updateBundleWithoutSpecs,
   getProductById,
 } from "@/lib/api";
@@ -199,75 +199,9 @@ export default function BundleForm({ currentStep, onNext }) {
     }
   }, [isEdit, bundleRes, accounts, revenueAccountId, expenseAccountId, categoryId, setValue]);
 
-  // Create Bundle Mutation (POST /api/Inventory/Product/CreateProduct/Create)
+  // Create Bundle Mutation (POST /api/Inventory/Product/CreateBundleWithoutSpecs)
   const createMutation = useMutation({
-    mutationFn: (data) => {
-      const validComponents = (data.product_Components || []).filter(
-        (c) => c.component_Variant_Id && c.unit_Of_Measurement_Id
-      );
-      const defaultUnitId =
-        validComponents[0]?.unit_Of_Measurement_Id ||
-        measurements[0]?.unit_Name_Id ||
-        measurements[0]?.id ||
-        "33333333-3333-3333-3333-333333333333";
-
-      const payload = {
-        name_Product: (data.name_Product || "").trim(),
-        product_Number: (
-          data.product_Number || String(Math.floor(100000 + Math.random() * 900000))
-        ).trim(),
-        has_Specifications: false,
-        is_Tracking_Inventory: false,
-        can_Be_Sold: true,
-        can_Be_Purchased: false,
-        requires_Shipping: Boolean(data.requires_Shipping ?? false),
-        requires_Contract: Boolean(data.requires_Contract ?? false),
-        requires_Scheduling: false,
-        has_Variants: false,
-        is_Fixed_Price: true,
-        revenue_Account_Id: data.revenue_Account_Id || null,
-        expense_Account_Id: data.expense_Account_Id || null,
-        inventory_Account_Id: null,
-        product_Type: "Bundle",
-        billing_Method: "FixedPrice",
-        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
-        origin_Id: null,
-        category_Id: data.category_Id || null,
-        productVariantDtos: [
-          {
-            minimum_Alert_Level: 0,
-            maximum_Stock_Level: 0,
-            limit_Unit_Id: defaultUnitId,
-            variantValues: [],
-            product_Units: [
-              {
-                unit_Of_Measurement_Id: defaultUnitId,
-                secondunit_Of_Measurement_Id: null,
-                barcode_Option: "Manual",
-                barcode: null,
-                qr_Code: null,
-                is_Default_Selling: true,
-                is_Default_Purchasing: false,
-                cost_Price: Number(data.cost_Price ?? calculatedCost ?? 0),
-                wholesale_Price: Number(data.consumer_Price ?? 0),
-                consumer_Price: Number(data.consumer_Price ?? 0),
-                last_Purchase_Price: 0,
-                average_Purchase_Price: 0,
-                relative_factor: 1,
-              },
-            ],
-            product_Components: validComponents.map((c) => ({
-              component_Variant_Id: c.component_Variant_Id,
-              quantity: Number(c.quantity) || 1,
-              unit_Of_Measurement_Id: c.unit_Of_Measurement_Id,
-              notes: c.notes || null,
-            })),
-          },
-        ],
-      };
-
-      return createProduct(payload);
-    },
+    mutationFn: (data) => createBundleWithoutSpecs(data),
     onSuccess: () => {
       toast.success("Bundle created successfully");
       navigate("/dashboard/inventory/items-management/items");

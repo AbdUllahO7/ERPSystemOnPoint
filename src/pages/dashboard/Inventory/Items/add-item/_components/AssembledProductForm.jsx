@@ -154,16 +154,18 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
       }
 
       const components = recipes.map((r) => ({
-        component_Variant_Id: r.raw_Material_Variant_Id || "",
-        unit_Of_Measurement_Id: r.unit_Of_Measurement_Id || "",
+        id: r.id || undefined,
+        component_Variant_Id: r.raw_Material_Variant_Id || r.component_Variant_Id || r.componentVariantId || "",
+        unit_Of_Measurement_Id: r.unit_Of_Measurement_Id || r.unitOfMeasurementId || "",
         quantity: r.quantity || 0,
         notes: r.notes || "",
       }));
 
       const units = unitData.map((u, i) => ({
+        id: u.id || undefined,
         unitName: u.unitName || `Unit ${i + 1}`,
         unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || "",
-        secondunit_Of_Measurement_Id: "",
+        secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || "",
         relative_factor: u.conversion_Factor || 1,
         is_Default_Selling: u.is_Default_Selling || false,
         is_Default_Purchasing: u.is_Default_Purchasing || false,
@@ -219,82 +221,7 @@ export default function AssembledProductForm({ currentStep, onNext, thereAreUnit
   }, [isEdit, assemblyRes, categories, accounts, setValue]);
 
   const createMutation = useMutation({
-    mutationFn: (data) => {
-      const units = (data.there_Are_Units && data.product_Units?.length > 0)
-        ? data.product_Units.map((u, idx) => ({
-            unit_Of_Measurement_Id: u.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id,
-            secondunit_Of_Measurement_Id: u.secondunit_Of_Measurement_Id || null,
-            barcode_Option: u.barcode_Option || data.barcode_Option || "Manual",
-            barcode: u.barcode || data.barcode || null,
-            qr_Code: u.qr_Code || data.qr_Code || null,
-            is_Default_Selling: Boolean(u.is_Default_Selling ?? (idx === 0)),
-            is_Default_Purchasing: Boolean(u.is_Default_Purchasing ?? (idx === 0)),
-            cost_Price: Number(u.cost_Price ?? data.cost_Price ?? 0),
-            wholesale_Price: Number(u.wholesale_Price ?? data.wholesale_Price ?? 0),
-            consumer_Price: Number(u.consumer_Price ?? data.consumer_Price ?? 0),
-            last_Purchase_Price: Number(u.last_Purchase_Price ?? data.last_Purchase_Price ?? 0),
-            average_Purchase_Price: Number(u.average_Purchase_Price ?? data.average_Purchase_Price ?? 0),
-            relative_factor: Number(u.relative_factor ?? 1),
-          }))
-        : [
-            {
-              unit_Of_Measurement_Id: data.unit_Of_Measurement_Id || measurements[0]?.unit_Name_Id,
-              secondunit_Of_Measurement_Id: null,
-              barcode_Option: data.barcode_Option || "Manual",
-              barcode: data.barcode || null,
-              qr_Code: data.qr_Code || null,
-              is_Default_Selling: true,
-              is_Default_Purchasing: true,
-              cost_Price: Number(data.cost_Price ?? 0),
-              wholesale_Price: Number(data.wholesale_Price ?? 0),
-              consumer_Price: Number(data.consumer_Price ?? 0),
-              last_Purchase_Price: Number(data.last_Purchase_Price ?? 0),
-              average_Purchase_Price: Number(data.average_Purchase_Price ?? 0),
-              relative_factor: 1,
-            },
-          ];
-
-      const validComponents = (data.product_Components || []).filter(c => c.component_Variant_Id && c.unit_Of_Measurement_Id);
-
-      const payload = {
-        name_Product: data.name_Product,
-        product_Number: data.product_Number || String(Math.floor(100000 + Math.random() * 900000)),
-        has_Specifications: false,
-        is_Tracking_Inventory: Boolean(data.is_Tracking_Inventory ?? true),
-        can_Be_Sold: true,
-        can_Be_Purchased: true,
-        requires_Shipping: Boolean(data.requires_Shipping ?? false),
-        requires_Contract: false,
-        requires_Scheduling: false,
-        has_Variants: false,
-        is_Fixed_Price: true,
-        revenue_Account_Id: data.revenue_Account_Id || null,
-        expense_Account_Id: data.expense_Account_Id || null,
-        inventory_Account_Id: data.inventory_Account_Id || null,
-        product_Type: "Assembly",
-        billing_Method: "FixedPrice",
-        has_Expiry_Date: Boolean(data.has_Expiry_Date ?? false),
-        origin_Id: data.origin_Id || data.item_Origin || null,
-        category_Id: data.category_Id || null,
-        productVariantDtos: [
-          {
-            minimum_Alert_Level: Number(data.minimum_Alert_Level) || 0,
-            maximum_Stock_Level: Number(data.maximum_Stock_Level) || 0,
-            limit_Unit_Id: data.limit_Unit_Id || null,
-            variantValues: [],
-            product_Units: units,
-            product_Components: validComponents.map((c) => ({
-              component_Variant_Id: c.component_Variant_Id,
-              quantity: Number(c.quantity) || 1,
-              unit_Of_Measurement_Id: c.unit_Of_Measurement_Id,
-              notes: c.notes || null,
-            })),
-          },
-        ],
-      };
-
-      return createProduct(payload);
-    },
+    mutationFn: (data) => createAssemblyWithoutSpecs(data),
     onSuccess: () => {
       toast.success("Assembled product created successfully");
       navigate("/dashboard/inventory/items-management/items");
