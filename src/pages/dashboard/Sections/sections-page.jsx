@@ -305,17 +305,11 @@ export default function Sections() {
           label: "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
-        onRefresh={() => console.log("refresh")}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
+        onRefresh={() => queryClient.invalidateQueries(["getSections"])}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/hr/sections/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

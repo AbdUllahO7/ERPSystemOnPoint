@@ -109,11 +109,6 @@ export default function BranchTab({ id }) {
         //   onClick: () => {}
         // }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => {}
-        }}
         addButton={{
           label: "Add Section",
           onClick: () => navigate("/dashboard/hr/sections/add", { state: { returnTo: location.pathname + location.search, departmentId: id } })

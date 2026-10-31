@@ -21,10 +21,6 @@ export function EcommerceOrdersPage() {
     handleToggleAllOrders,
   } = useEcommerceOrders();
 
-  const handleExport = () => {
-    alert("Exporting orders to CSV/Excel...");
-  };
-
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col justify-between space-y-6">
       <div className="space-y-6">
@@ -52,7 +48,6 @@ export function EcommerceOrdersPage() {
             searchQuery={searchQuery}
             onSearchChange={setSearchQuery}
             onRefresh={refetch}
-            onExport={handleExport}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
           />

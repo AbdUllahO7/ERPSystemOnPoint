@@ -9,8 +9,9 @@ import {
   Building2,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getPositions, deletePosition } from "../../../lib/api";
+import { getPositions, deletePosition, getDepartments } from "../../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import toast from "react-hot-toast";
@@ -54,12 +55,33 @@ export default function Positions() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ departmentId: "" });
+
+  const { data: departmentsResponse } = useQuery({
+    queryKey: ["getDepartmentsList"],
+    queryFn: () => getDepartments({ PageSize: 1000 }),
+  });
+  const departments = departmentsResponse?.data?.items || [];
+
+  const filterConfigs = [
+    {
+      key: "departmentId",
+      label: "Filter by Department",
+      placeholder: "All Departments",
+      options: departments.map((d) => ({
+        value: d.id,
+        label: d.departmentName || d.name,
+      })),
+    },
+  ];
 
   const params = useMemo(() => ({
     search: search,
     pageNumber: page,
     pageSize: 10,
-  }), [page, search]);
+    ...(filters.departmentId && { department_Id: filters.departmentId }),
+  }), [page, search, filters.departmentId]);
 
   const queryClient = useQueryClient();
 
@@ -186,6 +208,20 @@ export default function Positions() {
         ))}
       </div>
 
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={filterConfigs}
+        filters={filters}
+        onFilterChange={(key, val) => {
+          setFilters((prev) => ({ ...prev, [key]: val }));
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters({ departmentId: "" });
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
@@ -195,21 +231,15 @@ export default function Positions() {
           value: search,
           onChange: handleSearch,
         }}
-        // filter={{
-        //   label: "Filter",
-        //   onClick: () => console.log("filter"),
-        // }}
-        onRefresh={() => console.log("refresh")}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        onRefresh={() => queryClient.invalidateQueries(["getPositions"])}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/hr/positions/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

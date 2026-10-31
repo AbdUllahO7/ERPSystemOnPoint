@@ -179,11 +179,6 @@ export default function EmployeeTab({ id }) {
         //   onClick: () => {}
         // }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => {}
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/hr/employees/add")

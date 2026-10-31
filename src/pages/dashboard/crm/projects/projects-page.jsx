@@ -15,12 +15,15 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getCustomerProjects, deleteCustomerProject } from "@/lib/api";
 import { toast } from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { Button } from "@/components/ui/button";
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
   const [deleteId, setDeleteId] = useState(null);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -62,7 +65,13 @@ export default function ProjectsPage() {
   // Filter based on active tab and search
   const filteredProjects = useMemo(() => {
     let list = items;
-    if (activeTab !== "All") {
+    if (filterStatus !== "all") {
+      list = list.filter((p) => {
+        const s = (p.status || "").toLowerCase().replace(/[^a-z]/g, "");
+        const target = filterStatus.toLowerCase().replace(/[^a-z]/g, "");
+        return s === target;
+      });
+    } else if (activeTab !== "All") {
       list = list.filter((p) => {
         const s = (p.status || "").toLowerCase().replace(/[^a-z]/g, "");
         const target = activeTab.toLowerCase().replace(/[^a-z]/g, "");
@@ -294,6 +303,36 @@ export default function ProjectsPage() {
         ))}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "status",
+            label: "Project Status",
+            placeholder: "All Statuses",
+            options: [
+              { value: "Planning", label: "Planning" },
+              { value: "InProgress", label: "In Progress" },
+              { value: "Pending", label: "Pending" },
+              { value: "Completed", label: "Completed" },
+              { value: "Cancelled", label: "Cancelled" },
+            ],
+          },
+        ]}
+        filters={{
+          status: filterStatus !== "all" ? filterStatus : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "status") setFilterStatus(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterStatus("all");
+          setPage(1);
+        }}
+      />
+
       {/* DataView */}
       <DataView
         data={filteredProjects}
@@ -303,6 +342,10 @@ export default function ProjectsPage() {
           placeholder: "Search projects by name, customer, or ID...",
           value: search,
           onChange: setSearch,
+        }}
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}

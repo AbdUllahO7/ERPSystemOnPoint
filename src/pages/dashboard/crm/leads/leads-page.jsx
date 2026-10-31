@@ -12,6 +12,7 @@ import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getLeads, changeLeadStatus, deleteLead } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import {
   Dialog,
   DialogContent,
@@ -64,6 +65,8 @@ export default function LeadsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterStatus, setFilterStatus] = useState("all");
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
   const [selectedLead, setSelectedLead] = useState(null);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -85,9 +88,13 @@ export default function LeadsPage() {
       PageSize: 10,
       SearchTerm: search,
     };
-    if (activeTab !== "All") p.Status = activeTab;
+    if (filterStatus !== "all") {
+      p.Status = filterStatus;
+    } else if (activeTab !== "All") {
+      p.Status = activeTab;
+    }
     return p;
-  }, [page, search, activeTab]);
+  }, [page, search, activeTab, filterStatus]);
 
   const { data, isLoading } = useQuery({
     queryKey: ["leads", params],
@@ -295,6 +302,37 @@ export default function LeadsPage() {
         ))}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "status",
+            label: "Lead Status",
+            placeholder: "All Statuses",
+            options: [
+              { value: "New", label: "New" },
+              { value: "Contacted", label: "Contacted" },
+              { value: "Qualified", label: "Qualified" },
+              { value: "Quotation", label: "Quotation" },
+              { value: "Converted", label: "Converted" },
+              { value: "Lost", label: "Lost" },
+            ],
+          },
+        ]}
+        filters={{
+          status: filterStatus !== "all" ? filterStatus : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "status") setFilterStatus(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterStatus("all");
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={leads}
         isLoading={isLoading}
@@ -306,7 +344,7 @@ export default function LeadsPage() {
         }}
         filter={{
           label: "Filter",
-          onClick: () => console.log("Filter clicked"),
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
           label: "Add",

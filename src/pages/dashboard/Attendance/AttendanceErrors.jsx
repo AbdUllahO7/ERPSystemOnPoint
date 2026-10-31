@@ -132,16 +132,7 @@ export default function AttendanceErrors() {
             value: search,
             onChange: handleSearch,
           }}
-          filter={{
-            label: "Filter",
-            onClick: () => console.log("filter"),
-          }}
           onRefresh={() => refetch()}
-          onPrint={() => window.print()}
-          export={{
-            label: "Export",
-            onClick: () => console.log("export"),
-          }}
           card={{
             icon: User,
             title: (row) => row.employeeName || "hum sassa",

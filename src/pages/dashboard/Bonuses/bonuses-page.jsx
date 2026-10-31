@@ -255,8 +255,6 @@ export default function BonusesPage() {
           ],
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{ label: "Export", onClick: () => console.log("export") }}
         addButton={{ label: "Add Bonus", onClick: () => navigate("/dashboard/hr/bounces/add") }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}

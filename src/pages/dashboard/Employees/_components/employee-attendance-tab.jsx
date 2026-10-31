@@ -157,12 +157,6 @@ export default function EmployeeAttendanceTab() {
           ],
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         pagination={{
           page: currentPage,

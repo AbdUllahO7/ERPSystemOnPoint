@@ -20,15 +20,7 @@ import {
 import toast from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { cn } from "@/lib/utils";
 
 const TYPE_STYLES = {
@@ -427,6 +419,69 @@ export default function ItemsPage() {
         ))}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "category",
+            label: "Filter by Category",
+            placeholder: "All Categories",
+            options: (categoriesList || []).map((cat) => ({
+              value: cat.id,
+              label: cat.name || cat.name_Category || "Category",
+            })),
+          },
+          {
+            key: "status",
+            label: "Filter by Status",
+            placeholder: "All Statuses",
+            options: [
+              { value: "active", label: "Active Only" },
+              { value: "inactive", label: "Inactive Only" },
+            ],
+          },
+          {
+            key: "tracking",
+            label: "Inventory Tracking",
+            placeholder: "All",
+            options: [
+              { value: "tracked", label: "Tracked Inventory" },
+              { value: "untracked", label: "Not Tracked" },
+            ],
+          },
+          {
+            key: "specs",
+            label: "Has Specifications",
+            placeholder: "All",
+            options: [
+              { value: "yes", label: "With Specifications" },
+              { value: "no", label: "Without Specifications" },
+            ],
+          },
+        ]}
+        filters={{
+          category: filterCategory !== "all" ? filterCategory : "",
+          status: filterStatus !== "all" ? filterStatus : "",
+          tracking: filterTracking !== "all" ? filterTracking : "",
+          specs: filterSpecs !== "all" ? filterSpecs : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "category") setFilterCategory(val || "all");
+          if (key === "status") setFilterStatus(val || "all");
+          if (key === "tracking") setFilterTracking(val || "all");
+          if (key === "specs") setFilterSpecs(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterCategory("all");
+          setFilterStatus("all");
+          setFilterTracking("all");
+          setFilterSpecs("all");
+          setPage(1);
+        }}
+      />
+
       {/* Data Table */}
       <DataView
         data={productsData}
@@ -442,140 +497,11 @@ export default function ItemsPage() {
         }}
         filter={{
           label: "Filter",
-          onClick: () => setIsFilterOpen(true),
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
-        isFilterOpen={isFilterOpen}
-        onCloseFilter={() => setIsFilterOpen(false)}
-        filterContent={
-          <div className="space-y-4 pt-2">
-            {/* Category Filter */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-700">
-                Filter by Category
-              </Label>
-              <Select
-                value={filterCategory}
-                onValueChange={(val) => {
-                  setFilterCategory(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  {categoriesList.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {cat.name || cat.name_Category || "Category"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Status Filter */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-700">
-                Filter by Status
-              </Label>
-              <Select
-                value={filterStatus}
-                onValueChange={(val) => {
-                  setFilterStatus(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="active">Active Only</SelectItem>
-                  <SelectItem value="inactive">Inactive Only</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Tracking Filter */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-700">
-                Inventory Tracking
-              </Label>
-              <Select
-                value={filterTracking}
-                onValueChange={(val) => {
-                  setFilterTracking(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="tracked">Tracked Inventory</SelectItem>
-                  <SelectItem value="untracked">Not Tracked</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Specifications Filter */}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-700">
-                Has Specifications
-              </Label>
-              <Select
-                value={filterSpecs}
-                onValueChange={(val) => {
-                  setFilterSpecs(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All</SelectItem>
-                  <SelectItem value="yes">With Specifications</SelectItem>
-                  <SelectItem value="no">Without Specifications</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Filter Actions */}
-            <div className="pt-3 flex justify-end gap-2 border-t border-slate-100">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilterCategory("all");
-                  setFilterStatus("all");
-                  setFilterTracking("all");
-                  setFilterSpecs("all");
-                  setPage(1);
-                }}
-              >
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                className="bg-[#0066d1] hover:bg-[#0052a8]"
-                onClick={() => setIsFilterOpen(false)}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        }
         onRefresh={() => {
           refetch();
           toast.success("Items refreshed!");
-        }}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => toast.success("Exporting items..."),
         }}
         addButton={{
           label: "Add Item",

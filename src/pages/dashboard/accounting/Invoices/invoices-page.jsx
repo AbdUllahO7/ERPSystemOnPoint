@@ -11,10 +11,15 @@ import { useQuery } from "@tanstack/react-query";
 import { getAllInvoices } from "../../../../lib/api";
 import { useNavigate, Link } from "react-router-dom";
 import { useI18n } from "@/context/translate-api";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 
 export default function InvoicesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterPaymentMethod, setFilterPaymentMethod] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const { t } = useI18n();
 
   const invT = t?.invoices || {};
@@ -36,7 +41,25 @@ export default function InvoicesPage() {
     queryFn: () => getAllInvoices(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const displayRows = useMemo(() => {
+    let rows = data?.data?.items || [];
+    if (filterPaymentMethod !== "all") {
+      rows = rows.filter((r) =>
+        String(r.payment_Method || "")
+          .toLowerCase()
+          .includes(filterPaymentMethod.toLowerCase())
+      );
+    }
+    if (fromDate) {
+      rows = rows.filter((r) => new Date(r.invoice_Date) >= new Date(fromDate));
+    }
+    if (toDate) {
+      rows = rows.filter(
+        (r) => new Date(r.invoice_Date) <= new Date(toDate + "T23:59:59")
+      );
+    }
+    return rows;
+  }, [data, filterPaymentMethod, fromDate, toDate]);
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 
@@ -115,20 +138,63 @@ export default function InvoicesPage() {
         </div>
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "paymentMethod",
+            label: invT.paymentMethod || "Payment Method",
+            placeholder: "All Methods",
+            options: [
+              { value: "Cash", label: "Cash" },
+              { value: "Credit", label: "Credit" },
+              { value: "Bank", label: "Bank" },
+            ],
+          },
+          {
+            key: "fromDate",
+            label: "From Date",
+            type: "date",
+          },
+          {
+            key: "toDate",
+            label: "To Date",
+            type: "date",
+          },
+        ]}
+        filters={{
+          paymentMethod: filterPaymentMethod !== "all" ? filterPaymentMethod : "",
+          fromDate,
+          toDate,
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "paymentMethod") setFilterPaymentMethod(val || "all");
+          if (key === "fromDate") setFromDate(val);
+          if (key === "toDate") setToDate(val);
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterPaymentMethod("all");
+          setFromDate("");
+          setToDate("");
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
         // selectable
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
+        }}
         search={{
           placeholder: invT.searchPlaceholder || "Search invoices...",
           value: search,
           onChange: handleSearch,
-        }}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
         }}
         addButton={{
           label: invT.addInvoice || "Add Invoice",

@@ -165,11 +165,6 @@ export default function CashBoxDetails() {
                   onChange: handleSearch,
                 }}
                 onRefresh={() => {}}
-                onPrint={() => window.print()}
-                export={{
-                  label: "Export",
-                  onClick: () => console.log("export"),
-                }}
                 addButton={{
                   label: "Add",
                   onClick: () => navigate(`/dashboard/accounting/cash-boxes/${id}/add-movement`),

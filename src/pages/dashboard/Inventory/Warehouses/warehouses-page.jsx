@@ -11,6 +11,7 @@ import { DataView } from "@/components/data-view/DataView";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { getWarehouses, deleteWarehouse } from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -53,6 +54,8 @@ export default function WarehousesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterLocation, setFilterLocation] = useState("all");
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -90,7 +93,17 @@ export default function WarehousesPage() {
     queryFn: () => getWarehouses(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const displayRows = useMemo(() => {
+    let rows = data?.data?.items || [];
+    if (filterLocation !== "all") {
+      rows = rows.filter((r) =>
+        String(r.location || "")
+          .toLowerCase()
+          .includes(filterLocation.toLowerCase())
+      );
+    }
+    return rows;
+  }, [data, filterLocation]);
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 
@@ -167,6 +180,30 @@ export default function WarehousesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "location",
+            label: "Location",
+            placeholder: "All Locations",
+            type: "text",
+          },
+        ]}
+        filters={{
+          location: filterLocation !== "all" ? filterLocation : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "location") setFilterLocation(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterLocation("all");
+          setPage(1);
+        }}
+      />
+
       <DataView
         title="Warehouses"
         stats={stats}
@@ -179,6 +216,10 @@ export default function WarehousesPage() {
           fields: [
             { label: "Location", value: (row) => row.location },
           ],
+        }}
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         search={{
           value: search,

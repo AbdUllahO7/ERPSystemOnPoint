@@ -50,10 +50,6 @@ export default function AuditLogTab() {
             value: search,
             onChange: setSearch,
           }}
-          filter={{
-            label: "Filter",
-            onClick: () => console.log("Filter clicked"),
-          }}
           columns={columns}
           pagination={{
             page: page,

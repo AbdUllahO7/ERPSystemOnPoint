@@ -8,8 +8,9 @@ import {
   FileText,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { useQuery } from "@tanstack/react-query";
-import { getAllOperationExpenses } from "../../../../lib/api";
+import { getAllOperationExpenses, getOperationExpenseLookUp } from "../../../../lib/api";
 import { useNavigate } from "react-router-dom";
 
 const stats = [
@@ -50,6 +51,8 @@ const stats = [
 export default function OperatingExpensesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ category: "", paymentMethod: "" });
 
   const navigate = useNavigate();
 
@@ -67,7 +70,62 @@ export default function OperatingExpensesPage() {
     queryFn: () => getAllOperationExpenses(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const { data: lookupsData } = useQuery({
+    queryKey: ["getOperationExpenseLookUp"],
+    queryFn: () => getOperationExpenseLookUp({ PageNumber: 1, PageSize: 100 }),
+  });
+
+  const rawRows = data?.data?.items || [];
+
+  const categoryOptions = useMemo(() => {
+    const fromLookups = (lookupsData?.data?.items || []).map((c) => ({
+      value: c.name || c.category_Name || c.label,
+      label: c.name || c.category_Name || c.label,
+    }));
+    if (fromLookups.length > 0) return fromLookups;
+    const set = new Set();
+    rawRows.forEach((r) => {
+      if (r.categoryName && r.categoryName !== "-") set.add(r.categoryName);
+    });
+    return Array.from(set).map((name) => ({ value: name, label: name }));
+  }, [lookupsData, rawRows]);
+
+  const paymentMethodOptions = useMemo(() => {
+    const set = new Set();
+    rawRows.forEach((r) => {
+      const pm = r.paymentMethodName || r.paymentMethod;
+      if (pm && pm !== "-") set.add(pm);
+    });
+    return Array.from(set).map((name) => ({ value: name, label: name }));
+  }, [rawRows]);
+
+  const filterConfigs = [
+    {
+      key: "category",
+      label: "Filter by Category",
+      placeholder: "All Categories",
+      options: categoryOptions,
+    },
+    {
+      key: "paymentMethod",
+      label: "Filter by Payment Method",
+      placeholder: "All Payment Methods",
+      options: paymentMethodOptions,
+    },
+  ];
+
+  const displayRows = useMemo(() => {
+    return rawRows.filter((row) => {
+      if (filters.category && row.categoryName !== filters.category) return false;
+      if (
+        filters.paymentMethod &&
+        (row.paymentMethodName || row.paymentMethod) !== filters.paymentMethod
+      )
+        return false;
+      return true;
+    });
+  }, [rawRows, filters]);
+
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 
@@ -183,6 +241,20 @@ export default function OperatingExpensesPage() {
         ))}
       </div>
 
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={filterConfigs}
+        filters={filters}
+        onFilterChange={(key, val) => {
+          setFilters((prev) => ({ ...prev, [key]: val }));
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters({ category: "", paymentMethod: "" });
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
@@ -193,18 +265,16 @@ export default function OperatingExpensesPage() {
           value: search,
           onChange: handleSearch,
         }}
-        onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        onRefresh={() => {}}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/operating-expenses/add"),
           icon: <Plus className="w-4 h-4 mr-1" />
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

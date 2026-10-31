@@ -179,9 +179,6 @@ export default function ChartOfAccountsPage() {
                 className="h-10 w-full rounded-lg border-border bg-card ps-9 pe-3"
               />
             </div>
-            <Button variant="outline" className="shrink-0 h-10">
-              Filter
-            </Button>
           </div>
           
           {/* <div className="flex items-center gap-2 w-full sm:w-auto">

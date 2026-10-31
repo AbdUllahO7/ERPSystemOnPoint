@@ -66,11 +66,6 @@ export default function ArchiveTab({ id }) {
         //   onClick: () => {}
         // }}
         onRefresh={() => {}}
-        onPrint={() => {}}
-        export={{
-          label: "Export",
-          onClick: () => {}
-        }}
         card={{
           icon: () => <History className="w-4 h-4 text-primary" />,
           title: (row) => row.actionTitle,

@@ -89,7 +89,13 @@ export default function ContractDetailPage() {
                   <p className="text-sm font-semibold text-foreground">Contract Details</p>
                   <p className="text-xs text-muted-foreground mt-0.5">Attachment</p>
                 </div>
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground cursor-pointer"
+                  onClick={() => window.open(contract.attachmentUrl, "_blank")}
+                  title="Download / View Attachment"
+                >
                   <Download className="w-5 h-5" />
                 </Button>
               </div>

@@ -5,15 +5,7 @@ import { Eye, Trash2, ArrowUp, ArrowDown } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import {
   getRentalInvoices,
@@ -254,6 +246,45 @@ export default function RentalInvoicesPage() {
         })}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "contract",
+            label: "Contract",
+            placeholder: "All Contracts",
+            options: (lookups.contracts || []).map((c) => ({
+              value: c.id,
+              label: c.name,
+            })),
+          },
+          {
+            key: "status",
+            label: "Status",
+            placeholder: "All Statuses",
+            options: (lookups.statuses || []).map((st) => ({
+              value: st,
+              label: st,
+            })),
+          },
+        ]}
+        filters={{
+          contract: selectedContract !== "all" ? selectedContract : "",
+          status: selectedStatus !== "all" ? selectedStatus : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "contract") setSelectedContract(val || "all");
+          if (key === "status") setSelectedStatus(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setSelectedContract("all");
+          setSelectedStatus("all");
+          setPage(1);
+        }}
+      />
+
       {/* Main Table with DataView */}
       <DataView
         data={displayRows}
@@ -268,85 +299,10 @@ export default function RentalInvoicesPage() {
         }}
         onAdd={() => navigate("/dashboard/rentals/invoices/add")}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        onExport={() => toast.success("Exporting rental invoices...")}
-        onFilter={() => setIsFilterOpen(true)}
-        isFilterOpen={isFilterOpen}
-        onCloseFilter={() => setIsFilterOpen(false)}
-        filterContent={
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Contract
-              </Label>
-              <Select
-                value={selectedContract}
-                onValueChange={(val) => {
-                  setSelectedContract(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Contract" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Contracts</SelectItem>
-                  {(lookups.contracts || []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Status
-              </Label>
-              <Select
-                value={selectedStatus}
-                onValueChange={(val) => {
-                  setSelectedStatus(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  {(lookups.statuses || []).map((st) => (
-                    <SelectItem key={st} value={st}>
-                      {st}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedContract("all");
-                  setSelectedStatus("all");
-                  setPage(1);
-                }}
-              >
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                className="bg-[#0066d1] hover:bg-[#0052a8]"
-                onClick={() => setIsFilterOpen(false)}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        }
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
+        }}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}

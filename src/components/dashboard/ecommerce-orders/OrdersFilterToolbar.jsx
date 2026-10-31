@@ -5,15 +5,12 @@ import {
   List,
   LayoutGrid,
   RefreshCw,
-  Printer,
-  Download,
 } from "lucide-react";
 
 export function OrdersFilterToolbar({
   searchQuery,
   onSearchChange,
   onRefresh,
-  onExport,
   viewMode = "list",
   onViewModeChange,
 }) {
@@ -77,24 +74,6 @@ export function OrdersFilterToolbar({
           title="Refresh"
         >
           <RefreshCw className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 shadow-2xs transition-colors cursor-pointer"
-          title="Print"
-        >
-          <Printer className="w-4 h-4" />
-        </button>
-
-        <button
-          type="button"
-          onClick={onExport}
-          className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center gap-2 shadow-2xs transition-colors cursor-pointer"
-        >
-          <Download className="w-3.5 h-3.5" />
-          <span>Export</span>
         </button>
       </div>
     </div>

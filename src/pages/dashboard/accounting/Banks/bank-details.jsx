@@ -141,11 +141,6 @@ export default function BankDetails() {
                   onChange: handleSearch,
                 }}
                 onRefresh={() => {}}
-                onPrint={() => window.print()}
-                export={{
-                  label: "Export",
-                  onClick: () => console.log("export"),
-                }}
                 addButton={{
                   label: "Add",
                   onClick: () => navigate(`/dashboard/accounting/banks/${id}/add-movement`),
@@ -172,7 +167,6 @@ export default function BankDetails() {
                     },
                   ],
                 }}
-                onColumnSettings={() => console.log("column settings")}
                 columns={columns}
                 emptyMessage="No movements found."
                 pagination={{

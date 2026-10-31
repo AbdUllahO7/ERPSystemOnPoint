@@ -3,15 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, ArrowDown, Eye, CheckCircle2 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import {
   getCommissionLedger,
@@ -212,6 +204,45 @@ export default function CommissionLedgerPage() {
         })}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "status",
+            label: "Filter by Status",
+            placeholder: "All Statuses",
+            options: [
+              { value: "Pending", label: "Pending" },
+              { value: "Paid", label: "Paid" },
+            ],
+          },
+          {
+            key: "provider",
+            label: "Filter by Provider",
+            placeholder: "All Providers",
+            options: (lookups.providers || []).map((p) => ({
+              value: p.id,
+              label: p.name,
+            })),
+          },
+        ]}
+        filters={{
+          status: selectedStatus !== "all" ? selectedStatus : "",
+          provider: selectedProvider !== "all" ? selectedProvider : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "status") setSelectedStatus(val || "all");
+          if (key === "provider") setSelectedProvider(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setSelectedStatus("all");
+          setSelectedProvider("all");
+          setPage(1);
+        }}
+      />
+
       {/* Main Table with DataView */}
       <DataView
         data={displayRows}
@@ -225,82 +256,10 @@ export default function CommissionLedgerPage() {
           setPage(1);
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        onExport={() => toast.success("Exporting commission ledger...")}
-        onFilter={() => setIsFilterOpen(true)}
-        isFilterOpen={isFilterOpen}
-        onCloseFilter={() => setIsFilterOpen(false)}
-        filterContent={
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Filter by Status
-              </Label>
-              <Select
-                value={selectedStatus}
-                onValueChange={(val) => {
-                  setSelectedStatus(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Paid">Paid</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Filter by Provider
-              </Label>
-              <Select
-                value={selectedProvider}
-                onValueChange={(val) => {
-                  setSelectedProvider(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Provider" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Providers</SelectItem>
-                  {lookups.providers.map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedStatus("all");
-                  setSelectedProvider("all");
-                  setPage(1);
-                }}
-              >
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                className="bg-[#0066d1] hover:bg-[#0052a8]"
-                onClick={() => setIsFilterOpen(false)}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        }
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
+        }}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}

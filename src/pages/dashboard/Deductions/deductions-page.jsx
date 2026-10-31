@@ -255,8 +255,6 @@ export default function DeductionsPage() {
           ],
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{ label: "Export", onClick: () => console.log("export") }}
         addButton={{ label: "Add Deduction", onClick: () => navigate("/dashboard/hr/deductions/add") }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}

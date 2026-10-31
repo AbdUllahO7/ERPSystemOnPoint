@@ -290,17 +290,11 @@ export default function Offices() {
           label: "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
-        onRefresh={() => console.log("refresh")}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
+        onRefresh={() => queryClient.invalidateQueries(["getOffices"])}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/hr/offices/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

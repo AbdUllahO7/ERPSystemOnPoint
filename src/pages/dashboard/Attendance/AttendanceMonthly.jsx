@@ -281,11 +281,6 @@ export default function AttendanceMonthly() {
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         card={{
           icon: Calendar,
           title: (row) => `${getMonthName(row.month)} ${row.year}`,

@@ -225,8 +225,6 @@ export default function ContractsPage() {
           ],
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllContracts"])}
-        onPrint={() => window.print()}
-        export={{ label: "Export", onClick: () => console.log("export") }}
         addButton={{ label: "Add", onClick: () => navigate("/dashboard/hr/contracts/add") }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}

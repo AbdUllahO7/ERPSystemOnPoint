@@ -174,11 +174,6 @@ export default function SubcategoriesPage() {
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/inventory/items-management/categories/add", { state: { parentId: id } }),

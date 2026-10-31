@@ -163,17 +163,11 @@ export default function AllTransactionsPage() {
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/banks/add-movement"),
           icon: <Plus className="w-4 h-4 mr-1" />
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         card={{
           title: (row) => row.transactionNumber || "-",

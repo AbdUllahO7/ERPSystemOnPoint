@@ -225,16 +225,10 @@ export default function EmployeeContractsTab() {
           ],
         }}
         onRefresh={() => queryClient.invalidateQueries(["getContractsByEmployeeId"])}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate(`/dashboard/hr/contracts/add?employeeId=${id}`),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         pagination={{

@@ -17,6 +17,7 @@ import {
 } from "../../../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 
 const stats = [
@@ -42,6 +43,9 @@ export default function AccountsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterNature, setFilterNature] = useState("all");
+  const [filterFinalAccount, setFilterFinalAccount] = useState("all");
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -76,7 +80,24 @@ export default function AccountsPage() {
     queryFn: () => getAllAccountsFlat(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const displayRows = useMemo(() => {
+    let rows = data?.data?.items || [];
+    if (filterNature !== "all") {
+      rows = rows.filter((r) =>
+        String(r.accountNature || "")
+          .toLowerCase()
+          .includes(filterNature.toLowerCase())
+      );
+    }
+    if (filterFinalAccount !== "all") {
+      rows = rows.filter((r) =>
+        String(r.finalAccount || "")
+          .toLowerCase()
+          .includes(filterFinalAccount.toLowerCase())
+      );
+    }
+    return rows;
+  }, [data, filterNature, filterFinalAccount]);
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 
@@ -180,27 +201,65 @@ export default function AccountsPage() {
         ))}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "nature",
+            label: "Account Nature",
+            placeholder: "All Natures",
+            options: [
+              { value: "Debit", label: "Debit" },
+              { value: "Credit", label: "Credit" },
+            ],
+          },
+          {
+            key: "finalAccount",
+            label: "Final Account",
+            placeholder: "All Final Accounts",
+            options: [
+              { value: "BalanceSheet", label: "Balance Sheet" },
+              { value: "IncomeStatement", label: "Income Statement" },
+              { value: "Trading", label: "Trading Account" },
+              { value: "ProfitAndLoss", label: "Profit & Loss" },
+            ],
+          },
+        ]}
+        filters={{
+          nature: filterNature !== "all" ? filterNature : "",
+          finalAccount: filterFinalAccount !== "all" ? filterFinalAccount : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "nature") setFilterNature(val || "all");
+          if (key === "finalAccount") setFilterFinalAccount(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterNature("all");
+          setFilterFinalAccount("all");
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
-        
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
+        }}
         search={{
           placeholder: "Search accounts...",
           value: search,
           onChange: handleSearch,
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllAccountsFlat"])}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/accounts/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

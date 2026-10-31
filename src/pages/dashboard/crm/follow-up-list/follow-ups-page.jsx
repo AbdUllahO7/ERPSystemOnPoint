@@ -366,10 +366,6 @@ export default function FollowUpsPage() {
                 label: "Filter",
                 onClick: () => refetch(),
               }}
-              export={{
-                label: "Export",
-                onClick: () => toast.success("Exporting follow-ups..."),
-              }}
               addButton={{
                 label: "Add",
                 onClick: () => setIsAddOpen(true),

@@ -5,15 +5,7 @@ import { Eye, Pencil, Trash2 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import {
   getServices,
@@ -268,62 +260,35 @@ export default function ServicesPage() {
         })}
       </div>
 
-      {/* Main Table Card */}
-      <div className="rounded-xl border border-border bg-card p-4 sm:p-6 shadow-sm space-y-4">
-        {/* Collapsible Filter Panel */}
-        <div
-          className={`grid transition-all duration-300 ease-in-out ${
-            isFilterOpen
-              ? "grid-rows-[1fr] opacity-100 mb-4"
-              : "grid-rows-[0fr] opacity-0 mb-0"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="flex flex-wrap items-end gap-4 rounded-xl border border-border bg-muted/40 p-4">
-              <div className="w-full flex-1 min-w-[200px]">
-                <Label className="mb-1.5 block text-xs font-medium text-foreground">
-                  Filter by Category
-                </Label>
-                <Select
-                  value={selectedCategory}
-                  onValueChange={(val) => {
-                    setSelectedCategory(val);
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-full bg-card">
-                    <SelectValue placeholder="All Categories" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Categories</SelectItem>
-                    {lookups.categories.map((c) => (
-                      <SelectItem key={c.id} value={c.value}>
-                        {c.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "category",
+            label: "Filter by Category",
+            placeholder: "All Categories",
+            options: (lookups.categories || []).map((c) => ({
+              value: c.value || c.id,
+              label: c.label || c.name,
+            })),
+          },
+        ]}
+        filters={{
+          category: selectedCategory !== "all" ? selectedCategory : "",
+        }}
+        onFilterChange={(key, val) => {
+          setSelectedCategory(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setSelectedCategory("all");
+          setPage(1);
+        }}
+      />
 
-              {selectedCategory !== "all" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setSelectedCategory("all");
-                    setPage(1);
-                  }}
-                  className="h-10"
-                >
-                  Clear Filters
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* DataView Table with Toolbar */}
-        <DataView
+      {/* DataView Table with Toolbar */}
+      <DataView
           data={displayRows}
           isLoading={isLoading}
           getRowId={(row) => row.id}
@@ -344,11 +309,6 @@ export default function ServicesPage() {
             refetch();
             toast.success("Services refreshed!");
           }}
-          onPrint={() => window.print()}
-          export={{
-            label: "Export",
-            onClick: () => toast.success("Exporting services..."),
-          }}
           addButton={{
             label: "Add",
             onClick: () => navigate("/dashboard/appointments/services/add"),
@@ -364,7 +324,6 @@ export default function ServicesPage() {
           }}
           emptyMessage="No services found"
         />
-      </div>
 
       {/* Delete Confirmation Dialog */}
       <DeleteConfirmDialog

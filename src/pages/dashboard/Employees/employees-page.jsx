@@ -398,17 +398,11 @@ export default function Employees() {
           label: "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
-        onRefresh={() => console.log("refresh")}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
+        onRefresh={() => queryClient.invalidateQueries(["getEmployees"])}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/hr/employees/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{
