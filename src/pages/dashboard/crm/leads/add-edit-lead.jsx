@@ -15,11 +15,14 @@ import { Plus, ArrowLeft } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getLeadById, createLead, updateLead } from "@/lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { cn } from "@/lib/utils";
 
 export default function AddEditLead() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { locale } = useI18n();
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
@@ -32,6 +35,12 @@ export default function AddEditLead() {
     responsible: null,
     note: "",
   });
+
+  const [errors, setErrors] = useState({});
+
+  const isFormValid = Boolean(
+    formData.name?.trim() && formData.phoneNumber?.trim()
+  );
 
   const { data, isLoading } = useQuery({
     queryKey: ["lead", id],
@@ -81,18 +90,51 @@ export default function AddEditLead() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: false }));
+    }
   };
 
   const handleSelectChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: false }));
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const newErrors = {};
+
+    if (!formData.name?.trim()) {
+      newErrors.name = true;
+    }
+    if (!formData.phoneNumber?.trim()) {
+      newErrors.phoneNumber = true;
+    }
+    if (formData.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = true;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.name) {
+        toast.error(locale === "ar" ? "يرجى ملء اسم الفرصة" : "Lead name is required");
+      } else if (newErrors.phoneNumber) {
+        toast.error(locale === "ar" ? "يرجى إدخال رقم الهاتف" : "Phone number is required");
+      } else if (newErrors.email) {
+        toast.error(locale === "ar" ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email");
+      }
+      return;
+    }
+
     const payload = {
       ...formData,
-      phone: formData.phoneNumber,
-      phoneNumber: formData.phoneNumber,
+      phone: formData.phoneNumber.trim(),
+      phoneNumber: formData.phoneNumber.trim(),
+      name: formData.name.trim(),
+      company: formData.company?.trim() || "",
+      email: formData.email?.trim() || "",
       notes: formData.note,
       note: formData.note,
       expectedValue: Number(formData.expectedValue) || 0,
@@ -124,7 +166,12 @@ export default function AddEditLead() {
             <span>{isEdit ? "Edit Lead" : "Add Lead"}</span>
           </div>
         </div>
-        <Button onClick={handleSubmit} className="gap-2" disabled={mutation.isPending}>
+        <Button
+          onClick={handleSubmit}
+          className="gap-2"
+          disabled={mutation.isPending || !isFormValid}
+          title={!isFormValid ? "Please fill in required fields (Name, Phone)" : ""}
+        >
           <Plus className="w-4 h-4" />
           {mutation.isPending ? "Saving..." : isEdit ? "Save" : "Add"}
         </Button>
@@ -133,15 +180,23 @@ export default function AddEditLead() {
       <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-semibold text-foreground">Name</Label>
+            <Label htmlFor="name" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Name</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               name="name"
               placeholder="Name"
-              className="h-11 bg-transparent"
+              className={cn("h-11 bg-transparent", errors.name && "border-red-500 focus-visible:ring-red-500")}
               value={formData.name}
               onChange={handleChange}
             />
+            {errors.name && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "اسم الفرصة مطلوب" : "Lead name is required"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -163,22 +218,35 @@ export default function AddEditLead() {
               name="email"
               type="email"
               placeholder="e-mail"
-              className="h-11 bg-transparent"
+              className={cn("h-11 bg-transparent", errors.email && "border-red-500 focus-visible:ring-red-500")}
               value={formData.email}
               onChange={handleChange}
             />
+            {errors.email && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "بريد إلكتروني غير صالح" : "Invalid email address"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phoneNumber" className="text-sm font-semibold text-foreground">Phone</Label>
+            <Label htmlFor="phoneNumber" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Phone</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="phoneNumber"
               name="phoneNumber"
               placeholder="phone"
-              className="h-11 bg-transparent"
+              className={cn("h-11 bg-transparent", errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
               value={formData.phoneNumber}
               onChange={handleChange}
             />
+            {errors.phoneNumber && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

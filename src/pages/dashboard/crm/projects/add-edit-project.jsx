@@ -178,7 +178,8 @@ export default function AddEditProject() {
           <Button
             onClick={handleSubmit}
             className="bg-blue-600 hover:bg-blue-700 font-medium"
-            disabled={saveMutation.isPending || isPageLoading}
+            disabled={saveMutation.isPending || isPageLoading || !formData.projectName?.trim() || !formData.customerId}
+            title={!formData.projectName?.trim() || !formData.customerId ? "Please enter project name and select customer" : ""}
           >
             {saveMutation.isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Project"}
           </Button>

@@ -305,8 +305,9 @@ export default function AddEditEventPage() {
           </Button>
           <Button
             type="submit"
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || !formData.title?.trim() || !formData.productVariantId || !formData.resourceId || !formData.startDate || !formData.endDate}
             className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
+            title={!formData.title?.trim() || !formData.productVariantId || !formData.resourceId || !formData.startDate || !formData.endDate ? "Please enter title, service, venue, and dates" : ""}
           >
             {saveMutation.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />

@@ -809,7 +809,7 @@ function AddFollowUpDialog({ isOpen, onClose }) {
             <Button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || !form.topic?.trim() || !form.scheduledDate}
             >
               {mutation.isPending ? "Creating..." : "Save Follow-Up"}
             </Button>
@@ -899,7 +899,7 @@ function CompleteOrCancelDialog({ isOpen, onClose, item, action }) {
               className={`rounded-xl text-white ${
                 isCompleted ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
               }`}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || !note.trim()}
             >
               {mutation.isPending ? "Saving..." : isCompleted ? "Complete Follow-Up" : "Cancel Follow-Up"}
             </Button>

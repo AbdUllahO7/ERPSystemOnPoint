@@ -82,7 +82,22 @@ export default function AddEditContractPage() {
     }
   });
 
+  const isFormValid = Boolean(form.employeeId && form.startDate && form.salary);
+
   const handleSave = () => {
+    if (!form.employeeId) {
+      toast.error("Please select an employee");
+      return;
+    }
+    if (!form.startDate) {
+      toast.error("Please select a start date");
+      return;
+    }
+    if (!form.salary || Number(form.salary) <= 0) {
+      toast.error("Please enter a valid salary");
+      return;
+    }
+
     const formData = new FormData();
     formData.append("EmployeeId", form.employeeId);
     if (form.startDate) formData.append("StartDate", new Date(form.startDate).toISOString());
@@ -125,8 +140,9 @@ export default function AddEditContractPage() {
         </div>
         <Button 
           onClick={handleSave} 
-          disabled={mutation.isPending || isLoadingContract} 
+          disabled={mutation.isPending || isLoadingContract || !isFormValid} 
           className="px-8"
+          title={!isFormValid ? "Please fill in employee, start date, and salary" : ""}
         >
           {mutation.isPending ? "Saving..." : "Save"}
         </Button>
@@ -140,7 +156,10 @@ export default function AddEditContractPage() {
           <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2 md:col-span-2">
-                <label className="text-sm font-semibold text-foreground leading-none">Employee Name</label>
+                <label className="text-sm font-semibold text-foreground leading-none flex items-center gap-1">
+                  <span>Employee Name</span>
+                  <span className="text-red-500">*</span>
+                </label>
                 <Select
                   value={form.employeeId ? String(form.employeeId) : undefined}
                   onValueChange={(val) => setForm({ ...form, employeeId: val })}
@@ -182,7 +201,10 @@ export default function AddEditContractPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground leading-none">Salary</label>
+                <label className="text-sm font-semibold text-foreground leading-none flex items-center gap-1">
+                  <span>Salary</span>
+                  <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="number"
                   className="h-9 bg-transparent"
@@ -204,7 +226,10 @@ export default function AddEditContractPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground leading-none">Start Date</label>
+                <label className="text-sm font-semibold text-foreground leading-none flex items-center gap-1">
+                  <span>Start Date</span>
+                  <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="date"
                   className="h-9 bg-transparent"

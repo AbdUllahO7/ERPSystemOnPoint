@@ -423,7 +423,12 @@ export default function AddEditAppointment() {
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSaving || isPageLoading} className="gap-2">
+            <Button
+              type="submit"
+              disabled={isSaving || isPageLoading || !formData.productVariantId || !formData.appointmentDate}
+              className="gap-2"
+              title={!formData.productVariantId || !formData.appointmentDate ? "Please select service and appointment date" : ""}
+            >
               <Save className="h-4 w-4" />
               {isSaving ? "Saving..." : "Save"}
             </Button>

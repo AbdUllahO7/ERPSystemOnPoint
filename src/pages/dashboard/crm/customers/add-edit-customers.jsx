@@ -174,7 +174,12 @@ export default function AddEditCustomers() {
             <span>{isEdit ? "Edit Customer" : "Add Customers"}</span>
           </div>
         </div>
-        <Button onClick={handleSubmit} className="gap-2" disabled={isLoading}>
+        <Button
+          onClick={handleSubmit}
+          className="gap-2"
+          disabled={isLoading || !formData.name?.trim()}
+          title={!formData.name?.trim() ? "Please enter customer name" : ""}
+        >
           <Plus className="w-4 h-4" />
           {isEdit ? "Save" : "Add"}
         </Button>
@@ -183,7 +188,10 @@ export default function AddEditCustomers() {
       <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="name" className="text-sm font-semibold text-foreground">Name</Label>
+            <Label htmlFor="name" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Name</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="name"
               name="name"

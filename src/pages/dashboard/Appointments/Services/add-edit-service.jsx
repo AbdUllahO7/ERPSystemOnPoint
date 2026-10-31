@@ -366,7 +366,12 @@ export default function AddEditService() {
             >
               {tr("services.cancel") || "Cancel"}
             </Button>
-            <Button type="submit" disabled={isSaving || isPageLoading} className="gap-2">
+            <Button
+              type="submit"
+              disabled={isSaving || isPageLoading || !formData.name?.trim()}
+              className="gap-2"
+              title={!formData.name?.trim() ? "Please enter a service name" : ""}
+            >
               <Save className="h-4 w-4" />
               {isSaving ? (tr("services.saving") || "Saving...") : (tr("services.save") || "Save")}
             </Button>
