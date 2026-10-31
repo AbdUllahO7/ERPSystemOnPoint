@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllCategories, deleteCategory } from "@/lib/api";
 import toast from "react-hot-toast";
 
@@ -66,6 +66,7 @@ export default function ItemCategoriesPage() {
   const [filters, setFilters] = useState({ Type: "" });
 
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const filterConfigs = [
     {
@@ -91,6 +92,8 @@ export default function ItemCategoriesPage() {
       PageSize: 10,
       SearchTerm: search || undefined,
     }),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const categoriesData = categoriesRes?.data?.items?.map(cat => ({
@@ -106,6 +109,10 @@ export default function ItemCategoriesPage() {
     mutationFn: deleteCategory,
     onSuccess: () => {
       toast.success("Category deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["all-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["subcategories"] });
+      queryClient.invalidateQueries({ queryKey: ["getAllCategories"] });
       refetch();
     },
     onError: (error) => {

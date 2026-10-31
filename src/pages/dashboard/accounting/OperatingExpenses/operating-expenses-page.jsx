@@ -113,7 +113,7 @@ export default function OperatingExpensesPage() {
     {
       key: "date",
       label: "Date",
-      render: (row) => new Date(row.date).toISOString().split("T")[0],
+      render: (row) => (row.date ? String(row.date).split("T")[0] : "-"),
     },
     {
       key: "categoryName",
@@ -124,13 +124,25 @@ export default function OperatingExpensesPage() {
       label: "Vendor",
     },
     {
-      key: "paymentMethod",
+      key: "paymentMethodName",
       label: "Payment Method",
+      render: (row) => row.paymentMethodName || row.paymentMethod || "-",
     },
     {
       key: "amount",
       label: "Amount",
-      render: (row) => `$${row.amount}`,
+      render: (row) =>
+        `$${
+          row.totalAmount != null
+            ? Number(row.totalAmount).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+            : Number(row.amount || 0).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+        }`,
     },
   ];
 

@@ -11,13 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { createCategory, updateCategory, getCategoryById, getAllCategories } from "@/lib/api";
 import toast from "react-hot-toast";
 
 export default function AddCategoryPage() {
   const navigate = useNavigate();
   const location = useLocation();
+  const queryClient = useQueryClient();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const stateParentId = location.state?.parentId;
@@ -76,6 +77,10 @@ export default function AddCategoryPage() {
     mutationFn: (data) => isEdit ? updateCategory(id, data) : createCategory(data),
     onSuccess: () => {
       toast.success(`Category ${isEdit ? "updated" : "created"} successfully!`);
+      queryClient.invalidateQueries({ queryKey: ["categories"] });
+      queryClient.invalidateQueries({ queryKey: ["all-categories"] });
+      queryClient.invalidateQueries({ queryKey: ["subcategories"] });
+      queryClient.invalidateQueries({ queryKey: ["getAllCategories"] });
       navigate("/dashboard/inventory/items-management/categories");
     },
     onError: (error) => {

@@ -80,7 +80,18 @@ export default function FixedExpensesPage() {
     {
       key: "amount",
       label: "Amount",
-      render: (row) => `$${row.totalAmount?.toLocaleString()}`,
+      render: (row) =>
+        `$${
+          row.totalAmount != null
+            ? Number(row.totalAmount).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+            : Number(row.amount || 0).toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })
+        }`,
     },
     {
       key: "paymentMethod",
@@ -93,7 +104,7 @@ export default function FixedExpensesPage() {
     {
       key: "startDate",
       label: "Start Date",
-      render: (row) => new Date(row.startDate).toISOString().split("T")[0],
+      render: (row) => (row.startDate ? String(row.startDate).split("T")[0] : "-"),
     },
     {
       key: "status",

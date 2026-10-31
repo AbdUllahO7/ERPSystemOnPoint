@@ -76,10 +76,11 @@ export async function getTransferDetails(id) {
   });
 }
 
-export async function getProductsByWarehouse(id) {
+export async function getProductsByWarehouse(id, params = { PageNumber: 1, PageSize: 1000 }) {
   return apiHandler({
     endPoint: `inventory/Warehouses/GetWarehouseProducts/${id}/products`,
     method: "GET",
+    params,
   });
 }
 
@@ -1407,6 +1408,22 @@ export async function getInventoryPricingLookup(params) {
 export async function getAllUnitOfMeasurements(params) {
   return apiHandler({
     endPoint: "Inventory/UnitOfMeasurements/GetAllUnitOfMeasurements",
+    method: "GET",
+    params,
+  });
+}
+
+export async function getAllProductUnits(params = { PageNumber: 1, PageSize: 1000 }) {
+  return apiHandler({
+    endPoint: "Inventory/ProductUnit/GetAllUnits",
+    method: "GET",
+    params,
+  });
+}
+
+export async function getProductUnitsLookup(params = { PageNumber: 1, PageSize: 1000 }) {
+  return apiHandler({
+    endPoint: "HR/Lookups/ProductUnits",
     method: "GET",
     params,
   });
