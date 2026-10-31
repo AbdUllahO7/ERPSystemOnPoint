@@ -14,6 +14,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { getAllCustomers } from "@/lib/api";
 import {
   getAppointmentById,
   createAppointment,
@@ -44,6 +46,8 @@ export default function AddEditAppointment() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { locale } = useI18n();
+  const noDataText = locale === "ar" ? "لا توجد بيانات" : "There is no data";
   const isEdit = Boolean(id);
 
   const [formData, setFormData] = useState({
@@ -84,6 +88,12 @@ export default function AddEditAppointment() {
   const { data: directProvidersData } = useQuery({
     queryKey: ["allServiceProvidersDirect"],
     queryFn: () => getServiceProviders({ PageSize: 100 }),
+  });
+
+  // Direct fetch of customers as fallback if lookups has no customers
+  const { data: directCustomersData } = useQuery({
+    queryKey: ["allCustomersDirectForAppointments"],
+    queryFn: () => getAllCustomers({ PageSize: 100 }),
   });
 
   const lookups = lookupsData?.data || {
@@ -162,7 +172,16 @@ export default function AddEditAppointment() {
 
   // Dynamically ensure Select options contain the current customer/service/provider
   const customerOptions = useMemo(() => {
-    const list = [...(lookups.customers || [])];
+    const lookupList = Array.isArray(lookups.customers) ? lookups.customers : [];
+    const directList = (directCustomersData?.data?.items || directCustomersData?.data || []).map((c) => ({
+      id: c.id || c.customerId,
+      value: c.id || c.customerId,
+      label: c.customerName || c.name || `Customer #${(c.id || c.customerId)?.substring?.(0, 8) || ""}`,
+    }));
+
+    const baseList = lookupList.length > 0 ? lookupList : directList;
+    const list = [...baseList];
+
     if (
       formData.customerId &&
       !list.some((c) => c.value === formData.customerId || c.id === formData.customerId)
@@ -174,7 +193,7 @@ export default function AddEditAppointment() {
       });
     }
     return list;
-  }, [lookups.customers, formData.customerId, formData.customerName]);
+  }, [lookups.customers, directCustomersData, formData.customerId, formData.customerName]);
 
   const serviceOptions = useMemo(() => {
     // Priority 1: items from direct GetAppointmentPricing lookup
@@ -476,12 +495,18 @@ export default function AddEditAppointment() {
                     {formData.customerName || customerOptions.find((c) => c.value === formData.customerId)?.label}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {customerOptions.map((c) => (
-                    <SelectItem key={c.id || c.value} value={c.value || c.id}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent position="popper">
+                  {customerOptions.length === 0 ? (
+                    <div className="py-6 px-3 text-center text-xs text-muted-foreground select-none cursor-default font-medium">
+                      {noDataText}
+                    </div>
+                  ) : (
+                    customerOptions.map((c) => (
+                      <SelectItem key={c.id || c.value} value={c.value || c.id}>
+                        {c.label}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -511,12 +536,18 @@ export default function AddEditAppointment() {
                     {formData.serviceName || serviceOptions.find((s) => s.value === formData.productVariantId)?.label}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {serviceOptions.map((s) => (
-                    <SelectItem key={s.id || s.value} value={s.value || s.id}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent position="popper">
+                  {serviceOptions.length === 0 ? (
+                    <div className="py-6 px-3 text-center text-xs text-muted-foreground select-none cursor-default font-medium">
+                      {noDataText}
+                    </div>
+                  ) : (
+                    serviceOptions.map((s) => (
+                      <SelectItem key={s.id || s.value} value={s.value || s.id}>
+                        {s.label}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -544,12 +575,18 @@ export default function AddEditAppointment() {
                     {providerOptions.find((p) => String(p.value).toLowerCase() === String(formData.serviceProviderId).toLowerCase() || String(p.id).toLowerCase() === String(formData.serviceProviderId).toLowerCase())?.label || (!isGenericProviderName(formData.serviceProviderName) ? formData.serviceProviderName : "")}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent>
-                  {providerOptions.map((p) => (
-                    <SelectItem key={p.id || p.value} value={p.value || p.id}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
+                <SelectContent position="popper">
+                  {providerOptions.length === 0 ? (
+                    <div className="py-6 px-3 text-center text-xs text-muted-foreground select-none cursor-default font-medium">
+                      {noDataText}
+                    </div>
+                  ) : (
+                    providerOptions.map((p) => (
+                      <SelectItem key={p.id || p.value} value={p.value || p.id}>
+                        {p.label}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -629,12 +666,18 @@ export default function AddEditAppointment() {
                       {formData.status}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent>
-                    {statusOptions.map((st) => (
-                      <SelectItem key={st} value={st}>
-                        {st}
-                      </SelectItem>
-                    ))}
+                  <SelectContent position="popper">
+                    {statusOptions.length === 0 ? (
+                      <div className="py-6 px-3 text-center text-xs text-muted-foreground select-none cursor-default font-medium">
+                        {noDataText}
+                      </div>
+                    ) : (
+                      statusOptions.map((st) => (
+                        <SelectItem key={st} value={st}>
+                          {st}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>
