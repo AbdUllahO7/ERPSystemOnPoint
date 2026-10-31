@@ -1,12 +1,13 @@
 import React from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Info, DollarSign } from "lucide-react";
+import { Info, DollarSign, FileText, ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { getOperationExpenseById } from "../../../../lib/api";
 
 export default function OperatingExpenseDetails() {
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const { data: expenseResponse, isLoading } = useQuery({
     queryKey: ["getOperationExpenseById", id],
@@ -19,20 +20,50 @@ export default function OperatingExpenseDetails() {
     return <div className="p-6 text-center text-muted-foreground">Loading details...</div>;
   }
 
-  const formattedDate = data.date ? new Date(data.date).toISOString().split('T')[0] : "";
+  // Safe date extraction to avoid local timezone UTC shift (e.g. 2026-11-01 becoming 2026-10-31)
+  const formatDate = (val) => {
+    if (!val) return "-";
+    if (typeof val === "string") {
+      return val.split("T")[0];
+    }
+    try {
+      const d = new Date(val);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    } catch {
+      return String(val);
+    }
+  };
+
+  const formatCurrency = (val) => {
+    if (val === null || val === undefined || isNaN(Number(val))) return "-";
+    return `$${Number(val).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  const formattedDate = formatDate(data.date);
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
       {/* Header */}
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold text-foreground">Operating Expenses Details</h2>
+          <h2 className="text-2xl font-bold text-foreground">Operating Expense Details</h2>
           <Info className="w-4 h-4 text-muted-foreground" />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-          <span>Operating Expenses</span>
+          <span
+            className="hover:underline cursor-pointer"
+            onClick={() => navigate("/dashboard/accounting/operating-expenses")}
+          >
+            Operating Expenses
+          </span>
           <span>/</span>
-          <span className="font-medium text-foreground">Operating Expenses Details</span>
+          <span className="font-medium text-foreground">Operating Expense Details</span>
         </div>
       </div>
 
@@ -43,17 +74,26 @@ export default function OperatingExpenseDetails() {
             <DollarSign className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="text-xl font-bold text-foreground">{data.description || "-"}</h3>
+              {data.categoryName && data.categoryName !== "-" && (
+                <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400 rounded-md text-xs font-medium">
+                  {data.categoryName}
+                </span>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
-              {formattedDate} • {data.vendorName || "-"}
+              {formattedDate} {data.vendorName && data.vendorName !== "-" ? `• ${data.vendorName}` : ""}
             </p>
           </div>
         </div>
         <div className="text-right">
-          <p className="text-2xl font-bold text-foreground">${data.totalAmount?.toLocaleString() || "0"}</p>
-          <p className="text-sm text-muted-foreground">incl. ${(data.taxAmount || 0).toFixed(2)} tax</p>
+          <p className="text-2xl font-bold text-foreground">
+            {formatCurrency(data.totalAmount)}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            incl. {formatCurrency(data.taxAmount)} tax
+          </p>
         </div>
       </div>
 
@@ -77,52 +117,93 @@ export default function OperatingExpenseDetails() {
         </div>
 
         <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6 overflow-hidden">
-            <TabsContent value="details" className="mt-0 outline-none">
-              <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-y-8 gap-x-4">
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Date</p>
-                  <p className="text-sm text-muted-foreground">{formattedDate || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Category</p>
-                  <p className="text-sm text-muted-foreground">{data.categoryName || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Vendor</p>
-                  <p className="text-sm text-muted-foreground">{data.vendorName || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Payment</p>
-                  <p className="text-sm text-muted-foreground">{data.paymentMethodName || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Branch</p>
-                  <p className="text-sm text-muted-foreground">{data.branchName || "-"}</p>
-                </div>
-                {/* <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Project</p>
-                  <p className="text-sm text-muted-foreground">{data.projectName || "-"}</p>
-                </div> */}
-                <div>
-                  <p className="text-sm font-medium text-foreground mb-1">Cost Center</p>
-                  <p className="text-sm text-muted-foreground">{data.costCenterName || "-"}</p>
-                </div>
+          <TabsContent value="details" className="mt-0 outline-none space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-y-8 gap-x-6">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Expense ID</p>
+                <p className="text-sm font-semibold text-foreground break-all">{data.id || "-"}</p>
               </div>
-            </TabsContent>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Date</p>
+                <p className="text-sm font-semibold text-foreground">{formattedDate}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Category</p>
+                <p className="text-sm font-semibold text-foreground">{data.categoryName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Vendor</p>
+                <p className="text-sm font-semibold text-foreground">{data.vendorName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Payment Method</p>
+                <p className="text-sm font-semibold text-foreground">{data.paymentMethodName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Cost Center</p>
+                <p className="text-sm font-semibold text-foreground">{data.costCenterName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Branch</p>
+                <p className="text-sm font-semibold text-foreground">{data.branchName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Project</p>
+                <p className="text-sm font-semibold text-foreground">{data.projectName || "-"}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Amount (Excl. Tax)</p>
+                <p className="text-sm font-semibold text-foreground">{formatCurrency(data.amount)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Tax Amount</p>
+                <p className="text-sm font-semibold text-foreground">{formatCurrency(data.taxAmount)}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1">Total Amount</p>
+                <p className="text-sm font-semibold text-primary">{formatCurrency(data.totalAmount)}</p>
+              </div>
+            </div>
 
-            <TabsContent value="attachments" className="mt-0 outline-none">
-              {data.attachmentFilePath ? (
-                <div className="flex items-center gap-2">
-                   <a href={data.attachmentFilePath} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                     View Attachment
-                   </a>
+            {/* Description / Notes section */}
+            <div className="pt-4 border-t">
+              <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground mb-1.5">Description</p>
+              <p className="text-sm text-foreground bg-muted/30 p-3 rounded-lg border">
+                {data.description || "-"}
+              </p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="attachments" className="mt-0 outline-none">
+            {data.attachmentFilePath ? (
+              <div className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <FileText className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {data.attachmentFilePath.split("/").pop() || "Expense Attachment"}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{data.attachmentFilePath}</p>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No attachments found.</p>
-              )}
-            </TabsContent>
-          </div>
-        </Tabs>
+                <a
+                  href={data.attachmentFilePath}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors shrink-0"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  View File
+                </a>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No attachments found.</p>
+            )}
+          </TabsContent>
+        </div>
+      </Tabs>
     </div>
   );
 }

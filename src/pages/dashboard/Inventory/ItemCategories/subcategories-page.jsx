@@ -67,6 +67,8 @@ export default function SubcategoriesPage() {
       SearchTerm: search || undefined,
       category_parents: id
     }),
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const subcategoriesData = subcategoriesRes?.data?.items?.map(cat => ({

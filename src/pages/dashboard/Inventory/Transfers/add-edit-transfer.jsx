@@ -1,3 +1,4 @@
+import { useEffect, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Plus, Trash2, Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
-import { getWarehouses, addTransfer, getProductsByWarehouse } from "../../../../lib/api";
+import {
+  getWarehouses,
+  addTransfer,
+  getProductsByWarehouse,
+  getAllUnitOfMeasurements,
+  getTransferDetails,
+  getAllProductUnits,
+  getProductUnitsLookup,
+} from "../../../../lib/api";
 
 export default function AddEditTransfer() {
   const { id } = useParams();
@@ -19,54 +28,228 @@ export default function AddEditTransfer() {
   const queryClient = useQueryClient();
   const isEdit = !!id;
 
-  const { register, control, handleSubmit, watch, formState: { errors } } = useForm({
+  const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     mode: "onChange",
     defaultValues: {
       source_Warehouse_Id: "",
       destination_Warehouse_Id: "",
       transfer_Date: new Date().toISOString().slice(0, 16),
       notes: "",
-      items: [{ product_Variant_Id: "", quantity: 0, weight: 0, product_Unit_Id: "" }]
-    }
+      items: [{ product_Variant_Id: "", quantity: "", weight: "", product_Unit_Id: "" }],
+    },
   });
 
   const source_Warehouse_Id = watch("source_Warehouse_Id");
+  const watchedItems = watch("items") || [];
 
   const { fields, append, remove } = useFieldArray({
     control,
-    name: "items"
+    name: "items",
   });
 
+  // 1. Warehouses lookup
   const { data: warehousesData, isLoading: warehousesLoading } = useQuery({
     queryKey: ['getWarehouses'],
-    queryFn: () => getWarehouses({ pageNumber: 1, pageSize: 100 }), // Fetching all warehouses without pagination for dropdown
+    queryFn: () => getWarehouses({ pageNumber: 1, pageSize: 100 }),
   });
 
-  const { data: productsByWarehouseData, isLoading: productsLoading } = useQuery({
+  // 2. Warehouse products lookup for the selected warehouse
+  const { data: warehouseProductsData, isLoading: warehouseProductsLoading } = useQuery({
     queryKey: ["warehouse-products", source_Warehouse_Id],
-    queryFn: () => getProductsByWarehouse(source_Warehouse_Id),
+    queryFn: () => getProductsByWarehouse(source_Warehouse_Id, { PageNumber: 1, PageSize: 1000 }),
     enabled: !!source_Warehouse_Id,
   });
+
+  // 3. Product units lookup (the actual ProductUnit entities with IDs and variant associations)
+  const { data: productUnitsData, isLoading: productUnitsLoading } = useQuery({
+    queryKey: ["getAllProductUnits"],
+    queryFn: () => getAllProductUnits({ PageNumber: 1, PageSize: 1000 }),
+  });
+
+  // 4. Product units names lookup
+  const { data: productUnitsLookupData } = useQuery({
+    queryKey: ["getProductUnitsLookup"],
+    queryFn: () => getProductUnitsLookup({ PageNumber: 1, PageSize: 1000 }),
+  });
+
+  // 5. Units of measurement lookup (dictionary of units: Piece, Box, etc.)
+  const { data: unitsData } = useQuery({
+    queryKey: ["all-units-of-measurement"],
+    queryFn: () => getAllUnitOfMeasurements({ PageNumber: 1, PageSize: 1000 }),
+  });
+
+  // 6. Transfer details in edit mode
+  const { data: transferDetailsData, isLoading: transferLoading } = useQuery({
+    queryKey: ["getTransferDetails", id],
+    queryFn: () => getTransferDetails(id),
+    enabled: isEdit,
+  });
+
+  // Populate form if in edit mode
+  useEffect(() => {
+    if (isEdit && transferDetailsData?.data) {
+      const transfer = transferDetailsData.data;
+      reset({
+        source_Warehouse_Id: transfer.source_Warehouse_Id || "",
+        destination_Warehouse_Id: transfer.destination_Warehouse_Id || "",
+        transfer_Date: transfer.transfer_Date ? transfer.transfer_Date.slice(0, 16) : new Date().toISOString().slice(0, 16),
+        notes: transfer.notes || "",
+        items: transfer.details?.length > 0
+          ? transfer.details.map((d) => ({
+              product_Variant_Id: d.product_Variant_Id || "",
+              quantity: d.quantity ?? "",
+              weight: d.weight ?? "",
+              product_Unit_Id: d.product_Unit_Id || "",
+            }))
+          : [{ product_Variant_Id: "", quantity: "", weight: "", product_Unit_Id: "" }],
+      });
+    }
+  }, [isEdit, transferDetailsData, reset]);
+
+  // Unified materials / product options with exact ProductUnit IDs required by backend
+  const productOptions = useMemo(() => {
+    const unitsList = productUnitsData?.data?.items || productUnitsData?.data || (Array.isArray(productUnitsData) ? productUnitsData : []);
+    const lookupList = productUnitsLookupData?.data?.items || productUnitsLookupData?.data || (Array.isArray(productUnitsLookupData) ? productUnitsLookupData : []);
+    const dictList = unitsData?.data?.items || unitsData?.data || (Array.isArray(unitsData) ? unitsData : []);
+    const whList = warehouseProductsData?.data?.items || warehouseProductsData?.data || (Array.isArray(warehouseProductsData) ? warehouseProductsData : []);
+
+    // 1. Build lookup maps for unit names
+    const lookupMap = new Map();
+    if (Array.isArray(lookupList)) {
+      lookupList.forEach((u) => {
+        if (u.id) lookupMap.set(String(u.id).toLowerCase(), u.name || u.unit_name || u.unitName);
+      });
+    }
+
+    const dictMap = new Map();
+    if (Array.isArray(dictList)) {
+      dictList.forEach((u) => {
+        const uId = u.unit_Name_Id || u.id;
+        if (uId) dictMap.set(String(uId).toLowerCase(), u.unit_name || u.name);
+      });
+    }
+
+    // 2. Build stock map for warehouse products
+    const stockMap = new Map();
+    if (Array.isArray(whList)) {
+      whList.forEach((w) => {
+        const vId = w.productVariantId || w.variantId || w.id;
+        if (vId) stockMap.set(String(vId).toLowerCase(), w.availableQuantity);
+      });
+    }
+
+    // 3. Group ProductUnits by product_Variant_Id
+    const variantMap = new Map();
+
+    if (Array.isArray(unitsList)) {
+      unitsList.forEach((u) => {
+        const variantId = String(u.product_Variant_Id || u.variantId || u.productVariantId || "");
+        if (!variantId) return;
+        const key = variantId.toLowerCase();
+
+        // The unit name resolved accurately
+        const unitName =
+          lookupMap.get(String(u.id).toLowerCase()) ||
+          dictMap.get(String(u.unit_Of_Measurement_Id || "").toLowerCase()) ||
+          u.unit_name ||
+          u.unitName ||
+          u.name ||
+          "Unit";
+
+        const unitObj = {
+          id: String(u.id), // The real ProductUnit.id required by backend
+          name: unitName,
+          unitOfMeasurementId: u.unit_Of_Measurement_Id,
+        };
+
+        if (variantMap.has(key)) {
+          const existing = variantMap.get(key);
+          if (!existing.availableUnits.some((unit) => unit.id.toLowerCase() === unitObj.id.toLowerCase())) {
+            existing.availableUnits.push(unitObj);
+          }
+        } else {
+          variantMap.set(key, {
+            productVariantId: variantId,
+            productName: u.product_Name || u.name || "Product",
+            availableQuantity: stockMap.get(key),
+            availableUnits: [unitObj],
+          });
+        }
+      });
+    }
+
+    return Array.from(variantMap.values());
+  }, [productUnitsData, productUnitsLookupData, unitsData, warehouseProductsData]);
 
   const { mutate, isPending } = useMutation({
     mutationFn: addTransfer,
     onSuccess: () => {
-      toast.success("Transfer added successfully!");
+      toast.success(isEdit ? "Transfer saved successfully!" : "Transfer added successfully!");
       queryClient.invalidateQueries(["getAllTransfers"]);
       navigate("/dashboard/inventory/transfers");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to add transfer!");
+      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to save transfer!");
     },
   });
 
   const onSubmit = (data) => {
-    mutate(data);
+    if (data.source_Warehouse_Id === data.destination_Warehouse_Id) {
+      toast.error("Destination must be different from source warehouse");
+      return;
+    }
+
+    if (!data.items || data.items.length === 0) {
+      toast.error("Please add at least one material to transfer");
+      return;
+    }
+
+    for (let i = 0; i < data.items.length; i++) {
+      const item = data.items[i];
+      if (!item.product_Variant_Id) {
+        toast.error(`Please select a material for line #${i + 1}`);
+        return;
+      }
+      if (!item.product_Unit_Id) {
+        toast.error(`Please select a unit for line #${i + 1}`);
+        return;
+      }
+      if (item.quantity === "" || item.quantity === null || Number(item.quantity) <= 0) {
+        toast.error(`Please enter a valid quantity (> 0) for line #${i + 1}`);
+        return;
+      }
+    }
+
+    const payload = {
+      source_Warehouse_Id: data.source_Warehouse_Id,
+      destination_Warehouse_Id: data.destination_Warehouse_Id,
+      transfer_Date: data.transfer_Date ? new Date(data.transfer_Date).toISOString() : new Date().toISOString(),
+      notes: data.notes || "",
+      items: data.items.map((item) => ({
+        product_Variant_Id: item.product_Variant_Id,
+        product_Unit_Id: item.product_Unit_Id,
+        quantity: Number(item.quantity) || 0,
+        weight: Number(item.weight) || 0,
+      })),
+    };
+
+    mutate(payload);
+  };
+
+  const handleMaterialSelect = (index, variantId) => {
+    setValue(`items.${index}.product_Variant_Id`, variantId, { shouldValidate: true });
+
+    // Auto-select first available ProductUnit for this product
+    const prod = productOptions.find(
+      (p) => String(p.productVariantId).toLowerCase() === String(variantId).toLowerCase()
+    );
+    if (prod?.availableUnits?.length > 0) {
+      setValue(`items.${index}.product_Unit_Id`, prod.availableUnits[0].id, { shouldValidate: true });
+    }
   };
 
   const warehouseOptions = warehousesData?.data?.items || [];
-  const productOptions = productsByWarehouseData?.data?.items || [];
-  console.log(productOptions)
+  const isProductsLoading = productUnitsLoading || (source_Warehouse_Id && warehouseProductsLoading);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 max-w-[1200px] mx-auto w-full pb-10">
@@ -193,7 +376,11 @@ export default function AddEditTransfer() {
           
           {/* Header Actions */}
           <div className="p-4 border-b flex justify-end">
-             <Button type="button" onClick={() => append({ product_Variant_Id: "", quantity: 0, weight: 0, product_Unit_Id: "" })} className="bg-blue-600 hover:bg-blue-700 text-white">
+             <Button
+               type="button"
+               onClick={() => append({ product_Variant_Id: "", quantity: "", weight: "", product_Unit_Id: "" })}
+               className="bg-blue-600 hover:bg-blue-700 text-white"
+             >
                 <Plus className="w-4 h-4 mr-2" />
                 Add Line
               </Button>
@@ -213,8 +400,11 @@ export default function AddEditTransfer() {
               </thead>
               <tbody>
                 {fields?.map((field, index) => {
-                  const selectedProductVariantId = watch(`items.${index}.product_Variant_Id`);
-                  const selectedProductData = productOptions?.find(p => p.productVariantId === selectedProductVariantId);
+                  const currentItem = watchedItems?.[index] || {};
+                  const selectedProductVariantId = currentItem.product_Variant_Id;
+                  const selectedProductData = productOptions.find(
+                    (p) => String(p.productVariantId).toLowerCase() === String(selectedProductVariantId || "").toLowerCase()
+                  );
                   const rowUnitOptions = selectedProductData?.availableUnits || [];
 
                   return (
@@ -224,28 +414,25 @@ export default function AddEditTransfer() {
                           name={`items.${index}.product_Variant_Id`}
                           control={control}
                           rules={{ required: "Material is required" }}
-                          render={({ field }) => (
+                          render={({ field: matField }) => (
                             <Select
-                              key={field.value}
-                              value={field.value || ""}
-                              onValueChange={field.onChange}
-                              disabled={!source_Warehouse_Id || productOptions.length === 0}
+                              value={matField.value || ""}
+                              onValueChange={(val) => handleMaterialSelect(index, val)}
+                              disabled={productOptions.length === 0}
                             >
                               <SelectTrigger className={`w-full h-9 bg-transparent ${errors.items?.[index]?.product_Variant_Id ? "border-red-500" : "border-input"}`}>
                                 <SelectValue placeholder={
-                                  !source_Warehouse_Id 
-                                    ? "Select Warehouse first" 
-                                    : productsLoading 
-                                      ? "Loading products..."
-                                      : productOptions.length === 0 
-                                        ? "No products available" 
-                                        : "Select material"
+                                  isProductsLoading 
+                                    ? "Loading products..."
+                                    : productOptions.length === 0 
+                                      ? "No products available" 
+                                      : "Select material"
                                 } />
                               </SelectTrigger>
                               <SelectContent position="popper">
                                 {productOptions?.map((p) => (
                                   <SelectItem key={p.productVariantId} value={String(p.productVariantId)}>
-                                    {p.productName}
+                                    {p.productName} {p.availableQuantity !== undefined ? `(Available: ${p.availableQuantity})` : ""}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -264,7 +451,7 @@ export default function AddEditTransfer() {
                           className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground ${errors.items?.[index]?.quantity ? "border-red-500" : "border-input"}`}
                           {...register(`items.${index}.quantity`, { 
                             required: "Required",
-                            min: { value: 0.01, message: "> 0" }
+                            min: { value: 0.0001, message: "> 0" }
                           })}
                         />
                         {errors.items?.[index]?.quantity && <p className="text-red-500 text-[10px] mt-1">{errors.items[index].quantity.message}</p>}
@@ -286,20 +473,19 @@ export default function AddEditTransfer() {
                           name={`items.${index}.product_Unit_Id`}
                           control={control}
                           rules={{ required: "Unit required" }}
-                          render={({ field }) => (
+                          render={({ field: unitField }) => (
                             <Select
-                              key={field.value}
-                              value={field.value || ""}
-                              onValueChange={field.onChange}
-                              disabled={!selectedProductVariantId}
+                              value={unitField.value || ""}
+                              onValueChange={unitField.onChange}
+                              disabled={!selectedProductVariantId || rowUnitOptions.length === 0}
                             >
                               <SelectTrigger className={`w-full h-9 bg-transparent ${errors.items?.[index]?.product_Unit_Id ? "border-red-500" : "border-input"}`}>
                                 <SelectValue placeholder="Select Unit" />
                               </SelectTrigger>
                               <SelectContent position="popper">
                                 {rowUnitOptions.map((u) => (
-                                  <SelectItem key={u.productUnitId} value={String(u.productUnitId)}>
-                                    {u.unitName}
+                                  <SelectItem key={u.id} value={String(u.id)}>
+                                    {u.name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>

@@ -68,6 +68,7 @@ export default function AddEditServiceProvider() {
   const { locale } = useI18n();
 
   const [copiedId, setCopiedId] = useState(false);
+  const [employeeError, setEmployeeError] = useState(false);
   const [formData, setFormData] = useState({
     employeeId: "",
     startTime: "08:00",
@@ -135,8 +136,14 @@ export default function AddEditServiceProvider() {
     },
     onError: (err) => {
       console.error("Failed to save service provider:", err);
+      const errMsg =
+        err?.response?.data?.message ||
+        err?.data?.message ||
+        err?.message;
       toast.error(
-        isEdit
+        errMsg && errMsg !== "An unexpected error occurred"
+          ? errMsg
+          : isEdit
           ? "Failed to update service provider!"
           : "Failed to create service provider!"
       );
@@ -144,11 +151,10 @@ export default function AddEditServiceProvider() {
   });
 
   const handleSelectEmployee = (empId) => {
-    if (!empId || empId === "none") {
-      setFormData((prev) => ({ ...prev, employeeId: "" }));
-      return;
+    setFormData((prev) => ({ ...prev, employeeId: empId || "" }));
+    if (empId) {
+      setEmployeeError(false);
     }
-    setFormData((prev) => ({ ...prev, employeeId: empId }));
   };
 
   const handleToggleDay = (dayId) => {
@@ -172,16 +178,25 @@ export default function AddEditServiceProvider() {
 
   const handleSubmit = (e) => {
     e?.preventDefault();
+    if (!formData.employeeId) {
+      setEmployeeError(true);
+      toast.error(
+        locale === "ar"
+          ? "يرجى اختيار موظف من الموارد البشرية"
+          : "Please select an HR employee"
+      );
+      return;
+    }
     if (isEdit) {
       // POST /api/inventory/ServiceProvider/UpdateServiceProvider
-      // Schema: { id: "uuid", hrEmployeeId: "uuid | null" }
+      // Schema: { id: "uuid", hrEmployeeId: "uuid" }
       saveMutation.mutate({
         id,
-        hrEmployeeId: formData.employeeId || null,
+        hrEmployeeId: formData.employeeId,
       });
     } else {
       // POST /api/inventory/ServiceProvider/CreateServiceProvider
-      // Schema: { hrEmployeeId: "uuid | null", weeklySchedule: [...] }
+      // Schema: { hrEmployeeId: "uuid", weeklySchedule: [...] }
       saveMutation.mutate(formData);
     }
   };
@@ -336,25 +351,32 @@ export default function AddEditServiceProvider() {
         {/* Section 1: HR Employee Selection */}
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-semibold text-slate-800">
-              {locale === "ar" ? "اختيار موظف الموارد البشرية" : "Select HR Employee"}
+            <Label className="text-sm font-semibold text-slate-800 flex items-center gap-1">
+              <span>{locale === "ar" ? "اختيار موظف الموارد البشرية" : "Select HR Employee"}</span>
+              <span className="text-red-500">*</span>
             </Label>
             <p className="text-xs text-slate-500 mt-0.5">
-              Assign or reassign an employee from the HR system to this service provider.
+              {locale === "ar"
+                ? "تعيين موظف من نظام الموارد البشرية لمقدم الخدمة هذا (مطلوب)."
+                : "Assign an employee from the HR system to this service provider (Required)."}
             </p>
           </div>
 
           <div className="max-w-xl">
             <Select
-              value={formData.employeeId || "none"}
+              value={formData.employeeId || ""}
               onValueChange={handleSelectEmployee}
               disabled={isLoadingEmployees}
             >
-              <SelectTrigger className="h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]">
+              <SelectTrigger
+                className={cn(
+                  "h-11 rounded-lg border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]",
+                  employeeError && "border-red-500 focus-visible:ring-red-500"
+                )}
+              >
                 <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Choose employee..."} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">None (Independent Provider - بدون موظف HR)</SelectItem>
                 {employees.map((emp) => (
                   <SelectItem key={emp.id} value={emp.id}>
                     {emp.label} {emp.code ? `(#${emp.code})` : ""}
@@ -362,6 +384,13 @@ export default function AddEditServiceProvider() {
                 ))}
               </SelectContent>
             </Select>
+            {employeeError && (
+              <p className="text-xs text-red-500 font-medium mt-1.5">
+                {locale === "ar"
+                  ? "موظف الموارد البشرية مطلوب"
+                  : "HR Employee is required"}
+              </p>
+            )}
           </div>
 
           {/* Selected Employee Details Card Preview */}

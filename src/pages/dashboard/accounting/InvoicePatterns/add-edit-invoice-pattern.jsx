@@ -19,7 +19,6 @@ import {
   getLeafAccounts,
   getWarehouses,
   getAllCostCenters,
-  getAllCurrencies,
 } from "../../../../lib/api";
 import toast from "react-hot-toast";
 
@@ -46,7 +45,6 @@ export default function AddEditInvoicePattern() {
       end_Date: "",
       wareHouse_Id: "",
       costCenter_id: "",
-      currency_id: "",
       service_Account_Id: "",
       paymentPay: "Cash",
       tax_Percentage: 0,
@@ -69,11 +67,6 @@ export default function AddEditInvoicePattern() {
     queryFn: () => getAllCostCenters({ PageNumber: 1, PageSize: 1000 }),
   });
 
-  const { data: currenciesData, isLoading: isLoadingCurrencies } = useQuery({
-    queryKey: ["getAllCurrencies"],
-    queryFn: () => getAllCurrencies({ PageNumber: 1, PageSize: 1000 }),
-  });
-
   const { data: patternData, isLoading: isLoadingPattern } = useQuery({
     queryKey: ["getInvoicePatternById", id],
     queryFn: () => getInvoicePatternById(id),
@@ -83,8 +76,7 @@ export default function AddEditInvoicePattern() {
   const isLoadingLookups =
     isLoadingAccounts ||
     isLoadingWarehouses ||
-    isLoadingCostCenters ||
-    isLoadingCurrencies;
+    isLoadingCostCenters;
   const isPageLoading = (isEdit && isLoadingPattern) || isLoadingLookups;
 
   useEffect(() => {
@@ -103,7 +95,6 @@ export default function AddEditInvoicePattern() {
       setValue("end_Date", data.end_Date ? data.end_Date.split("T")[0] : "");
       setValue("wareHouse_Id", String(data.wareHouse_Id || data.warehouse_Id || data.warehouseId || ""));
       setValue("costCenter_id", String(data.costCenter_id || data.costCenter_Id || data.costCenterId || ""));
-      setValue("currency_id", String(data.currency_id || data.currency_Id || data.currencyId || ""));
       setValue("service_Account_Id", String(data.service_Accoount_Id || data.service_Account_Id || data.serviceAccountId || ""));
       setValue("paymentPay", data.paymentPay || data.payment_Pay || "Cash");
       setValue("tax_Percentage", data.tax_Percentage ?? data.taxPercentage ?? 0);
@@ -146,6 +137,8 @@ export default function AddEditInvoicePattern() {
       end_Date: data.end_Date ? new Date(data.end_Date).toISOString() : null,
     };
 
+    delete payload.currency_id;
+
     // Clear out empty uuids to prevent backend errors if they aren't required, or leave them.
     Object.keys(payload).forEach((key) => {
       if (payload[key] === "") payload[key] = null;
@@ -157,7 +150,6 @@ export default function AddEditInvoicePattern() {
   const accounts = accountsData?.data?.items || [];
   const warehouses = warehousesData?.data?.items || [];
   const costCenters = costCentersData?.data?.items || [];
-  const currencies = currenciesData?.data?.items || [];
   const pageTitle = isEdit ? "Edit Invoice Pattern" : "Add Invoice Pattern";
 
   return (
@@ -456,39 +448,6 @@ export default function AddEditInvoicePattern() {
               {errors.paymentPay && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
-                Currency
-              </label>
-              <Controller
-                name="currency_id"
-                control={control}
-                render={({ field }) => (
-                  <Select
-                    key={field.value}
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Currency" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {field.value && !currencies.some((curr) => String(curr.id) === String(field.value)) && (
-                        <SelectItem value={String(field.value)}>
-                          {`Currency (${String(field.value).slice(0, 8)}...)`}
-                        </SelectItem>
-                      )}
-                      {currencies.map((curr) => (
-                        <SelectItem key={curr.id} value={String(curr.id)}>
-                          {curr.currency_Name || curr.name || curr.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
             </div>
 
             <div className="space-y-2">
