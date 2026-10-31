@@ -357,9 +357,13 @@ export const router = createBrowserRouter([
       { path: "/dashboard/crm/customers", element: lazyLoad(() => import("../pages/dashboard/crm/customers/customers-page")) },
       { path: "/dashboard/crm/customers/add", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customers")) },
       { path: "/dashboard/crm/customers/edit/:id", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customers")) },
+      { path: "/dashboard/crm/customers/:customerId/follow-ups/add", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customer-follow-up")) },
+      { path: "/dashboard/crm/customers/:customerId/follow-ups/edit/:followUpId", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customer-follow-up")) },
       { path: "/dashboard/crm/customers/:id", element: lazyLoad(() => import("../pages/dashboard/crm/customers/customer-details")) },
 
       { path: "/dashboard/crm/follow-up-list", element: lazyLoad(() => import("../pages/dashboard/crm/follow-up-list/follow-ups-page")) },
+      { path: "/dashboard/crm/follow-ups/add", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customer-follow-up")) },
+      { path: "/dashboard/crm/follow-ups/edit/:followUpId", element: lazyLoad(() => import("../pages/dashboard/crm/customers/add-edit-customer-follow-up")) },
 
       { path: "/dashboard/crm/suppliers", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/supplier-page")) },
       { path: "/dashboard/crm/suppliers/add", element: lazyLoad(() => import("../pages/dashboard/crm/suppliers/add-edit-supplier")) },

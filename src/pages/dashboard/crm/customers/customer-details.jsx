@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Info, Edit, Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getCustomerById } from "@/lib/api";
@@ -17,7 +17,7 @@ import { TimelineTab } from "./_components/tabs/timeline-tab";
 export default function CustomerDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState("Basic Information");
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const tabs = [
     "Basic Information",
@@ -30,6 +30,21 @@ export default function CustomerDetails() {
     "Notes",
     "Timeline"
   ];
+
+  const tabParam = searchParams.get("tab");
+  const initialTab = tabParam && tabs.includes(tabParam) ? tabParam : "Basic Information";
+  const [activeTab, setActiveTab] = useState(initialTab);
+
+  useEffect(() => {
+    if (tabParam && tabs.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   const { data: customerData, isLoading, isError } = useQuery({
     queryKey: ["customer", id],
@@ -134,7 +149,7 @@ export default function CustomerDetails() {
           {tabs.map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
+              onClick={() => handleTabChange(tab)}
               className={`pb-3 text-sm font-semibold transition-colors relative whitespace-nowrap ${
                 activeTab === tab
                   ? "text-blue-500"
