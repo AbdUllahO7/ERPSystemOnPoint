@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useMemo, useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Eye,
@@ -11,6 +11,7 @@ import {
   FileText,
   Building2,
   Users,
+  X,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
@@ -18,6 +19,7 @@ import { PageTitle } from "@/components/common/page-title";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import { useI18n } from "@/context/translate-api";
+import { getEventById } from "@/services/events";
 import {
   getReservations,
   getReservationsStats,
@@ -44,16 +46,43 @@ function formatDate(dateStr) {
 
 export default function ReservationsPage() {
   const { t } = useI18n();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+
+  const urlEventId =
+    searchParams.get("bookingEventId") ||
+    searchParams.get("eventId") ||
+    location.state?.bookingEventId ||
+    "all";
+
+  const urlCustomerId = searchParams.get("customerId") || "all";
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
-  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(urlEventId !== "all" || urlCustomerId !== "all");
   const [deleteRowId, setDeleteRowId] = useState(null);
-  const [selectedCustomer, setSelectedCustomer] = useState("all");
-  const [selectedEvent, setSelectedEvent] = useState("all");
+  const [selectedCustomer, setSelectedCustomer] = useState(urlCustomerId);
+  const [selectedEvent, setSelectedEvent] = useState(urlEventId);
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const eventParam =
+      searchParams.get("bookingEventId") ||
+      searchParams.get("eventId") ||
+      location.state?.bookingEventId ||
+      "all";
+
+    if (eventParam !== selectedEvent) {
+      setSelectedEvent(eventParam);
+      if (eventParam !== "all") {
+        setIsFilterOpen(true);
+      }
+      setPage(1);
+    }
+  }, [searchParams, location.state]);
 
   // Lookups Query
   const { data: lookupsData } = useQuery({
@@ -61,6 +90,37 @@ export default function ReservationsPage() {
     queryFn: getReservationLookups,
   });
   const lookups = lookupsData?.data || { customers: [], events: [] };
+
+  // Specific Event Query for active filter display
+  const { data: currentEventData } = useQuery({
+    queryKey: ["eventForReservationsFilter", selectedEvent],
+    queryFn: () => getEventById(selectedEvent),
+    enabled: Boolean(selectedEvent && selectedEvent !== "all"),
+  });
+
+  const eventDisplayName =
+    currentEventData?.data?.title ||
+    location.state?.eventTitle ||
+    lookups.events?.find((e) => String(e.id) === String(selectedEvent))?.name ||
+    (selectedEvent !== "all" ? `Event #${String(selectedEvent).substring(0, 8)}` : "");
+
+  const eventFilterOptions = useMemo(() => {
+    const options = (lookups.events || []).map((e) => ({
+      value: String(e.id),
+      label: e.name || e.title || `Event #${String(e.id).substring(0, 8)}`,
+    }));
+    if (
+      selectedEvent &&
+      selectedEvent !== "all" &&
+      !options.some((o) => o.value === String(selectedEvent))
+    ) {
+      options.unshift({
+        value: String(selectedEvent),
+        label: eventDisplayName || `Event #${String(selectedEvent).substring(0, 8)}`,
+      });
+    }
+    return options;
+  }, [lookups.events, selectedEvent, eventDisplayName]);
 
   // Stats Query with Fallback
   const { data: statsData } = useQuery({
@@ -359,12 +419,9 @@ export default function ReservationsPage() {
           },
           {
             key: "event",
-            label: t?.reservationsModule?.event || "Booking Event",
+            label: t?.eventsModule?.event || "Booking Event",
             placeholder: t?.reservationsModule?.allEvents || "All Events",
-            options: (lookups.events || []).map((e) => ({
-              value: String(e.id),
-              label: e.name,
-            })),
+            options: eventFilterOptions,
           },
         ]}
         filters={{
@@ -373,15 +430,59 @@ export default function ReservationsPage() {
         }}
         onFilterChange={(key, val) => {
           if (key === "customer") setSelectedCustomer(val || "all");
-          if (key === "event") setSelectedEvent(val || "all");
+          if (key === "event") {
+            const nextEvent = val || "all";
+            setSelectedEvent(nextEvent);
+            const newParams = new URLSearchParams(searchParams);
+            if (nextEvent !== "all") {
+              newParams.set("bookingEventId", nextEvent);
+            } else {
+              newParams.delete("bookingEventId");
+              newParams.delete("eventId");
+            }
+            setSearchParams(newParams);
+          }
           setPage(1);
         }}
         onClear={() => {
           setSelectedCustomer("all");
           setSelectedEvent("all");
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete("bookingEventId");
+          newParams.delete("eventId");
+          newParams.delete("customerId");
+          setSearchParams(newParams);
           setPage(1);
         }}
       />
+
+      {/* Active Event Filter Notice */}
+      {selectedEvent !== "all" && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 bg-blue-50/80 border border-blue-200/80 rounded-xl text-xs text-blue-900 shadow-xs">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#0066d1] animate-pulse" />
+            <span>
+              {t?.eventsModule?.viewReservations || "Showing reservations for event"}:
+            </span>
+            <strong className="font-bold text-[#0066d1]">{eventDisplayName}</strong>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedEvent("all");
+              const newParams = new URLSearchParams(searchParams);
+              newParams.delete("bookingEventId");
+              newParams.delete("eventId");
+              setSearchParams(newParams);
+              setPage(1);
+            }}
+            className="flex items-center gap-1 text-slate-500 hover:text-slate-800 bg-white hover:bg-slate-100 px-2.5 py-1 rounded-lg border border-slate-200 font-medium transition-colors cursor-pointer"
+          >
+            <X className="w-3.5 h-3.5 text-slate-400" />
+            Show All Events
+          </button>
+        </div>
+      )}
 
       {/* Main Table with DataView */}
       <DataView
@@ -403,7 +504,13 @@ export default function ReservationsPage() {
           setSearch(val);
           setPage(1);
         }}
-        onAdd={() => navigate("/dashboard/reservations/add")}
+        onAdd={() =>
+          navigate(
+            selectedEvent !== "all"
+              ? `/dashboard/reservations/add?bookingEventId=${selectedEvent}`
+              : "/dashboard/reservations/add"
+          )
+        }
         onRefresh={() => refetch()}
         filter={{
           label: "Filter",

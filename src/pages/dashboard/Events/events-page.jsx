@@ -118,7 +118,13 @@ export default function EventsPage() {
             key: "reservations",
             label: t?.eventsModule?.viewReservations || "View Reservations",
             icon: Users,
-            onClick: (row) => navigate(`/dashboard/reservations?bookingEventId=${row.id}`),
+            onClick: (row) => {
+              const targetId = row?.id || row?.original?.id;
+              const targetTitle = row?.title || row?.original?.title || "";
+              navigate(`/dashboard/reservations?bookingEventId=${targetId}`, {
+                state: { bookingEventId: targetId, eventTitle: targetTitle },
+              });
+            },
           },
           {
             key: "edit",
@@ -136,7 +142,7 @@ export default function EventsPage() {
         ],
       },
     ],
-    [navigate]
+    [navigate, t]
   );
 
   const getStatusBadge = (status) => {
@@ -273,9 +279,19 @@ export default function EventsPage() {
           const reserved = row.original.reserved || 0;
           const max = row.original.maxCapacity || 20;
           const pct = max > 0 ? Math.min(100, Math.round((reserved / max) * 100)) : 0;
+          const targetId = row.original.id;
+          const targetTitle = row.original.title;
           return (
-            <div className="space-y-1 min-w-[85px]">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+            <div
+              className="space-y-1 min-w-[85px] cursor-pointer group"
+              title="Click to view reservations for this event"
+              onClick={() =>
+                navigate(`/dashboard/reservations?bookingEventId=${targetId}`, {
+                  state: { bookingEventId: targetId, eventTitle: targetTitle },
+                })
+              }
+            >
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-700 group-hover:text-[#0066d1] transition-colors">
                 <span>{reserved}/{max}</span>
                 <span className="text-[10px] text-slate-400 font-normal">{pct}%</span>
               </div>
