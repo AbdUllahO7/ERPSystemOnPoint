@@ -15,23 +15,32 @@ import { Plus, Loader2 } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { createCustomer, updateCustomer, getCustomerById } from "@/lib/api";
+import { useI18n } from "@/context/translate-api";
+import { cn } from "@/lib/utils";
 
 export default function AddEditCustomers() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { locale } = useI18n();
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
     name: "",
-    type: "",
+    type: "Individual",
     sector: "",
-    status: "",
+    status: "Active",
     email: "",
     phone: "",
     website: "",
     address: "",
   });
+
+  const [errors, setErrors] = useState({});
+
+  const isFormValid = Boolean(
+    formData.name?.trim() && formData.phone?.trim() && formData.type && formData.status
+  );
 
   const { data: customerData, isLoading: isFetching } = useQuery({
     queryKey: ["customer", id],
@@ -70,10 +79,16 @@ export default function AddEditCustomers() {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: false }));
+    }
   };
 
   const handleSelectChange = (name, value) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: false }));
+    }
   };
 
   const addMutation = useMutation({
@@ -105,47 +120,76 @@ export default function AddEditCustomers() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const newErrors = {};
+
     if (!formData.name?.trim()) {
-      toast.error("Customer name is required");
+      newErrors.name = true;
+    }
+    if (!formData.phone?.trim()) {
+      newErrors.phone = true;
+    }
+    if (!formData.type) {
+      newErrors.type = true;
+    }
+    if (!formData.status) {
+      newErrors.status = true;
+    }
+    if (formData.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      newErrors.email = true;
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.name) {
+        toast.error(locale === "ar" ? "اسم العميل مطلوب" : "Customer name is required");
+      } else if (newErrors.phone) {
+        toast.error(locale === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required");
+      } else if (newErrors.email) {
+        toast.error(locale === "ar" ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email address");
+      } else if (newErrors.type) {
+        toast.error(locale === "ar" ? "يرجى تحديد نوع العميل" : "Please select customer type");
+      } else if (newErrors.status) {
+        toast.error(locale === "ar" ? "يرجى تحديد حالة العميل" : "Please select customer status");
+      }
       return;
     }
 
     if (isEdit) {
       updateMutation.mutate({
         id,
-        customer_Name: formData.name,
-        customerName: formData.name,
-        name: formData.name,
-        phone_Number: formData.phone,
-        phoneNumber: formData.phone,
-        phone: formData.phone,
-        address: formData.address,
-        email: formData.email,
+        customer_Name: formData.name.trim(),
+        customerName: formData.name.trim(),
+        name: formData.name.trim(),
+        phone_Number: formData.phone.trim(),
+        phoneNumber: formData.phone.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address?.trim() || "",
+        email: formData.email?.trim() || "",
         status: formData.status,
         customer_Type: formData.type,
         customerType: formData.type,
         type: formData.type,
-        sector: formData.sector,
-        webSite: formData.website,
-        website: formData.website,
+        sector: formData.sector?.trim() || "",
+        webSite: formData.website?.trim() || "",
+        website: formData.website?.trim() || "",
       });
     } else {
       addMutation.mutate({
-        customer_Name: formData.name,
-        customerName: formData.name,
-        name: formData.name,
+        customer_Name: formData.name.trim(),
+        customerName: formData.name.trim(),
+        name: formData.name.trim(),
         customer_Type: formData.type || "Individual",
         customerType: formData.type || "Individual",
         type: formData.type || "Individual",
-        sector: formData.sector,
+        sector: formData.sector?.trim() || "",
         status: formData.status || "Active",
-        email: formData.email,
-        phone_Number: formData.phone,
-        phoneNumber: formData.phone,
-        phone: formData.phone,
-        webSite: formData.website,
-        website: formData.website,
-        address: formData.address,
+        email: formData.email?.trim() || "",
+        phone_Number: formData.phone.trim(),
+        phoneNumber: formData.phone.trim(),
+        phone: formData.phone.trim(),
+        webSite: formData.website?.trim() || "",
+        website: formData.website?.trim() || "",
+        address: formData.address?.trim() || "",
       });
     }
   };
@@ -177,11 +221,11 @@ export default function AddEditCustomers() {
         <Button
           onClick={handleSubmit}
           className="gap-2"
-          disabled={isLoading || !formData.name?.trim()}
-          title={!formData.name?.trim() ? "Please enter customer name" : ""}
+          disabled={isLoading || !isFormValid}
+          title={!isFormValid ? "Please fill in required fields (Name, Phone, Type, Status)" : ""}
         >
           <Plus className="w-4 h-4" />
-          {isEdit ? "Save" : "Add"}
+          {isLoading ? "Saving..." : isEdit ? "Save" : "Add"}
         </Button>
       </div>
 
@@ -196,20 +240,28 @@ export default function AddEditCustomers() {
               id="name"
               name="name"
               placeholder="Name"
-              className="h-11 bg-transparent"
+              className={cn("h-11 bg-transparent", errors.name && "border-red-500 focus-visible:ring-red-500")}
               value={formData.name}
               onChange={handleChange}
             />
+            {errors.name && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "اسم العميل مطلوب" : "Customer name is required"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="type" className="text-sm font-semibold text-foreground">Type</Label>
+            <Label htmlFor="type" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Type</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Select
               key={formData.type || "type-select"}
               value={formData.type}
               onValueChange={(val) => handleSelectChange("type", val)}
             >
-              <SelectTrigger className="!h-11 w-full bg-transparent">
+              <SelectTrigger className={cn("!h-11 w-full bg-transparent", errors.type && "border-red-500 focus-visible:ring-red-500")}>
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
@@ -217,6 +269,11 @@ export default function AddEditCustomers() {
                 <SelectItem value="Company">Company</SelectItem>
               </SelectContent>
             </Select>
+            {errors.type && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "نوع العميل مطلوب" : "Customer type is required"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -232,13 +289,16 @@ export default function AddEditCustomers() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status" className="text-sm font-semibold text-foreground">Status</Label>
+            <Label htmlFor="status" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Status</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Select
               key={formData.status || "status-select"}
               value={formData.status}
               onValueChange={(val) => handleSelectChange("status", val)}
             >
-              <SelectTrigger className="!h-11 w-full bg-transparent">
+              <SelectTrigger className={cn("!h-11 w-full bg-transparent", errors.status && "border-red-500 focus-visible:ring-red-500")}>
                 <SelectValue placeholder="Select Status" />
               </SelectTrigger>
               <SelectContent>
@@ -249,6 +309,11 @@ export default function AddEditCustomers() {
                 <SelectItem value="Unreliable">Unreliable</SelectItem>
               </SelectContent>
             </Select>
+            {errors.status && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "حالة العميل مطلوبة" : "Customer status is required"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -258,22 +323,35 @@ export default function AddEditCustomers() {
               name="email"
               type="email"
               placeholder="e-mail"
-              className="h-11 bg-transparent"
+              className={cn("h-11 bg-transparent", errors.email && "border-red-500 focus-visible:ring-red-500")}
               value={formData.email}
               onChange={handleChange}
             />
+            {errors.email && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "بريد إلكتروني غير صالح" : "Invalid email address"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-sm font-semibold text-foreground">Phone</Label>
+            <Label htmlFor="phone" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Phone</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="phone"
               name="phone"
               placeholder="phone"
-              className="h-11 bg-transparent"
+              className={cn("h-11 bg-transparent", errors.phone && "border-red-500 focus-visible:ring-red-500")}
               value={formData.phone}
               onChange={handleChange}
             />
+            {errors.phone && (
+              <p className="text-xs text-red-500 font-medium">
+                {locale === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required"}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
