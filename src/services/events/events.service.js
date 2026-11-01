@@ -52,13 +52,13 @@ export const EVENT_STATUS_TABS = [
 export const DAYS_OF_WEEK = ["Sat", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri"];
 
 export const DAYS_OF_WEEK_CONFIG = [
-  { id: "Sat", name: "Saturday", arabic: "السبت", dayIndex: 6 },
-  { id: "Sun", name: "Sunday", arabic: "الأحد", dayIndex: 0 },
-  { id: "Mon", name: "Monday", arabic: "الإثنين", dayIndex: 1 },
-  { id: "Tue", name: "Tuesday", arabic: "الثلاثاء", dayIndex: 2 },
-  { id: "Wed", name: "Wednesday", arabic: "الأربعاء", dayIndex: 3 },
-  { id: "Thu", name: "Thursday", arabic: "الخميس", dayIndex: 4 },
-  { id: "Fri", name: "Friday", arabic: "الجمعة", dayIndex: 5 },
+  { id: "Sat", name: "Saturday", english: "Saturday", arabic: "السبت", shortName: "Sat", dayIndex: 6 },
+  { id: "Sun", name: "Sunday", english: "Sunday", arabic: "الأحد", shortName: "Sun", dayIndex: 0 },
+  { id: "Mon", name: "Monday", english: "Monday", arabic: "الإثنين", shortName: "Mon", dayIndex: 1 },
+  { id: "Tue", name: "Tuesday", english: "Tuesday", arabic: "الثلاثاء", shortName: "Tue", dayIndex: 2 },
+  { id: "Wed", name: "Wednesday", english: "Wednesday", arabic: "الأربعاء", shortName: "Wed", dayIndex: 3 },
+  { id: "Thu", name: "Thursday", english: "Thursday", arabic: "الخميس", shortName: "Thu", dayIndex: 4 },
+  { id: "Fri", name: "Friday", english: "Friday", arabic: "الجمعة", shortName: "Fri", dayIndex: 5 },
 ];
 
 /**
@@ -129,9 +129,9 @@ export async function getEventLookups() {
         params: { PageSize: 100, IsActive: true },
       }),
       apiHandler({
-        endPoint: "inventory/ServiceProvider/GetAllServiceProviders/all-service-providers",
+        endPoint: "HR/Employees/GetAll",
         method: "GET",
-        params: { PageSize: 100, IsActive: true },
+        params: { PageSize: 1000 },
       }),
     ]);
 
@@ -171,14 +171,17 @@ export async function getEventLookups() {
       }));
     }
 
-    // Parse Providers
+    // Parse Providers / Employees (from HR/Employees/GetAll)
     let providers = [];
     if (providersRes.status === "fulfilled") {
       const raw = providersRes.value?.data || providersRes.value || {};
       const list = raw?.items || (Array.isArray(raw) ? raw : []);
       providers = list.map((item) => ({
         id: item.id,
-        name: item.name || item.fullName || "Unnamed Provider",
+        name: item.fullName || item.name || "Employee",
+        fullName: item.fullName || item.name || "Employee",
+        jobTitle: item.jobTitle || "",
+        departmentName: item.departmentName || "",
         phone: item.phone || item.contact_Number || "",
       }));
     }
@@ -276,7 +279,8 @@ export async function getEvents(params = {}) {
         provider: e.serviceProviderName || e.serviceProviderId || "Provider",
         providerId: e.serviceProviderId,
         providerName: e.serviceProviderName || "Provider",
-        service: e.productVariantName || e.product_Name || "Service",
+        service: e.productName || e.productVariantName || e.product_Name || "Service",
+        productName: e.productName || e.productVariantName || "Service",
         productVariantId: e.productVariantId,
         period,
         startDate: startDateStr,
@@ -286,9 +290,11 @@ export async function getEvents(params = {}) {
         endTime: endTimeStr,
         price: displayPrice,
         numericPrice: priceVal,
+        advancePayment: e.advancePayment || 0,
         deposit: e.advancePayment ? `$${e.advancePayment}` : "$0",
         numericDeposit: e.advancePayment || 0,
-        reserved: e.reservedQuantity ?? e.reserved ?? 0,
+        currentReservedQuantity: e.currentReservedQuantity ?? e.reservedQuantity ?? e.reserved ?? 0,
+        reserved: e.currentReservedQuantity ?? e.reservedQuantity ?? e.reserved ?? 0,
         maxCapacity: e.maxCapacity ?? e.capacity ?? 20,
         status: e.status || (e.isActive ? "Booked" : "Canceled"),
         isActive: e.isActive ?? true,
@@ -379,20 +385,27 @@ export async function getEventById(id) {
       // Ignored if no attendees found
     }
 
+    const priceNum = e.price !== undefined && e.price !== null ? Number(e.price) : 0;
+    const advanceNum = e.advancePayment !== undefined && e.advancePayment !== null ? Number(e.advancePayment) : 0;
+    const currentReserved = e.currentReservedQuantity ?? e.reservedQuantity ?? linkedReservations.reduce((sum, r) => sum + (r.qty || 1), 0);
+
     return {
       status: 200,
       data: {
+        ...e,
         id: e.id || id,
         code: e.code || `EVT-${String(id).substring(0, 8)}`,
         title: e.title || "Untitled Event",
         fullTitle: e.title || "Untitled Event",
         productVariantId: e.productVariantId || "",
-        service: e.productVariantName || "",
-        serviceName: e.productVariantName || "Service",
+        productName: e.productName || e.productVariantName || "",
+        service: e.productName || e.productVariantName || "Service",
+        serviceName: e.productName || e.productVariantName || "Service",
         resourceId: e.resourceId || "",
-        resource: e.resourceName || "",
+        resource: e.resourceName || "Resource",
         resourceName: e.resourceName || "Resource",
-        serviceProviderId: e.serviceProviderId || "",
+        serviceProviderId: e.serviceProviderId || null,
+        serviceProviderName: e.serviceProviderName || "",
         provider: e.serviceProviderName || "",
         providerName: e.serviceProviderName || "Provider",
         startDate: startDateStr,
@@ -401,17 +414,21 @@ export async function getEventById(id) {
         startTime: startTimeStr,
         endTime: endTimeStr,
         time: `${startTimeStr} - ${endTimeStr}`,
-        price: e.price ? `$${e.price}` : "$0",
-        numericPrice: e.price ?? 0,
-        deposit: e.advancePayment ? `$${e.advancePayment}` : "$0",
-        numericDeposit: e.advancePayment ?? 0,
-        reserved: e.reservedQuantity ?? linkedReservations.reduce((sum, r) => sum + (r.qty || 1), 0),
+        price: priceNum,
+        formattedPrice: `$${priceNum}`,
+        numericPrice: priceNum,
+        advancePayment: advanceNum,
+        deposit: `$${advanceNum}`,
+        numericDeposit: advanceNum,
+        currentReservedQuantity: currentReserved,
+        reserved: currentReserved,
         maxCapacity: e.maxCapacity ?? e.capacity ?? 20,
         status: e.status || (e.isActive ? "Booked" : "Canceled"),
         isActive: e.isActive ?? true,
         recurringDays: typeof e.recurringDays === "string" ? e.recurringDays.split(",").filter(Boolean) : (e.recurringDays || []),
         notes: e.notes || "",
         reservations: linkedReservations,
+        raw: e,
       },
     };
   } catch (error) {
@@ -487,13 +504,15 @@ export function buildCreateBookingEventDto(data = {}) {
     recurring = data.recurringDays.trim();
   }
 
-  const startDateIso = data.startDate
-    ? (typeof data.startDate === "string" && data.startDate.includes("T") ? data.startDate : new Date(data.startDate).toISOString())
-    : new Date().toISOString();
+  const formatIsoDate = (d) => {
+    if (!d) return new Date().toISOString();
+    const str = String(d).trim();
+    if (str.includes("T")) return str;
+    return `${str}T00:00:00`;
+  };
 
-  const endDateIso = data.endDate
-    ? (typeof data.endDate === "string" && data.endDate.includes("T") ? data.endDate : new Date(data.endDate).toISOString())
-    : new Date().toISOString();
+  const startDateIso = formatIsoDate(data.startDate);
+  const endDateIso = formatIsoDate(data.endDate);
 
   return {
     title: (data.title || "").trim(),
@@ -601,7 +620,7 @@ export async function deleteEvent(id) {
   return toggleEventStatus(id);
 }
 
-export async function changeEventStatus({ id, status }) {
+export async function changeEventStatus({ id }) {
   return toggleEventStatus(id);
 }
 
