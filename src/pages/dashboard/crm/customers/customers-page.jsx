@@ -12,6 +12,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllCustomers, deleteCustomer } from "@/lib/api";
 import toast from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 
 const stats = [
   {
@@ -53,6 +54,9 @@ export default function CustomersPage() {
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
   const [deleteRowId, setDeleteRowId] = useState(null);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterType, setFilterType] = useState("all");
+  const [filterSector, setFilterSector] = useState("all");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -76,10 +80,17 @@ export default function CustomersPage() {
     },
   });
 
-  const customers = (data?.data?.items || []).map((item, index) => ({
-    ...item,
-    idx: (page - 1) * 10 + index + 1
-  }));
+  const customers = (data?.data?.items || [])
+    .filter((c) => {
+      if (activeTab !== "All" && c.status !== activeTab) return false;
+      if (filterType !== "all" && c.type !== filterType) return false;
+      if (filterSector !== "all" && c.sector !== filterSector) return false;
+      return true;
+    })
+    .map((item, index) => ({
+      ...item,
+      idx: (page - 1) * 10 + index + 1
+    }));
   const totalPages = data?.data?.totalPages || 1;
 
   const columns = [
@@ -193,6 +204,47 @@ export default function CustomersPage() {
         ))}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "type",
+            label: "Customer Type",
+            placeholder: "All Types",
+            options: [
+              { value: "Company", label: "Company" },
+              { value: "Individual", label: "Individual" },
+            ],
+          },
+          {
+            key: "sector",
+            label: "Sector",
+            placeholder: "All Sectors",
+            options: [
+              { value: "Commercial", label: "Commercial" },
+              { value: "Industrial", label: "Industrial" },
+              { value: "Services", label: "Services" },
+              { value: "Government", label: "Government" },
+            ],
+          },
+        ]}
+        filters={{
+          type: filterType !== "all" ? filterType : "",
+          sector: filterSector !== "all" ? filterSector : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "type") setFilterType(val || "all");
+          if (key === "sector") setFilterSector(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterType("all");
+          setFilterSector("all");
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={customers}
         isLoading={isLoading}
@@ -216,11 +268,7 @@ export default function CustomersPage() {
         }}
         filter={{
           label: "Filter",
-          onClick: () => console.log("Filter clicked"),
-        }}
-        export={{
-          label: "Export",
-          onClick: () => console.log("Export clicked"),
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
           label: "Add",

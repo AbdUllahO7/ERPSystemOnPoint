@@ -231,12 +231,7 @@ export default function TransfersPage() {
           label: "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
-        onRefresh={() => console.log("refresh")}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
+        onRefresh={() => refetch()}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/inventory/transfers/add"),

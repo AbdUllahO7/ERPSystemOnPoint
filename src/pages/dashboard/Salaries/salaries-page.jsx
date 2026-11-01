@@ -238,9 +238,6 @@ export default function SalariesPage() {
           ],
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{ label: "Export", onClick: () => console.log("export") }}
-        // addButton={{ label: "Generate Payroll", onClick: () => console.log("generate payroll") }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         pagination={{ page: currentPage, totalPages: totalPages, onPageChange: setPage, prevLabel: "Pre", nextLabel: "Next" }}

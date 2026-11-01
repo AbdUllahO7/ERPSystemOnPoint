@@ -230,16 +230,10 @@ export default function EmployeeSalaryDeductions() {
         ],
       }}
       onRefresh={() => refetch()}
-      onPrint={() => window.print()}
-      export={{
-        label: "Export",
-        onClick: () => console.log("export"),
-      }}
       addButton={{
         label: "Add Deduction",
         onClick: () => navigate(`/dashboard/hr/deductions/add?employeeId=${id}`),
       }}
-      onColumnSettings={() => console.log("columns")}
       columns={columns}
       rowActionsMenu={rowActionsMenu}
       pagination={{

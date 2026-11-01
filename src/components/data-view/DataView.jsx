@@ -3,10 +3,7 @@ import {
   Search,
   Filter,
   RefreshCw,
-  Printer,
-  Download,
   Plus,
-  SlidersHorizontal,
   ChevronUp,
   ChevronDown,
   ChevronsUpDown,
@@ -142,9 +139,6 @@ export function DataView({
   onCloseFilter,
 
   onRefresh,
-  onPrint,
-  export: exportAction,
-  onExport,
 
   addButton,
   onAdd,
@@ -154,7 +148,6 @@ export function DataView({
   onSelectionChange,
 
   columns = [],
-  onColumnSettings = () => {},
   onSort,
   sortKey,
   sortDirection,
@@ -395,18 +388,7 @@ export function DataView({
                 </th>
               );
             })}
-            <th className="w-12 sm:w-14 px-3 sm:px-4 py-3 sm:py-3.5 text-end shrink-0 whitespace-nowrap">
-              <div className="flex items-center justify-end">
-                <button
-                  type="button"
-                  onClick={onColumnSettings}
-                  className="rounded-md p-1 text-slate-600 hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
-                  aria-label="Column settings"
-                >
-                  <SlidersHorizontal className="size-3.5 sm:size-4 text-slate-600" />
-                </button>
-              </div>
-            </th>
+            <th className="w-12 sm:w-14 px-3 sm:px-4 py-3 sm:py-3.5 text-end shrink-0 whitespace-nowrap" />
           </tr>
         </thead>
         <tbody>
@@ -561,22 +543,6 @@ export function DataView({
               >
                 <RefreshCw className="size-3.5 sm:size-4 text-slate-600" />
               </ToolbarIconButton>
-              {onPrint && (
-                <ToolbarIconButton onClick={onPrint} aria-label="Print">
-                  <Printer className="size-3.5 sm:size-4 text-slate-600" />
-                </ToolbarIconButton>
-              )}
-              {(exportAction || onExport) && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={exportAction?.onClick || onExport}
-                  className="h-9 sm:h-10 gap-1.5 rounded-xl border-slate-200/90 text-slate-700 bg-white hover:bg-slate-50 text-xs font-medium px-3 sm:px-4 cursor-pointer shrink-0"
-                >
-                  <Download className="size-3.5 text-slate-600" />
-                  <span>{exportAction?.label ?? "Export"}</span>
-                </Button>
-              )}
             </div>
 
             {activeAddButton && (

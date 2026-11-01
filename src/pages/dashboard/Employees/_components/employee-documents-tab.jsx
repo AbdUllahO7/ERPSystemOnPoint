@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Filter, RefreshCw, Printer, Plus, MoreVertical, Download, Trash2, UploadCloud, File as FileIcon, X } from "lucide-react";
+import { Search, Filter, RefreshCw, Plus, MoreVertical, Download, Trash2, UploadCloud, File as FileIcon, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -130,11 +130,14 @@ export default function EmployeeDocumentsTab() {
         </div>
         
         <div className="flex items-center gap-2 w-full sm:w-auto">
-          <Button variant="outline" size="icon" className="bg-card text-muted-foreground">
-            <RefreshCw className="w-4 h-4" />
-          </Button>
-          <Button variant="outline" size="icon" className="bg-card text-muted-foreground">
-            <Printer className="w-4 h-4" />
+          <Button
+            variant="outline"
+            size="icon"
+            className="bg-card text-muted-foreground"
+            onClick={() => refetch()}
+            title="Refresh"
+          >
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
           </Button>
           <Button 
             className="bg-[#0066d1] hover:bg-blue-700 text-white"

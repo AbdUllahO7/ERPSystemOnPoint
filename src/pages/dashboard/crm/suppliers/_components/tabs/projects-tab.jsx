@@ -38,18 +38,6 @@ export function ProjectsTab() {
           value: search,
           onChange: setSearch,
         }}
-        filter={{
-          label: "Filter",
-          onClick: () => console.log("Filter clicked"),
-        }}
-        export={{
-          label: "Export",
-          onClick: () => console.log("Export clicked"),
-        }}
-        addButton={{
-          label: "Add",
-          onClick: () => console.log("Add Project"),
-        }}
         columns={columns}
         pagination={{
           page: page,

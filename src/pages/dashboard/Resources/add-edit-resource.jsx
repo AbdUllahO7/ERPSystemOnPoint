@@ -230,8 +230,9 @@ export default function AddEditResourcePage() {
           </Button>
           <Button
             type="submit"
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || !formData.name?.trim() || !formData.maxCapacity}
             className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
+            title={!formData.name?.trim() || !formData.maxCapacity ? "Please enter resource name and max capacity" : ""}
           >
             {saveMutation.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />

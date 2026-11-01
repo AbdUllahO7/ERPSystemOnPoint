@@ -219,11 +219,6 @@ export default function EmployeePerformanceTab() {
           ],
         }}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add Performance",
           onClick: () => navigate(`/dashboard/hr/employees/${id}/performance/add`),

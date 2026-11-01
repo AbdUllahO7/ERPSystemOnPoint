@@ -266,11 +266,6 @@ export default function EmployeeTab({ id }) {
           onClick: () => setIsFilterOpen(!isFilterOpen)
         }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => {}
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/hr/employees/add")

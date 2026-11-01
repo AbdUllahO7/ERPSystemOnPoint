@@ -374,7 +374,6 @@ export default function Users() {
           </div>
         }
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

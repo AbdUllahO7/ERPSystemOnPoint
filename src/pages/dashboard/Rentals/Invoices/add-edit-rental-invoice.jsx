@@ -163,8 +163,9 @@ export default function AddEditRentalInvoicePage() {
 
         <Button
           type="submit"
-          disabled={saveMutation.isPending}
+          disabled={saveMutation.isPending || !formData.rentalContract}
           className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
+          title={!formData.rentalContract ? "Please select a rental contract" : ""}
         >
           {saveMutation.isPending && (
             <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />

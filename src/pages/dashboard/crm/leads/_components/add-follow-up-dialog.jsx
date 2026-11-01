@@ -139,7 +139,10 @@ export function AddFollowUpDialog({ isOpen, onClose, leadId, defaultType }) {
           </div>
 
           <div className="space-y-2">
-            <Label className="font-semibold">Topic</Label>
+            <Label className="font-semibold flex items-center gap-1">
+              <span>Topic</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Input 
               placeholder="Topic"
               value={formData.topic}
@@ -149,7 +152,10 @@ export function AddFollowUpDialog({ isOpen, onClose, leadId, defaultType }) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label className="font-semibold">Date</Label>
+              <Label className="font-semibold flex items-center gap-1">
+                <span>Date</span>
+                <span className="text-red-500">*</span>
+              </Label>
               <Input 
                 type="date"
                 value={formData.date}
@@ -157,7 +163,10 @@ export function AddFollowUpDialog({ isOpen, onClose, leadId, defaultType }) {
               />
             </div>
             <div className="space-y-2">
-              <Label className="font-semibold">Time</Label>
+              <Label className="font-semibold flex items-center gap-1">
+                <span>Time</span>
+                <span className="text-red-500">*</span>
+              </Label>
               <Input 
                 type="time"
                 value={formData.time}
@@ -169,7 +178,7 @@ export function AddFollowUpDialog({ isOpen, onClose, leadId, defaultType }) {
           <Button 
             type="submit" 
             className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-4 h-11"
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !formData.type || !formData.status || !formData.topic?.trim() || !formData.date || !formData.time}
           >
             {mutation.isPending ? "Adding..." : "Add"}
           </Button>

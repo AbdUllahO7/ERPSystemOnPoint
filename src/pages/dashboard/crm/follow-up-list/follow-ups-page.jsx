@@ -17,7 +17,8 @@ import {
   Clock,
   UserCheck,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Edit
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { useNavigate, Link } from "react-router-dom";
@@ -39,6 +40,7 @@ import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { toast } from "react-hot-toast";
 
 export default function FollowUpsPage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
@@ -243,6 +245,18 @@ export default function FollowUpsPage() {
         const isScheduled = row.status === "Scheduled";
         return (
           <div className="flex items-center gap-1.5 justify-end">
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/dashboard/crm/follow-ups/edit/${row.id}`, {
+                  state: { followUp: row, customerId: row.customerId },
+                })
+              }
+              className="w-8 h-8 rounded-lg border border-slate-200 text-slate-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 flex items-center justify-center transition-colors cursor-pointer"
+              title="Edit Follow-up"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
             {isScheduled && (
               <>
                 <button
@@ -292,7 +306,7 @@ export default function FollowUpsPage() {
         </div>
 
         <Button 
-          onClick={() => setIsAddOpen(true)} 
+          onClick={() => navigate("/dashboard/crm/follow-ups/add")} 
           className="bg-blue-600 hover:bg-blue-700 text-white gap-2 font-semibold shadow-xs"
         >
           <Plus className="w-4 h-4" />
@@ -366,13 +380,9 @@ export default function FollowUpsPage() {
                 label: "Filter",
                 onClick: () => refetch(),
               }}
-              export={{
-                label: "Export",
-                onClick: () => toast.success("Exporting follow-ups..."),
-              }}
               addButton={{
                 label: "Add",
-                onClick: () => setIsAddOpen(true),
+                onClick: () => navigate("/dashboard/crm/follow-ups/add"),
               }}
               columns={columns}
               pagination={{
@@ -412,7 +422,7 @@ export default function FollowUpsPage() {
           <CalendarView 
             items={rawItems} 
             onViewModeChange={setViewMode}
-            onOpenAdd={() => setIsAddOpen(true)}
+            onOpenAdd={() => navigate("/dashboard/crm/follow-ups/add")}
             onAction={(item, action) => setActionDialog({ isOpen: true, item, action })}
             currentDate={currentCalendarDate}
             onDateChange={setCurrentCalendarDate}
@@ -813,7 +823,7 @@ function AddFollowUpDialog({ isOpen, onClose }) {
             <Button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || !form.topic?.trim() || !form.scheduledDate}
             >
               {mutation.isPending ? "Creating..." : "Save Follow-Up"}
             </Button>
@@ -903,7 +913,7 @@ function CompleteOrCancelDialog({ isOpen, onClose, item, action }) {
               className={`rounded-xl text-white ${
                 isCompleted ? "bg-emerald-600 hover:bg-emerald-700" : "bg-rose-600 hover:bg-rose-700"
               }`}
-              disabled={mutation.isPending}
+              disabled={mutation.isPending || !note.trim()}
             >
               {mutation.isPending ? "Saving..." : isCompleted ? "Complete Follow-Up" : "Cancel Follow-Up"}
             </Button>

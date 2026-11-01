@@ -1,29 +1,42 @@
-import { Phone, Check, X, Plus, Mail, Calendar, CheckSquare, Activity, ChevronsRight, PhoneCall, CheckCircle2 } from "lucide-react";
+import { Phone, Check, X, Plus, Mail, Calendar, CheckSquare, Activity, Edit, Trash2, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getCustomerFollowUpsTimeline, createCustomerFollowUp, completeOrCancelCustomerFollowUp } from "@/lib/api";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { getCustomerFollowUpsTimeline, completeOrCancelCustomerFollowUp, deleteCustomerFollowUp } from "@/lib/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 
 export function FollowUpsTab({ customerId: propCustomerId }) {
   const { id: paramId } = useParams();
   const id = propCustomerId || paramId;
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const pageSize = 10;
   
-  const [isAddOpen, setIsAddOpen] = useState(false);
   const [actionDialog, setActionDialog] = useState({ isOpen: false, itemId: null, action: null });
+  const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, id: null });
 
   const { data: followUpsData, isLoading } = useQuery({
     queryKey: ["customer-follow-ups", id, page],
     queryFn: () => getCustomerFollowUpsTimeline({ CustomerId: id, PageNumber: page, PageSize: pageSize }),
     enabled: !!id,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (targetId) => deleteCustomerFollowUp(targetId),
+    onSuccess: () => {
+      toast.success("Follow-up deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["customer-follow-ups", id] });
+      setDeleteDialog({ isOpen: false, id: null });
+    },
+    onError: (err) => {
+      toast.error(err?.response?.data?.message || err?.message || "Failed to delete follow-up");
+    },
   });
 
   const followUps = followUpsData?.data?.items || [];
@@ -49,9 +62,12 @@ export function FollowUpsTab({ customerId: propCustomerId }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-foreground">Follow-Up Log</h3>
-        <Button className="gap-2" onClick={() => setIsAddOpen(true)}>
+        <Button
+          className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          onClick={() => navigate(`/dashboard/crm/customers/${id}/follow-ups/add`, { state: { customerId: id } })}
+        >
           <Plus className="w-4 h-4" />
-          Add
+          Add Follow-Up
         </Button>
       </div>
 
@@ -74,7 +90,7 @@ export function FollowUpsTab({ customerId: propCustomerId }) {
             
             return (
               <div key={item.id} className="bg-white border rounded-xl p-4 shadow-sm flex flex-col gap-4">
-                <div className="flex items-start justify-between">
+                <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
                       <Icon className="w-5 h-5" />
@@ -87,31 +103,62 @@ export function FollowUpsTab({ customerId: propCustomerId }) {
                     </div>
                   </div>
                   
-                  {isScheduled ? (
-                    <div className="flex items-center gap-3">
-                      <button 
-                        onClick={() => setActionDialog({ isOpen: true, itemId: item.id, action: "Completed" })}
-                        className="w-10 h-10 border border-emerald-200 text-emerald-500 rounded-lg flex items-center justify-center hover:bg-emerald-50 transition-colors"
-                        title="Complete"
-                      >
-                        <Check className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => setActionDialog({ isOpen: true, itemId: item.id, action: "Canceled" })}
-                        className="w-10 h-10 border border-red-200 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors"
-                        title="Cancel"
-                      >
-                        <X className="w-5 h-5" />
-                      </button>
-                      <span className="px-3 py-1 bg-blue-50 text-blue-500 text-sm font-semibold rounded-lg ml-2">
-                        {item.status}
-                      </span>
-                    </div>
-                  ) : (
-                    <span className={`px-3 py-1 text-sm font-semibold rounded-lg ${item.status === 'Completed' ? 'bg-emerald-50 text-emerald-500' : 'bg-red-50 text-red-500'}`}>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        navigate(`/dashboard/crm/customers/${id}/follow-ups/edit/${item.id}`, {
+                          state: { followUp: item, customerId: id },
+                        })
+                      }
+                      className="w-9 h-9 border border-slate-200 text-slate-600 rounded-lg flex items-center justify-center hover:bg-slate-50 hover:text-blue-600 transition-colors"
+                      title="Edit Follow-Up"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </button>
+
+                    {isScheduled && (
+                      <>
+                        <button 
+                          type="button"
+                          onClick={() => setActionDialog({ isOpen: true, itemId: item.id, action: "Completed" })}
+                          className="w-9 h-9 border border-emerald-200 text-emerald-500 rounded-lg flex items-center justify-center hover:bg-emerald-50 transition-colors"
+                          title="Complete"
+                        >
+                          <Check className="w-4 h-4" />
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setActionDialog({ isOpen: true, itemId: item.id, action: "Canceled" })}
+                          className="w-9 h-9 border border-red-200 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors"
+                          title="Cancel"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() => setDeleteDialog({ isOpen: true, id: item.id })}
+                      className="w-9 h-9 border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 rounded-lg flex items-center justify-center transition-colors"
+                      title="Delete Follow-Up"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+
+                    <span
+                      className={`px-3 py-1 text-xs font-semibold rounded-lg ml-1 ${
+                        isScheduled
+                          ? "bg-blue-50 text-blue-600 border border-blue-200"
+                          : item.status === "Completed"
+                          ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                          : "bg-red-50 text-red-600 border border-red-200"
+                      }`}
+                    >
                       {item.status}
                     </span>
-                  )}
+                  </div>
                 </div>
 
                 {isCompleted && item.executionNote && (
@@ -150,12 +197,6 @@ export function FollowUpsTab({ customerId: propCustomerId }) {
         </div>
       )}
 
-      <AddFollowUpDialog
-        isOpen={isAddOpen}
-        onClose={() => setIsAddOpen(false)}
-        customerId={id}
-      />
-
       <CompleteOrCancelDialog
         isOpen={actionDialog.isOpen}
         onClose={() => setActionDialog({ isOpen: false, itemId: null, action: null })}
@@ -163,157 +204,16 @@ export function FollowUpsTab({ customerId: propCustomerId }) {
         action={actionDialog.action}
         customerId={id}
       />
+
+      <DeleteConfirmDialog
+        open={deleteDialog.isOpen}
+        onOpenChange={(open) => !open && setDeleteDialog({ isOpen: false, id: null })}
+        onConfirm={() => deleteMutation.mutate(deleteDialog.id)}
+        loading={deleteMutation.isPending}
+        title="Delete Follow-Up"
+        description="Are you sure you want to delete this follow-up record? This action cannot be undone."
+      />
     </div>
-  );
-}
-
-function AddFollowUpDialog({ isOpen, onClose, customerId }) {
-  const queryClient = useQueryClient();
-  const [formData, setFormData] = useState({
-    type: "",
-    status: "",
-    topic: "",
-    date: "",
-    time: "",
-  });
-
-  useEffect(() => {
-    if (isOpen) {
-      setFormData({
-        type: "",
-        status: "",
-        topic: "",
-        date: "",
-        time: "",
-      });
-    }
-  }, [isOpen]);
-
-  const mutation = useMutation({
-    mutationFn: createCustomerFollowUp,
-    onSuccess: () => {
-      toast.success("Follow-up added successfully");
-      queryClient.invalidateQueries({ queryKey: ["customer-follow-ups", customerId] });
-      onClose();
-    },
-    onError: () => {
-      toast.error("Failed to add follow-up");
-    },
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!formData.type || !formData.status || !formData.topic || !formData.date || !formData.time) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    const scheduledDate = new Date(`${formData.date}T${formData.time}`).toISOString();
-
-    const payload = {
-      customerId,
-      type: formData.type,
-      status: formData.status,
-      topic: formData.topic,
-      scheduledDate,
-    };
-
-    mutation.mutate(payload);
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader className="flex flex-row items-center gap-4 border-b pb-4">
-          <div className="w-12 h-12 rounded-full border flex items-center justify-center shrink-0 bg-gray-50">
-            <ChevronsRight className="w-6 h-6 text-muted-foreground" />
-          </div>
-          <div>
-            <DialogTitle className="text-xl">Add new follow-Up</DialogTitle>
-            <p className="text-sm text-muted-foreground mt-1">
-              Added follow-up information such as calls, meetings, and more...
-            </p>
-          </div>
-        </DialogHeader>
-
-        <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">Type</Label>
-              <Select 
-                value={formData.type} 
-                onValueChange={(val) => setFormData(prev => ({...prev, type: val}))}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Call">Call</SelectItem>
-                  <SelectItem value="Meeting">Meeting</SelectItem>
-                  <SelectItem value="Email">Email</SelectItem>
-                  <SelectItem value="Task">Task</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">Status</Label>
-              <Select 
-                value={formData.status} 
-                onValueChange={(val) => setFormData(prev => ({...prev, status: val}))}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Select Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Scheduled">Scheduled</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="font-semibold text-sm">Topic</Label>
-            <Input 
-              placeholder="Topic"
-              value={formData.topic}
-              onChange={(e) => setFormData(prev => ({...prev, topic: e.target.value}))}
-              className="h-11"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">Date</Label>
-              <Input 
-                type="date"
-                value={formData.date}
-                onChange={(e) => setFormData(prev => ({...prev, date: e.target.value}))}
-                className="h-11"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="font-semibold text-sm">Time</Label>
-              <Input 
-                type="time"
-                value={formData.time}
-                onChange={(e) => setFormData(prev => ({...prev, time: e.target.value}))}
-                className="h-11"
-              />
-            </div>
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white mt-6 h-11 text-base font-medium"
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? "Adding..." : "Add"}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -321,17 +221,12 @@ function CompleteOrCancelDialog({ isOpen, onClose, itemId, action, customerId })
   const queryClient = useQueryClient();
   const [note, setNote] = useState("");
 
-  useEffect(() => {
-    if (isOpen) {
-      setNote("");
-    }
-  }, [isOpen]);
-
   const mutation = useMutation({
     mutationFn: completeOrCancelCustomerFollowUp,
     onSuccess: () => {
       toast.success(`Follow-up ${action.toLowerCase()} successfully`);
       queryClient.invalidateQueries({ queryKey: ["customer-follow-ups", customerId] });
+      queryClient.invalidateQueries({ queryKey: ["follow-ups-timeline"] });
       onClose();
     },
     onError: () => {
@@ -346,8 +241,6 @@ function CompleteOrCancelDialog({ isOpen, onClose, itemId, action, customerId })
       return;
     }
 
-    // Backend expects 'Cancled' potentially based on user prompt, but typically 'Canceled'.
-    // We send action directly, it can be 'Completed' or 'Cancled'
     const payloadAction = action === "Canceled" ? "Cancled" : "Completed";
 
     mutation.mutate({

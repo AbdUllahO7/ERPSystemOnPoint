@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, Filter, RefreshCw, Printer, Plus, MoreVertical, FileText, CloudUpload, Trash2, X } from "lucide-react";
+import { Search, RefreshCw, Plus, MoreVertical, FileText, CloudUpload, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -93,17 +93,10 @@ export function FilesTab({ supplierId }) {
               className="pl-9 h-10 bg-transparent"
             />
           </div>
-          <Button variant="outline" className="h-10 gap-2 bg-blue-50 text-blue-600 border-blue-100 hover:bg-blue-100">
-            <Filter className="w-4 h-4" />
-            Filter
-          </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => refetch()}>
-            <RefreshCw className="w-4 h-4 text-muted-foreground" />
-          </Button>
-          <Button variant="outline" size="icon" className="h-10 w-10">
-            <Printer className="w-4 h-4 text-muted-foreground" />
+          <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => refetch()} title="Refresh">
+            <RefreshCw className={`w-4 h-4 text-muted-foreground ${isLoading ? "animate-spin" : ""}`} />
           </Button>
           <Button className="h-10 gap-2" onClick={() => setIsUploadModalOpen(true)}>
             <Plus className="w-4 h-4" />

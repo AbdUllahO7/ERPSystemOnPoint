@@ -18,15 +18,7 @@ import {
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import { useI18n } from "@/context/translate-api";
 import {
@@ -126,7 +118,13 @@ export default function EventsPage() {
             key: "reservations",
             label: t?.eventsModule?.viewReservations || "View Reservations",
             icon: Users,
-            onClick: (row) => navigate(`/dashboard/reservations?bookingEventId=${row.id}`),
+            onClick: (row) => {
+              const targetId = row?.id || row?.original?.id;
+              const targetTitle = row?.title || row?.original?.title || "";
+              navigate(`/dashboard/reservations?bookingEventId=${targetId}`, {
+                state: { bookingEventId: targetId, eventTitle: targetTitle },
+              });
+            },
           },
           {
             key: "edit",
@@ -144,7 +142,7 @@ export default function EventsPage() {
         ],
       },
     ],
-    [navigate]
+    [navigate, t]
   );
 
   const getStatusBadge = (status) => {
@@ -281,9 +279,19 @@ export default function EventsPage() {
           const reserved = row.original.reserved || 0;
           const max = row.original.maxCapacity || 20;
           const pct = max > 0 ? Math.min(100, Math.round((reserved / max) * 100)) : 0;
+          const targetId = row.original.id;
+          const targetTitle = row.original.title;
           return (
-            <div className="space-y-1 min-w-[85px]">
-              <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+            <div
+              className="space-y-1 min-w-[85px] cursor-pointer group"
+              title="Click to view reservations for this event"
+              onClick={() =>
+                navigate(`/dashboard/reservations?bookingEventId=${targetId}`, {
+                  state: { bookingEventId: targetId, eventTitle: targetTitle },
+                })
+              }
+            >
+              <div className="flex items-center justify-between text-xs font-semibold text-slate-700 group-hover:text-[#0066d1] transition-colors">
                 <span>{reserved}/{max}</span>
                 <span className="text-[10px] text-slate-400 font-normal">{pct}%</span>
               </div>
@@ -371,6 +379,57 @@ export default function EventsPage() {
         })}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "service",
+            label: t?.eventsModule?.service || "Service",
+            placeholder: t?.eventsModule?.allServices || "All Services",
+            options: (lookups.services || []).map((s) => ({
+              value: String(s.id),
+              label: s.name,
+            })),
+          },
+          {
+            key: "resource",
+            label: t?.eventsModule?.resource || "Resource",
+            placeholder: t?.eventsModule?.allResources || "All Resources",
+            options: (lookups.resources || []).map((r) => ({
+              value: String(r.id),
+              label: r.name,
+            })),
+          },
+          {
+            key: "provider",
+            label: t?.eventsModule?.provider || "Provider",
+            placeholder: t?.eventsModule?.allProviders || "All Providers",
+            options: (lookups.providers || []).map((p) => ({
+              value: String(p.id),
+              label: p.name,
+            })),
+          },
+        ]}
+        filters={{
+          service: selectedService !== "all" ? selectedService : "",
+          resource: selectedResource !== "all" ? selectedResource : "",
+          provider: selectedProvider !== "all" ? selectedProvider : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "service") setSelectedService(val || "all");
+          if (key === "resource") setSelectedResource(val || "all");
+          if (key === "provider") setSelectedProvider(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setSelectedService("all");
+          setSelectedResource("all");
+          setSelectedProvider("all");
+          setPage(1);
+        }}
+      />
+
       {/* Main Table with DataView & Tabs inside table container */}
       <DataView
         tabs={{
@@ -393,111 +452,10 @@ export default function EventsPage() {
         }}
         onAdd={() => navigate("/dashboard/events/add")}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        onExport={() => toast.success("Exporting events...")}
-        onFilter={() => setIsFilterOpen(true)}
-        isFilterOpen={isFilterOpen}
-        onCloseFilter={() => setIsFilterOpen(false)}
-        filterContent={
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                {t?.eventsModule?.service || "Service"}
-              </Label>
-              <Select
-                value={selectedService}
-                onValueChange={(val) => {
-                  setSelectedService(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Services" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t?.eventsModule?.allServices || "All Services"}</SelectItem>
-                  {lookups.services.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                {t?.eventsModule?.resource || "Resource"}
-              </Label>
-              <Select
-                value={selectedResource}
-                onValueChange={(val) => {
-                  setSelectedResource(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Resources" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t?.eventsModule?.allResources || "All Resources"}</SelectItem>
-                  {lookups.resources.map((r) => (
-                    <SelectItem key={r.id} value={String(r.id)}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                {t?.eventsModule?.provider || "Provider"}
-              </Label>
-              <Select
-                value={selectedProvider}
-                onValueChange={(val) => {
-                  setSelectedProvider(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Providers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{t?.eventsModule?.allProviders || "All Providers"}</SelectItem>
-                  {lookups.providers.map((p) => (
-                    <SelectItem key={p.id} value={String(p.id)}>
-                      {p.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedService("all");
-                  setSelectedResource("all");
-                  setSelectedProvider("all");
-                  setPage(1);
-                }}
-              >
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                className="bg-[#0066d1] hover:bg-[#0052a8]"
-                onClick={() => setIsFilterOpen(false)}
-              >
-                Apply Filters
-              </Button>
-            </div>
-          </div>
-        }
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
+        }}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}

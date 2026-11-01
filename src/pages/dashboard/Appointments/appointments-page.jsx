@@ -14,15 +14,7 @@ import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { DynamicModal } from "@/components/common/dynamic-modal";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import { INITIAL_APPOINTMENT_STATS } from "@/services/appointments";
 import {
@@ -315,6 +307,37 @@ export default function AppointmentsPage() {
         })}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "provider",
+            label: "Filter by Provider",
+            placeholder: "All Providers",
+            options: lookups.providers,
+          },
+          {
+            key: "service",
+            label: "Filter by Service",
+            placeholder: "All Services",
+            options: lookups.services,
+          },
+        ]}
+        filters={{
+          provider: filters.provider !== "all" ? filters.provider : "",
+          service: filters.service !== "all" ? filters.service : "",
+        }}
+        onFilterChange={(key, val) => {
+          setFilters((prev) => ({ ...prev, [key]: val || "all" }));
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters({ provider: "all", service: "all", status: "all" });
+          setPage(1);
+        }}
+      />
+
       {/* DataView Table with Integrated Tabs & Toolbar */}
       <DataView
         tabs={{
@@ -341,83 +364,9 @@ export default function AppointmentsPage() {
           label: "Filter",
           onClick: () => setIsFilterOpen((prev) => !prev),
         }}
-        isFilterOpen={isFilterOpen}
-        onCloseFilter={() => setIsFilterOpen(false)}
-        filterContent={
-          <div className="flex flex-wrap items-end gap-4 p-2">
-            <div className="w-full flex-1 min-w-[180px]">
-              <Label className="mb-1.5 block text-xs font-medium text-foreground">
-                Filter by Provider
-              </Label>
-              <Select
-                value={filters.provider}
-                onValueChange={(val) => {
-                  setFilters((prev) => ({ ...prev, provider: val }));
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full bg-card">
-                  <SelectValue placeholder="All Providers" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Providers</SelectItem>
-                  {lookups.providers.map((p) => (
-                    <SelectItem key={p.value} value={p.value}>
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="w-full flex-1 min-w-[180px]">
-              <Label className="mb-1.5 block text-xs font-medium text-foreground">
-                Filter by Service
-              </Label>
-              <Select
-                value={filters.service}
-                onValueChange={(val) => {
-                  setFilters((prev) => ({ ...prev, service: val }));
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full bg-card">
-                  <SelectValue placeholder="All Services" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Services</SelectItem>
-                  {lookups.services.map((s) => (
-                    <SelectItem key={s.value} value={s.value}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {(filters.provider !== "all" || filters.service !== "all") && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setFilters({ provider: "all", service: "all", status: "all" });
-                  setPage(1);
-                }}
-                className="h-10"
-              >
-                Clear Filters
-              </Button>
-            )}
-          </div>
-        }
         onRefresh={() => {
           refetch();
           toast.success("Appointments refreshed!");
-        }}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => toast.success("Exporting appointments..."),
         }}
         addButton={{
           label: "Add",

@@ -4,6 +4,7 @@ import { Trash2, Calendar as CalendarIcon, Plus } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
@@ -213,6 +214,44 @@ export default function ProviderCommissionsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Side: Rules Table */}
         <div className="lg:col-span-8">
+          <CollapsibleFilterBar
+            isOpen={isFilterOpen}
+            configs={[
+              {
+                key: "provider",
+                label: "Filter by Provider",
+                placeholder: "All Providers",
+                options: (lookups.providers || []).map((p) => ({
+                  value: p.id,
+                  label: p.name,
+                })),
+              },
+              {
+                key: "service",
+                label: "Filter by Service",
+                placeholder: "All Services",
+                options: (lookups.services || []).map((s) => ({
+                  value: s.variantId || s.id,
+                  label: s.name,
+                })),
+              },
+            ]}
+            filters={{
+              provider: filterProvider !== "all" ? filterProvider : "",
+              service: filterService !== "all" ? filterService : "",
+            }}
+            onFilterChange={(key, val) => {
+              if (key === "provider") setFilterProvider(val || "all");
+              if (key === "service") setFilterService(val || "all");
+              setPage(1);
+            }}
+            onClear={() => {
+              setFilterProvider("all");
+              setFilterService("all");
+              setPage(1);
+            }}
+          />
+
           <DataView
             data={displayRows}
             columns={columns}
@@ -225,86 +264,10 @@ export default function ProviderCommissionsPage() {
               setPage(1);
             }}
             onRefresh={() => refetch()}
-            onFilter={() => setIsFilterOpen(true)}
-            isFilterOpen={isFilterOpen}
-            onCloseFilter={() => setIsFilterOpen(false)}
-            filterContent={
-              <div className="space-y-4 pt-2">
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-600">
-                    Filter by Provider
-                  </Label>
-                  <Select
-                    value={filterProvider}
-                    onValueChange={(val) => {
-                      setFilterProvider(val);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Provider" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Providers</SelectItem>
-                      {lookups.providers.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium text-slate-600">
-                    Filter by Service
-                  </Label>
-                  <Select
-                    value={filterService}
-                    onValueChange={(val) => {
-                      setFilterService(val);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select Service" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Services</SelectItem>
-                      {lookups.services.map((s) => {
-                        const optionVal = s.variantId || s.id;
-                        return (
-                          <SelectItem key={optionVal} value={optionVal}>
-                            {s.name}
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="pt-2 flex justify-end gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setFilterProvider("all");
-                      setFilterService("all");
-                      setPage(1);
-                    }}
-                  >
-                    Reset
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="bg-[#0066d1] hover:bg-[#0052a8]"
-                    onClick={() => setIsFilterOpen(false)}
-                  >
-                    Apply
-                  </Button>
-                </div>
-              </div>
-            }
+            filter={{
+              label: "Filter",
+              onClick: () => setIsFilterOpen(!isFilterOpen),
+            }}
             page={page}
             totalPages={totalPages}
             onPageChange={setPage}

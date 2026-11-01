@@ -286,8 +286,6 @@ export default function LeavesPage() {
           ],
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllLeaveRequests"])}
-        onPrint={() => window.print()}
-        export={{ label: "Export", onClick: () => console.log("export") }}
         addButton={{ label: "Add", onClick: () => navigate("/dashboard/hr/leaves/add") }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}

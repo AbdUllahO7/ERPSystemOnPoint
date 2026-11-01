@@ -4,18 +4,11 @@ import {
   Plus,
   Eye,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { DataView } from "@/components/data-view/DataView";
 import { useQuery } from "@tanstack/react-query";
 import { getAllExpenses } from "../../../../lib/api";
 import { useNavigate } from "react-router-dom";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 
 export default function ExpensesPage() {
   const [search, setSearch] = useState("");
@@ -127,50 +120,31 @@ export default function ExpensesPage() {
       </div>
 
       {/* Filter Menu */}
-      <div
-        className={`grid transition-all duration-300 ease-in-out ${
-          isFilterOpen
-            ? "grid-rows-[1fr] opacity-100 mb-6"
-            : "grid-rows-[0fr] opacity-0 mb-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="bg-card text-card-foreground p-4 rounded-xl border shadow-sm flex flex-col sm:flex-row items-end gap-4 flex-wrap">
-            <div className="flex flex-col gap-2 w-full sm:max-w-[250px]">
-              <label className="text-sm font-medium text-foreground">
-                Filter by Status
-              </label>
-              <Select
-                value={selectedStatus || "all"}
-                onValueChange={(val) => {
-                  setSelectedStatus(val === "all" ? "" : val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full bg-transparent h-10">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="Draft">Draft</SelectItem>
-                  <SelectItem value="Posted">Posted</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <Button
-              variant="outline"
-              onClick={() => {
-                setSelectedStatus("");
-                setPage(1);
-              }}
-              className="w-full sm:w-auto h-10"
-            >
-              Reset
-            </Button>
-          </div>
-        </div>
-      </div>
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "status",
+            label: "Filter by Status",
+            placeholder: "All Statuses",
+            options: [
+              { value: "Draft", label: "Draft" },
+              { value: "Posted", label: "Posted" },
+            ],
+          },
+        ]}
+        filters={{
+          status: selectedStatus,
+        }}
+        onFilterChange={(key, val) => {
+          setSelectedStatus(val);
+          setPage(1);
+        }}
+        onClear={() => {
+          setSelectedStatus("");
+          setPage(1);
+        }}
+      />
 
       <DataView
         data={displayRows}
@@ -186,17 +160,11 @@ export default function ExpensesPage() {
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add Expense",
           onClick: () => navigate("/dashboard/accounting/expenses/add"),
           icon: <Plus className="w-4 h-4 mr-1" />
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

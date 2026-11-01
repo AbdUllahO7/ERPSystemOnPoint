@@ -314,11 +314,6 @@ export default function EmployeeLeavesTab() {
           ],
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllLeaveRequests"])}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add Leave",
           onClick: () => navigate(`/dashboard/hr/employees/${employeeId}/add-leave`),

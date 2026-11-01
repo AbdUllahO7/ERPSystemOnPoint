@@ -532,11 +532,6 @@ export default function InstallmentsPage() {
             setPage(1);
           },
         }}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("Exporting installments..."),
-        }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

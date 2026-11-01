@@ -382,8 +382,9 @@ export default function AddEditReservation() {
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={saveMutation.isPending || isLoading || capacityCheck.isExceeded}
+              disabled={saveMutation.isPending || isLoading || capacityCheck.isExceeded || !formData.customerId || !formData.bookingEventId || !formData.invoicePatternId}
               className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-medium shadow-xs transition-all cursor-pointer"
+              title={!formData.customerId || !formData.bookingEventId || !formData.invoicePatternId ? "Please select customer, event, and invoice pattern" : ""}
             >
               {saveMutation.isPending && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />

@@ -6,15 +6,7 @@ import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import SettleRentalContractDialog from "./_components/settle-rental-contract-dialog";
 import { PageTitle } from "@/components/common/page-title";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import toast from "react-hot-toast";
 import {
   RENTAL_STATUS_TABS,
@@ -318,6 +310,61 @@ export default function RentalsPage() {
         })}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "customer",
+            label: "Customer",
+            placeholder: "All Customers",
+            options: (lookups.customers || []).map((c) => ({
+              value: c.id,
+              label: c.name,
+            })),
+          },
+          {
+            key: "resource",
+            label: "Resource",
+            placeholder: "All Resources",
+            options: (lookups.resources || []).map((r) => ({
+              value: r.id,
+              label: r.name,
+            })),
+          },
+          {
+            key: "fromDate",
+            label: "From Date",
+            type: "date",
+          },
+          {
+            key: "toDate",
+            label: "To Date",
+            type: "date",
+          },
+        ]}
+        filters={{
+          customer: selectedCustomer !== "all" ? selectedCustomer : "",
+          resource: selectedResource !== "all" ? selectedResource : "",
+          fromDate,
+          toDate,
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "customer") setSelectedCustomer(val || "all");
+          if (key === "resource") setSelectedResource(val || "all");
+          if (key === "fromDate") setFromDate(val);
+          if (key === "toDate") setToDate(val);
+          setPage(1);
+        }}
+        onClear={() => {
+          setSelectedCustomer("all");
+          setSelectedResource("all");
+          setFromDate("");
+          setToDate("");
+          setPage(1);
+        }}
+      />
+
       {/* Main Table with DataView & Tabs inside table container */}
       <DataView
         tabs={{
@@ -340,119 +387,10 @@ export default function RentalsPage() {
         }}
         onAdd={() => navigate("/dashboard/rentals/add")}
         onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        onExport={() => toast.success("Exporting rental contracts...")}
-        onFilter={() => setIsFilterOpen(true)}
-        isFilterOpen={isFilterOpen}
-        onCloseFilter={() => setIsFilterOpen(false)}
-        filterContent={
-          <div className="space-y-4 pt-2">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Customer
-              </Label>
-              <Select
-                value={selectedCustomer}
-                onValueChange={(val) => {
-                  setSelectedCustomer(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Customer" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Customers</SelectItem>
-                  {(lookups.customers || []).map((c) => (
-                    <SelectItem key={c.id} value={c.id}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-xs font-medium text-slate-600">
-                Resource
-              </Label>
-              <Select
-                value={selectedResource}
-                onValueChange={(val) => {
-                  setSelectedResource(val);
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Resource" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Resources</SelectItem>
-                  {(lookups.resources || []).map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600">
-                  From Date
-                </Label>
-                <input
-                  type="date"
-                  value={fromDate}
-                  onChange={(e) => {
-                    setFromDate(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-medium text-slate-600">
-                  To Date
-                </Label>
-                <input
-                  type="date"
-                  value={toDate}
-                  onChange={(e) => {
-                    setToDate(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full h-9 rounded-md border border-input bg-transparent px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setSelectedCustomer("all");
-                  setSelectedResource("all");
-                  setFromDate("");
-                  setToDate("");
-                  setPage(1);
-                }}
-              >
-                Reset
-              </Button>
-              <Button
-                size="sm"
-                className="bg-[#0066d1] hover:bg-[#0052a8]"
-                onClick={() => setIsFilterOpen(false)}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        }
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
+        }}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}

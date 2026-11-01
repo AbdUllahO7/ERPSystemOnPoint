@@ -413,8 +413,9 @@ export default function AddEditRentalPage() {
           </Button>
           <Button
             type="submit"
-            disabled={saveMutation.isPending}
+            disabled={saveMutation.isPending || !formData.customerId || !formData.title?.trim()}
             className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
+            title={!formData.customerId || !formData.title?.trim() ? "Please select customer and enter contract title" : ""}
           >
             {saveMutation.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />

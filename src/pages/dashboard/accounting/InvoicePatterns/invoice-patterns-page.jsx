@@ -7,6 +7,7 @@ import {
   Info,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllInvoicePatterns,
@@ -19,11 +20,27 @@ import toast from "react-hot-toast";
 export default function InvoicePatternsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [typeFilter, setTypeFilter] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ Type: "" });
   const [deleteRowId, setDeleteRowId] = useState(null);
 
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const filterConfigs = [
+    {
+      key: "Type",
+      label: "Filter by Invoice Type",
+      placeholder: "All Types",
+      options: [
+        { value: "Sales", label: "Sales" },
+        { value: "Purchases", label: "Purchases" },
+        { value: "Sales_Returns", label: "Sales Returns" },
+        { value: "Purchases_Returns", label: "Purchases Returns" },
+        { value: "Opening_Balance", label: "Opening Balance" },
+      ],
+    },
+  ];
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteInvoicePattern(id),
@@ -41,11 +58,11 @@ export default function InvoicePatternsPage() {
   const params = useMemo(
     () => ({
       search: search,
-      Type: typeFilter || undefined,
+      Type: filters.Type || undefined,
       pageNumber: page,
       pageSize: 10,
     }),
-    [page, search, typeFilter],
+    [page, search, filters.Type],
   );
 
   const { data, isLoading } = useQuery({
@@ -140,46 +157,39 @@ export default function InvoicePatternsPage() {
         <Info className="w-4 h-4 text-muted-foreground" />
       </div>
 
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={filterConfigs}
+        filters={filters}
+        onFilterChange={(key, val) => {
+          setFilters((prev) => ({ ...prev, [key]: val }));
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters({ Type: "" });
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
         getRowId={(row) => row.id}
         selectable
-        toolbarExtra={
-          <div className="flex items-center gap-2 mb-4 w-full max-w-[200px]">
-            <select
-              value={typeFilter}
-              onChange={(e) => {
-                setTypeFilter(e.target.value);
-                setPage(1);
-              }}
-              className="flex h-10 w-full items-center justify-between rounded-lg border border-input bg-card px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-            >
-              <option value="">-- All Types --</option>
-              <option value="Sales">Sales</option>
-              <option value="Purchases">Purchases</option>
-              <option value="Sales_Returns">Sales_Returns</option>
-              <option value="Purchases_Returns">Purchases_Returns</option>
-              <option value="Opening_Balance">Opening_Balance</option>
-            </select>
-          </div>
-        }
         search={{
           placeholder: "Search invoice patterns...",
           value: search,
           onChange: handleSearch,
         }}
-        onRefresh={() => queryClient.invalidateQueries(["getAllInvoicePatterns"])}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        onRefresh={() => queryClient.invalidateQueries(["getAllInvoicePatterns"])}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/invoice-patterns/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

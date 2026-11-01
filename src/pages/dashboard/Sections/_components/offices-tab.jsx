@@ -102,11 +102,6 @@ export default function OfficesTab({ id }) {
         //   onClick: () => {}
         // }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => {}
-        }}
         addButton={{
           label: "Add Office",
           onClick: () => navigate("/dashboard/hr/offices/add", { state: { returnTo: location.pathname + location.search, sectorId: id } })

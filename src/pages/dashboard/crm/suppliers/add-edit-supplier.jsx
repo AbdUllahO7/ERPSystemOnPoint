@@ -80,8 +80,14 @@ export default function AddEditSupplier() {
     }
   });
 
+  const isFormValid = Boolean(formData.supplier_Name?.trim());
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.supplier_Name?.trim()) {
+      toast.error("Please enter supplier name");
+      return;
+    }
     mutation.mutate(formData);
   };
 
@@ -101,7 +107,12 @@ export default function AddEditSupplier() {
             <span>{isEdit ? "Edit Supplier" : "Add Supplier"}</span>
           </div>
         </div>
-        <Button onClick={handleSubmit} disabled={mutation.isPending} className="gap-2">
+        <Button
+          onClick={handleSubmit}
+          disabled={mutation.isPending || !isFormValid}
+          className="gap-2"
+          title={!isFormValid ? "Please enter supplier name" : ""}
+        >
           <Plus className="w-4 h-4" />
           {isEdit ? "Save" : "Add"}
         </Button>
@@ -110,7 +121,10 @@ export default function AddEditSupplier() {
       <div className="bg-card text-card-foreground rounded-xl border shadow-sm p-6">
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="supplier_Name" className="text-sm font-semibold text-foreground">Name</Label>
+            <Label htmlFor="supplier_Name" className="text-sm font-semibold text-foreground flex items-center gap-1">
+              <span>Name</span>
+              <span className="text-red-500">*</span>
+            </Label>
             <Input
               id="supplier_Name"
               name="supplier_Name"

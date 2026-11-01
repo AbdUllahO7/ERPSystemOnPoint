@@ -108,17 +108,11 @@ export default function BanksPage() {
           onChange: handleSearch,
         }}
         onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/banks/add"),
           icon: <Plus className="w-4 h-4 mr-1" />
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

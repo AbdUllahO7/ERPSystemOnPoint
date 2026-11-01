@@ -6,6 +6,7 @@ import {
   Plus,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { useQuery } from "@tanstack/react-query";
 import { getAllFixedExpenses } from "../../../../lib/api";
 import { useNavigate } from "react-router-dom";
@@ -13,8 +14,43 @@ import { useNavigate } from "react-router-dom";
 export default function FixedExpensesPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ cycle: "", status: "", autoGenerateJournal: "" });
 
   const navigate = useNavigate();
+
+  const filterConfigs = [
+    {
+      key: "cycle",
+      label: "Filter by Cycle",
+      placeholder: "All Cycles",
+      options: [
+        { value: "Daily", label: "Daily" },
+        { value: "Weekly", label: "Weekly" },
+        { value: "Monthly", label: "Monthly" },
+        { value: "Quarterly", label: "Quarterly" },
+        { value: "Yearly", label: "Yearly" },
+      ],
+    },
+    {
+      key: "status",
+      label: "Filter by Status",
+      placeholder: "All Statuses",
+      options: [
+        { value: "active", label: "Active" },
+        { value: "inactive", label: "Inactive" },
+      ],
+    },
+    {
+      key: "autoGenerateJournal",
+      label: "Auto Journal Entry",
+      placeholder: "All",
+      options: [
+        { value: "true", label: "Enabled" },
+        { value: "false", label: "Disabled" },
+      ],
+    },
+  ];
 
   const params = useMemo(
     () => ({
@@ -30,7 +66,18 @@ export default function FixedExpensesPage() {
     queryFn: () => getAllFixedExpenses(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const rawRows = data?.data?.items || [];
+  const displayRows = useMemo(() => {
+    return rawRows.filter((row) => {
+      if (filters.cycle && row.cycle !== filters.cycle) return false;
+      if (filters.status === "active" && !row.isActive) return false;
+      if (filters.status === "inactive" && row.isActive) return false;
+      if (filters.autoGenerateJournal === "true" && !row.autoGenerateJournal) return false;
+      if (filters.autoGenerateJournal === "false" && row.autoGenerateJournal) return false;
+      return true;
+    });
+  }, [rawRows, filters]);
+
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 
@@ -128,6 +175,20 @@ export default function FixedExpensesPage() {
 
   return (
     <div className="space-y-6">
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={filterConfigs}
+        filters={filters}
+        onFilterChange={(key, val) => {
+          setFilters((prev) => ({ ...prev, [key]: val }));
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters({ cycle: "", status: "", autoGenerateJournal: "" });
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
@@ -137,18 +198,16 @@ export default function FixedExpensesPage() {
           value: search,
           onChange: handleSearch,
         }}
-        onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        onRefresh={() => {}}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/fixed-expenses/add"),
           icon: <Plus className="w-4 h-4 mr-1" />
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

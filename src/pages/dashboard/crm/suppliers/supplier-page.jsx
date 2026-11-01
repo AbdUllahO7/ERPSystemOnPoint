@@ -5,6 +5,7 @@ import { DataView } from '@/components/data-view/DataView';
 import { useNavigate } from 'react-router-dom';
 import { getAllSuppliers, toggleSupplierStatus } from '@/lib/api';
 import { DeleteConfirmDialog } from '@/components/common/delete-confirm-dialog';
+import { CollapsibleFilterBar } from '@/components/common/collapsible-filter-bar';
 import { toast } from "react-hot-toast";
 
 const stats = [
@@ -16,6 +17,8 @@ export default function SupplierPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState('All');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filterType, setFilterType] = useState('all');
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -53,6 +56,9 @@ export default function SupplierPage() {
   if (activeTab !== 'All') {
     const isActive = activeTab === 'Active';
     filteredSuppliers = filteredSuppliers.filter(s => s.is_Active === isActive);
+  }
+  if (filterType !== 'all') {
+    filteredSuppliers = filteredSuppliers.filter(s => s.supplier_Type === filterType);
   }
   if (search) {
     filteredSuppliers = filteredSuppliers.filter(
@@ -167,6 +173,33 @@ export default function SupplierPage() {
         ))}
       </div>
 
+      {/* Collapsible Filter Bar */}
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={[
+          {
+            key: "type",
+            label: "Supplier Type",
+            placeholder: "All Types",
+            options: [
+              { value: "Company", label: "Company" },
+              { value: "Individual", label: "Individual" },
+            ],
+          },
+        ]}
+        filters={{
+          type: filterType !== "all" ? filterType : "",
+        }}
+        onFilterChange={(key, val) => {
+          if (key === "type") setFilterType(val || "all");
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilterType("all");
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={filteredSuppliers}
         isLoading={isLoading}
@@ -179,11 +212,7 @@ export default function SupplierPage() {
         }}
         filter={{
           label: 'Filter',
-          onClick: () => console.log('Filter clicked'),
-        }}
-        export={{
-          label: 'Export',
-          onClick: () => console.log('Export clicked'),
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
           label: 'Add',

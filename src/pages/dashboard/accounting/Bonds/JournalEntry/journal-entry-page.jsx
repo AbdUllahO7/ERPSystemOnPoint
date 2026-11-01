@@ -6,6 +6,7 @@ import {
   Plus,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
+import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { useQuery } from "@tanstack/react-query";
 import { getAllVouchers } from "../../../../../lib/api";
 import { useNavigate } from "react-router-dom";
@@ -15,16 +16,39 @@ export default function JournalEntryPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [statusTab, setStatusTab] = useState("all");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState({ voucherType: "", dateFrom: "", dateTo: "" });
 
   const navigate = useNavigate();
+
+  const filterConfigs = [
+    {
+      key: "voucherType",
+      label: "Filter by Voucher Type",
+      placeholder: "All Types",
+      options: [
+        { value: "Journal_Voucher", label: "General" },
+        { value: "Opening_Entry", label: "Opening" },
+        { value: "Adjustment_Entry", label: "Adjustment" },
+      ],
+    },
+    {
+      key: "dateFrom",
+      label: "Date From",
+      type: "date",
+    },
+    {
+      key: "dateTo",
+      label: "Date To",
+      type: "date",
+    },
+  ];
 
   const params = useMemo(
     () => ({
       search: search,
       pageNumber: page,
       pageSize: 10,
-      // If backend supports status filtering, we can pass it here. 
-      // For now, keeping it basic as requested.
     }),
     [page, search, statusTab],
   );
@@ -34,7 +58,16 @@ export default function JournalEntryPage() {
     queryFn: () => getAllVouchers(params),
   });
 
-  const displayRows = data?.data?.items || [];
+  const rawRows = data?.data?.items || [];
+  const displayRows = useMemo(() => {
+    return rawRows.filter((row) => {
+      if (filters.voucherType && row.voucher_Type !== filters.voucherType) return false;
+      if (filters.dateFrom && row.date && String(row.date).split("T")[0] < filters.dateFrom) return false;
+      if (filters.dateTo && row.date && String(row.date).split("T")[0] > filters.dateTo) return false;
+      return true;
+    });
+  }, [rawRows, filters]);
+
   const totalPages = data?.data?.totalPages || 1;
   const currentPage = data?.data?.pageNumber || page;
 
@@ -136,6 +169,20 @@ export default function JournalEntryPage() {
         </div>
       </Tabs>
 
+      <CollapsibleFilterBar
+        isOpen={isFilterOpen}
+        configs={filterConfigs}
+        filters={filters}
+        onFilterChange={(key, val) => {
+          setFilters((prev) => ({ ...prev, [key]: val }));
+          setPage(1);
+        }}
+        onClear={() => {
+          setFilters({ voucherType: "", dateFrom: "", dateTo: "" });
+          setPage(1);
+        }}
+      />
+
       <DataView
         data={displayRows}
         isLoading={isLoading}
@@ -146,18 +193,16 @@ export default function JournalEntryPage() {
           value: search,
           onChange: handleSearch,
         }}
-        onRefresh={() => {}}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        onRefresh={() => {}}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/bonds/journal-entry/add"),
           icon: <Plus className="w-4 h-4 mr-1" />
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

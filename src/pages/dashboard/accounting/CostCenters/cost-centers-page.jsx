@@ -202,16 +202,10 @@ export default function CostCenters() {
           onChange: handleSearch,
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllCostCenters"])}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
-        }}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/accounting/cost-centers/add"),
         }}
-        onColumnSettings={() => console.log("columns")}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{

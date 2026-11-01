@@ -96,12 +96,16 @@ export default function ItemCategoriesPage() {
     refetchOnMount: "always",
   });
 
-  const categoriesData = categoriesRes?.data?.items?.map(cat => ({
+  const rawCategories = categoriesRes?.data?.items?.map(cat => ({
     id: cat.id,
     serialNumber: cat.code_Numbers,
     categoryName: cat.name,
     type: cat.mainOrSub
   })) || [];
+
+  const categoriesData = filters.Type
+    ? rawCategories.filter((c) => String(c.type).toLowerCase() === filters.Type.toLowerCase())
+    : rawCategories;
 
   const totalPages = categoriesRes?.data?.totalPages || 1;
 
@@ -306,16 +310,11 @@ export default function ItemCategoriesPage() {
           value: search,
           onChange: handleSearch,
         }}
-        // filter={{
-        //   label: "Filter",
-        //   onClick: () => setIsFilterOpen(!isFilterOpen),
-        // }}
-        onRefresh={() => refetch()}
-        onPrint={() => window.print()}
-        export={{
-          label: "Export",
-          onClick: () => console.log("export"),
+        filter={{
+          label: "Filter",
+          onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        onRefresh={() => refetch()}
         addButton={{
           label: "Add",
           onClick: () => navigate("/dashboard/inventory/items-management/categories/add"),
