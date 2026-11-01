@@ -57,7 +57,8 @@ function formatDate(dateStr) {
 }
 
 export default function EventDetailsPage() {
-  const { t } = useI18n();
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -130,7 +131,7 @@ export default function EventDetailsPage() {
     return event.notes?.includes("pricingModel:PerBooking") ? "PerBooking" : "PerSeat";
   }, [event.notes]);
 
-  const bookingModel = useMemo(() => {
+  const _bookingModel = useMemo(() => {
     return event.notes?.includes("bookingModel:PerSession") ? "PerSession" : "FullCourse";
   }, [event.notes]);
 
@@ -302,7 +303,7 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-xs font-semibold text-slate-800">سعر الحدث (Price)</p>
               <p className="text-xs font-bold text-[#0066d1] mt-1">
-                {event.price || "$0"}
+                {typeof event.price === "number" ? `$${event.price}` : event.price || "$0"}
                 <span className="text-[10px] text-slate-400 font-normal ms-1">
                   ({pricingModel === "PerSeat" ? (t?.eventsModule?.perSeat || "Per Seat") : (t?.eventsModule?.perBooking || "Per Booking")})
                 </span>
@@ -312,7 +313,7 @@ export default function EventDetailsPage() {
             <div>
               <p className="text-xs font-semibold text-slate-800">العربون (AdvancePayment)</p>
               <p className="text-xs text-slate-600 mt-1 font-semibold">
-                {event.deposit || "$0"}
+                {typeof event.advancePayment === "number" ? `$${event.advancePayment}` : event.deposit || "$0"}
               </p>
             </div>
 
@@ -328,11 +329,13 @@ export default function EventDetailsPage() {
           <div className="pt-2 border-t border-slate-50 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-slate-800">
-                أيام التكرار داخل الفترة (RecurringDays)
+                {isAr ? "أيام التكرار داخل الفترة" : "Recurring Days"}
               </p>
               {sessionOccurrences.count > 0 && (
                 <span className="text-[11px] font-semibold text-[#0066d1]">
-                  {sessionOccurrences.count} جلسات محسوبة في الفترة
+                  {isAr
+                    ? `${sessionOccurrences.count} جلسات محسوبة في الفترة`
+                    : `${sessionOccurrences.count} calculated sessions`}
                 </span>
               )}
             </div>
@@ -340,6 +343,9 @@ export default function EventDetailsPage() {
             <div className="flex flex-wrap items-center gap-2">
               {DAYS_OF_WEEK_CONFIG.map((day) => {
                 const isSelected = event.recurringDays?.includes(day.id);
+                const dayLabel = isAr
+                  ? (day.arabic || day.name)
+                  : (day.english || day.name || day.id);
                 return (
                   <span
                     key={day.id}
@@ -349,7 +355,7 @@ export default function EventDetailsPage() {
                         : "bg-slate-50 text-slate-400 border-slate-200/80"
                     }`}
                   >
-                    {day.arabic} ({day.id})
+                    {dayLabel}
                   </span>
                 );
               })}

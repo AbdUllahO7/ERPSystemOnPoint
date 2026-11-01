@@ -78,12 +78,12 @@ export async function getReservationLookups() {
       apiHandler({
         endPoint: "accounting/InvoicePatterns/GetAll",
         method: "GET",
-        params: { PageSize: 100, IsActive: true },
+        params: { Type: "Sales", PageSize: 100, IsActive: true },
       }),
       apiHandler({
         endPoint: "accounting/CostCenters/GetAllCostCenters/all",
         method: "GET",
-        params: { PageSize: 100, IsActive: true },
+        params: { search: "", pageNumber: 1, pageSize: 100 },
       }),
       apiHandler({
         endPoint: "accounting/Currencies/GetAllCurrencies/all",
@@ -124,15 +124,32 @@ export async function getReservationLookups() {
       });
     }
 
-    // Parse Invoice Patterns
+    // Parse Invoice Patterns (Strictly Sales Patterns only)
     let invoicePatterns = [];
     if (patternsRes.status === "fulfilled") {
       const raw = patternsRes.value?.data || patternsRes.value || {};
       const list = raw?.items || (Array.isArray(raw) ? raw : []);
-      invoicePatterns = list.map((p) => ({
-        id: p.id,
-        name: p.pattern_Name || p.name || "Standard Invoice",
-      }));
+      invoicePatterns = list
+        .filter((p) => {
+          const t = p.invoiceType || p.type || p.invoice_Type;
+          return !t || t === "Sales" || String(t).toLowerCase() === "sales";
+        })
+        .map((p) => {
+          const ccId = p.costCenter_id || p.costCenter_Id || p.costCenterId || p.cost_Center_Id || null;
+          const ccName = p.costCenter_Name || p.costCenterName || p.cost_Center_Name || null;
+          return {
+            id: p.id,
+            name: p.pattern_Name || p.name || "Sales Invoice",
+            costCenter_id: ccId,
+            costCenterId: ccId,
+            costCenter_Name: ccName,
+            costCenterName: ccName,
+            tax_Percentage: p.tax_Percentage ?? p.taxPercentage ?? 0,
+            currency_id: p.currency_id || p.currencyId || null,
+            invoiceType: p.invoiceType || "Sales",
+            raw: p,
+          };
+        });
     }
 
     // Parse Cost Centers
@@ -140,10 +157,20 @@ export async function getReservationLookups() {
     if (costCentersRes.status === "fulfilled") {
       const raw = costCentersRes.value?.data || costCentersRes.value || {};
       const list = raw?.items || (Array.isArray(raw) ? raw : []);
-      costCenters = list.map((cc) => ({
-        id: cc.id,
-        name: cc.costCenter_Name || cc.name || "Main Cost Center",
-      }));
+      costCenters = list.map((cc) => {
+        const name = cc.cost_Center_Name || cc.costCenter_Name || cc.costCenterName || cc.name || "Cost Center";
+        const number = cc.cost_Center_Number || cc.costCenter_Number || cc.costCenterNumber || "";
+        return {
+          id: cc.id,
+          cost_Center_Number: number,
+          cost_Center_Name: name,
+          name: name,
+          number: number,
+          displayName: number ? `${name} (${number})` : name,
+          linked_Account_Id: cc.linked_Account_Id,
+          linked_Account_Name: cc.linked_Account_Name,
+        };
+      });
     }
 
     // Parse Currencies

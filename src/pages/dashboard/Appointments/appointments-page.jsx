@@ -9,12 +9,19 @@ import {
   Plus,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataView } from "@/components/data-view/DataView";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { DynamicModal } from "@/components/common/dynamic-modal";
 import { PageTitle } from "@/components/common/page-title";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { INITIAL_APPOINTMENT_STATS } from "@/services/appointments";
 import {
