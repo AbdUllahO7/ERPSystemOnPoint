@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الإمارات - تصنيع 01",
+  "businessType": "manufacturing",
+  "country": "uae",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "AED",
+      "USD"
+    ],
+    "baseCurrencyCode": "AED"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.uae.manufacturing@example.com",
+  "adminPassword": "Test@Password2026!"
+}

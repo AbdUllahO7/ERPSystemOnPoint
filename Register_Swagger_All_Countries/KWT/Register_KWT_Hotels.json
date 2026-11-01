@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - فنادق 01",
+  "businessType": "hotels",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.hotels@example.com",
+  "adminPassword": "Test@Password2026!"
+}

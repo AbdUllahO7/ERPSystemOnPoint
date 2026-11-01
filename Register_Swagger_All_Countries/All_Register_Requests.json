@@ -1,0 +1,506 @@
+[
+  {
+    "country": "kuwait",
+    "businessType": "general",
+    "template": "KWT_GeneralTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - عام 01",
+      "businessType": "general",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.general@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "retail",
+    "template": "KWT_RetailTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - تجزئة 01",
+      "businessType": "retail",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.retail@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "service",
+    "template": "KWT_ServiceTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - خدمات 01",
+      "businessType": "service",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.service@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "manufacturing",
+    "template": "KWT_ManufacturingTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - تصنيع 01",
+      "businessType": "manufacturing",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.manufacturing@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "restaurant",
+    "template": "KWT_RestaurantTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - مطاعم 01",
+      "businessType": "restaurant",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.restaurant@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "clinics",
+    "template": "KWT_ClinicsTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - عيادات 01",
+      "businessType": "clinics",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.clinics@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "hotels",
+    "template": "KWT_HotelsTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - فنادق 01",
+      "businessType": "hotels",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.hotels@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "kuwait",
+    "businessType": "spa-salon",
+    "template": "KWT_SpaSalonTemplate.json",
+    "request": {
+      "companyName": "تجربة الكويت - صالونات وسبا 01",
+      "businessType": "spa-salon",
+      "country": "kuwait",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "KWD",
+          "USD"
+        ],
+        "baseCurrencyCode": "KWD"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.kwt.spa-salon@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "general",
+    "template": "QAT_GeneralTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - عام 01",
+      "businessType": "general",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.general@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "retail",
+    "template": "QAT_RetailTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - تجزئة 01",
+      "businessType": "retail",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.retail@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "service",
+    "template": "QAT_ServiceTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - خدمات 01",
+      "businessType": "service",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.service@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "manufacturing",
+    "template": "QAT_ManufacturingTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - تصنيع 01",
+      "businessType": "manufacturing",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.manufacturing@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "restaurant",
+    "template": "QAT_RestaurantTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - مطاعم 01",
+      "businessType": "restaurant",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.restaurant@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "clinics",
+    "template": "QAT_ClinicsTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - عيادات 01",
+      "businessType": "clinics",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.clinics@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "hotels",
+    "template": "QAT_HotelsTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - فنادق 01",
+      "businessType": "hotels",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.hotels@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "qatar",
+    "businessType": "spa-salon",
+    "template": "QAT_SpaSalonTemplate.json",
+    "request": {
+      "companyName": "تجربة قطر - صالونات وسبا 01",
+      "businessType": "spa-salon",
+      "country": "qatar",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "QAR",
+          "USD"
+        ],
+        "baseCurrencyCode": "QAR"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.qat.spa-salon@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "general",
+    "template": "UAE_GeneralTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - عام 01",
+      "businessType": "general",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.general@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "retail",
+    "template": "UAE_RetailTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - تجزئة 01",
+      "businessType": "retail",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.retail@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "service",
+    "template": "UAE_ServiceTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - خدمات 01",
+      "businessType": "service",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.service@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "manufacturing",
+    "template": "UAE_ManufacturingTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - تصنيع 01",
+      "businessType": "manufacturing",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.manufacturing@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "restaurant",
+    "template": "UAE_RestaurantTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - مطاعم 01",
+      "businessType": "restaurant",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.restaurant@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "clinics",
+    "template": "UAE_ClinicsTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - عيادات 01",
+      "businessType": "clinics",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.clinics@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "hotels",
+    "template": "UAE_HotelsTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - فنادق 01",
+      "businessType": "hotels",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.hotels@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  },
+  {
+    "country": "uae",
+    "businessType": "spa-salon",
+    "template": "UAE_SpaSalonTemplate.json",
+    "request": {
+      "companyName": "تجربة الإمارات - صالونات وسبا 01",
+      "businessType": "spa-salon",
+      "country": "uae",
+      "initializeSettings": {
+        "selectedCurrencyCodes": [
+          "AED",
+          "USD"
+        ],
+        "baseCurrencyCode": "AED"
+      },
+      "taxType": null,
+      "mainBranchName": "الفرع الرئيسي",
+      "adminEmail": "admin.uae.spa-salon@example.com",
+      "adminPassword": "Test@Password2026!"
+    }
+  }
+]

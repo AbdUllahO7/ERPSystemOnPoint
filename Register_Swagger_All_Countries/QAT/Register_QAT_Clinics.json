@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - عيادات 01",
+  "businessType": "clinics",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.clinics@example.com",
+  "adminPassword": "Test@Password2026!"
+}

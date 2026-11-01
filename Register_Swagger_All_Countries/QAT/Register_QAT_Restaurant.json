@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - مطاعم 01",
+  "businessType": "restaurant",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.restaurant@example.com",
+  "adminPassword": "Test@Password2026!"
+}

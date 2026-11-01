@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الإمارات - تجزئة 01",
+  "businessType": "retail",
+  "country": "uae",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "AED",
+      "USD"
+    ],
+    "baseCurrencyCode": "AED"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.uae.retail@example.com",
+  "adminPassword": "Test@Password2026!"
+}

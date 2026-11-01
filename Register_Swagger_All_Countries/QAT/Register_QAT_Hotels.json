@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - فنادق 01",
+  "businessType": "hotels",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.hotels@example.com",
+  "adminPassword": "Test@Password2026!"
+}

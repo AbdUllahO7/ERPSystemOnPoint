@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react"
 import { createBrowserRouter } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import WebsiteLayout from "@/layouts/WebsiteLayout"
+import AuthLayout from "@/layouts/AuthLayout"
 import PageSkeleton from "@/components/feedback/PageSkeleton"
 
 // ✨ دالة مساعدة لتغليف المكونات بالتحميل الكسول وشاشة التحميل الأنيقة
@@ -194,15 +195,23 @@ export const router = createBrowserRouter([
       { path: "account", element: lazyLoad(() => import("@/pages/website/store/Account")) },
       { path: "account/profile", element: lazyLoad(() => import("@/pages/website/store/Account")) },
       { path: "account/orders", element: lazyLoad(() => import("@/pages/website/store/Account")) },
+      { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/legal/PrivacyPolicy")) },
+      { path: "return-policy", element: lazyLoad(() => import("@/pages/website/legal/ReturnPolicy")) },
+      { path: "terms", element: lazyLoad(() => import("@/pages/website/legal/Terms")) },
+      { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
+    ],
+  },
+  // 🔐 صفحات المصادقة المستقلة (Auth Pages — no website header/footer)
+  {
+    path: "/",
+    element: <AuthLayout />,
+    children: [
       { path: "login", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
       { path: "auth/sign-in", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
       { path: "sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
       { path: "register", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
       { path: "auth/sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
-      { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/legal/PrivacyPolicy")) },
-      { path: "return-policy", element: lazyLoad(() => import("@/pages/website/legal/ReturnPolicy")) },
-      { path: "terms", element: lazyLoad(() => import("@/pages/website/legal/Terms")) },
-      { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
+      { path: "forgot-password", element: lazyLoad(() => import("@/pages/website/auth/ForgotPassword")) },
     ],
   },
   {
