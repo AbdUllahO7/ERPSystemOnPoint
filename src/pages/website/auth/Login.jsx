@@ -1,11 +1,15 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { Mail, Lock, Eye, EyeOff, RefreshCw, LogIn } from "lucide-react";
 import { login } from "@/services/auth";
 
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // إذا جاء المستخدم من صفحة محمية، نرجعه لها بعد الدخول
+  const from = location.state?.from?.pathname || "/dashboard";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -25,7 +29,7 @@ export function Login() {
     try {
       await login({ email: email.trim(), password });
       toast.success("مرحباً بك! تم تسجيل الدخول بنجاح.");
-      navigate("/dashboard");
+      navigate(from, { replace: true });
     } catch (err) {
       toast.error(err?.message || "بريد إلكتروني أو كلمة مرور غير صحيحة");
     } finally {

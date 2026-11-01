@@ -3,6 +3,7 @@ import { createBrowserRouter } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import WebsiteLayout from "@/layouts/WebsiteLayout"
 import AuthLayout from "@/layouts/AuthLayout"
+import ProtectedRoute from "@/components/common/ProtectedRoute"
 import PageSkeleton from "@/components/feedback/PageSkeleton"
 
 // ✨ دالة مساعدة لتغليف المكونات بالتحميل الكسول وشاشة التحميل الأنيقة
@@ -214,10 +215,14 @@ export const router = createBrowserRouter([
       { path: "forgot-password", element: lazyLoad(() => import("@/pages/website/auth/ForgotPassword")) },
     ],
   },
+  // 🔒 الصفحات المحمية — تتطلب تسجيل دخول (Protected Routes)
   {
-    path: "/dashboard",
-    element: <DashboardLayout />,
+    element: <ProtectedRoute />,
     children: [
+      {
+        path: "/dashboard",
+        element: <DashboardLayout />,
+        children: [
       { index: true, element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
       { path: "users", element: lazyLoad(() => import("../pages/dashboard/Users/Users")) },
       { path: "web-service", element: lazyLoad(() => import("../pages/dashboard/WebsiteBuilder/WebsitesListPage")) },
@@ -437,6 +442,8 @@ export const router = createBrowserRouter([
       { path: "/dashboard/rentals/invoices/:id", element: lazyLoad(() => import("../pages/dashboard/Rentals/Invoices/rental-invoice-details")) },
 
       { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
+        ],
+      },
     ],
   },
 ])
