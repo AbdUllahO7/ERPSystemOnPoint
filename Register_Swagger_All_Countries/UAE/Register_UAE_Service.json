@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الإمارات - خدمات 01",
+  "businessType": "service",
+  "country": "uae",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "AED",
+      "USD"
+    ],
+    "baseCurrencyCode": "AED"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.uae.service@example.com",
+  "adminPassword": "Test@Password2026!"
+}

@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - خدمات 01",
+  "businessType": "service",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.service@example.com",
+  "adminPassword": "Test@Password2026!"
+}

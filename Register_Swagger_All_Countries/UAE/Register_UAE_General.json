@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الإمارات - عام 01",
+  "businessType": "general",
+  "country": "uae",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "AED",
+      "USD"
+    ],
+    "baseCurrencyCode": "AED"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.uae.general@example.com",
+  "adminPassword": "Test@Password2026!"
+}

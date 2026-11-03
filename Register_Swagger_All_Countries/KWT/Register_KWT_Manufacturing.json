@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - تصنيع 01",
+  "businessType": "manufacturing",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.manufacturing@example.com",
+  "adminPassword": "Test@Password2026!"
+}

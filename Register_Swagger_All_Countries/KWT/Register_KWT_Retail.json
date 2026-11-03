@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - تجزئة 01",
+  "businessType": "retail",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.retail@example.com",
+  "adminPassword": "Test@Password2026!"
+}

@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - تصنيع 01",
+  "businessType": "manufacturing",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.manufacturing@example.com",
+  "adminPassword": "Test@Password2026!"
+}

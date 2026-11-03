@@ -1,0 +1,5 @@
+{
+  "email": "REPLACE_WITH_SAME_REGISTER_EMAIL",
+  "otp": "123456",
+  "purpose": "EmailConfirmation"
+}

@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - صالونات وسبا 01",
+  "businessType": "spa-salon",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.spa-salon@example.com",
+  "adminPassword": "Test@Password2026!"
+}

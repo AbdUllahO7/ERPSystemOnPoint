@@ -8,6 +8,7 @@
  */
 
 // 1. Domain namespaces
+export * as authService from "./auth";
 export * as accountingService from "./accounting";
 export * as appointmentsService from "./appointments";
 export * as crmService from "./crm";
@@ -25,6 +26,7 @@ export * as websiteBuilderService from "./website-builder";
 export * as websiteContentService from "./website-content";
 
 // 2. Direct API Clients
+export { authApi } from "./auth";
 export { accountingApi } from "./accounting";
 export { appointmentsApi } from "./appointments";
 export { crmApi } from "./crm";

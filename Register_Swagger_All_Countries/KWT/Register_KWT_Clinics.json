@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - عيادات 01",
+  "businessType": "clinics",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.clinics@example.com",
+  "adminPassword": "Test@Password2026!"
+}

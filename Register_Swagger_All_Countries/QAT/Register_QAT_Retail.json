@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - تجزئة 01",
+  "businessType": "retail",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.retail@example.com",
+  "adminPassword": "Test@Password2026!"
+}

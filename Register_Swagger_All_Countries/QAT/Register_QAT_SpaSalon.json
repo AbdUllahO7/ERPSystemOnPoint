@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - صالونات وسبا 01",
+  "businessType": "spa-salon",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.spa-salon@example.com",
+  "adminPassword": "Test@Password2026!"
+}

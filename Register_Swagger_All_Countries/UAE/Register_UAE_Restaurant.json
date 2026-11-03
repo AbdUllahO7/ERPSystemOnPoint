@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الإمارات - مطاعم 01",
+  "businessType": "restaurant",
+  "country": "uae",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "AED",
+      "USD"
+    ],
+    "baseCurrencyCode": "AED"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.uae.restaurant@example.com",
+  "adminPassword": "Test@Password2026!"
+}

@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react"
 import { createBrowserRouter } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import WebsiteLayout from "@/layouts/WebsiteLayout"
+import AuthLayout from "@/layouts/AuthLayout"
+import ProtectedRoute from "@/components/common/ProtectedRoute"
 import PageSkeleton from "@/components/feedback/PageSkeleton"
 
 // ✨ دالة مساعدة لتغليف المكونات بالتحميل الكسول وشاشة التحميل الأنيقة
@@ -194,21 +196,33 @@ export const router = createBrowserRouter([
       { path: "account", element: lazyLoad(() => import("@/pages/website/store/Account")) },
       { path: "account/profile", element: lazyLoad(() => import("@/pages/website/store/Account")) },
       { path: "account/orders", element: lazyLoad(() => import("@/pages/website/store/Account")) },
-      { path: "login", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
-      { path: "auth/sign-in", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
-      { path: "sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
-      { path: "register", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
-      { path: "auth/sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
       { path: "privacy-policy", element: lazyLoad(() => import("@/pages/website/legal/PrivacyPolicy")) },
       { path: "return-policy", element: lazyLoad(() => import("@/pages/website/legal/ReturnPolicy")) },
       { path: "terms", element: lazyLoad(() => import("@/pages/website/legal/Terms")) },
       { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
     ],
   },
+  // 🔐 صفحات المصادقة المستقلة (Auth Pages — no website header/footer)
   {
-    path: "/dashboard",
-    element: <DashboardLayout />,
+    path: "/",
+    element: <AuthLayout />,
     children: [
+      { path: "login", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
+      { path: "auth/sign-in", element: lazyLoad(() => import("@/pages/website/auth/Login")) },
+      { path: "sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
+      { path: "register", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
+      { path: "auth/sign-up", element: lazyLoad(() => import("@/pages/website/auth/SignUp")) },
+      { path: "forgot-password", element: lazyLoad(() => import("@/pages/website/auth/ForgotPassword")) },
+    ],
+  },
+  // 🔒 الصفحات المحمية — تتطلب تسجيل دخول (Protected Routes)
+  {
+    element: <ProtectedRoute />,
+    children: [
+      {
+        path: "/dashboard",
+        element: <DashboardLayout />,
+        children: [
       { index: true, element: lazyLoad(() => import("../pages/dashboard/HrDashboard/hr-dashboard-page")) },
       { path: "users", element: lazyLoad(() => import("../pages/dashboard/Users/Users")) },
       { path: "web-service", element: lazyLoad(() => import("../pages/dashboard/WebsiteBuilder/WebsitesListPage")) },
@@ -428,6 +442,8 @@ export const router = createBrowserRouter([
       { path: "/dashboard/rentals/invoices/:id", element: lazyLoad(() => import("../pages/dashboard/Rentals/Invoices/rental-invoice-details")) },
 
       { path: "*", element: lazyLoad(() => import("../pages/not-found")) },
+        ],
+      },
     ],
   },
 ])

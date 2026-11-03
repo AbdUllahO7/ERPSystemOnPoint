@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة قطر - خدمات 01",
+  "businessType": "service",
+  "country": "qatar",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "QAR",
+      "USD"
+    ],
+    "baseCurrencyCode": "QAR"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.qat.service@example.com",
+  "adminPassword": "Test@Password2026!"
+}

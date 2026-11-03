@@ -1,0 +1,16 @@
+{
+  "companyName": "تجربة الكويت - مطاعم 01",
+  "businessType": "restaurant",
+  "country": "kuwait",
+  "initializeSettings": {
+    "selectedCurrencyCodes": [
+      "KWD",
+      "USD"
+    ],
+    "baseCurrencyCode": "KWD"
+  },
+  "taxType": null,
+  "mainBranchName": "الفرع الرئيسي",
+  "adminEmail": "admin.kwt.restaurant@example.com",
+  "adminPassword": "Test@Password2026!"
+}
