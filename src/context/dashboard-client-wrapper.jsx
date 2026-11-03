@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { href, Link, useLocation } from "react-router-dom";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { href, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutGrid,
   Home,
@@ -35,12 +36,15 @@ import {
   Globe,
   PlusCircle,
   Plus,
+  LogOut,
 } from "lucide-react";
 import { useSidebar } from "./dashboard-providers";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
 import { useI18n } from "../context/translate-api";
 import iconDashboard from "../assets/icon-dashbord.svg";
 import { ModeToggle } from "../components/common/mode-toggel";
+import { logout } from "@/services/auth";
+import toast from "react-hot-toast";
 
 // ===== Nav Data (matches sidebar design) =====
 const sidebarLinks = [
@@ -522,6 +526,42 @@ function AppSidebar({ collapsed, onMobileClose, isMobile, onToggle }) {
   );
 }
 
+// ===== Logout Button =====
+function LogoutButton() {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      await logout();
+      toast.success("تم تسجيل الخروج بنجاح");
+      navigate("/login", { replace: true });
+    } catch (err) {
+      // logout() يتجاهل الأخطاء داخلياً ويمسح التوكن دائماً
+      navigate("/login", { replace: true });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <button
+      onClick={handleLogout}
+      disabled={loading}
+      title="تسجيل الخروج"
+      aria-label="Logout"
+      className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50"
+    >
+      {loading ? (
+        <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+      ) : (
+        <LogOut size={16} />
+      )}
+    </button>
+  );
+}
+
 // ===== Header =====
 function AppHeader({ onMobileMenuOpen }) {
   return (
@@ -573,6 +613,7 @@ function AppHeader({ onMobileMenuOpen }) {
         >
           A
         </div>
+        <LogoutButton />
       </div>
     </header>
   );

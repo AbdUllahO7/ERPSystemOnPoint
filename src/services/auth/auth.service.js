@@ -16,7 +16,32 @@ import Cookies from "js-cookie";
  *   POST /api/Hr/Auth/Login/Login          → login()
  *   POST /api/Hr/Auth/RefreshToken         → refreshToken()
  *   POST /api/Hr/Auth/Logout               → logout()
+ *
+ * الثوابت المحلية (localStorage):
+ *   "erp_current_user" → كائن المستخدم الحالي المستخلص من استجابة تسجيل الدخول + JWT
  */
+
+// ----------------------------------------------------------------
+// JWT Decoder — بدون مكتبات خارجية
+// يفك ترميز payload الـ JWT ويُعيد الكلايمز كـ object
+// ----------------------------------------------------------------
+export function decodeJwt(token) {
+  try {
+    const base64Url = token.split(".")[1];
+    if (!base64Url) return null;
+    // base64url → base64
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const json = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
 
 // ----------------------------------------------------------------
 // 1. registerTenant — RegisterTenantDto
@@ -122,7 +147,30 @@ export async function login({ email, password }) {
     Cookies.set("refreshToken", refreshTokenValue, { expires: 30 });
   }
 
-  // حفظ بيانات المستخدم
+  // ----------------------------------------------------------------
+  // حفظ بيانات المستخدم الحالي (erp_current_user)
+  // يستخلص المعلومات من استجابة تسجيل الدخول مباشرةً
+  // ----------------------------------------------------------------
+  const jwtClaims = token ? decodeJwt(token) : null;
+
+  const currentUser = {
+    // من استجابة الـ API مباشرةً
+    userName: response?.user_Name || response?.userName || null,
+    email: response?.email || jwtClaims?.email || null,
+    roles: response?.roles || [],
+    // من JWT Claims
+    userId: jwtClaims?.sub || jwtClaims?.nameid || null,
+    tenantId: jwtClaims?.tenantId || null,
+    // صلاحية التوكن
+    accessTokenExpiresAt: response?.accessTokenExpiresAt || null,
+    refreshTokenExpiresAt: response?.refreshTokenExpiresAt || null,
+    // الحالة
+    isAuthenticated: response?.is_Authenticated ?? true,
+  };
+
+  localStorage.setItem("erp_current_user", JSON.stringify(currentUser));
+
+  // حفظ بيانات المستخدم (الحقل القديم للتوافق)
   const user = response?.user || response?.data?.user || response?.data;
   if (user) {
     localStorage.setItem("erp_user", JSON.stringify(user));
@@ -171,6 +219,7 @@ export async function logout() {
     Cookies.remove("token");
     Cookies.remove("refreshToken");
     localStorage.removeItem("erp_user");
+    localStorage.removeItem("erp_current_user");
   }
 }
 
@@ -188,6 +237,60 @@ export function getStoredUser() {
   } catch {
     return null;
   }
+}
+
+// ----------------------------------------------------------------
+// getCurrentUser
+// يُعيد بيانات المستخدم المسجّل حالياً من:
+//   1. localStorage ("erp_current_user") — محفوظة عند تسجيل الدخول
+//   2. JWT Token (fallback) — إذا لم يوجد السجل المحفوظ
+// لا يستدعي أي API — المعلومات مستخلصة من التوكن واستجابة Login مباشرةً
+// ----------------------------------------------------------------
+export function getCurrentUser() {
+  // أولاً: حاول من البيانات المحفوظة عند تسجيل الدخول
+  try {
+    const raw = localStorage.getItem("erp_current_user");
+    if (raw) {
+      const stored = JSON.parse(raw);
+      // تحقق من أن التوكن لم تنتهي صلاحيته
+      if (stored?.accessTokenExpiresAt) {
+        const expiresAt = new Date(stored.accessTokenExpiresAt);
+        if (expiresAt > new Date()) {
+          return stored;
+        }
+      } else {
+        return stored;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  // ثانياً: Fallback — استخلاص من JWT مباشرةً
+  const token = Cookies.get("token");
+  if (!token) return null;
+
+  const claims = decodeJwt(token);
+  if (!claims) return null;
+
+  // التحقق من انتهاء صلاحية التوكن
+  if (claims.exp && claims.exp * 1000 < Date.now()) return null;
+
+  return {
+    userId:
+      claims.sub ||
+      claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"] ||
+      null,
+    userName:
+      claims["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"] ||
+      claims.name ||
+      null,
+    email: claims.email || null,
+    tenantId: claims.tenantId || null,
+    roles: [],
+    isAuthenticated: true,
+    accessTokenExpiresAt: claims.exp ? new Date(claims.exp * 1000).toISOString() : null,
+  };
 }
 
 export function isLoggedIn() {

@@ -13,6 +13,8 @@ export const authApi = {
   logout: authService.logout,
   getStoredToken: authService.getStoredToken,
   getStoredUser: authService.getStoredUser,
+  getCurrentUser: authService.getCurrentUser,
+  decodeJwt: authService.decodeJwt,
   isLoggedIn: authService.isLoggedIn,
 };
 

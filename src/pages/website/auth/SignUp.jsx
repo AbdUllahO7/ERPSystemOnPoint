@@ -5,7 +5,7 @@ import {
   Building2, ShoppingBag, Briefcase, Factory, Utensils,
   Stethoscope, Hotel, Sparkles, ShieldCheck, CheckCircle2,
   ArrowLeft, ArrowRight, Mail, Lock, Eye, EyeOff,
-  Building, RefreshCw, Coins,
+  Building, RefreshCw, Coins, Star,
 } from "lucide-react";
 import { COUNTRIES, BUSINESS_TYPES } from "@/features/auth";
 import { registerTenant, verifyOtp, resendOtp, login } from "@/services/auth";
@@ -15,6 +15,22 @@ const ICON_MAP = {
   Building2, ShoppingBag, Briefcase, Factory,
   Utensils, Stethoscope, Hotel, Sparkles,
 };
+
+// ============================================================
+// كل العملات المتاحة في النظام
+// ============================================================
+const ALL_CURRENCIES = [
+  { code: "KWD", name: "دينار كويتي",   nameEn: "Kuwaiti Dinar",   flag: "🇰🇼" },
+  { code: "USD", name: "دولار أمريكي",  nameEn: "US Dollar",        flag: "🇺🇸" },
+  { code: "SAR", name: "ريال سعودي",    nameEn: "Saudi Riyal",      flag: "🇸🇦" },
+  { code: "AED", name: "درهم إماراتي", nameEn: "UAE Dirham",        flag: "🇦🇪" },
+  { code: "EUR", name: "يورو",          nameEn: "Euro",             flag: "🇪🇺" },
+  { code: "GBP", name: "جنيه إسترليني",nameEn: "British Pound",    flag: "🇬🇧" },
+  { code: "QAR", name: "ريال قطري",    nameEn: "Qatari Riyal",      flag: "🇶🇦" },
+  { code: "OMR", name: "ريال عُماني",  nameEn: "Omani Rial",        flag: "🇴🇲" },
+  { code: "BHD", name: "دينار بحريني", nameEn: "Bahraini Dinar",    flag: "🇧🇭" },
+  { code: "JOD", name: "دينار أردني",  nameEn: "Jordanian Dinar",   flag: "🇯🇴" },
+];
 
 // ============================================================
 // مكوّن شريط التقدم
@@ -44,7 +60,113 @@ function StepBar({ current }) {
 }
 
 // ============================================================
-// الخطوة 1 — بيانات الشركة والنشاط والدولة
+// مكوّن اختيار العملات — على شكل select
+// ============================================================
+function CurrencySelector({ baseCurrency, selectedCurrencies, onBaseChange, onSelectedChange }) {
+  const toggleSelected = (code) => {
+    if (code === baseCurrency) return; // الأساسية لا تُحذف
+    const next = selectedCurrencies.includes(code)
+      ? selectedCurrencies.filter((c) => c !== code)
+      : [...selectedCurrencies, code];
+    onSelectedChange(next);
+  };
+
+  const handleBaseChange = (code) => {
+    onBaseChange(code);
+    // نضيفها للمحددة إذا لم تكن موجودة
+    if (!selectedCurrencies.includes(code)) {
+      onSelectedChange([...selectedCurrencies, code]);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* العملة الأساسية — select */}
+        <div className="space-y-1.5 text-right">
+          <label className="text-xs font-bold text-slate-700 flex items-center justify-end gap-1.5">
+            العملة الأساسية <span className="text-rose-500">*</span>
+            <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+          </label>
+          <div className="relative">
+            <select
+              value={baseCurrency}
+              onChange={(e) => handleBaseChange(e.target.value)}
+              className="w-full appearance-none text-right bg-white text-sm px-4 py-3 pr-10 rounded-xl border-2 border-amber-300 text-slate-900 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all cursor-pointer"
+              dir="rtl"
+            >
+              {ALL_CURRENCIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.flag} {c.code} — {c.name}
+                </option>
+              ))}
+            </select>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-amber-500">
+              <Star className="w-4 h-4 fill-amber-400" />
+            </span>
+          </div>
+          <p className="text-[11px] text-amber-600 text-right">
+            ستُستخدم هذه العملة كمرجع أساسي في جميع العمليات
+          </p>
+        </div>
+
+        {/* العملات المقبولة — multi-select بكروت صغيرة */}
+        <div className="space-y-1.5 text-right">
+          <label className="text-xs font-bold text-slate-700 flex items-center justify-end gap-1.5">
+            العملات المقبولة
+            <Coins className="w-3.5 h-3.5 text-slate-400" />
+          </label>
+          <div className="border-2 border-slate-200 rounded-xl bg-white p-2 space-y-1 max-h-[148px] overflow-y-auto">
+            {ALL_CURRENCIES.map((c) => {
+              const isSelected = selectedCurrencies.includes(c.code);
+              const isBase = baseCurrency === c.code;
+              return (
+                <button
+                  key={c.code}
+                  type="button"
+                  disabled={isBase}
+                  onClick={() => toggleSelected(c.code)}
+                  className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg transition-all text-right ${
+                    isBase
+                      ? "bg-amber-50 cursor-not-allowed"
+                      : isSelected
+                      ? "bg-blue-50 hover:bg-blue-100 cursor-pointer"
+                      : "hover:bg-slate-50 cursor-pointer"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {isBase ? (
+                      <span className="text-[10px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded-full">أساسية</span>
+                    ) : isSelected ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#0066d1]" />
+                    ) : (
+                      <span className="w-3.5 h-3.5 rounded-full border-2 border-slate-300 inline-block" />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-right">
+                    <span className={`text-xs font-bold ${
+                      isBase ? "text-amber-700" : isSelected ? "text-[#0066d1]" : "text-slate-700"
+                    }`}>
+                      {c.code}
+                    </span>
+                    <span className="text-[11px] text-slate-400">{c.name}</span>
+                    <span className="text-base">{c.flag}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-slate-400 text-right">
+            محدد: <span className="text-slate-600 font-medium">{selectedCurrencies.join(" · ")}</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// الخطوة 1 — بيانات الشركة والنشاط والدولة والعملات
 // ============================================================
 function Step1({ form, setForm, onNext }) {
   const handleSubmit = (e) => {
@@ -53,7 +175,26 @@ function Step1({ form, setForm, onNext }) {
       toast.error("يرجى إدخال اسم الشركة");
       return;
     }
+    if (!form.baseCurrencyCode) {
+      toast.error("يرجى اختيار العملة الأساسية");
+      return;
+    }
+    if (!form.selectedCurrencyCodes.length) {
+      toast.error("يرجى اختيار عملة واحدة على الأقل");
+      return;
+    }
     onNext();
+  };
+
+  // عند تغيير الدولة — نحدّث العملات بالقيم الافتراضية للدولة
+  const handleCountryChange = (countryCode) => {
+    const country = COUNTRIES.find((c) => c.code === countryCode);
+    setForm((f) => ({
+      ...f,
+      country: countryCode,
+      baseCurrencyCode: country.baseCurrencyCode,
+      selectedCurrencyCodes: country.selectedCurrencyCodes,
+    }));
   };
 
   return (
@@ -92,7 +233,7 @@ function Step1({ form, setForm, onNext }) {
       {/* اختيار الدولة */}
       <div className="space-y-2">
         <label className="text-xs font-bold text-slate-700 flex items-center justify-end gap-1.5">
-          الدولة والعملة الأساسية <span className="text-rose-500">*</span>
+          الدولة <span className="text-rose-500">*</span>
           <Coins className="w-3.5 h-3.5 text-slate-400" />
         </label>
         <div className="grid grid-cols-3 gap-3">
@@ -102,7 +243,7 @@ function Step1({ form, setForm, onNext }) {
               <button
                 key={c.code}
                 type="button"
-                onClick={() => setForm((f) => ({ ...f, country: c.code }))}
+                onClick={() => handleCountryChange(c.code)}
                 className={`p-3.5 rounded-2xl border-2 text-right transition-all cursor-pointer flex flex-col gap-2 ${
                   selected
                     ? "border-[#0066d1] bg-blue-50 ring-2 ring-[#0066d1]/10"
@@ -121,6 +262,29 @@ function Step1({ form, setForm, onNext }) {
             );
           })}
         </div>
+        <p className="text-[11px] text-slate-400 text-right">
+          اختيار الدولة يضبط العملات الافتراضية تلقائياً — يمكنك تعديلها أدناه
+        </p>
+      </div>
+
+      {/* اختيار العملات */}
+      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
+        <CurrencySelector
+          baseCurrency={form.baseCurrencyCode}
+          selectedCurrencies={form.selectedCurrencyCodes}
+          onBaseChange={(code) =>
+            setForm((f) => ({
+              ...f,
+              baseCurrencyCode: code,
+              selectedCurrencyCodes: f.selectedCurrencyCodes.includes(code)
+                ? f.selectedCurrencyCodes
+                : [...f.selectedCurrencyCodes, code],
+            }))
+          }
+          onSelectedChange={(codes) =>
+            setForm((f) => ({ ...f, selectedCurrencyCodes: codes }))
+          }
+        />
       </div>
 
       {/* اختيار نوع النشاط */}
@@ -220,7 +384,7 @@ function Step2({ form, setForm, onNext, onBack, loading }) {
             {form.companyName} — {country?.name} {country?.flag}
           </p>
           <p className="text-[11px] text-slate-500">
-            {business?.title} · عملة: {country?.baseCurrencyCode}
+            {business?.title} · أساسية: {form.baseCurrencyCode} · محدد: {form.selectedCurrencyCodes.join(", ")}
           </p>
         </div>
         <div className="w-9 h-9 rounded-xl bg-blue-100 text-[#0066d1] flex items-center justify-center">
@@ -348,7 +512,6 @@ function Step3({ email, onVerify, loading }) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* أيقونة + وصف */}
       <div className="text-center space-y-3 py-4">
         <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto ring-8 ring-blue-50/50">
           <ShieldCheck className="w-8 h-8 text-[#0066d1]" />
@@ -362,7 +525,6 @@ function Step3({ email, onVerify, loading }) {
         </div>
       </div>
 
-      {/* حقل الكود */}
       <div className="max-w-xs mx-auto space-y-2">
         <input
           type="text"
@@ -378,7 +540,6 @@ function Step3({ email, onVerify, loading }) {
         </p>
       </div>
 
-      {/* زر التأكيد */}
       <button
         type="submit"
         disabled={loading || otp.length < 4}
@@ -391,7 +552,6 @@ function Step3({ email, onVerify, loading }) {
         )}
       </button>
 
-      {/* إعادة الإرسال */}
       <div className="text-center">
         {cooldown > 0 ? (
           <p className="text-xs text-slate-400">
@@ -438,15 +598,16 @@ function Step4({ form, onGoToDashboard }) {
       {/* ملخص التسجيل */}
       <div className="text-right p-4 bg-slate-50 rounded-2xl border border-slate-200 max-w-sm mx-auto space-y-2 text-xs">
         {[
-          { label: "الشركة", value: form.companyName },
-          { label: "الدولة", value: `${country?.name} ${country?.flag}` },
-          { label: "النشاط", value: business?.title },
-          { label: "العملة", value: country?.baseCurrencyCode },
-          { label: "المدير", value: form.adminEmail },
+          { label: "الشركة",          value: form.companyName },
+          { label: "الدولة",          value: `${country?.name} ${country?.flag}` },
+          { label: "النشاط",          value: business?.title },
+          { label: "العملة الأساسية", value: form.baseCurrencyCode },
+          { label: "العملات المقبولة",value: form.selectedCurrencyCodes.join(" · ") },
+          { label: "المدير",          value: form.adminEmail },
         ].map(({ label, value }) => (
-          <div key={label} className="flex justify-between items-center">
+          <div key={label} className="flex justify-between items-center gap-2">
             <span className="font-bold text-slate-900">{value}</span>
-            <span className="text-slate-500">{label}:</span>
+            <span className="text-slate-500 shrink-0">{label}:</span>
           </div>
         ))}
       </div>
@@ -476,6 +637,9 @@ export function SignUp() {
     mainBranchName: "الفرع الرئيسي",
     country: "kuwait",
     businessType: "general",
+    // العملات — مبدئياً حسب الكويت (KWD أساسية + USD مقبولة)
+    baseCurrencyCode: "KWD",
+    selectedCurrencyCodes: ["KWD", "USD"],
     adminEmail: "",
     adminPassword: "",
     confirmPassword: "",
@@ -486,19 +650,18 @@ export function SignUp() {
 
   // الخطوة 2 → POST RegisterTenant → 3
   const handleStep2Next = async () => {
-    const country = COUNTRIES.find((c) => c.code === form.country);
     const payload = {
-      companyName: form.companyName.trim(),
-      businessType: form.businessType,
-      country: form.country,
+      companyName:    form.companyName.trim(),
+      businessType:   form.businessType,
+      country:        form.country,
       initializeSettings: {
-        baseCurrencyCode: country.baseCurrencyCode,
-        selectedCurrencyCodes: country.selectedCurrencyCodes,
+        baseCurrencyCode:      form.baseCurrencyCode,
+        selectedCurrencyCodes: form.selectedCurrencyCodes,
       },
-      taxType: null,
+      taxType:        null,
       mainBranchName: form.mainBranchName.trim() || "الفرع الرئيسي",
-      adminEmail: form.adminEmail.trim(),
-      adminPassword: form.adminPassword,
+      adminEmail:     form.adminEmail.trim(),
+      adminPassword:  form.adminPassword,
     };
 
     setLoading(true);
@@ -518,7 +681,7 @@ export function SignUp() {
     setLoading(true);
     try {
       await verifyOtp({
-        email: form.adminEmail.trim(),
+        email:   form.adminEmail.trim(),
         otp,
         purpose: "EmailConfirmation",
       });
@@ -526,10 +689,7 @@ export function SignUp() {
 
       // تسجيل دخول تلقائي بعد التأكيد
       try {
-        await login({
-          email: form.adminEmail.trim(),
-          password: form.adminPassword,
-        });
+        await login({ email: form.adminEmail.trim(), password: form.adminPassword });
       } catch (loginErr) {
         console.warn("Auto-login after verify:", loginErr?.message);
       }
@@ -544,7 +704,7 @@ export function SignUp() {
 
   return (
     <div className="w-full min-h-[calc(100vh-140px)] flex items-center justify-center py-10 px-4 sm:px-6 bg-[#222226]/95">
-      <div className="w-full max-w-[780px] bg-white rounded-[32px] shadow-2xl p-6 sm:p-10 space-y-7 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-[820px] bg-white rounded-[32px] shadow-2xl p-6 sm:p-10 space-y-7 animate-in fade-in zoom-in-95 duration-200">
 
         {/* Header */}
         {step < 4 && (
