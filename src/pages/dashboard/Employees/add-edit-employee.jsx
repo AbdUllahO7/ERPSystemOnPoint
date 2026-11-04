@@ -19,10 +19,9 @@ import {
   getEmployeeById,
   getDepartmentSections,
   getLookupPositions,
-  getJobTitles,
   getShiftRules,
   getOffices,
-  getAllManagers,
+  getLookupEmployees,
   getEmployeeStatus,
 } from "../../../lib/api";
 import toast from "react-hot-toast";
@@ -70,11 +69,6 @@ export default function AddEditEmployee() {
     queryFn: () => getLookupPositions({ pageNumber: 1, pageSize: 100 }),
   });
 
-  const { data: jobTitlesData } = useQuery({
-    queryKey: ["getJobTitles"],
-    queryFn: () => getJobTitles({ pageNumber: 1, pageSize: 100 }),
-  });
-
   const { data: shiftRulesData } = useQuery({
     queryKey: ["getShiftRules"],
     queryFn: () => getShiftRules({ pageNumber: 1, pageSize: 100 }),
@@ -86,8 +80,8 @@ export default function AddEditEmployee() {
   });
 
   const { data: managersData } = useQuery({
-    queryKey: ["getAllManagers"],
-    queryFn: () => getAllManagers({ pageNumber: 1, pageSize: 100 }),
+    queryKey: ["getLookupEmployees"],
+    queryFn: () => getLookupEmployees({ pageNumber: 1, pageSize: 100 }),
   });
 
   const { data: statusData } = useQuery({
@@ -115,7 +109,7 @@ export default function AddEditEmployee() {
       setValue("sectionId", emp.sectionId || "");
       setValue("positionId", emp.positionId || "");
       setValue("officeId", emp.officeId || "");
-      setValue("jobTitleId", emp.jobTitleId || "");
+      setValue("jobTitleId", emp.jobTitleId || emp.positionId || "");
       setValue("statusId", emp.statusId || "");
       setValue("jobNumber", emp.jobNumber || "");
       setValue("managerId", emp.managerId || "");
@@ -146,12 +140,21 @@ export default function AddEditEmployee() {
   });
 
   const onSubmit = (data) => {
-    mutation.mutate(data);
+    // If status is not provided, use first available status from backend lookup
+    const defaultStatusId = statuses?.[0]?.id || null;
+    const payload = {
+      ...data,
+      // Map jobTitleId from positionId if empty for backend compatibility
+      jobTitleId: data.jobTitleId || data.positionId,
+      statusId: data.statusId || defaultStatusId,
+      managerId: data.managerId || null,
+      shiftRules: data.shiftRules || null,
+    };
+    mutation.mutate(payload);
   };
 
   const sections = sectionsData?.data?.items || [];
   const positions = positionsData?.data?.items || [];
-  const jobTitles = jobTitlesData?.data?.items || [];
   const shiftRules = shiftRulesData?.data?.items || [];
   const offices = officesData?.data?.items || [];
   const managers = managersData?.data?.items || [];
@@ -187,7 +190,7 @@ export default function AddEditEmployee() {
 
       {/* Form Card */}
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-        {(isLoadingEmployee && isEdit) || !sectionsData || !positionsData || !jobTitlesData || !shiftRulesData || !officesData || !managersData || !statusData ? (
+        {(isLoadingEmployee && isEdit) || !sectionsData || !positionsData || !shiftRulesData || !officesData || !managersData || !statusData ? (
           <div className="text-sm text-muted-foreground">
             Loading details...
           </div>
@@ -333,7 +336,10 @@ export default function AddEditEmployee() {
                   <Select
                     key={field.value}
                     value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
+                    onValueChange={(val) => {
+                      field.onChange(val);
+                      setValue("jobTitleId", val);
+                    }}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
                       <SelectValue placeholder="Select Position" />
@@ -349,38 +355,6 @@ export default function AddEditEmployee() {
                 )}
               />
               {errors.positionId && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
-                Job Title
-              </label>
-              <Controller
-                name="jobTitleId"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select
-                    key={field.value}
-                    value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Job Title" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {jobTitles.map((job) => (
-                        <SelectItem key={job.id} value={String(job.id)}>
-                          {job.jobTitleName || job.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.jobTitleId && (
                 <span className="text-red-500 text-xs">Required</span>
               )}
             </div>
@@ -439,7 +413,7 @@ export default function AddEditEmployee() {
               )}
             </div>
 
-            {/* Hidden or additional fields required by API */}
+            {/* Manager (Optional) */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
                 Manager
@@ -447,31 +421,39 @@ export default function AddEditEmployee() {
               <Controller
                 name="managerId"
                 control={control}
-                rules={{ required: true }}
+                rules={{ required: false }}
                 render={({ field }) => (
                   <Select
                     key={field.value}
                     value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
+                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Manager" />
+                      <SelectValue placeholder="Select Manager (Optional)" />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                      {managers.map((m) => (
-                        <SelectItem key={m.managerId || m.id} value={String(m.managerId || m.id)}>
-                          {m.managerName || m.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="none">None</SelectItem>
+                      {managers.map((m) => {
+                        const val = String(m.id || m.employeeId || m.managerId);
+                        const name =
+                          m.name ||
+                          m.employeeName ||
+                          m.employee_Name ||
+                          m.managerName ||
+                          [m.firstName, m.lastName].filter(Boolean).join(" ");
+                        return (
+                          <SelectItem key={val} value={val}>
+                            {name}
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                 )}
               />
-              {errors.managerId && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
             </div>
 
+            {/* Shift Rule (Optional) */}
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
                 Shift Rule
@@ -479,17 +461,18 @@ export default function AddEditEmployee() {
               <Controller
                 name="shiftRules"
                 control={control}
-                rules={{ required: true }}
+                rules={{ required: false }}
                 render={({ field }) => (
                   <Select
                     key={field.value}
                     value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
+                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Shift Rule" />
+                      <SelectValue placeholder="Select Shift Rule (Optional)" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      <SelectItem value="none">None</SelectItem>
                       {shiftRules.map((rule) => (
                         <SelectItem key={rule.shift_Rule_id} value={String(rule.shift_Rule_id)}>
                           {rule.rule_Name}
@@ -499,41 +482,6 @@ export default function AddEditEmployee() {
                   </Select>
                 )}
               />
-              {errors.shiftRules && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
-                Status
-              </label>
-              <Controller
-                name="statusId"
-                control={control}
-                rules={{ required: true }}
-                render={({ field }) => (
-                  <Select
-                    key={field.value}
-                    value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Status" />
-                    </SelectTrigger>
-                    <SelectContent position="popper">
-                      {statuses.map((status) => (
-                        <SelectItem key={status.id} value={String(status.id)}>
-                          {status.statusName || status.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              {errors.statusId && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
             </div>
           </form>
         )}
