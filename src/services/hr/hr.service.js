@@ -248,6 +248,14 @@ export async function getLookupPositions(data) {
   });
 }
 
+export async function getLookupEmployees(data) {
+  return apiHandler({
+    endPoint: "HR/Lookups/Employees",
+    method: "GET",
+    params: data,
+  });
+}
+
 // ==========================================
 // EMPLOYEES
 // ==========================================

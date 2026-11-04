@@ -107,8 +107,10 @@ export default function AddEditDepartment() {
   const onSubmit = (data) => {
     const payload = {
       department_Name: data.department_Name,
-      manager_id: data.manager_id,
-      branch_id: data.branch_id,
+      manager_id: data.manager_id || null,
+      mangaer_id: data.manager_id || null,
+      branch_id: data.branch_id || null,
+      branch_Id: data.branch_id || null,
       ...(isEdit && {
         actionTitle: data.actionTitle,
         actionDescription: data.actionDescription,
@@ -185,7 +187,7 @@ export default function AddEditDepartment() {
               <Controller
                 name="manager_id"
                 control={control}
-                rules={{ required: true }}
+                rules={{ required: false }}
                 render={({ field }) => {
                   const currentValue = field.value ? String(field.value) : "";
                   const dept = departmentData?.data;
@@ -198,12 +200,15 @@ export default function AddEditDepartment() {
                     <Select
                       key={currentValue}
                       value={currentValue || undefined}
-                      onValueChange={field.onChange}
+                      onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                     >
                       <SelectTrigger className="w-full h-11 bg-transparent">
-                        <SelectValue placeholder="Select Manager Name" />
+                        <SelectValue placeholder="Select Manager Name (Optional)" />
                       </SelectTrigger>
                       <SelectContent position="popper">
+                        <SelectItem value="none">
+                          None
+                        </SelectItem>
                         {/* If current manager is not in the paginated managers list, render it as fallback */}
                         {currentValue && !hasCurrentInList && currentManagerName && (
                           <SelectItem value={currentValue}>
@@ -224,9 +229,6 @@ export default function AddEditDepartment() {
                   );
                 }}
               />
-              {errors.manager_id && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -239,17 +241,20 @@ export default function AddEditDepartment() {
               <Controller
                 name="branch_id"
                 control={control}
-                rules={{ required: true }}
+                rules={{ required: false }}
                 render={({ field }) => (
                   <Select
                     key={field.value}
                     value={field.value ? String(field.value) : undefined}
-                    onValueChange={field.onChange}
+                    onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-11 bg-transparent">
-                      <SelectValue placeholder="Select Branch Name" />
+                      <SelectValue placeholder="Select Branch Name (Optional)" />
                     </SelectTrigger>
                     <SelectContent position="popper">
+                      <SelectItem value="none">
+                        None
+                      </SelectItem>
                       {branches.map((branch) => (
                         <SelectItem key={branch.id} value={String(branch.id)}>
                           {branch.branchName}
@@ -259,9 +264,6 @@ export default function AddEditDepartment() {
                   </Select>
                 )}
               />
-              {errors.branch_id && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
             </div>
           </form>
         )}

@@ -104,8 +104,10 @@ export function DepartmentForm({ isOpen, onClose, editId }) {
   const onSubmit = (data) => {
     const payload = {
       department_Name: data.department_Name,
-      manager_id: data.manager_id,
-      branch_id: data.branch_id,
+      manager_id: data.manager_id || null,
+      mangaer_id: data.manager_id || null,
+      branch_id: data.branch_id || null,
+      branch_Id: data.branch_id || null,
       ...(isEdit && {
         actionTitle: data.actionTitle,
         actionDescription: data.actionDescription,
@@ -153,18 +155,15 @@ export function DepartmentForm({ isOpen, onClose, editId }) {
             <select
               id="manager_id"
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("manager_id", { required: true })}
+              {...register("manager_id", { required: false })}
             >
-              <option value="">Select Manager...</option>
+              <option value="">Select Manager (Optional)...</option>
               {managers.map((manager) => (
                 <option key={manager.managerId} value={manager.managerId}>
                   {manager.managerName}
                 </option>
               ))}
             </select>
-            {errors.manager_id && (
-              <span className="text-red-500 text-xs">Required</span>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -177,18 +176,15 @@ export function DepartmentForm({ isOpen, onClose, editId }) {
             <select
               id="branch_Id"
               className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-              {...register("branch_id", { required: true })}
+              {...register("branch_id", { required: false })}
             >
-              <option value="">Select Branch...</option>
+              <option value="">Select Branch (Optional)...</option>
               {branches?.map((branch)=> (
                 <option key={branch.id} value={branch.id}>
                   {branch.branchName}
                 </option>
               ))}
             </select>
-            {errors.branch_id && (
-              <span className="text-red-500 text-xs">Required</span>
-            )}
           </div>
 
           <DialogFooter className="mt-6">

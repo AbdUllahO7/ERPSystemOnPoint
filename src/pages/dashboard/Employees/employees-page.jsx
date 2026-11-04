@@ -272,12 +272,6 @@ export default function Employees() {
       label: "Section",
       sortable: true,
     },
-    {
-      key: "status",
-      label: "Status",
-      render: (row) => <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-xs whitespace-nowrap">{row.status}</span>,
-      sortable: true,
-    },
   ];
 
   return (
