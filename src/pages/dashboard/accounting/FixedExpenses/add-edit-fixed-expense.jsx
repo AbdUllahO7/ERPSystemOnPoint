@@ -152,6 +152,7 @@ export default function AddEditFixedExpense() {
   const onSubmit = (data) => {
     const payload = {
       ...data,
+      costCenter_Id: data.costCenter_Id || null,
       start_Date: new Date(data.start_Date).toISOString(),
       end_Date: data.end_Date ? new Date(data.end_Date).toISOString() : null,
       amount: parseFloat(data.amount),
@@ -365,21 +366,22 @@ export default function AddEditFixedExpense() {
               </div> */}
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Cost Center <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold text-foreground">Cost Center</label>
                 <Controller
                   name="costCenter_Id"
                   control={control}
-                  rules={{ required: true }}
+                  rules={{ required: false }}
                   render={({ field }) => (
                     <Select
                       key={field.value}
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
+                      value={field.value || undefined}
+                      onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                     >
                       <SelectTrigger className="w-full h-9 bg-transparent">
-                        <SelectValue placeholder="Select Cost Center" />
+                        <SelectValue placeholder="Select Cost Center (Optional)" />
                       </SelectTrigger>
                       <SelectContent position="popper">
+                        <SelectItem value="none">None</SelectItem>
                         {costCenters.map((cc) => (
                           <SelectItem key={cc.id} value={String(cc.id)}>
                             {cc.cost_Center_Name}
@@ -389,7 +391,6 @@ export default function AddEditFixedExpense() {
                     </Select>
                   )}
                 />
-                {errors.costCenter_Id && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
               <div className="space-y-2">

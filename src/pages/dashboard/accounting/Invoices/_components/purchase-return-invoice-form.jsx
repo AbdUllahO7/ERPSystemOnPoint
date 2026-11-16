@@ -299,22 +299,23 @@ console.log(invoicePatterns)
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold">Cost Center <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold">Cost Center</label>
             <Controller
               name="costCenter_Id"
               control={control}
-              rules={{ required: "Required" }}
+              rules={{ required: false }}
               render={({ field }) => (
                 <Select
                   key={field.value}
                   value={field.value ? String(field.value) : undefined}
-                  onValueChange={field.onChange}
+                  onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   disabled={!!selectedPattern?.costCenter_id}
                 >
-                  <SelectTrigger className={`w-full h-9 bg-transparent disabled:bg-slate-100 ${errors.costCenter_Id ? "border-red-500" : "border-input"}`}>
-                    <SelectValue placeholder="Cost Center" />
+                  <SelectTrigger className="w-full h-9 bg-transparent disabled:bg-slate-100 border-input">
+                    <SelectValue placeholder="Cost Center (Optional)" />
                   </SelectTrigger>
                   <SelectContent position="popper">
+                    <SelectItem value="none">None</SelectItem>
                     {costCenters.map((cc) => (
                       <SelectItem key={cc.id} value={String(cc.id)}>
                         {cc.cost_Center_Name}
@@ -324,7 +325,6 @@ console.log(invoicePatterns)
                 </Select>
               )}
             />
-            {errors.costCenter_Id && <span className="text-xs text-red-500">{errors.costCenter_Id.message}</span>}
           </div>
 
           {/* <div className="space-y-2">

@@ -78,7 +78,7 @@ export default function AddRevenue() {
     const payload = {
       revenue_Account_Id: data.revenue_Account_Id,
       customer_Id: data.customer_Id,
-      costCenter_Id: data.costCenter_Id,
+      costCenter_Id: data.costCenter_Id || null,
       project_Id: null, // As requested, set to null for now
       amount: parseFloat(data.amount) || 0,
       tax_Amount: parseFloat(data.tax_Amount) || 0,
@@ -209,21 +209,22 @@ export default function AddRevenue() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Cost Center <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">Cost Center</label>
             <Controller
               name="costCenter_Id"
               control={control}
-              rules={{ required: true }}
+              rules={{ required: false }}
               render={({ field }) => (
                 <Select
                   key={field.value}
-                  value={field.value || ""}
-                  onValueChange={field.onChange}
+                  value={field.value || undefined}
+                  onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Cost Center" />
+                    <SelectValue placeholder="Select Cost Center (Optional)" />
                   </SelectTrigger>
                   <SelectContent position="popper">
+                    <SelectItem value="none">None</SelectItem>
                     {costCenters.map((cc) => (
                       <SelectItem key={cc.id} value={String(cc.id)}>
                         {cc.cost_Center_Name || cc.name}
@@ -233,7 +234,6 @@ export default function AddRevenue() {
                 </Select>
               )}
             />
-            {errors.costCenter_Id && <span className="text-red-500 text-xs">Required</span>}
           </div>
 
           <div className="space-y-2">
