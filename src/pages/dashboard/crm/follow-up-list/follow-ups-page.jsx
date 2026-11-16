@@ -823,7 +823,7 @@ function AddFollowUpDialog({ isOpen, onClose }) {
             <Button
               type="submit"
               className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-              disabled={mutation.isPending || !form.topic?.trim() || !form.scheduledDate}
+              disabled={mutation.isPending || !formData.topic?.trim() || !formData.date || !formData.time}
             >
               {mutation.isPending ? "Creating..." : "Save Follow-Up"}
             </Button>

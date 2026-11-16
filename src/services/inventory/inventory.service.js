@@ -1405,6 +1405,14 @@ export async function getInventoryPricingLookup(params) {
   });
 }
 
+export async function getServicePricingLookup(params) {
+  return apiHandler({
+    endPoint: "HR/Lookups/GetServicePricing/GetServicePricing",
+    method: "GET",
+    params,
+  });
+}
+
 export async function getAllUnitOfMeasurements(params) {
   return apiHandler({
     endPoint: "Inventory/UnitOfMeasurements/GetAllUnitOfMeasurements",

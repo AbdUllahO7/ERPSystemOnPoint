@@ -22,6 +22,7 @@ import {
   getAllCurrencies,
   getAllSuppliers,
   getSupplierContracts,
+  getServicePricingLookup,
 } from "../../../../../lib/api";
 import { useI18n } from "@/context/translate-api";
 
@@ -112,9 +113,15 @@ export default function PurchaseInvoiceForm() {
     enabled: !!watchSupplierId,
   });
 
+  const { data: servicesLookupData } = useQuery({
+    queryKey: ["getServicePricingLookup"],
+    queryFn: () => getServicePricingLookup(),
+  });
+
   const warehouses = warehousesData?.data?.items || [];
   const costCenters = costCentersData?.data?.items || [];
   const products = productsData?.data?.items || [];
+  const servicesLookup = servicesLookupData?.data?.items || servicesLookupData?.data || [];
   const invoicePatterns = invoicePatternsData?.data?.items || [];
   const currencies = currenciesData?.data?.items || [];
   const suppliers = suppliersData?.data?.items || [];
@@ -242,12 +249,27 @@ export default function PurchaseInvoiceForm() {
   };
 
   const handleProductSelect = (index, productVariantId) => {
+    // Check in warehouse products first
     const product = products.find(p => p.productVariantId === productVariantId);
     if (product) {
+      setValue(`createInvoiceDetailsDto.${index}.is_Service_Item`, false);
       const unit = product.availableUnits?.[0];
       if (unit) {
         setValue(`createInvoiceDetailsDto.${index}.unitOfMeasurement_Id`, unit.unitOfMesuranse_Id);
-        setValue(`createInvoiceDetailsDto.${index}.unit_Price`, unit.consumerPrice);
+        setValue(`createInvoiceDetailsDto.${index}.unit_Price`, unit.consumerPrice || unit.price || 0);
+      }
+      return;
+    }
+
+    // Check in services lookup
+    const service = Array.isArray(servicesLookup) ? servicesLookup.find(s => (s.id || s.serviceId || s.productVariantId || s.service_Id) === productVariantId) : null;
+    if (service) {
+      setValue(`createInvoiceDetailsDto.${index}.is_Service_Item`, true);
+      const sPrice = service.price ?? service.cost ?? service.servicePrice ?? 0;
+      setValue(`createInvoiceDetailsDto.${index}.unit_Price`, sPrice);
+      const sUnit = service.unitOfMeasurementId || service.unitOfMeasurement_Id || service.unitId || null;
+      if (sUnit) {
+        setValue(`createInvoiceDetailsDto.${index}.unitOfMeasurement_Id`, sUnit);
       }
     }
   };
@@ -456,22 +478,23 @@ export default function PurchaseInvoiceForm() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold">Cost Center <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold">Cost Center</label>
             <Controller
               name="costCenter_Id"
               control={control}
-              rules={{ required: "Required" }}
+              rules={{ required: false }}
               render={({ field }) => (
                 <Select
                   key={field.value}
                   value={field.value ? String(field.value) : undefined}
-                  onValueChange={field.onChange}
+                  onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   disabled={!!selectedPattern?.costCenter_id}
                 >
-                  <SelectTrigger className={`w-full h-9 bg-transparent disabled:bg-slate-100 ${errors.costCenter_Id ? "border-red-500" : "border-input"}`}>
-                    <SelectValue placeholder="Cost Center" />
+                  <SelectTrigger className="w-full h-9 bg-transparent disabled:bg-slate-100 border-input">
+                    <SelectValue placeholder="Cost Center (Optional)" />
                   </SelectTrigger>
                   <SelectContent position="popper">
+                    <SelectItem value="none">None</SelectItem>
                     {costCenters.map((cc) => (
                       <SelectItem key={cc.id} value={String(cc.id)}>
                         {cc.cost_Center_Name}
@@ -481,7 +504,6 @@ export default function PurchaseInvoiceForm() {
                 </Select>
               )}
             />
-            {errors.costCenter_Id && <span className="text-xs text-red-500">{errors.costCenter_Id.message}</span>}
           </div>
         </div>
 
@@ -518,10 +540,25 @@ export default function PurchaseInvoiceForm() {
                           handleProductSelect(index, e.target.value);
                         }}
                       >
-                        <option value="">Select Item</option>
-                        {products.map(p => (
-                          <option key={p.productVariantId} value={p.productVariantId}>{p.productName}</option>
-                        ))}
+                        <option value="">Select Item / Service</option>
+                        {products.length > 0 && (
+                          <optgroup label="Products">
+                            {products.map(p => (
+                              <option key={p.productVariantId} value={p.productVariantId}>{p.productName}</option>
+                            ))}
+                          </optgroup>
+                        )}
+                        {Array.isArray(servicesLookup) && servicesLookup.length > 0 && (
+                          <optgroup label="Purchase Services">
+                            {servicesLookup.map((s) => {
+                              const sId = s.id || s.serviceId || s.productVariantId || s.service_Id;
+                              const sName = s.name || s.serviceName || s.service_Name || "Service";
+                              return (
+                                <option key={sId} value={sId}>{sName} (Service)</option>
+                              );
+                            })}
+                          </optgroup>
+                        )}
                       </select>
                     </td>
                     <td className="py-2 pr-2">

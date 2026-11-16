@@ -111,6 +111,7 @@ export default function AddEditOperatingExpense() {
     // format date as ISO
     const payload = {
       ...data,
+      costCenterId: data.costCenterId || null,
       expenseDate: new Date(data.expenseDate).toISOString(),
       amount: parseFloat(data.amount),
       taxAmount: parseFloat(data.taxAmount),
@@ -307,21 +308,22 @@ export default function AddEditOperatingExpense() {
               </div> */}
 
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-foreground">Cost Center <span className="text-red-500">*</span></label>
+                <label className="text-sm font-semibold text-foreground">Cost Center</label>
                 <Controller
                   name="costCenterId"
                   control={control}
-                  rules={{ required: true }}
+                  rules={{ required: false }}
                   render={({ field }) => (
                     <Select
                       key={field.value}
-                      value={field.value || ""}
-                      onValueChange={field.onChange}
+                      value={field.value || undefined}
+                      onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                     >
                       <SelectTrigger className="w-full h-9 bg-transparent">
-                        <SelectValue placeholder="Select Cost Center" />
+                        <SelectValue placeholder="Select Cost Center (Optional)" />
                       </SelectTrigger>
                       <SelectContent position="popper">
+                        <SelectItem value="none">None</SelectItem>
                         {costCenters.map((cc) => (
                           <SelectItem key={cc.id} value={String(cc.id)}>
                             {cc.cost_Center_Name}
@@ -331,7 +333,6 @@ export default function AddEditOperatingExpense() {
                     </Select>
                   )}
                 />
-                {errors.costCenterId && <span className="text-red-500 text-xs">Required</span>}
               </div>
 
               <div className="space-y-2">

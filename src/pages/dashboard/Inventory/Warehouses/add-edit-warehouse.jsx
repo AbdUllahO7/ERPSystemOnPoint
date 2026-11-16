@@ -88,7 +88,11 @@ export default function AddEditWarehouse() {
   });
 
   const onSubmit = (data) => {
-    mutation.mutate(data);
+    const payload = {
+      ...data,
+      manager_Id: data.manager_Id || null,
+    };
+    mutation.mutate(payload);
   };
 
   const pageTitle = isEdit ? "Edit Warehouse" : "Add Warehouse";
@@ -178,7 +182,7 @@ export default function AddEditWarehouse() {
               <Controller
                 name="manager_Id"
                 control={control}
-                rules={{ required: true }}
+                rules={{ required: false }}
                 render={({ field }) => {
                   const currentValue = field.value ? String(field.value) : "";
                   const wData = warehouseData?.data;
@@ -191,13 +195,14 @@ export default function AddEditWarehouse() {
                     <Select
                       key={currentValue}
                       value={currentValue || undefined}
-                      onValueChange={field.onChange}
+                      onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                     >
                       <SelectTrigger className="w-full h-9 bg-transparent">
-                        <SelectValue placeholder="Select Manager Name" />
+                        <SelectValue placeholder="Select Manager Name (Optional)" />
                       </SelectTrigger>
 
                       <SelectContent position="popper">
+                        <SelectItem value="none">None</SelectItem>
                         {currentValue && !hasCurrentInList && currentManagerName && (
                           <SelectItem value={currentValue}>
                             {currentManagerName}
@@ -217,9 +222,6 @@ export default function AddEditWarehouse() {
                   );
                 }}
               />
-              {errors.manager_Id && (
-                <span className="text-red-500 text-xs">Required</span>
-              )}
             </div>
 
             <div className="space-y-2">
