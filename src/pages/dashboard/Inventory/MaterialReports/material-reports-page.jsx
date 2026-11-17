@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
@@ -26,6 +28,8 @@ const formatDate = (dateStr) => {
 };
 
 export default function MaterialReportsPage() {
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -73,23 +77,23 @@ export default function MaterialReportsPage() {
       render: (row) => <span>{formatDate(row.end_Date)}</span>,
     },
     {
-      label: "Status",
+      label: t("common.status"),
       key: "status",
       render: (row) => {
         const status = row.status;
         return (
           <Badge variant={status === "Completed" ? "default" : "secondary"}>
-            {status}
+            {isAr ? translateErp(status, locale) : status}
           </Badge>
         );
       },
     },
     {
-      label: "Is Settled",
+      label: t("inventory.materialReports.isSettled"),
       key: "is_Settled",
       render: (row) => (
         <Badge variant={row.is_Settled ? "success" : "outline"}>
-          {row.is_Settled ? "Settled" : "Not Settled"}
+          {row.is_Settled ? t("inventory.materialReports.settled") : t("inventory.materialReports.notSettled")}
         </Badge>
       ),
     },
@@ -99,7 +103,7 @@ export default function MaterialReportsPage() {
     {
       items: [
         {
-          label: "View Details",
+          label: t("common.viewDetails"),
           icon: Eye,
           onClick: (row) => navigate(`/dashboard/inventory/material-reports/${row.id}`),
         }
@@ -111,11 +115,13 @@ export default function MaterialReportsPage() {
     setSearch(value);
     setPage(1);
   }
-console.log(warehouses)
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Material Reports (Inventory Records)</h1>
+        <h1 className="text-2xl font-bold">
+          {t("inventory.materialReports.titleFull")}
+        </h1>
       </div>
 
       {/* Filter Menu */}
@@ -130,7 +136,7 @@ console.log(warehouses)
           <div className="bg-card text-card-foreground p-4 rounded-xl border shadow-sm flex flex-col sm:flex-row items-end gap-4 flex-wrap">
             <div className="flex flex-col gap-2 w-full sm:max-w-[200px]">
               <label className="text-sm font-medium text-foreground">
-                Filter by Warehouse
+                {t("inventory.materialReports.filterWarehouse")}
               </label>
               <Select
                 value={filters.WarehouseId || "all"}
@@ -143,10 +149,10 @@ console.log(warehouses)
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Warehouses" />
+                  <SelectValue placeholder={t("inventory.materialReports.allWarehouses")} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Warehouses</SelectItem>
+                  <SelectItem value="all">{t("inventory.materialReports.allWarehouses")}</SelectItem>
                   {warehouses.map((opt) => (
                     <SelectItem key={opt.id} value={opt.id}>
                       {opt.name_Warehouse || "_"}
@@ -164,7 +170,7 @@ console.log(warehouses)
                   setPage(1);
                 }}
               >
-                Clear Filters
+                {t("common.clearFilters")}
               </Button>
             )}
           </div>
@@ -177,37 +183,37 @@ console.log(warehouses)
         rowActionsMenu={rowActionsMenu}
         isLoading={isLoading}
         search={{
-          placeholder: "Search material reports...",
+          placeholder: t("inventory.materialReports.searchPlaceholder"),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
-          label: "Add",
+          label: t("common.add"),
           onClick: () => navigate("/dashboard/inventory/material-reports/add"),
         }}
         card={{
           icon: FileText,
           title: (row) => row.record_Number,
-          subtitle: (row) => `Warehouse: ${row.warehouse_Name}`,
+          subtitle: (row) => `${t("inventory.materialReports.warehousePrefix")} ${row.warehouse_Name}`,
           fields: [
             {
               icon: Calendar,
-              label: "Start:",
+              label: t("inventory.materialReports.start"),
               value: (row) => formatDate(row.start_Date),
             },
             {
               icon: Calendar,
-              label: "End:",
+              label: t("inventory.materialReports.end"),
               value: (row) => formatDate(row.end_Date),
             },
             {
               icon: List,
-              label: "Status:",
-              value: (row) => row.status,
+              label: t("inventory.materialReports.statusLabel"),
+              value: (row) => isAr ? translateErp(row.status, locale) : row.status,
             },
           ],
         }}
@@ -215,10 +221,10 @@ console.log(warehouses)
           page: data?.data?.pageNumber || page,
           totalPages: data?.data?.totalPages || 1,
           onPageChange: (newPage) => setPage(newPage),
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t("common.prev"),
+          nextLabel: t("common.next"),
         }}
-        emptyMessage="No material reports found"
+        emptyMessage={t("inventory.materialReports.empty")}
       />
     </div>
   );

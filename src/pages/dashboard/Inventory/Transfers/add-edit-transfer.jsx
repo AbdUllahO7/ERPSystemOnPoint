@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getWarehouses,
   addTransfer,
@@ -27,6 +28,7 @@ export default function AddEditTransfer() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  const { t } = useI18n();
 
   const { register, control, handleSubmit, watch, setValue, reset, formState: { errors } } = useForm({
     mode: "onChange",
@@ -184,38 +186,38 @@ export default function AddEditTransfer() {
   const { mutate, isPending } = useMutation({
     mutationFn: addTransfer,
     onSuccess: () => {
-      toast.success(isEdit ? "Transfer saved successfully!" : "Transfer added successfully!");
+      toast.success(isEdit ? t("inventory.transfers.saveSuccess") : t("inventory.transfers.createSuccess"));
       queryClient.invalidateQueries(["getAllTransfers"]);
       navigate("/dashboard/inventory/transfers");
     },
     onError: (error) => {
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to save transfer!");
+      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : t("inventory.transfers.saveError"));
     },
   });
 
   const onSubmit = (data) => {
     if (data.source_Warehouse_Id === data.destination_Warehouse_Id) {
-      toast.error("Destination must be different from source warehouse");
+      toast.error(t("inventory.transfers.destinationDiff"));
       return;
     }
 
     if (!data.items || data.items.length === 0) {
-      toast.error("Please add at least one material to transfer");
+      toast.error(t("inventory.transfers.atLeastOne"));
       return;
     }
 
     for (let i = 0; i < data.items.length; i++) {
       const item = data.items[i];
       if (!item.product_Variant_Id) {
-        toast.error(`Please select a material for line #${i + 1}`);
+        toast.error(`${t("inventory.transfers.selectMaterialForLine")} #${i + 1}`);
         return;
       }
       if (!item.product_Unit_Id) {
-        toast.error(`Please select a unit for line #${i + 1}`);
+        toast.error(`${t("inventory.transfers.selectUnitForLine")} #${i + 1}`);
         return;
       }
       if (item.quantity === "" || item.quantity === null || Number(item.quantity) <= 0) {
-        toast.error(`Please enter a valid quantity (> 0) for line #${i + 1}`);
+        toast.error(`${t("inventory.transfers.validQuantityForLine")} #${i + 1}`);
         return;
       }
     }
@@ -266,22 +268,22 @@ export default function AddEditTransfer() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-2xl font-bold text-foreground">
-                {isEdit ? "Edit Transfer" : "Transfer Details"}
+                {isEdit ? t("inventory.transfers.editTitle") : t("inventory.transfers.detailsTitle")}
               </h2>
               <Info className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <span>Transfers</span>
+              <span>{t("inventory.transfers.title")}</span>
               <span>/</span>
               <span className="font-medium text-foreground">
-                {isEdit ? "Edit Transfer" : "Add Transfer"}
+                {isEdit ? t("inventory.transfers.editTitle") : t("inventory.transfers.addTitle")}
               </span>
             </div>
           </div>
         </div>
         <Button type="submit" disabled={isPending} className="bg-blue-600 hover:bg-blue-700 text-white">
           {isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-          {isEdit ? "Save Changes" : "Add Transfer"}
+          {isEdit ? t("common.save") : t("inventory.transfers.addTitle")}
         </Button>
       </div>
 
@@ -289,11 +291,11 @@ export default function AddEditTransfer() {
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Source Warehouse</label>
+            <label className="text-sm font-semibold text-foreground">{t("inventory.transfers.sourceWarehouse")}</label>
             <Controller
               name="source_Warehouse_Id"
               control={control}
-              rules={{ required: "Source Warehouse is required" }}
+              rules={{ required: t("inventory.transfers.sourceRequired") }}
               render={({ field }) => (
                 <Select
                   key={field.value}
@@ -301,7 +303,7 @@ export default function AddEditTransfer() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className={`w-full h-9 bg-transparent ${errors.source_Warehouse_Id ? "border-red-500" : "border-input"}`}>
-                    <SelectValue placeholder={warehousesLoading ? "Loading..." : "Select Source Warehouse"} />
+                    <SelectValue placeholder={warehousesLoading ? t("common.loading") : t("inventory.transfers.selectSource")} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {warehouseOptions.map((w) => (
@@ -317,13 +319,13 @@ export default function AddEditTransfer() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Destination Warehouse</label>
+            <label className="text-sm font-semibold text-foreground">{t("inventory.transfers.destinationWarehouse")}</label>
             <Controller
               name="destination_Warehouse_Id"
               control={control}
               rules={{ 
-                required: "Destination Warehouse is required",
-                validate: (value, formValues) => value !== formValues.source_Warehouse_Id || "Destination must be different from source"
+                required: t("inventory.transfers.destinationRequired"),
+                validate: (value, formValues) => value !== formValues.source_Warehouse_Id || t("inventory.transfers.destinationDiff")
               }}
               render={({ field }) => (
                 <Select
@@ -332,7 +334,7 @@ export default function AddEditTransfer() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className={`w-full h-9 bg-transparent ${errors.destination_Warehouse_Id ? "border-red-500" : "border-input"}`}>
-                    <SelectValue placeholder={warehousesLoading ? "Loading..." : "Select Destination Warehouse"} />
+                    <SelectValue placeholder={warehousesLoading ? t("common.loading") : t("inventory.transfers.selectDestination")} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {warehouseOptions.map((w) => (
@@ -348,20 +350,20 @@ export default function AddEditTransfer() {
           </div>
           
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Transfer Date</label>
+            <label className="text-sm font-semibold text-foreground">{t("inventory.transfers.transferDate")}</label>
             <input
               type="datetime-local"
               className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.transfer_Date ? "border-red-500" : "border-input"}`}
-              {...register("transfer_Date", { required: "Date is required" })}
+              {...register("transfer_Date", { required: t("inventory.transfers.dateRequired") })}
             />
             {errors.transfer_Date && <p className="text-red-500 text-xs">{errors.transfer_Date.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Notes</label>
+            <label className="text-sm font-semibold text-foreground">{t("inventory.transfers.notes")}</label>
             <input
               type="text"
-              placeholder="Internal notes..."
+              placeholder={t("inventory.transfers.internalNotes")}
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
               {...register("notes")}
             />
@@ -371,7 +373,7 @@ export default function AddEditTransfer() {
 
       {/* Add Materials Section */}
       <div className="space-y-4">
-        <h3 className="text-lg font-bold text-foreground">Add Materials</h3>
+        <h3 className="text-lg font-bold text-foreground">{t("inventory.transfers.addMaterials")}</h3>
         <div className="bg-card text-card-foreground rounded-xl border shadow-sm overflow-hidden">
           
           {/* Header Actions */}
@@ -382,7 +384,7 @@ export default function AddEditTransfer() {
                className="bg-blue-600 hover:bg-blue-700 text-white"
              >
                 <Plus className="w-4 h-4 mr-2" />
-                Add Line
+                {t("inventory.transfers.addLine")}
               </Button>
           </div>
 
@@ -391,10 +393,10 @@ export default function AddEditTransfer() {
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-muted-foreground bg-muted/50 border-b">
                 <tr>
-                  <th className="px-6 py-4 font-medium">Material Name</th>
-                  <th className="px-6 py-4 font-medium">Quantity</th>
-                  <th className="px-6 py-4 font-medium">Weight</th>
-                  <th className="px-6 py-4 font-medium">Unity</th>
+                  <th className="px-6 py-4 font-medium">{t("inventory.transfers.materialName")}</th>
+                  <th className="px-6 py-4 font-medium">{t("inventory.transfers.quantity")}</th>
+                  <th className="px-6 py-4 font-medium">{t("inventory.transfers.weight")}</th>
+                  <th className="px-6 py-4 font-medium">{t("inventory.transfers.unit")}</th>
                   <th className="px-6 py-4 font-medium text-center w-[80px]"></th>
                 </tr>
               </thead>
@@ -413,7 +415,7 @@ export default function AddEditTransfer() {
                         <Controller
                           name={`items.${index}.product_Variant_Id`}
                           control={control}
-                          rules={{ required: "Material is required" }}
+                          rules={{ required: t("inventory.transfers.materialRequired") }}
                           render={({ field: matField }) => (
                             <Select
                               value={matField.value || ""}
@@ -423,16 +425,16 @@ export default function AddEditTransfer() {
                               <SelectTrigger className={`w-full h-9 bg-transparent ${errors.items?.[index]?.product_Variant_Id ? "border-red-500" : "border-input"}`}>
                                 <SelectValue placeholder={
                                   isProductsLoading 
-                                    ? "Loading products..."
+                                    ? t("inventory.transfers.loadingProducts")
                                     : productOptions.length === 0 
-                                      ? "No products available" 
-                                      : "Select material"
+                                      ? t("inventory.transfers.noProducts") 
+                                      : t("inventory.transfers.selectMaterial")
                                 } />
                               </SelectTrigger>
                               <SelectContent position="popper">
                                 {productOptions?.map((p) => (
                                   <SelectItem key={p.productVariantId} value={String(p.productVariantId)}>
-                                    {p.productName} {p.availableQuantity !== undefined ? `(Available: ${p.availableQuantity})` : ""}
+                                    {p.productName} {p.availableQuantity !== undefined ? `(${p.availableQuantity})` : ""}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -450,7 +452,7 @@ export default function AddEditTransfer() {
                           disabled={!selectedProductVariantId}
                           className={`flex h-9 w-full rounded-md border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground ${errors.items?.[index]?.quantity ? "border-red-500" : "border-input"}`}
                           {...register(`items.${index}.quantity`, { 
-                            required: "Required",
+                            required: t("inventory.transfers.required"),
                             min: { value: 0.0001, message: "> 0" }
                           })}
                         />
@@ -461,7 +463,7 @@ export default function AddEditTransfer() {
                         <input
                           type="number"
                           step="any"
-                          placeholder="Weight"
+                          placeholder={t("inventory.transfers.weight")}
                           disabled={!selectedProductVariantId}
                           className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:bg-muted disabled:text-muted-foreground"
                           {...register(`items.${index}.weight`)}
@@ -472,7 +474,7 @@ export default function AddEditTransfer() {
                         <Controller
                           name={`items.${index}.product_Unit_Id`}
                           control={control}
-                          rules={{ required: "Unit required" }}
+                          rules={{ required: t("inventory.transfers.unitRequired") }}
                           render={({ field: unitField }) => (
                             <Select
                               value={unitField.value || ""}
@@ -480,7 +482,7 @@ export default function AddEditTransfer() {
                               disabled={!selectedProductVariantId || rowUnitOptions.length === 0}
                             >
                               <SelectTrigger className={`w-full h-9 bg-transparent ${errors.items?.[index]?.product_Unit_Id ? "border-red-500" : "border-input"}`}>
-                                <SelectValue placeholder="Select Unit" />
+                                <SelectValue placeholder={t("inventory.transfers.selectUnit")} />
                               </SelectTrigger>
                               <SelectContent position="popper">
                                 {rowUnitOptions.map((u) => (
@@ -500,7 +502,7 @@ export default function AddEditTransfer() {
                           type="button"
                           onClick={() => remove(index)}
                           disabled={fields.length === 1}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>

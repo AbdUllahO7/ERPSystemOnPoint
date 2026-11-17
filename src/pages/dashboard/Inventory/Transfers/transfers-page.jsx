@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -17,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { getAllTransfers } from "../../../../lib/api";
+import { useI18n } from "@/context/translate-api";
 
 const stats = [
   {
@@ -54,6 +56,7 @@ const stats = [
 ];
 
 export default function TransfersPage() {
+  const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -64,11 +67,11 @@ export default function TransfersPage() {
   const filterConfigs = [
     {
       key: "Status",
-      label: "Filter by Status",
-      placeholder: "All Statuses",
+      label: t('inventory.transfers.filterStatus'),
+      placeholder: t('inventory.transfers.allStatuses'),
       options: [
-        { value: "Transferred", label: "Transferred" },
-        { value: "Pending", label: "Pending" },
+        { value: "Transferred", label: t('inventory.transfers.statusTransferred') },
+        { value: "Pending", label: t('inventory.transfers.statusPending') },
       ],
     },
   ];
@@ -83,7 +86,7 @@ export default function TransfersPage() {
     [page, search, filters]
   );
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["getAllTransfers", params],
     queryFn: () => getAllTransfers(params),
   });
@@ -102,41 +105,41 @@ export default function TransfersPage() {
         items: [
           {
             key: "view",
-            label: "View Details",
+            label: t('common.viewDetails'),
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/inventory/transfers/${row.id}`),
           },
         ],
       },
     ],
-    [navigate],
+    [navigate, t],
   );
 
   const columns = [
     {
       key: "transfer_Number",
-      label: "Transfer Number",
+      label: t('inventory.transfers.transferNumber'),
       render: (row) => <span className="text-blue-500 font-medium">{row.transfer_Number}</span>,
     },
     {
       key: "source_Warehouse_Name",
-      label: "Source",
+      label: t('inventory.transfers.source'),
     },
     {
       key: "destination_Warehouse_Name",
-      label: "Destination",
+      label: t('inventory.transfers.destination'),
     },
     {
       key: "transfer_Date",
-      label: "Date",
-      render: (row) => row.transfer_Date ? new Date(row.transfer_Date).toLocaleDateString() : "N/A",
+      label: t('inventory.transfers.date'),
+      render: (row) => row.transfer_Date ? new Date(row.transfer_Date).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US") : "N/A",
     },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-6">
-        <h2 className="text-xl font-semibold text-foreground">Transfers</h2>
+        <h2 className="text-xl font-semibold text-foreground">{t('inventory.transfers.title')}</h2>
         <Info className="w-5 h-5 text-muted-foreground" />
       </div>
 
@@ -148,7 +151,7 @@ export default function TransfersPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? "text-green-500" : "text-red-500"}`}>
@@ -211,7 +214,7 @@ export default function TransfersPage() {
                   setPage(1);
                 }}
               >
-                Clear Filters
+                {t('common.clearFilters')}
               </Button>
             )}
           </div>
@@ -223,17 +226,17 @@ export default function TransfersPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         search={{
-          placeholder: "Search by id or employee name...",
+          placeholder: t('inventory.transfers.searchPlaceholder'),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t('common.filter'),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => refetch()}
         addButton={{
-          label: "Add",
+          label: t('common.add'),
           onClick: () => navigate("/dashboard/inventory/transfers/add"),
         }}
         columns={columns}
@@ -242,10 +245,10 @@ export default function TransfersPage() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t('common.prev'),
+          nextLabel: t('common.next'),
         }}
-        emptyMessage="No transfers found"
+        emptyMessage={t('inventory.transfers.empty')}
       />
     </div>
   );

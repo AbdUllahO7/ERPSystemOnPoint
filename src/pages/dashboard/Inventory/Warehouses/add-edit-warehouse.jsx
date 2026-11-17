@@ -20,12 +20,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Info, Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 export default function AddEditWarehouse() {
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
 
   const { control, register, handleSubmit, reset, setValue, formState: { errors } } = useForm({
     defaultValues: {
@@ -78,12 +80,22 @@ export default function AddEditWarehouse() {
     mutationFn: (data) => isEdit ? updateWarehouse({ id, ...data }) : createWarehouse(data),
     onSuccess: () => {
       queryClient.invalidateQueries(["getWarehouses"]);
-      toast.success(isEdit ? "Warehouse updated successfully!" : "Warehouse added successfully!");
+      toast.success(
+        isEdit 
+          ? t('inventory.warehouses.updateSuccess')
+          : t('inventory.warehouses.createSuccess')
+      );
       navigate("/dashboard/inventory/warehouses");
     },
     onError: (error) => {
       console.error("Failed to save warehouse", error);
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to save warehouse!");
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : isEdit
+          ? t('inventory.warehouses.updateSuccess')
+          : t('inventory.warehouses.createSuccess')
+      );
     }
   });
 
@@ -95,7 +107,9 @@ export default function AddEditWarehouse() {
     mutation.mutate(payload);
   };
 
-  const pageTitle = isEdit ? "Edit Warehouse" : "Add Warehouse";
+  const pageTitle = isEdit 
+    ? t('inventory.warehouses.editTitle')
+    : t('inventory.warehouses.addTitle');
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
@@ -107,7 +121,12 @@ export default function AddEditWarehouse() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Warehouses</span>
+            <span
+              className="cursor-pointer hover:text-primary"
+              onClick={() => navigate("/dashboard/inventory/warehouses")}
+            >
+              {t('inventory.warehouses.title')}
+            </span>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -116,9 +135,13 @@ export default function AddEditWarehouse() {
         <Button 
           onClick={handleSubmit(onSubmit)} 
           disabled={mutation.isPending || isPageLoading}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {mutation.isPending ? "Saving..." : "Save"}
+          {mutation.isPending 
+            ? t('common.saving') 
+            : isEdit 
+            ? t('common.save') 
+            : t('common.save')}
         </Button>
       </div>
 
@@ -128,48 +151,48 @@ export default function AddEditWarehouse() {
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm font-medium">
-              {isEdit ? "Loading warehouse details & data..." : "Loading form data..."}
+              {t('inventory.warehouses.loading')}
             </p>
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label htmlFor="warehouse_Code" className="text-sm font-semibold text-foreground leading-none">
-                Warehouse Code
+                {t('inventory.warehouses.warehouseCode')}
               </label>
               <Input 
                 id="warehouse_Code" 
-                placeholder="Warehouse Code" 
+                placeholder={t('inventory.warehouses.warehouseCode')} 
                 className="h-9 bg-transparent"
                 {...register("warehouse_Code", { required: true })}
               />
               {errors.warehouse_Code && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t('required', 'Required')}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label htmlFor="name_Warehouse" className="text-sm font-semibold text-foreground leading-none">
-                Warehouse Name
+                {t('inventory.warehouses.warehouseName')}
               </label>
               <Input 
                 id="name_Warehouse" 
-                placeholder="Warehouse Name" 
+                placeholder={t('inventory.warehouses.warehouseName')} 
                 className="h-9 bg-transparent"
                 {...register("name_Warehouse", { required: true })}
               />
               {errors.name_Warehouse && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t('required', 'Required')}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label htmlFor="location" className="text-sm font-semibold text-foreground leading-none">
-                Location
+                {t('inventory.warehouses.location')}
               </label>
               <Input 
                 id="location" 
-                placeholder="Location" 
+                placeholder={t('inventory.warehouses.location')} 
                 className="h-9 bg-transparent"
                 {...register("location")}
               />
@@ -177,7 +200,7 @@ export default function AddEditWarehouse() {
 
             <div className="space-y-2">
               <label htmlFor="manager_Id" className="text-sm font-semibold text-foreground leading-none">
-                Manager Name
+                {t('inventory.warehouses.managerName')}
               </label>
               <Controller
                 name="manager_Id"
@@ -198,11 +221,11 @@ export default function AddEditWarehouse() {
                       onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                     >
                       <SelectTrigger className="w-full h-9 bg-transparent">
-                        <SelectValue placeholder="Select Manager Name (Optional)" />
+                        <SelectValue placeholder={t('inventory.warehouses.selectManager')} />
                       </SelectTrigger>
 
                       <SelectContent position="popper">
-                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="none">{t('inventory.warehouses.none')}</SelectItem>
                         {currentValue && !hasCurrentInList && currentManagerName && (
                           <SelectItem value={currentValue}>
                             {currentManagerName}
@@ -226,7 +249,7 @@ export default function AddEditWarehouse() {
 
             <div className="space-y-2">
               <label htmlFor="branch_Id" className="text-sm font-semibold text-foreground leading-none">
-                Branch Name
+                {t('inventory.warehouses.branchName')}
               </label>
               <Controller
                 name="branch_Id"
@@ -239,7 +262,7 @@ export default function AddEditWarehouse() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Branch Name" />
+                      <SelectValue placeholder={t('inventory.warehouses.selectBranch')} />
                     </SelectTrigger>
 
                     <SelectContent position="popper">
@@ -253,7 +276,7 @@ export default function AddEditWarehouse() {
                 )}
               />
               {errors.branch_Id && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t('required', 'Required')}</span>
               )}
             </div>
           </form>

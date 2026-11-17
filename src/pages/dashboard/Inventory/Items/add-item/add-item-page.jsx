@@ -5,6 +5,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useForm, FormProvider } from "react-hook-form";
 import { useQuery } from "@tanstack/react-query";
 import { getProductById } from "@/lib/api";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 import StepItemType from "./_components/step-item-type";
 import ServiceForm from "./_components/ServiceForm";
 import RentalForm from "./_components/RentalForm";
@@ -17,6 +19,8 @@ export default function AddItemPage() {
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
 
   const [currentStep, setCurrentStep] = useState(1);
   
@@ -154,13 +158,22 @@ export default function AddItemPage() {
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
       {/* Header */}
       <div className="flex items-center gap-2">
-        <h2 className="text-2xl font-bold text-foreground">{isEdit ? "Edit Item" : "Add Item"}</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {isEdit ? t("inventory.items.editTitle", "Edit Item") : t("inventory.items.addTitle", "Add Item")}
+        </h2>
         <Info className="w-4 h-4 text-muted-foreground" />
       </div>
       <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1 mb-6">
-        <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/inventory/items-management/items")}>Items</span>
+        <span
+          className="cursor-pointer hover:text-primary"
+          onClick={() => navigate("/dashboard/inventory/items-management/items")}
+        >
+          {t("inventory.items.title", "Items")}
+        </span>
         <span>/</span>
-        <span className="font-medium text-foreground">{isEdit ? "Edit Item" : "Add Item"}</span>
+        <span className="font-medium text-foreground">
+          {isEdit ? t("inventory.items.editTitle", "Edit Item") : t("inventory.items.addTitle", "Add Item")}
+        </span>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -170,6 +183,7 @@ export default function AddItemPage() {
             {steps.map((step, index) => {
               const isActive = currentStep === step.id;
               const isCompleted = currentStep > step.id;
+              const stepDisplayLabel = isAr ? translateErp(step.label, locale) : step.label;
 
               return (
                 <div key={step.id} className="flex items-center flex-1 last:flex-none relative">
@@ -190,7 +204,7 @@ export default function AddItemPage() {
                         isActive || isCompleted ? "text-primary" : "text-muted-foreground"
                       }`}
                     >
-                      {step.label}
+                      {stepDisplayLabel}
                     </span>
                   </div>
 
