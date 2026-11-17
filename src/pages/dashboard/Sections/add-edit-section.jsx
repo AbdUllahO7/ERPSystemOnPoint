@@ -6,6 +6,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 import {
   Select,
   SelectContent,
@@ -26,6 +29,8 @@ export default function AddEditSection() {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
   const isEdit = !!id;
   const departmentIdFromState = location.state?.departmentId;
 
@@ -113,7 +118,9 @@ export default function AddEditSection() {
   const departments = departmentsRaw.filter(
     (v, i, a) => a.findIndex((t) => (t.id || t.department_Id) === (v.id || v.department_Id)) === i
   );
-  const pageTitle = isEdit ? "Edit Section" : "Add Section";
+  const pageTitle = isEdit
+    ? (isAr ? "تعديل القطاع" : "Edit Section")
+    : (isAr ? "إضافة قطاع" : "Add Section");
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
@@ -125,7 +132,12 @@ export default function AddEditSection() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Sections</span>
+            <span
+              className="cursor-pointer hover:text-primary"
+              onClick={() => navigate("/dashboard/hr/sections")}
+            >
+              {isAr ? translateErp("Sections", locale) : "Sections"}
+            </span>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -134,9 +146,9 @@ export default function AddEditSection() {
         <Button 
           onClick={handleSubmit(onSubmit)} 
           disabled={mutation.isLoading || isPageLoading}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {mutation.isLoading ? "Saving..." : "Save"}
+          {mutation.isLoading ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ" : "Save")}
         </Button>
       </div>
 
@@ -146,18 +158,20 @@ export default function AddEditSection() {
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm font-medium">
-              {isEdit ? "Loading section details & data..." : "Loading form data..."}
+              {isEdit
+                ? (isAr ? "جارٍ تحميل تفاصيل وبيانات القطاع..." : "Loading section details & data...")
+                : (isAr ? "جارٍ تحميل بيانات النموذج..." : "Loading form data...")}
             </p>
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="section_Name"
                 className="text-sm font-semibold text-foreground leading-none"
               >
                 Section Name
-              </label>
+              </Label>
               <Input
                 id="section_Name"
                 placeholder="Section Name"
@@ -165,17 +179,17 @@ export default function AddEditSection() {
                 {...register("section_Name", { required: true })}
               />
               {errors.section_Name && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="department_Id"
                 className="text-sm font-semibold text-foreground leading-none"
               >
                 Department
-              </label>
+              </Label>
               <Controller
                 name="department_Id"
                 control={control}

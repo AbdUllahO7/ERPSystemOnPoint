@@ -17,8 +17,12 @@ import {
   addReward,
 } from "../../../lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function AddBonusPage() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
@@ -48,7 +52,7 @@ export default function AddBonusPage() {
     mutationFn: (data) => addReward(data),
     onSuccess: () => {
       queryClient.invalidateQueries(["getRewards"]);
-      toast.success("Bonus added successfully!");
+      toast.success(isAr ? "تمت إضافة المكافأة بنجاح!" : "Bonus added successfully!");
       if (employeeIdParam) {
         navigate(`/dashboard/hr/employees/${employeeIdParam}?tab=salary`);
       } else {
@@ -59,7 +63,7 @@ export default function AddBonusPage() {
       console.log("Failed to add reward", error);
       const errorMessage = error?.message && error.message !== "An unexpected error occurred" 
         ? error.message 
-        : "Failed to add bonus!";
+        : (isAr ? "فشل إضافة المكافأة!" : "Failed to add bonus!");
       toast.error(errorMessage);
     },
   });
@@ -83,22 +87,24 @@ export default function AddBonusPage() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-foreground">Add Bonus</h2>
+            <h2 className="text-2xl font-bold text-foreground">{isAr ? "إضافة مكافأة" : "Add Bonus"}</h2>
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Bonuses</span>
+            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/hr/bounces")}>
+              {isAr ? "المكافآت" : "Bonuses"}
+            </span>
             <span>/</span>
-            <span className="font-medium text-foreground">Add Bonus</span>
+            <span className="font-medium text-foreground">{isAr ? "إضافة مكافأة" : "Add Bonus"}</span>
           </div>
         </div>
         
         <Button 
           onClick={handleSubmit(onSubmit)} 
           disabled={mutation.isPending || mutation.isLoading}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {(mutation.isPending || mutation.isLoading) ? "Saving..." : "Save"}
+          {(mutation.isPending || mutation.isLoading) ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ" : "Save")}
         </Button>
       </div>
 
@@ -111,7 +117,7 @@ export default function AddBonusPage() {
               htmlFor="employeeId"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Employee
+              {isAr ? "الموظف" : "Employee"}
             </label>
             <Controller
               name="employeeId"
@@ -124,7 +130,7 @@ export default function AddBonusPage() {
                   disabled={!!employeeIdParam || isLoadingEmployees}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Select Employee"} />
+                    <SelectValue placeholder={isLoadingEmployees ? (isAr ? "جاري تحميل الموظفين..." : "Loading employees...") : (isAr ? "حدد الموظف" : "Select Employee")} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {employees.map((emp) => (
@@ -137,7 +143,7 @@ export default function AddBonusPage() {
               )}
             />
             {errors.employeeId && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
             )}
           </div>
 
@@ -146,7 +152,7 @@ export default function AddBonusPage() {
               htmlFor="rewardType"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Reward Category
+              {isAr ? "فئة المكافأة" : "Reward Category"}
             </label>
             <Controller
               name="rewardType"
@@ -159,20 +165,20 @@ export default function AddBonusPage() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Reward Category" />
+                    <SelectValue placeholder={isAr ? "حدد فئة المكافأة" : "Select Reward Category"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="Bonus">Bonus</SelectItem>
-                    <SelectItem value="Commission">Commission</SelectItem>
-                    <SelectItem value="Overtime">Overtime</SelectItem>
-                    <SelectItem value="Exceptional">Exceptional</SelectItem>
-                    <SelectItem value="Other">Other</SelectItem>
+                    <SelectItem value="Bonus">{isAr ? "مكافأة" : "Bonus"}</SelectItem>
+                    <SelectItem value="Commission">{isAr ? "عمولة" : "Commission"}</SelectItem>
+                    <SelectItem value="Overtime">{isAr ? "عمل إضافي" : "Overtime"}</SelectItem>
+                    <SelectItem value="Exceptional">{isAr ? "استثنائي" : "Exceptional"}</SelectItem>
+                    <SelectItem value="Other">{isAr ? "أخرى" : "Other"}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
             />
             {errors.rewardType && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
             )}
           </div>
 
@@ -181,7 +187,7 @@ export default function AddBonusPage() {
               htmlFor="disbursementDate"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Date
+              {isAr ? "التاريخ" : "Date"}
             </label>
             <Input
               id="disbursementDate"
@@ -190,7 +196,7 @@ export default function AddBonusPage() {
               {...register("disbursementDate", { required: true })}
             />
             {errors.disbursementDate && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
             )}
           </div>
 
@@ -199,7 +205,7 @@ export default function AddBonusPage() {
               htmlFor="amount"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Amount
+              {isAr ? "المبلغ" : "Amount"}
             </label>
             <Input
               id="amount"
@@ -210,7 +216,7 @@ export default function AddBonusPage() {
               {...register("amount", { required: true, min: 0.01 })}
             />
             {errors.amount && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
             )}
           </div>
 
@@ -219,11 +225,11 @@ export default function AddBonusPage() {
               htmlFor="notes"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Notes
+              {isAr ? "ملاحظات" : "Notes"}
             </label>
             <Input
               id="notes"
-              placeholder="Notes..."
+              placeholder={isAr ? "ملاحظات..." : "Notes..."}
               className="h-9 bg-transparent"
               {...register("notes")}
             />

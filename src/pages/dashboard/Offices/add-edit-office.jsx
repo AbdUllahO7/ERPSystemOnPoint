@@ -22,8 +22,12 @@ import {
   getSectionById,
 } from "../../../lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function AddEditOffice() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,9 +163,9 @@ export default function AddEditOffice() {
   const sections = sectionsRaw.filter(
     (v, i, a) => a.findIndex((t) => (t.id || t.section_Id) === (v.id || v.section_Id)) === i
   );
-  const pageTitle = isEdit ? "Edit Office" : "Add Office";
-  console.log("sections", sections.length);
-  console.log("departments", departments);
+  const pageTitle = isAr
+    ? (isEdit ? "تعديل المكتب" : "إضافة مكتب")
+    : (isEdit ? "Edit Office" : "Add Office");
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
@@ -173,7 +177,9 @@ export default function AddEditOffice() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Offices</span>
+            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/hr/offices")}>
+              {isAr ? "المكاتب" : "Offices"}
+            </span>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -182,9 +188,9 @@ export default function AddEditOffice() {
         <Button 
           onClick={handleSubmit(onSubmit)} 
           disabled={mutation.isLoading || isPageLoading}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {mutation.isLoading ? "Saving..." : "Save"}
+          {mutation.isLoading ? (isAr ? "جاري الحفظ..." : "Saving...") : (isAr ? "حفظ" : "Save")}
         </Button>
       </div>
 
@@ -194,7 +200,9 @@ export default function AddEditOffice() {
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm font-medium">
-              {isEdit ? "Loading office details & data..." : "Loading form data..."}
+              {isAr
+                ? (isEdit ? "جاري تحميل تفاصيل المكتب..." : "جاري تحميل البيانات...")
+                : (isEdit ? "Loading office details & data..." : "Loading form data...")}
             </p>
           </div>
         ) : (
@@ -204,16 +212,16 @@ export default function AddEditOffice() {
                 htmlFor="name_Office"
                 className="text-sm font-semibold text-foreground leading-none"
               >
-                Office Name
+                {isAr ? "اسم المكتب" : "Office Name"}
               </label>
               <Input
                 id="name_Office"
-                placeholder="Office Name"
+                placeholder={isAr ? "اسم المكتب" : "Office Name"}
                 className="h-9 bg-transparent max-w-md"
                 {...register("name_Office", { required: true })}
               />
               {errors.name_Office && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
@@ -222,7 +230,7 @@ export default function AddEditOffice() {
                 htmlFor="department_id"
                 className="text-sm font-semibold text-foreground leading-none"
               >
-                Department
+                {isAr ? "القسم" : "Department"}
               </label>
               <Controller
                 name="department_id"
@@ -235,7 +243,7 @@ export default function AddEditOffice() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-11 bg-transparent">
-                      <SelectValue placeholder="Select Department" />
+                      <SelectValue placeholder={isAr ? "حدد القسم" : "Select Department"} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {departments.map((dept) => {
@@ -251,7 +259,7 @@ export default function AddEditOffice() {
                 )}
               />
               {errors.department_id && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
@@ -260,7 +268,7 @@ export default function AddEditOffice() {
                 htmlFor="sector_id"
                 className="text-sm font-semibold text-foreground leading-none"
               >
-                Section
+                {isAr ? "القطاع" : "Section"}
               </label>
               <Controller
                 name="sector_id"
@@ -277,10 +285,10 @@ export default function AddEditOffice() {
                       <SelectValue
                         placeholder={
                           !departmentId
-                            ? "Select Section"
+                            ? (isAr ? "حدد القطاع" : "Select Section")
                             : isFetchingSections
-                              ? "Loading sections..."
-                              : "Select Section"
+                              ? (isAr ? "جاري تحميل القطاعات..." : "Loading sections...")
+                              : (isAr ? "حدد القطاع" : "Select Section")
                         }
                       />
                     </SelectTrigger>
@@ -288,7 +296,7 @@ export default function AddEditOffice() {
                       {isEdit && officeData?.data && (officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id || officeData.data.section_id) &&
                         !sections.some((sec) => String(sec.id || sec.section_Id || sec.sector_id || sec.sector_Id) === String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id || officeData.data.section_id)) && (
                           <SelectItem value={String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id || officeData.data.section_id)}>
-                            {officeData.data.sector_name || officeData.data.sector_Name || officeData.data.section_name || officeData.data.section_Name || `Section #${String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id).substring(0, 8)}`}
+                            {officeData.data.sector_name || officeData.data.sector_Name || officeData.data.section_name || officeData.data.section_Name || `${isAr ? "قطاع #" : "Section #"}${String(officeData.data.sector_id || officeData.data.sector_Id || officeData.data.section_Id).substring(0, 8)}`}
                           </SelectItem>
                         )}
                       {Array.isArray(sections) &&
@@ -306,11 +314,11 @@ export default function AddEditOffice() {
               />
               {!isFetchingSections && sections.length === 0 && departmentId && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  No sections available for this department
+                  {isAr ? "لا توجد قطاعات متاحة لهذا القسم" : "No sections available for this department"}
                 </p>
               )}
               {errors.sector_id && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
           </form>

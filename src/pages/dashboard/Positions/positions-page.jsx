@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import {
   Users as UsersIcon,
@@ -15,6 +16,7 @@ import { getPositions, deletePosition, getDepartments } from "../../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 const stats = [
   {
@@ -52,6 +54,7 @@ const stats = [
 ];
 
 export default function Positions() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -67,8 +70,8 @@ export default function Positions() {
   const filterConfigs = [
     {
       key: "departmentId",
-      label: "Filter by Department",
-      placeholder: "All Departments",
+      label: t('positions.filterDepartment'),
+      placeholder: t('positions.allDepartments'),
       options: departments.map((d) => ({
         value: d.id,
         label: d.departmentName || d.name,
@@ -89,12 +92,12 @@ export default function Positions() {
     mutationFn: (id) => deletePosition(id),
     onSuccess: (res) => {
       if (res && (res.success === false || res.status >= 400)) {
-        toast.error(res.message || "Failed to delete position!");
+        toast.error(res.message || t('positions.deleteError'));
         setDeleteRowId(null);
         return;
       }
       queryClient.invalidateQueries(["getPositions"]);
-      toast.success(res?.message || "Position deleted successfully!");
+      toast.success(res?.message || t('positions.deleteSuccess'));
       setDeleteRowId(null);
     },
     onError: (error) => {
@@ -103,7 +106,7 @@ export default function Positions() {
         error?.response?.data?.message ||
         error?.data?.message ||
         error?.message ||
-        "Failed to delete position!";
+        t('positions.deleteError');
       toast.error(errMsg);
       setDeleteRowId(null);
     },
@@ -186,7 +189,9 @@ export default function Positions() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-foreground">Positions List</h2>
+      <h2 className="text-xl font-semibold text-foreground">
+        {t('positions.title')}
+      </h2>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -196,7 +201,7 @@ export default function Positions() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? 'text-green-500' : 'text-red-500'}`}>
@@ -227,17 +232,17 @@ export default function Positions() {
         isLoading={isLoading}
         getRowId={(row) => row.position_Id}
         search={{
-          placeholder: "Search positions...",
+          placeholder: t('positions.searchPlaceholder'),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t('common.filter'),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => queryClient.invalidateQueries(["getPositions"])}
         addButton={{
-          label: "Add",
+          label: t('common.add'),
           onClick: () => navigate("/dashboard/hr/positions/add"),
         }}
         columns={columns}
@@ -245,11 +250,11 @@ export default function Positions() {
         card={{
           icon: Waypoints,
           title: (row) => row.position_name,
-          subtitle: (row) => `Employees: ${row.total_employees}`,
+          subtitle: (row) => `${t('employees', 'Employees')}: ${row.total_employees}`,
           fields: [
             {
               icon: UsersIcon,
-              label: "Total Employees:",
+              label: t('employees', 'Employees') + ":",
               value: (row) => row.total_employees,
             },
           ],
@@ -258,10 +263,10 @@ export default function Positions() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t('common.prev'),
+          nextLabel: t('common.next'),
         }}
-        emptyMessage="No positions found"
+        emptyMessage={t('positions.empty')}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -274,8 +279,8 @@ export default function Positions() {
           }
         }}
         isLoading={deleteMutation.isPending || deleteMutation.isLoading}
-        title="Delete Position"
-        description="Are you sure you want to delete this position? This action cannot be undone and will permanently remove the position from the system."
+        title={t('positions.deleteTitle')}
+        description={t('positions.deleteDesc')}
       />
     </div>
   );

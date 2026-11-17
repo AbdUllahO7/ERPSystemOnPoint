@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import {
   Users as UsersIcon,
@@ -31,6 +32,8 @@ import { Button } from "@/components/ui/button";
 import { AlertCircle, Building } from "lucide-react";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 const stats = [
   {
@@ -68,6 +71,7 @@ const stats = [
 ];
 
 export default function Sections() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -93,12 +97,12 @@ export default function Sections() {
     mutationFn: (id) => deleteSection(id),
     onSuccess: (res) => {
       if (res && (res.success === false || res.status >= 400)) {
-        toast.error(res.message || "Failed to delete section!");
+        toast.error(res.message || t('sections.deleteError'));
         setDeleteRowId(null);
         return;
       }
       queryClient.invalidateQueries(["getSections"]);
-      toast.success(res?.message || "Section deleted successfully!");
+      toast.success(res?.message || t('sections.deleteSuccess'));
       setDeleteRowId(null);
     },
     onError: (error) => {
@@ -107,7 +111,7 @@ export default function Sections() {
         error?.response?.data?.message ||
         error?.data?.message ||
         error?.message ||
-        "Failed to delete section!";
+        t('sections.deleteError');
       toast.error(errMsg);
       setDeleteRowId(null);
     },
@@ -202,7 +206,9 @@ export default function Sections() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-foreground">Sectors List</h2>
+      <h2 className="text-xl font-semibold text-foreground">
+        {t('sections.title')}
+      </h2>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -212,7 +218,7 @@ export default function Sections() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? 'text-green-500' : 'text-red-500'}`}>
@@ -237,8 +243,8 @@ export default function Sections() {
             {[
               {
                 key: "department_Id",
-                label: "Filter by Department",
-                placeholder: "All Departments",
+                label: t('sections.filterDepartment'),
+                placeholder: t('sections.allDepartments'),
                 options: departments.map((d) => ({
                   value: d.id,
                   label: d.departmentName || "Unnamed Department",
@@ -285,7 +291,7 @@ export default function Sections() {
                   setPage(1);
                 }}
               >
-                Clear Filters
+                {t('common.clearFilters')}
               </Button>
             )}
           </div>
@@ -297,17 +303,17 @@ export default function Sections() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         search={{
-          placeholder: "Search sections...",
+          placeholder: t('sections.searchPlaceholder'),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t('common.filter'),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => queryClient.invalidateQueries(["getSections"])}
         addButton={{
-          label: "Add",
+          label: t('common.add'),
           onClick: () => navigate("/dashboard/hr/sections/add"),
         }}
         columns={columns}
@@ -315,11 +321,11 @@ export default function Sections() {
         card={{
           icon: GitBranch,
           title: (row) => row.section_name,
-          subtitle: (row) => `Department: ${row.department_Name}`,
+          subtitle: (row) => `${t('departments', 'Department')}: ${row.department_Name}`,
           fields: [
             {
               icon: UsersIcon,
-              label: "Employees:",
+              label: t('employees', 'Employees') + ":",
               value: (row) => row.employees_count,
             },
           ],
@@ -328,10 +334,10 @@ export default function Sections() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t('common.prev'),
+          nextLabel: t('common.next'),
         }}
-        emptyMessage="No sections found"
+        emptyMessage={t('sections.empty')}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -344,8 +350,8 @@ export default function Sections() {
           }
         }}
         isLoading={deleteMutation.isPending || deleteMutation.isLoading}
-        title="Delete Section"
-        description="Are you sure you want to delete this section? This action cannot be undone and will permanently remove the section from the system."
+        title={t('sections.deleteTitle')}
+        description={t('sections.deleteDesc')}
       />
     </div>
   );
