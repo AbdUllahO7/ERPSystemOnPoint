@@ -42,8 +42,7 @@ import {
 } from "@/services/reservations";
 
 export default function AddEditReservation() {
-  const { locale } = useI18n();
-  const isAr = locale === "ar";
+  const { t } = useI18n();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
@@ -92,13 +91,13 @@ export default function AddEditReservation() {
         costCenters: [],
         currencies: [],
         paymentMethods: [
-          { id: "Cash", name: isAr ? "نقدي" : "Cash" },
-          { id: "Credit", name: isAr ? "بطاقة / آجل" : "Credit / Card" },
-          { id: "Bank", name: isAr ? "تحويل بنكي" : "Bank Transfer" },
+          { id: "Cash", name: t("reservationsModule.cash") },
+          { id: "Credit", name: t("reservationsModule.credit") },
+          { id: "Bank", name: t("reservationsModule.bankTransfer") },
         ],
       }
     );
-  }, [lookupsData, isAr]);
+  }, [lookupsData, t]);
 
   // Direct Cost Centers Query from accounting endpoint
   const { data: costCentersQueryData } = useQuery({
@@ -150,7 +149,7 @@ export default function AddEditReservation() {
           null;
         return {
           id: p.id,
-          name: p.pattern_Name || p.name || (isAr ? "نمط مبيعات" : "Sales Invoice"),
+          name: p.pattern_Name || p.name || t("reservationsModule.salesInvoice"),
           costCenter_id: ccId,
           costCenterId: ccId,
           costCenter_Name: ccName,
@@ -162,7 +161,7 @@ export default function AddEditReservation() {
       });
 
     return mapped;
-  }, [salesPatternsData, lookups.invoicePatterns, isAr]);
+  }, [salesPatternsData, lookups.invoicePatterns, t]);
 
   // Detailed pattern query whenever invoicePatternId is selected
   const { data: patternDetailData } = useQuery({
@@ -231,7 +230,7 @@ export default function AddEditReservation() {
     const rawItems = costCentersQueryData?.data?.items || costCentersQueryData?.data || [];
     const sourceList = Array.isArray(rawItems) && rawItems.length > 0 ? rawItems : (lookups.costCenters || []);
     const mapped = sourceList.map((cc) => {
-      const name = cc.cost_Center_Name || cc.costCenter_Name || cc.name || (isAr ? "مركز تكلفة" : "Cost Center");
+      const name = cc.cost_Center_Name || cc.costCenter_Name || cc.name || t("reservationsModule.costCenter");
       const number = cc.cost_Center_Number || cc.costCenter_Number || cc.number || "";
       return {
         id: cc.id,
@@ -245,7 +244,7 @@ export default function AddEditReservation() {
       patternCostCenterInfo.id &&
       !mapped.some((c) => String(c.id) === String(patternCostCenterInfo.id))
     ) {
-      const patLabel = patternCostCenterInfo.name || (isAr ? "مركز تكلفة النمط" : "Pattern Cost Center");
+      const patLabel = patternCostCenterInfo.name || t("reservationsModule.patternCostCenter");
       mapped.unshift({
         id: patternCostCenterInfo.id,
         number: "",
@@ -259,7 +258,7 @@ export default function AddEditReservation() {
       formData.costCenterId !== "none" &&
       !mapped.some((c) => String(c.id) === String(formData.costCenterId))
     ) {
-      const fallbackName = reservationData?.data?.costCenterName || (isAr ? `مركز تكلفة #${String(formData.costCenterId).substring(0, 8)}` : `Cost Center #${String(formData.costCenterId).substring(0, 8)}`);
+      const fallbackName = reservationData?.data?.costCenterName || `${t("reservationsModule.costCenter")} #${String(formData.costCenterId).substring(0, 8)}`;
       mapped.unshift({
         id: formData.costCenterId,
         number: "",
@@ -269,7 +268,7 @@ export default function AddEditReservation() {
     }
 
     return mapped;
-  }, [costCentersQueryData, lookups.costCenters, patternCostCenterInfo, formData.costCenterId, reservationData, isAr]);
+  }, [costCentersQueryData, lookups.costCenters, patternCostCenterInfo, formData.costCenterId, reservationData, t]);
 
   // Pre-populate fields in edit mode
   useEffect(() => {
@@ -425,12 +424,12 @@ export default function AddEditReservation() {
       queryClient.invalidateQueries(["events"]);
       queryClient.invalidateQueries(["reservation", id]);
       toast.success(
-        res?.message || (isEdit ? (isAr ? "تم تحديث الحجز بنجاح" : "Reservation updated successfully!") : (isAr ? "تم إنشاء الحجز بنجاح" : "Reservation created successfully!"))
+        res?.message || (isEdit ? t("reservationsModule.updateSuccess") : t("reservationsModule.createSuccess"))
       );
       navigate("/dashboard/reservations");
     },
     onError: (err) => {
-      const msg = err?.response?.data?.message || (isEdit ? (isAr ? "فشل تحديث الحجز" : "Failed to update reservation!") : (isAr ? "فشل إنشاء الحجز" : "Failed to create reservation!"));
+      const msg = err?.response?.data?.message || (isEdit ? t("reservationsModule.updateError") : t("reservationsModule.createError"));
       toast.error(msg);
     },
   });
@@ -439,13 +438,13 @@ export default function AddEditReservation() {
   const handleAddPayment = (e) => {
     e?.preventDefault();
     if (!paymentForm.amountDue || Number(paymentForm.amountDue) <= 0) {
-      toast.error(isAr ? "يرجى إدخال مبلغ قسط صالح" : "Please enter a valid installment amount");
+      toast.error(t("reservationsModule.validInstallmentAmount"));
       return;
     }
 
     const newPayment = {
       id: Date.now(),
-      description: paymentForm.description?.trim() || (isAr ? `قسط ${formData.paymentSchedules.length + 1}` : `Installment ${formData.paymentSchedules.length + 1}`),
+      description: paymentForm.description?.trim() || `${t("reservationsModule.installment")} ${formData.paymentSchedules.length + 1}`,
       amountDue: Number(paymentForm.amountDue),
       dueDate: paymentForm.dueDate,
     };
@@ -461,7 +460,7 @@ export default function AddEditReservation() {
       dueDate: new Date().toISOString().split("T")[0],
     });
     setIsPaymentModalOpen(false);
-    toast.success(isAr ? "تمت إضافة القسط إلى الجدول بنجاح" : "Installment added to schedule successfully");
+    toast.success(t("reservationsModule.installmentSuccess"));
   };
 
   const handleRemovePayment = (paymentId) => {
@@ -475,30 +474,26 @@ export default function AddEditReservation() {
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!formData.customerId) {
-      toast.error(isAr ? "يرجى اختيار العميل" : "Customer is required");
+      toast.error(t("reservationsModule.customerRequired"));
       return;
     }
     if (!formData.bookingEventId) {
-      toast.error(isAr ? "يرجى اختيار الحدث" : "Booking Event is required");
+      toast.error(t("reservationsModule.eventRequired"));
       return;
     }
     const reqQty = Number(formData.quantity) || 0;
     if (reqQty <= 0) {
-      toast.error(isAr ? "كمية التذاكر يجب أن تكون 1 على الأقل" : "Quantity must be at least 1");
+      toast.error(t("reservationsModule.quantityMin1"));
       return;
     }
     if (!formData.invoicePatternId) {
-      toast.error(isAr ? "يرجى تحديد نمط الفاتورة" : "Invoice Pattern is required");
+      toast.error(t("reservationsModule.invoicePatternRequired"));
       return;
     }
 
     // Capacity Check
     if (capacityCheck.isExceeded) {
-      toast.error(
-        isAr
-          ? `المقاعد المطلوبة (${reqQty}) تتجاوز المقاعد المتاحة بالحدث (${capacityCheck.available} مقعداً فقط)`
-          : `Requested seats (${reqQty}) exceed available seats (${capacityCheck.available} seats only)`
-      );
+      toast.error(t("reservationsModule.capacityExceeded"));
       return;
     }
 
@@ -535,12 +530,12 @@ export default function AddEditReservation() {
       <PageTitle
         title={
           isEdit
-            ? isAr ? "تعديل الحجز" : "Edit Reservation"
-            : isAr ? "إضافة حجز" : "New Reservation"
+            ? t("reservationsModule.editReservation")
+            : t("reservationsModule.newReservation")
         }
         breadcrumbLinks={[
-          { label: isAr ? "الحجوزات" : "Reservations", href: "/dashboard/reservations" },
-          { label: isEdit ? (isAr ? "تعديل الحجز" : "Edit Reservation") : (isAr ? "إضافة حجز" : "New Reservation") },
+          { label: t("reservationsModule.title"), href: "/dashboard/reservations" },
+          { label: isEdit ? t("reservationsModule.editReservation") : t("reservationsModule.newReservation") },
         ]}
         actions={
           <div className="flex items-center gap-2">
@@ -550,22 +545,22 @@ export default function AddEditReservation() {
               onClick={() => navigate("/dashboard/reservations")}
               className="h-10 px-5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold cursor-pointer"
             >
-              {isAr ? "إلغاء" : "Cancel"}
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={saveMutation.isPending || isLoading || capacityCheck.isExceeded || !formData.customerId || !formData.bookingEventId || !formData.invoicePatternId}
               className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-medium shadow-xs transition-all cursor-pointer"
-              title={!formData.customerId || !formData.bookingEventId || !formData.invoicePatternId ? (isAr ? "يرجى اختيار العميل والحدث ونمط الفاتورة" : "Please select customer, event, and invoice pattern") : ""}
+              title={!formData.customerId || !formData.bookingEventId || !formData.invoicePatternId ? t("reservationsModule.selectRequiredFields") : ""}
             >
               {saveMutation.isPending && (
                 <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
               )}
               {saveMutation.isPending
-                ? (isAr ? "جاري الحفظ..." : "Saving...")
+                ? t("common.saving")
                 : isEdit
-                ? (isAr ? "تحديث الحجز" : "Update Reservation")
-                : (isAr ? "تأكيد الحجز" : "Confirm Reservation")}
+                ? t("reservationsModule.updateReservation")
+                : t("reservationsModule.confirmReservation")}
             </Button>
           </div>
         }
@@ -577,12 +572,10 @@ export default function AddEditReservation() {
           <AlertTriangle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
             <span className="font-bold text-rose-900 text-sm">
-              {isAr ? "تجاوز السعة المتاحة للحدث!" : "Event Capacity Exceeded!"}
+              {t("reservationsModule.capacityExceeded")}
             </span>
             <p className="text-xs text-rose-700 leading-relaxed">
-              {isAr
-                ? `المقاعد المطلوبة (${formData.quantity}) تتجاوز المقاعد المتبقية في الحدث (${capacityCheck.available} مقعداً متاحاً فقط من أصل ${capacityCheck.max}). يرجى تقليل الكمية لتتوافق مع السعة الشاغرة.`
-                : `Requested seats (${formData.quantity}) exceed available seats in event (${capacityCheck.available} available out of ${capacityCheck.max}). Please reduce the quantity.`}
+              {`${formData.quantity} / ${capacityCheck.available}`}
             </p>
           </div>
         </div>
@@ -594,21 +587,21 @@ export default function AddEditReservation() {
         <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
           <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
             <Users className="w-4 h-4 text-[#0066d1]" />
-            {isAr ? "بيانات الحجز والحدث" : "Reservation & Event Details"}
+            {t("reservationsModule.reservationAndEventDetails")}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* customerId */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "العميل" : "Customer"} <span className="text-rose-500">*</span>
+                {t("reservationsModule.customer")} <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.customerId}
                 onValueChange={(val) => setFormData((prev) => ({ ...prev, customerId: val }))}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder={isAr ? "اختر العميل" : "Select Customer"} />
+                  <SelectValue placeholder={t("reservationsModule.selectCustomer")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.customers.map((c) => (
@@ -623,7 +616,7 @@ export default function AddEditReservation() {
             {/* bookingEventId */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "الحدث المتاح" : "Booking Event"} <span className="text-rose-500">*</span>
+                {t("reservationsModule.event")} <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.bookingEventId}
@@ -639,12 +632,12 @@ export default function AddEditReservation() {
                 }}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder={isAr ? "اختر الحدث المطروح" : "Select Booking Event"} />
+                  <SelectValue placeholder={t("reservationsModule.selectBookingEvent")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.events.map((e) => (
                     <SelectItem key={e.id} value={String(e.id)}>
-                      {e.name} ({isAr ? `المتاح: ${e.remainingQty ?? 20} مقعداً | السعر: $${e.price}` : `Available: ${e.remainingQty ?? 20} seats | Price: $${e.price}`})
+                      {e.name} ({e.remainingQty ?? 20} {t("reservationsModule.seatUnit")} | ${e.price})
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -655,11 +648,11 @@ export default function AddEditReservation() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-slate-800">
-                  {isAr ? "الكمية المطلوبة" : "Quantity / Seats"} <span className="text-rose-500">*</span>
+                  {t("reservationsModule.quantitySeats")} <span className="text-rose-500">*</span>
                 </Label>
                 {selectedEvent && (
                   <span className="text-[11px] font-medium text-slate-500">
-                    {isAr ? "المتبقي بالحدث:" : "Remaining in event:"} <strong className="text-[#0066d1]">{capacityCheck.available}</strong> {isAr ? "مقعد" : "seats"}
+                    {t("reservationsModule.remainingInEvent")} <strong className="text-[#0066d1]">{capacityCheck.available}</strong> {t("reservationsModule.seatUnit")}
                   </span>
                 )}
               </div>
@@ -680,20 +673,20 @@ export default function AddEditReservation() {
           {selectedEvent && (
             <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/40 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
               <div>
-                <span className="text-slate-500 block">{isAr ? "سعر المقعد الواحد" : "Unit Price"}</span>
+                <span className="text-slate-500 block">{t("reservationsModule.unitPrice")}</span>
                 <span className="text-sm font-bold text-slate-800">{currencySymbol}{unitPrice}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">{isAr ? "إجمالي قيمة التذاكر" : "Subtotal"}</span>
+                <span className="text-slate-500 block">{t("reservationsModule.subtotal")}</span>
                 <span className="text-sm font-bold text-[#0066d1]">{currencySymbol}{subtotal.toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">{isAr ? "المحجوز بعد هذا الطلب" : "Reserved After Request"}</span>
+                <span className="text-slate-500 block">{t("reservationsModule.reservedAfterRequest")}</span>
                 <span className="text-sm font-bold text-slate-800">{capacityCheck.newReserved} / {capacityCheck.max}</span>
               </div>
               <div>
-                <span className="text-slate-500 block">{isAr ? "المقاعد الشاغرة المتبقية" : "Remaining Seats"}</span>
-                <span className="text-sm font-bold text-emerald-600">{capacityCheck.newRemaining} {isAr ? "مقعد" : "seats"}</span>
+                <span className="text-slate-500 block">{t("reservationsModule.remainingSeats")}</span>
+                <span className="text-sm font-bold text-emerald-600">{capacityCheck.newRemaining} {t("reservationsModule.seatUnit")}</span>
               </div>
             </div>
           )}
@@ -703,26 +696,26 @@ export default function AddEditReservation() {
         <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
           <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
             <Receipt className="w-4 h-4 text-[#0066d1]" />
-            {isAr ? "الإعدادات المالية ونمط الفاتورة" : "Invoice & Accounting Settings"}
+            {t("reservationsModule.title")}
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* 1. invoicePatternId - Strictly Sales Patterns */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "نمط فاتورة المبيعات المعتمد" : "Sales Invoice Pattern"} <span className="text-rose-500">*</span>
+                {t("reservationsModule.salesInvoice")} <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.invoicePatternId}
                 onValueChange={handleInvoicePatternChange}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder={isAr ? "اختر نمط فاتورة مبيعات" : "Select Sales Invoice Pattern"} />
+                  <SelectValue placeholder={t("reservationsModule.selectPatternFirst")} />
                 </SelectTrigger>
                 <SelectContent>
                   {formData.invoicePatternId && !salesPatternOptions.some((p) => String(p.id) === String(formData.invoicePatternId)) && (
                     <SelectItem value={String(formData.invoicePatternId)}>
-                      {reservationData?.data?.invoicePatternName || (isAr ? `نمط مبيعات #${String(formData.invoicePatternId).substring(0, 8)}` : `Pattern #${String(formData.invoicePatternId).substring(0, 8)}`)}
+                      {reservationData?.data?.invoicePatternName || `${t("reservationsModule.salesInvoice")} #${String(formData.invoicePatternId).substring(0, 8)}`}
                     </SelectItem>
                   )}
                   {salesPatternOptions.map((ip) => (
@@ -733,7 +726,7 @@ export default function AddEditReservation() {
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-slate-400">
-                {isAr ? "إنشاء فاتورة المبيعات آلياً لتوثيق حجز العميل." : "Auto-issue sales invoice for customer booking."}
+                {t("reservationsModule.autoIssueInvoice")}
               </p>
             </div>
 
@@ -741,11 +734,11 @@ export default function AddEditReservation() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-slate-800">
-                  {isAr ? "مركز التكلفة" : "Cost Center"}
+                  {t("reservationsModule.costCenter")}
                 </Label>
                 {Boolean(formData.invoicePatternId && patternCostCenterInfo.id) && (
                   <span className="text-[10px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                    {isAr ? "مرتبط بالنمط" : "Pattern Linked"}
+                    {t("reservationsModule.patternLinked")}
                   </span>
                 )}
               </div>
@@ -759,14 +752,14 @@ export default function AddEditReservation() {
                   <SelectValue
                     placeholder={
                       !formData.invoicePatternId
-                        ? (isAr ? "اختر نمط الفاتورة أولاً" : "Select Invoice Pattern First")
-                        : (isAr ? "اختر مركز التكلفة" : "Select Cost Center")
+                        ? t("reservationsModule.selectPatternFirst")
+                        : t("reservationsModule.selectCostCenter")
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">
-                    {isAr ? "-- بدون مركز تكلفة --" : "-- None / Default --"}
+                    {t("reservationsModule.noneCostCenter")}
                   </SelectItem>
                   {costCenterOptions.map((cc) => (
                     <SelectItem key={cc.id} value={String(cc.id)}>
@@ -777,25 +770,25 @@ export default function AddEditReservation() {
               </Select>
               <p className="text-[10px] text-slate-400">
                 {!formData.invoicePatternId
-                  ? (isAr ? "يرجى اختيار نمط الفاتورة لتفعيل واختيار مركز التكلفة." : "Select invoice pattern first to enable cost center.")
-                  : (isAr ? "يأتي مركز التكلفة تلقائياً من نمط الفاتورة ويمكنك تعديله." : "Cost center is derived from invoice pattern and can be changed.")}
+                  ? t("reservationsModule.patternFirstToEnableCC")
+                  : t("reservationsModule.costCenterDerivedFromPattern")}
               </p>
             </div>
 
             {/* 3. currencyId */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "العملة" : "Currency"}
+                {t("reservationsModule.currency")}
               </Label>
               <Select
                 value={formData.currencyId || "none"}
                 onValueChange={(val) => setFormData((prev) => ({ ...prev, currencyId: val === "none" ? "" : val }))}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder={isAr ? "اختر العملة" : "Select Currency"} />
+                  <SelectValue placeholder={t("reservationsModule.selectCurrency")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">{isAr ? "-- العملة الافتراضية --" : "-- Default Currency --"}</SelectItem>
+                  <SelectItem value="none">{t("reservationsModule.defaultCurrency")}</SelectItem>
                   {lookups.currencies.map((curr) => (
                     <SelectItem key={curr.id} value={String(curr.id)}>
                       {curr.name} {curr.code ? `(${curr.code})` : ""}
@@ -804,21 +797,21 @@ export default function AddEditReservation() {
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-slate-400">
-                {isAr ? "عملة تسعير وسداد الحجز." : "Pricing and settlement currency."}
+                {t("reservationsModule.currencyHelp")}
               </p>
             </div>
 
             {/* 4. paymentMethod */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "طريقة الدفع" : "Payment Method"} <span className="text-rose-500">*</span>
+                {t("reservationsModule.paymentMethod")} <span className="text-rose-500">*</span>
               </Label>
               <Select
                 value={formData.paymentMethod}
                 onValueChange={(val) => setFormData((prev) => ({ ...prev, paymentMethod: val }))}
               >
                 <SelectTrigger className="w-full h-11 rounded-xl border-slate-200 bg-white">
-                  <SelectValue placeholder={isAr ? "اختر طريقة الدفع" : "Select Payment Method"} />
+                  <SelectValue placeholder={t("reservationsModule.selectPaymentMethod")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.paymentMethods.map((pm) => (
@@ -829,7 +822,7 @@ export default function AddEditReservation() {
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-slate-400">
-                {isAr ? "وسيلة تحصيل قيمة الحجز." : "Method for collecting reservation fees."}
+                {t("reservationsModule.paymentMethodHelp")}
               </p>
             </div>
           </div>
@@ -837,11 +830,11 @@ export default function AddEditReservation() {
           {/* barcode row */}
           <div className="space-y-2 pt-2 border-t border-slate-50">
             <Label className="text-xs font-semibold text-slate-800">
-              {isAr ? "الباركود" : "Barcode"}
+              {t("reservationsModule.barcode")}
             </Label>
             <div className="relative">
               <Input
-                placeholder={isAr ? "رمز الباركود أو التذكرة..." : "Barcode or ticket code..."}
+                placeholder={t("reservationsModule.barcodePlaceholder")}
                 value={formData.barcode}
                 onChange={(e) => setFormData((prev) => ({ ...prev, barcode: e.target.value }))}
                 className="h-11 rounded-xl border-slate-200 bg-white ps-10 focus-visible:ring-[#0066d1]"
@@ -856,10 +849,10 @@ export default function AddEditReservation() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
               <DollarSign className="w-4 h-4 text-[#0066d1]" />
-              {isAr ? "القيم المالية والمبالغ المسددة" : "Financials & Payments"}
+              {t("reservationsModule.financialsAndPayments")}
             </h2>
             <span className="text-xs font-semibold text-slate-600">
-              {isAr ? "الإجمالي الصافي:" : "Net Total:"} <strong className="text-[#0066d1]">{currencySymbol}{grandTotal.toFixed(2)}</strong>
+              {t("reservationsModule.netTotal")} <strong className="text-[#0066d1]">{currencySymbol}{grandTotal.toFixed(2)}</strong>
             </span>
           </div>
 
@@ -867,7 +860,7 @@ export default function AddEditReservation() {
             {/* paidAmount */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "المبلغ المسدد فعلياً" : "Paid Amount"} <span className="text-rose-500">*</span>
+                {t("reservationsModule.paidAmount")} <span className="text-rose-500">*</span>
               </Label>
               <Input
                 type="number"
@@ -879,14 +872,14 @@ export default function AddEditReservation() {
                 className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1] font-bold text-[#0066d1]"
               />
               <p className="text-[10px] text-slate-400">
-                {isAr ? "المبلغ المدفوع فوراً عند إنشاء الحجز." : "Amount paid upfront when creating reservation."}
+                {t("reservationsModule.paidAmountHelp")}
               </p>
             </div>
 
             {/* discountPercentage */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "نسبة الخصم (%)" : "Discount %"}
+                {t("reservationsModule.discountPercentage")}
               </Label>
               <div className="relative">
                 <Input
@@ -906,7 +899,7 @@ export default function AddEditReservation() {
             {/* discountAmount */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "مبلغ الخصم" : "Discount Amount"}
+                {t("reservationsModule.discountAmount")}
               </Label>
               <Input
                 type="number"
@@ -922,13 +915,13 @@ export default function AddEditReservation() {
             {/* Due Balance Display */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "المتبقي كدين على العميل" : "Due Balance"}
+                {t("reservationsModule.dueBalance")}
               </Label>
               <div className="h-11 rounded-xl bg-slate-50 border border-slate-200 px-3.5 flex items-center font-bold text-slate-800">
                 {currencySymbol}{dueBalance.toFixed(2)}
               </div>
               <p className="text-[10px] text-slate-400">
-                {dueBalance > 0 ? (isAr ? "فاتورة آجلة / متبقي دين" : "Due Balance / Credit") : (isAr ? "حجز مدفوع بالكامل" : "Fully Paid")}
+                {dueBalance > 0 ? t("reservationsModule.dueBalanceStatus") : t("reservationsModule.fullyPaidStatus")}
               </p>
             </div>
           </div>
@@ -937,7 +930,7 @@ export default function AddEditReservation() {
             {/* tax_Percentage */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "نسبة الضريبة (%)" : "Tax %"}
+                {t("reservationsModule.taxPercentage")}
               </Label>
               <div className="relative">
                 <Input
@@ -957,7 +950,7 @@ export default function AddEditReservation() {
             {/* taxAmount */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-800">
-                {isAr ? "مبلغ الضريبة" : "Tax Amount"}
+                {t("reservationsModule.taxAmount")}
               </Label>
               <Input
                 type="number"
@@ -973,19 +966,19 @@ export default function AddEditReservation() {
             {/* Financial Summary Badges */}
             <div className="space-y-1 md:col-span-2 bg-slate-50/70 p-3 rounded-xl border border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs">
               <div>
-                <span className="text-slate-400 block text-[10px]">{isAr ? "المجموع قبل الخصم" : "Subtotal"}</span>
+                <span className="text-slate-400 block text-[10px]">{t("reservationsModule.subtotalBeforeDiscount")}</span>
                 <span className="font-semibold text-slate-700">{currencySymbol}{subtotal.toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">{isAr ? "الخصم الإجمالي" : "Total Discount"}</span>
+                <span className="text-slate-400 block text-[10px]">{t("reservationsModule.totalDiscount")}</span>
                 <span className="font-semibold text-amber-600">-{currencySymbol}{discountAmt.toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">{isAr ? "الضريبة المحتسبة" : "Estimated Tax"}</span>
+                <span className="text-slate-400 block text-[10px]">{t("reservationsModule.estimatedTax")}</span>
                 <span className="font-semibold text-slate-700">+{currencySymbol}{taxAmt.toFixed(2)}</span>
               </div>
               <div>
-                <span className="text-slate-400 block text-[10px]">{isAr ? "الإجمالي النهائي" : "Grand Total"}</span>
+                <span className="text-slate-400 block text-[10px]">{t("reservationsModule.grandTotal")}</span>
                 <span className="font-bold text-[#0066d1]">{currencySymbol}{grandTotal.toFixed(2)}</span>
               </div>
             </div>
@@ -998,10 +991,10 @@ export default function AddEditReservation() {
             <div>
               <h2 className="text-base font-bold text-slate-800 flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-[#0066d1]" />
-                {isAr ? "جدول الدفعات والأقساط المجدولة" : "Payment Schedules"}
+                {t("reservationsModule.paymentSchedules")}
               </h2>
               <p className="text-xs text-slate-500 mt-0.5">
-                {isAr ? "في حال كان الحجز مؤجلاً أو مقسطاً على دفعات بتواريخ استحقاق محددة." : "For deferred reservations or installment schedules with due dates."}
+                {t("reservationsModule.paymentSchedulesHelp")}
               </p>
             </div>
             <Button
@@ -1010,13 +1003,13 @@ export default function AddEditReservation() {
               className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-5 rounded-xl font-medium text-xs h-10 gap-1.5 shadow-xs cursor-pointer"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
-              {isAr ? "إضافة قسط" : "Add Installment"}
+              {t("reservationsModule.addInstallment")}
             </Button>
           </div>
 
           {formData.paymentSchedules.length === 0 ? (
             <div className="text-center py-6 bg-slate-50 rounded-xl border border-dashed border-slate-200 text-xs text-slate-400">
-              {isAr ? "لا توجد دفعات أو أقساط مجدولة مسجلة للحجز." : "No payment schedules recorded for this reservation."}
+              {t("reservationsModule.noPaymentSchedules")}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 pt-2">
@@ -1057,7 +1050,7 @@ export default function AddEditReservation() {
       <DynamicModal
         open={isPaymentModalOpen}
         onOpenChange={setIsPaymentModalOpen}
-        title={isAr ? "إضافة قسط مجدول" : "Add Payment Installment"}
+        title={t("reservationsModule.addPaymentInstallmentModal")}
         icon={Wallet}
         showDefaultFooter={false}
         size="md"
@@ -1067,10 +1060,10 @@ export default function AddEditReservation() {
           {/* description */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              {isAr ? "وصف القسط أو الدفعة" : "Installment Description"}
+              {t("reservationsModule.installmentDescription")}
             </Label>
             <Input
-              placeholder={isAr ? "مثال: الدفعة الثانية بعد الحضور..." : "e.g. Second installment..."}
+              placeholder={t("reservationsModule.installmentPlaceholder")}
               value={paymentForm.description}
               onChange={(e) =>
                 setPaymentForm((prev) => ({ ...prev, description: e.target.value }))
@@ -1082,7 +1075,7 @@ export default function AddEditReservation() {
           {/* amountDue */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              {isAr ? "المبلغ المستحق" : "Amount Due"} <span className="text-rose-500">*</span>
+              {t("reservationsModule.amountDue")} <span className="text-rose-500">*</span>
             </Label>
             <Input
               type="number"
@@ -1100,7 +1093,7 @@ export default function AddEditReservation() {
           {/* dueDate */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              {isAr ? "تاريخ الاستحقاق" : "Due Date"} <span className="text-rose-500">*</span>
+              {t("reservationsModule.dueDate")} <span className="text-rose-500">*</span>
             </Label>
             <div className="relative">
               <Input
@@ -1122,13 +1115,13 @@ export default function AddEditReservation() {
               onClick={() => setIsPaymentModalOpen(false)}
               className="h-11 px-5 rounded-xl border-slate-200"
             >
-              {isAr ? "إلغاء" : "Cancel"}
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
               className="h-11 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white"
             >
-              {isAr ? "إضافة القسط" : "Add"}
+              {t("common.add")}
             </Button>
           </div>
         </form>

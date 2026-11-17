@@ -22,7 +22,7 @@ export default function AddEditCustomers() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { locale } = useI18n();
+  const { t } = useI18n();
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
@@ -94,27 +94,27 @@ export default function AddEditCustomers() {
   const addMutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: () => {
-      toast.success("Customer added successfully!");
+      toast.success(t("crmCustomers.addSuccess"));
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["allCustomersList"] });
       navigate("/dashboard/crm/customers");
     },
     onError: (error) => {
-      toast.error(error?.message || "Failed to add customer!");
+      toast.error(error?.message || t("crmCustomers.addError"));
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: updateCustomer,
     onSuccess: () => {
-      toast.success("Customer updated successfully!");
+      toast.success(t("crmCustomers.updateSuccess"));
       queryClient.invalidateQueries({ queryKey: ["customers"] });
       queryClient.invalidateQueries({ queryKey: ["allCustomersList"] });
       queryClient.invalidateQueries({ queryKey: ["customer", id] });
       navigate("/dashboard/crm/customers");
     },
     onError: (error) => {
-      toast.error(error?.message || "Failed to update customer!");
+      toast.error(error?.message || t("crmCustomers.updateError"));
     },
   });
 
@@ -141,15 +141,15 @@ export default function AddEditCustomers() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       if (newErrors.name) {
-        toast.error(locale === "ar" ? "اسم العميل مطلوب" : "Customer name is required");
+        toast.error(t("crmCustomers.nameRequired"));
       } else if (newErrors.phone) {
-        toast.error(locale === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required");
+        toast.error(t("crmCustomers.phoneRequired"));
       } else if (newErrors.email) {
-        toast.error(locale === "ar" ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email address");
+        toast.error(t("crmCustomers.invalidEmail"));
       } else if (newErrors.type) {
-        toast.error(locale === "ar" ? "يرجى تحديد نوع العميل" : "Please select customer type");
+        toast.error(t("crmCustomers.typeRequired"));
       } else if (newErrors.status) {
-        toast.error(locale === "ar" ? "يرجى تحديد حالة العميل" : "Please select customer status");
+        toast.error(t("crmCustomers.statusRequired"));
       }
       return;
     }
@@ -198,7 +198,7 @@ export default function AddEditCustomers() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] gap-2 text-muted-foreground">
         <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-sm">Loading customer details...</p>
+        <p className="text-sm">{t("crmCustomers.loadingDetails")}</p>
       </div>
     );
   }
@@ -210,22 +210,24 @@ export default function AddEditCustomers() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground">
-            {isEdit ? "Edit Customer" : "Add Customers"}
+            {isEdit ? t("crmCustomers.editCustomer") : t("crmCustomers.addCustomer")}
           </h2>
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/customers")}>Customers</span>
+            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/customers")}>
+              {t("crmCustomers.title")}
+            </span>
             <span>/</span>
-            <span>{isEdit ? "Edit Customer" : "Add Customers"}</span>
+            <span>{isEdit ? t("crmCustomers.editCustomer") : t("crmCustomers.addCustomer")}</span>
           </div>
         </div>
         <Button
           onClick={handleSubmit}
-          className="gap-2"
+          className="gap-2 cursor-pointer"
           disabled={isLoading || !isFormValid}
-          title={!isFormValid ? "Please fill in required fields (Name, Phone, Type, Status)" : ""}
+          title={!isFormValid ? t("crmCustomers.fillRequiredFields") : ""}
         >
           <Plus className="w-4 h-4" />
-          {isLoading ? "Saving..." : isEdit ? "Save" : "Add"}
+          {isLoading ? t("common.saving") : isEdit ? t("common.save") : t("common.add")}
         </Button>
       </div>
 
@@ -233,27 +235,27 @@ export default function AddEditCustomers() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-semibold text-foreground flex items-center gap-1">
-              <span>Name</span>
+              <span>{t("crmCustomers.name")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
               name="name"
-              placeholder="Name"
+              placeholder={t("crmCustomers.name")}
               className={cn("h-11 bg-transparent", errors.name && "border-red-500 focus-visible:ring-red-500")}
               value={formData.name}
               onChange={handleChange}
             />
             {errors.name && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "اسم العميل مطلوب" : "Customer name is required"}
+                {t("crmCustomers.nameRequired")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="type" className="text-sm font-semibold text-foreground flex items-center gap-1">
-              <span>Type</span>
+              <span>{t("crmCustomers.type")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <Select
@@ -262,26 +264,28 @@ export default function AddEditCustomers() {
               onValueChange={(val) => handleSelectChange("type", val)}
             >
               <SelectTrigger className={cn("!h-11 w-full bg-transparent", errors.type && "border-red-500 focus-visible:ring-red-500")}>
-                <SelectValue placeholder="Select type" />
+                <SelectValue placeholder={t("crmCustomers.selectType")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Individual">Individual</SelectItem>
-                <SelectItem value="Company">Company</SelectItem>
+                <SelectItem value="Individual">{t("crmCustomers.individual")}</SelectItem>
+                <SelectItem value="Company">{t("crmCustomers.company")}</SelectItem>
               </SelectContent>
             </Select>
             {errors.type && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "نوع العميل مطلوب" : "Customer type is required"}
+                {t("crmCustomers.typeRequired")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="sector" className="text-sm font-semibold text-foreground">Sector</Label>
+            <Label htmlFor="sector" className="text-sm font-semibold text-foreground">
+              {t("crmCustomers.sector")}
+            </Label>
             <Input
               id="sector"
               name="sector"
-              placeholder="Sector"
+              placeholder={t("crmCustomers.sector")}
               className="h-11 bg-transparent"
               value={formData.sector}
               onChange={handleChange}
@@ -290,7 +294,7 @@ export default function AddEditCustomers() {
 
           <div className="space-y-2">
             <Label htmlFor="status" className="text-sm font-semibold text-foreground flex items-center gap-1">
-              <span>Status</span>
+              <span>{t("crmCustomers.status")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <Select
@@ -299,67 +303,71 @@ export default function AddEditCustomers() {
               onValueChange={(val) => handleSelectChange("status", val)}
             >
               <SelectTrigger className={cn("!h-11 w-full bg-transparent", errors.status && "border-red-500 focus-visible:ring-red-500")}>
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t("crmCustomers.selectStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Active">Active</SelectItem>
-                <SelectItem value="Distinct">Distinct</SelectItem>
-                <SelectItem value="Old">Old</SelectItem>
-                <SelectItem value="Unacceptable">Unacceptable</SelectItem>
-                <SelectItem value="Unreliable">Unreliable</SelectItem>
+                <SelectItem value="Active">{t("crmCustomers.active")}</SelectItem>
+                <SelectItem value="Distinct">{t("crmCustomers.distinct")}</SelectItem>
+                <SelectItem value="Old">{t("crmCustomers.old")}</SelectItem>
+                <SelectItem value="Unacceptable">{t("crmCustomers.unacceptable")}</SelectItem>
+                <SelectItem value="Unreliable">{t("crmCustomers.unreliable")}</SelectItem>
               </SelectContent>
             </Select>
             {errors.status && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "حالة العميل مطلوبة" : "Customer status is required"}
+                {t("crmCustomers.statusRequired")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold text-foreground">E-mail</Label>
+            <Label htmlFor="email" className="text-sm font-semibold text-foreground">
+              {t("crmCustomers.email")}
+            </Label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="e-mail"
+              placeholder={t("crmCustomers.email")}
               className={cn("h-11 bg-transparent", errors.email && "border-red-500 focus-visible:ring-red-500")}
               value={formData.email}
               onChange={handleChange}
             />
             {errors.email && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "بريد إلكتروني غير صالح" : "Invalid email address"}
+                {t("crmCustomers.invalidEmail")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phone" className="text-sm font-semibold text-foreground flex items-center gap-1">
-              <span>Phone</span>
+              <span>{t("crmCustomers.phone")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <Input
               id="phone"
               name="phone"
-              placeholder="phone"
+              placeholder={t("crmCustomers.phone")}
               className={cn("h-11 bg-transparent", errors.phone && "border-red-500 focus-visible:ring-red-500")}
               value={formData.phone}
               onChange={handleChange}
             />
             {errors.phone && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required"}
+                {t("crmCustomers.phoneRequired")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="website" className="text-sm font-semibold text-foreground">Website</Label>
+            <Label htmlFor="website" className="text-sm font-semibold text-foreground">
+              {t("crmCustomers.website")}
+            </Label>
             <Input
               id="website"
               name="website"
-              placeholder="website"
+              placeholder={t("crmCustomers.website")}
               className="h-11 bg-transparent"
               value={formData.website}
               onChange={handleChange}
@@ -367,11 +375,13 @@ export default function AddEditCustomers() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="address" className="text-sm font-semibold text-foreground">Address</Label>
+            <Label htmlFor="address" className="text-sm font-semibold text-foreground">
+              {t("crmCustomers.address")}
+            </Label>
             <Input
               id="address"
               name="address"
-              placeholder="Address"
+              placeholder={t("crmCustomers.address")}
               className="h-11 bg-transparent"
               value={formData.address}
               onChange={handleChange}

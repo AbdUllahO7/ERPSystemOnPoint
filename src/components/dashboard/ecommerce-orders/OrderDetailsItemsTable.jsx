@@ -1,5 +1,6 @@
 import React from "react";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function OrderDetailsItemsTable({
   items = [],
@@ -9,6 +10,7 @@ export function OrderDetailsItemsTable({
   searchQuery = "",
   onSearchChange,
 }) {
+  const { t } = useI18n();
   const isAllSelected =
     items.length > 0 && selectedItems.length === items.length;
 
@@ -20,7 +22,7 @@ export function OrderDetailsItemsTable({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by id or employee name..."
+            placeholder={t("ecommerceOrders.searchItemsPlaceholder")}
             value={searchQuery}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white text-xs sm:text-sm rounded-xl border border-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#0066d1] focus:ring-2 focus:ring-[#0066d1]/10 transition-all"
@@ -32,7 +34,7 @@ export function OrderDetailsItemsTable({
           className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#0066d1] flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
         >
           <Filter className="w-3.5 h-3.5" />
-          <span>Filter</span>
+          <span>{t("common.filter")}</span>
         </button>
       </div>
 
@@ -52,31 +54,31 @@ export function OrderDetailsItemsTable({
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Code</span>
+                    <span>{t("ecommerceOrders.code")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Item Name</span>
+                    <span>{t("ecommerceOrders.itemName")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Category</span>
+                    <span>{t("ecommerceOrders.category")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Unit</span>
+                    <span>{t("ecommerceOrders.unit")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Number of pieces required</span>
+                    <span>{t("ecommerceOrders.piecesRequired")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
@@ -131,7 +133,7 @@ export function OrderDetailsItemsTable({
       {/* Pagination */}
       <div className="flex items-center justify-end gap-2 pt-2 text-xs font-semibold text-slate-600">
         <button type="button" className="px-2 py-1 hover:text-slate-900 cursor-pointer">
-          Pre
+          {t("common.prev")}
         </button>
         <button
           type="button"
@@ -156,7 +158,7 @@ export function OrderDetailsItemsTable({
           type="button"
           className="px-2 py-1 text-[#0066d1] font-bold hover:underline cursor-pointer"
         >
-          Next
+          {t("common.next")}
         </button>
       </div>
     </div>

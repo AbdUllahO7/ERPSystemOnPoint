@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import {
   Calendar,
@@ -294,7 +295,7 @@ export default function AppointmentsPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-xs font-medium text-muted-foreground">
-                  {stat.title}
+                  <StatTitle>{stat.title}</StatTitle>
                 </p>
                 <div className="mt-1 flex items-center gap-2">
                   <span className="text-2xl font-bold text-foreground">

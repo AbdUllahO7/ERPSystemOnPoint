@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState, useMemo } from "react";
 import { 
   Building, 
@@ -325,7 +326,7 @@ export default function FollowUpsPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate">{stat.title}</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider truncate"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-baseline gap-2 mt-1">
                 <span className="text-2xl font-black text-slate-900">{stat.value}</span>
                 <span className={`text-xs font-bold ${stat.isUp ? "text-emerald-600" : "text-rose-500"}`}>

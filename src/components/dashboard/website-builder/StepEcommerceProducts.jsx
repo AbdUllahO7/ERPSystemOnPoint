@@ -1,20 +1,24 @@
 import React from "react";
 import { Eye } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function StepEcommerceProducts({
   categories,
   onToggleCategoryAll,
   onViewCategoryProducts,
 }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   return (
     <div className="bg-white rounded-2xl border border-slate-200/80 p-6 sm:p-8 shadow-xs space-y-6">
       {/* Step Header */}
       <div className="space-y-1">
         <h2 className="text-base sm:text-lg font-extrabold text-slate-900">
-          Step 4: Products
+          {isAr ? "الخطوة 4: المنتجات" : "Step 4: Products"}
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 font-medium">
-          Select the products you want to add to the site from your inventory
+          {isAr ? "حدد المنتجات التي تريد إضافتها إلى الموقع من مخزونك" : "Select the products you want to add to the site from your inventory"}
         </p>
       </div>
 
@@ -40,8 +44,8 @@ export function StepEcommerceProducts({
                   onChange={() => onToggleCategoryAll && onToggleCategoryAll(cat.id)}
                   className="w-4 h-4 rounded border-slate-300 text-[#0066d1] focus:ring-[#0066d1]"
                 />
-                <span className="hidden sm:inline">Add All Product To E-Commerce</span>
-                <span className="sm:hidden">Add All</span>
+                <span className="hidden sm:inline">{isAr ? "إضافة جميع المنتجات إلى المتجر" : "Add All Product To E-Commerce"}</span>
+                <span className="sm:hidden">{isAr ? "إضافة الكل" : "Add All"}</span>
               </label>
 
               {/* View Products Link */}
@@ -51,7 +55,7 @@ export function StepEcommerceProducts({
                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#0066d1] hover:text-[#0052a8] transition-colors cursor-pointer"
               >
                 <Eye className="w-4 h-4" />
-                <span>View Products</span>
+                <span>{isAr ? "عرض المنتجات" : "View Products"}</span>
               </button>
             </div>
           </div>
@@ -60,33 +64,33 @@ export function StepEcommerceProducts({
 
       {/* Pagination matching Screenshot 4 */}
       <div className="flex items-center justify-end gap-2 pt-4 text-xs font-semibold text-slate-600">
-        <button type="button" className="px-2 py-1 hover:text-slate-900">
-          Pre
+        <button type="button" className="px-2 py-1 hover:text-slate-900 cursor-pointer">
+          {isAr ? "السابق" : "Pre"}
         </button>
         <button
           type="button"
-          className="w-7 h-7 rounded-lg bg-[#0066d1] text-white font-bold flex items-center justify-center shadow-xs"
+          className="w-7 h-7 rounded-lg bg-[#0066d1] text-white font-bold flex items-center justify-center shadow-xs cursor-pointer"
         >
           1
         </button>
         <button
           type="button"
-          className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600"
+          className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600 cursor-pointer"
         >
           2
         </button>
         <span className="px-1 text-slate-400">....</span>
         <button
           type="button"
-          className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600"
+          className="w-7 h-7 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-600 cursor-pointer"
         >
           20
         </button>
         <button
           type="button"
-          className="px-2 py-1 text-[#0066d1] font-bold hover:underline"
+          className="px-2 py-1 text-[#0066d1] font-bold hover:underline cursor-pointer"
         >
-          Next
+          {isAr ? "التالي" : "Next"}
         </button>
       </div>
     </div>

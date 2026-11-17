@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { getRentalLookups, settleRentalContract } from "@/services/rentals";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function SettleRentalContractDialog({
   isOpen,
@@ -39,6 +41,7 @@ export default function SettleRentalContractDialog({
   contract,
   onSuccess,
 }) {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
 
   const [formData, setFormData] = useState({
@@ -97,7 +100,7 @@ export default function SettleRentalContractDialog({
   const settleMutation = useMutation({
     mutationFn: (payload) => settleRentalContract(payload),
     onSuccess: (res) => {
-      toast.success(res?.message || "Rental contract settled successfully!");
+      toast.success(res?.message || t("rentalsModule.settleContractSuccess"));
       queryClient.invalidateQueries(["rentals"]);
       if (contract?.id) {
         queryClient.invalidateQueries(["rental", contract.id]);
@@ -107,7 +110,7 @@ export default function SettleRentalContractDialog({
     },
     onError: (err) => {
       const msg =
-        err?.response?.data?.message || err?.message || "Failed to settle contract";
+        err?.response?.data?.message || err?.message || t("rentalsModule.settleContractFailed");
       toast.error(msg);
     },
   });
@@ -124,7 +127,7 @@ export default function SettleRentalContractDialog({
     setPaymentSchedules((prev) => [
       ...prev,
       {
-        description: `Damage / Settlement Fee #${prev.length + 1}`,
+        description: `${t("rentalsModule.damageSettlementFee")} #${prev.length + 1}`,
         amountDue: netDueFromCustomer > 0 ? String(netDueFromCustomer) : "0",
         dueDate: new Date().toISOString().slice(0, 10),
       },
@@ -138,7 +141,7 @@ export default function SettleRentalContractDialog({
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!contract?.id) {
-      toast.error("Contract ID is missing");
+      toast.error(t("rentalsModule.contractIdMissing"));
       return;
     }
 
@@ -152,7 +155,7 @@ export default function SettleRentalContractDialog({
     const schedules = paymentSchedules
       .filter((s) => Number(s.amountDue) > 0)
       .map((s) => ({
-        description: s.description || "Settlement Schedule",
+        description: s.description || t("rentalsModule.settlementSchedule"),
         amountDue: Number(s.amountDue),
         dueDate: s.dueDate ? new Date(s.dueDate).toISOString() : new Date().toISOString(),
       }));
@@ -181,10 +184,10 @@ export default function SettleRentalContractDialog({
             </div>
             <div>
               <DialogTitle className="text-base font-bold text-slate-900">
-                Settle Rental Contract
+                {t("rentalsModule.settleContract")}
               </DialogTitle>
               <p className="text-xs text-slate-500 mt-0.5">
-                Record actual return date, inspect items, assess damage charges, and process deposit settlement.
+                {t("rentalsModule.settleContractSub")}
               </p>
             </div>
           </div>
@@ -193,25 +196,25 @@ export default function SettleRentalContractDialog({
         {/* Contract Summary Banner */}
         <div className="p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mt-2">
           <div>
-            <span className="text-slate-400 block text-[11px]">Contract #</span>
+            <span className="text-slate-400 block text-[11px]">{t("rentalsModule.contractNumber")}</span>
             <span className="font-semibold text-slate-800">
               {contract?.contractNumber || contract?.id?.slice(0, 8) || "N/A"}
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[11px]">Customer</span>
+            <span className="text-slate-400 block text-[11px]">{t("rentalsModule.customer")}</span>
             <span className="font-semibold text-slate-800 truncate block">
-              {contract?.customer || contract?.customerName || "Customer"}
+              {contract?.customer || contract?.customerName || t("rentalsModule.customer")}
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[11px]">Resource / Unit</span>
+            <span className="text-slate-400 block text-[11px]">{t("rentalsModule.resource")}</span>
             <span className="font-semibold text-slate-800 truncate block">
-              {contract?.resource || contract?.resourceName || "Resource"}
+              {contract?.resource || contract?.resourceName || t("rentalsModule.resource")}
             </span>
           </div>
           <div>
-            <span className="text-slate-400 block text-[11px]">Deposit Held</span>
+            <span className="text-slate-400 block text-[11px]">{t("rentalsModule.depositHeld")}</span>
             <span className="font-bold text-emerald-600 block">
               ${deposit.toFixed(2)}
             </span>
@@ -223,7 +226,7 @@ export default function SettleRentalContractDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                Actual Return Date & Time <span className="text-rose-500">*</span>
+                {t("rentalsModule.actualReturnDateTime")} <span className="text-rose-500">*</span>
               </Label>
               <Input
                 type="datetime-local"
@@ -238,7 +241,7 @@ export default function SettleRentalContractDialog({
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                Invoice Pattern
+                {t("rentalsModule.invoicePattern")}
               </Label>
               <Select
                 value={formData.invoicePattern}
@@ -247,7 +250,7 @@ export default function SettleRentalContractDialog({
                 }
               >
                 <SelectTrigger className="h-10 rounded-xl text-xs">
-                  <SelectValue placeholder="Select Invoice Pattern" />
+                  <SelectValue placeholder={t("rentalsModule.selectInvoicePattern")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.invoicePatterns.map((p) => (
@@ -264,7 +267,7 @@ export default function SettleRentalContractDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                Damage / Penalty Charges ($)
+                {t("rentalsModule.damagePenaltyCharges")}
               </Label>
               <Input
                 type="number"
@@ -281,7 +284,7 @@ export default function SettleRentalContractDialog({
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-slate-700">
-                Settlement / Refund Account
+                {t("rentalsModule.settlementRefundAccount")}
               </Label>
               <Select
                 value={formData.refundAccountId}
@@ -290,7 +293,7 @@ export default function SettleRentalContractDialog({
                 }
               >
                 <SelectTrigger className="h-10 rounded-xl text-xs">
-                  <SelectValue placeholder="Select Account" />
+                  <SelectValue placeholder={t("invoicePatterns.selectAccount")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.paymentAccounts.map((a) => (
@@ -306,11 +309,11 @@ export default function SettleRentalContractDialog({
           {/* Row 3: Damage & Condition Notes */}
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Damage & Return Notes
+              {t("rentalsModule.damageReturnNotes")}
             </Label>
             <Textarea
               rows={3}
-              placeholder="Describe condition on return, repairs needed, fuel refilling notes, or return checklist observations..."
+              placeholder={t("rentalsModule.damageReturnNotesPlaceholder")}
               value={formData.damageNotes}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, damageNotes: e.target.value }))
@@ -325,7 +328,7 @@ export default function SettleRentalContractDialog({
               <div className="flex items-center gap-2">
                 <FileCheck2 className="w-4 h-4 text-[#0066d1]" />
                 <span className="text-xs font-bold text-slate-800">
-                  Return Inspection Checklist
+                  {t("rentalsModule.returnInspectionChecklist")}
                 </span>
               </div>
               <Button
@@ -336,7 +339,7 @@ export default function SettleRentalContractDialog({
                 className="h-8 gap-1.5 text-xs rounded-lg border-dashed text-[#0066d1] hover:text-[#0052a8]"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Item
+                {t("rentalsModule.addItem")}
               </Button>
             </div>
 
@@ -344,7 +347,7 @@ export default function SettleRentalContractDialog({
               {checkInItems.map((item, idx) => (
                 <div key={idx} className="flex items-center gap-2">
                   <Input
-                    placeholder="Attribute (e.g. Mileage, Fuel)"
+                    placeholder={t("rentalsModule.attributePlaceholder")}
                     value={item.key}
                     onChange={(e) => {
                       const updated = [...checkInItems];
@@ -354,7 +357,7 @@ export default function SettleRentalContractDialog({
                     className="h-9 rounded-lg text-xs w-1/2 bg-white"
                   />
                   <Input
-                    placeholder="Status / Value (e.g. 100%, Good)"
+                    placeholder={t("rentalsModule.statusValuePlaceholder")}
                     value={item.value}
                     onChange={(e) => {
                       const updated = [...checkInItems];
@@ -383,7 +386,7 @@ export default function SettleRentalContractDialog({
               <div className="flex items-center gap-2">
                 <Receipt className="w-4 h-4 text-[#0066d1]" />
                 <span className="text-xs font-bold text-slate-800">
-                  Settlement Payment Schedules (Optional)
+                  {t("rentalsModule.settlementPaymentSchedules")}
                 </span>
               </div>
               <Button
@@ -394,20 +397,20 @@ export default function SettleRentalContractDialog({
                 className="h-8 gap-1.5 text-xs rounded-lg border-dashed text-[#0066d1] hover:text-[#0052a8]"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Schedule
+                {t("rentalsModule.addSchedule")}
               </Button>
             </div>
 
             {paymentSchedules.length === 0 ? (
               <p className="text-[11px] text-slate-400 italic">
-                No payment schedules added. Add schedules if damage charges exceed deposit or require deferred collection.
+                {t("rentalsModule.noSchedulesAdded")}
               </p>
             ) : (
               <div className="space-y-2">
                 {paymentSchedules.map((schedule, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <Input
-                      placeholder="Description"
+                      placeholder={t("rentalsModule.description")}
                       value={schedule.description}
                       onChange={(e) => {
                         const updated = [...paymentSchedules];
@@ -419,7 +422,7 @@ export default function SettleRentalContractDialog({
                     <Input
                       type="number"
                       step="0.01"
-                      placeholder="Amount"
+                      placeholder={t("rentalsModule.amount")}
                       value={schedule.amountDue}
                       onChange={(e) => {
                         const updated = [...paymentSchedules];
@@ -456,22 +459,22 @@ export default function SettleRentalContractDialog({
           {/* Settlement Summary Card */}
           <div className="p-4 rounded-xl border border-blue-100 bg-blue-50/50 space-y-2 text-xs">
             <div className="flex justify-between text-slate-600">
-              <span>Security Deposit on Hold:</span>
+              <span>{t("rentalsModule.securityDepositOnHold")}</span>
               <span className="font-semibold text-slate-800">${deposit.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-slate-600">
-              <span>Damage / Additional Charges:</span>
+              <span>{t("rentalsModule.damageAdditionalCharges")}</span>
               <span className="font-semibold text-rose-600">-${damageCharges.toFixed(2)}</span>
             </div>
             <div className="border-t border-blue-200/60 pt-2 flex justify-between font-bold text-sm">
               {netDueFromCustomer > 0 ? (
                 <>
-                  <span className="text-amber-800">Remaining Due from Customer:</span>
+                  <span className="text-amber-800">{t("rentalsModule.remainingDueFromCustomer")}</span>
                   <span className="text-amber-700">${netDueFromCustomer.toFixed(2)}</span>
                 </>
               ) : (
                 <>
-                  <span className="text-emerald-800">Net Refund to Customer:</span>
+                  <span className="text-emerald-800">{t("rentalsModule.netRefundToCustomer")}</span>
                   <span className="text-emerald-700">${netRefund.toFixed(2)}</span>
                 </>
               )}
@@ -486,7 +489,7 @@ export default function SettleRentalContractDialog({
               disabled={settleMutation.isPending}
               className="h-10 rounded-xl text-xs font-semibold px-5"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
@@ -496,12 +499,12 @@ export default function SettleRentalContractDialog({
               {settleMutation.isPending ? (
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
-                  Settling...
+                  {t("rentalsModule.settling")}
                 </>
               ) : (
                 <>
                   <CheckCircle2 className="w-3.5 h-3.5 me-1.5" />
-                  Confirm Settlement
+                  {t("rentalsModule.confirmSettlement")}
                 </>
               )}
             </Button>

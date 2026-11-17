@@ -8,8 +8,7 @@ import { FileText, Receipt, ShieldCheck } from "lucide-react";
 import { useI18n } from "@/context/translate-api";
 
 export function InvoicesTab({ supplierId }) {
-  const { locale } = useI18n();
-  const isArabic = locale === "ar";
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -76,21 +75,21 @@ export function InvoicesTab({ supplierId }) {
     },
     { 
       key: "net_Amount", 
-      label: isArabic ? "صافي الفاتورة" : "Net Consumed", 
+      label: t("crmSuppliers.invoices.netConsumed"), 
       render: (row) => (
         <div>
           <span className="text-emerald-700 font-bold block">${Number(row.net_Amount || 0).toLocaleString()}</span>
-          <span className="text-[10px] text-muted-foreground">{isArabic ? "يخصم من العقد" : "Consumes contract"}</span>
+          <span className="text-[10px] text-muted-foreground">{t("crmSuppliers.invoices.consumesContract")}</span>
         </div>
       )
     },
     { 
       key: "paid_Amount", 
-      label: isArabic ? "المبلغ المدفوع" : "Paid Amount", 
+      label: t("crmSuppliers.invoices.paidAmount"), 
       render: (row) => (
         <div>
           <span className="font-semibold text-blue-600 block">${Number(row.paid_Amount || 0).toLocaleString()}</span>
-          <span className="text-[10px] text-muted-foreground">{isArabic ? "مدفوع نقداً" : "Cash paid"}</span>
+          <span className="text-[10px] text-muted-foreground">{t("crmSuppliers.invoices.cashPaid")}</span>
         </div>
       )
     },

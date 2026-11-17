@@ -95,49 +95,49 @@ export default function LeadDetails() {
   const followUpStatusMutation = useMutation({
     mutationFn: (payload) => updateFollowUpStatus(payload),
     onSuccess: () => {
-      toast.success("Follow-up status and execution note updated successfully!");
+      toast.success(t("leads.followUpStatusUpdateSuccess"));
       queryClient.invalidateQueries(["lead", id]);
       setExecutionDialog({ isOpen: false, followUp: null, action: "Completed", executionNote: "" });
     },
     onError: (err) => {
-      toast.error(err?.message || "Failed to update follow-up status.");
+      toast.error(err?.message || t("leads.followUpStatusUpdateError"));
     },
   });
 
   const leadStatusMutation = useMutation({
     mutationFn: (payload) => changeLeadStatus(payload),
     onSuccess: () => {
-      toast.success("Status changed successfully");
+      toast.success(t("leads.statusChangeSuccess"));
       queryClient.invalidateQueries(["lead", id]);
       queryClient.invalidateQueries(["leads"]);
     },
     onError: (err) => {
-      toast.error(err?.message || "Failed to change status");
+      toast.error(err?.message || t("leads.statusChangeError"));
     },
   });
 
   const uploadDocMutation = useMutation({
     mutationFn: (formData) => uploadLeadDocument(formData),
     onSuccess: () => {
-      toast.success("Document attached successfully");
+      toast.success(t("leads.docAttachSuccess"));
       queryClient.invalidateQueries(["lead-documents", id]);
       setIsDocModalOpen(false);
       setSelectedFile(null);
       setDocFileName("");
     },
     onError: (err) => {
-      toast.error(err?.message || "Failed to upload document");
+      toast.error(err?.message || t("leads.docAttachError"));
     },
   });
 
   const deleteDocMutation = useMutation({
     mutationFn: (docId) => deleteLeadDocument(docId),
     onSuccess: () => {
-      toast.success("Document deleted successfully");
+      toast.success(t("leads.docDeleteSuccess"));
       queryClient.invalidateQueries(["lead-documents", id]);
     },
     onError: (err) => {
-      toast.error(err?.message || "Failed to delete document");
+      toast.error(err?.message || t("leads.docDeleteError"));
     },
   });
 
@@ -154,7 +154,7 @@ export default function LeadDetails() {
   const handleExecutionSubmit = (e) => {
     e.preventDefault();
     if (!executionDialog.executionNote.trim()) {
-      toast.error("Please record the execution note / result before submitting.");
+      toast.error(t("leads.executionNoteRequired"));
       return;
     }
 
@@ -168,7 +168,7 @@ export default function LeadDetails() {
   const handleLeadStatusChange = (status) => {
     if (status === "Converted") {
       if (isConverted) {
-        toast.error("This opportunity has already been converted to a customer.");
+        toast.error(t("leads.alreadyConvertedError"));
         return;
       }
       setIsConvertDialogOpen(true);
@@ -176,7 +176,7 @@ export default function LeadDetails() {
     }
 
     if (isConverted) {
-      toast.error("Converted leads cannot change status.");
+      toast.error(t("leads.convertedLeadsCannotChangeStatus"));
       return;
     }
 
@@ -202,7 +202,7 @@ export default function LeadDetails() {
   const handleUploadSubmit = (e) => {
     e.preventDefault();
     if (!selectedFile) {
-      toast.error("Please choose a file to upload");
+      toast.error(t("leads.pleaseChooseFile"));
       return;
     }
 
@@ -214,8 +214,8 @@ export default function LeadDetails() {
     uploadDocMutation.mutate(formData);
   };
 
-  if (isLoading) return <div className="p-6">Loading lead details...</div>;
-  if (isError || !lead) return <div className="p-6 text-red-500">Error loading lead details.</div>;
+  if (isLoading) return <div className="p-6">{t("leads.loadingDetails")}</div>;
+  if (isError || !lead) return <div className="p-6 text-red-500">{t("leads.errorLoadingDetails")}</div>;
 
   const documents =
     (docsData?.data?.items && docsData.data.items.length > 0)
@@ -232,34 +232,36 @@ export default function LeadDetails() {
     switch (status) {
       case "New":
         colorClass = "bg-green-100 text-green-700 border border-green-200";
-        meaning = "New Opportunity";
+        meaning = t("leads.statusMeanings.new");
         break;
       case "Contacted":
         colorClass = "bg-blue-100 text-blue-700 border border-blue-200";
-        meaning = "Communication Started";
+        meaning = t("leads.statusMeanings.contacted");
         break;
       case "Qualified":
         colorClass = "bg-teal-100 text-teal-700 border border-teal-200";
-        meaning = "Qualified Opportunity";
+        meaning = t("leads.statusMeanings.qualified");
         break;
       case "Quotation":
         colorClass = "bg-amber-100 text-amber-700 border border-amber-200";
-        meaning = "Price Quote Phase";
+        meaning = t("leads.statusMeanings.quotation");
         break;
       case "Converted":
         colorClass = "bg-purple-100 text-purple-700 border border-purple-200";
-        meaning = "Converted to Customer";
+        meaning = t("leads.statusMeanings.converted");
         break;
       case "Lost":
         colorClass = "bg-red-100 text-red-700 border border-red-200";
-        meaning = "Closed without success";
+        meaning = t("leads.statusMeanings.lost");
         break;
       default:
         meaning = status;
     }
+    const statusKey = status?.toLowerCase();
+    const label = t(`leads.statuses.${statusKey}`) || status;
     return (
       <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${colorClass}`} title={meaning}>
-        {status}
+        {label}
       </span>
     );
   };
@@ -297,15 +299,19 @@ export default function LeadDetails() {
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-xl font-bold text-foreground">Lead Details</h2>
+          <h2 className="text-xl font-bold text-foreground">
+            {t("leads.details")}
+          </h2>
           <Info className="w-4 h-4 text-muted-foreground" />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
           <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/leads")}>
-            Leads
+            {t("leads.title")}
           </span>
           <span>/</span>
-          <span className="font-medium text-foreground">Lead Details</span>
+          <span className="font-medium text-foreground">
+            {t("leads.details")}
+          </span>
         </div>
       </div>
 
@@ -319,18 +325,18 @@ export default function LeadDetails() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-                  {t?.leads?.resultingCustomerRef || "Resulting Customer Reference"}
+                  {t("leads.resultingCustomerRef")}
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[11px] bg-emerald-200 text-emerald-900 font-bold">
-                  Converted
+                  {t("leads.statuses.converted")}
                 </span>
               </div>
               <p className="text-sm font-semibold text-emerald-950 mt-0.5">
                 {lead.customerName || lead.company || lead.name}
-                {lead.customerId ? ` • Customer ID: #${lead.customerId.substring(0, 8)}` : ""}
+                {lead.customerId ? ` • ${t("leads.customerIdLabel")} #${lead.customerId.substring(0, 8)}` : ""}
               </p>
               <p className="text-xs text-emerald-700 mt-0.5">
-                Conversion completed. Re-conversion is restricted to prevent duplicate customer records.
+                {t("leads.reconversionRestricted")}
               </p>
             </div>
           </div>
@@ -340,7 +346,7 @@ export default function LeadDetails() {
               className="bg-emerald-700 hover:bg-emerald-800 text-white gap-2 shrink-0 rounded-xl"
               onClick={() => navigate(`/dashboard/crm/customers/${lead.customerId}`)}
             >
-              View Customer Profile
+              {t("leads.viewCustomerProfile")}
             </Button>
           )}
         </div>
@@ -361,7 +367,7 @@ export default function LeadDetails() {
                   {renderStatusBadge(lead.status)}
                 </div>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {lead.company || "Individual Lead"} • Expected Value:{" "}
+                  {lead.company || t("leads.individualLead")} • {t("leads.expectedValueLabel")}{" "}
                   <span className="text-blue-600 font-semibold">${lead.expectedValue || 0}</span>
                 </p>
               </div>
@@ -376,7 +382,7 @@ export default function LeadDetails() {
                     ) : (
                       <RefreshCcw className="w-4 h-4" />
                     )}
-                    Change Status
+                    {t("leads.changeStatus")}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-52 p-2 space-y-1">
@@ -384,45 +390,45 @@ export default function LeadDetails() {
                     onClick={() => handleLeadStatusChange("New")}
                     className="cursor-pointer bg-green-50 text-green-700 hover:bg-green-100 font-medium py-2 rounded-md"
                   >
-                    {t?.leads?.statuses?.new || "New"}
+                    {t("leads.statuses.new")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Contacted")}
                     className="cursor-pointer bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium py-2 rounded-md"
                   >
-                    {t?.leads?.statuses?.contacted || "Contacted"}
+                    {t("leads.statuses.contacted")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Qualified")}
                     className="cursor-pointer bg-teal-50 text-teal-700 hover:bg-teal-100 font-medium py-2 rounded-md"
                   >
-                    {t?.leads?.statuses?.qualified || "Qualified"}
+                    {t("leads.statuses.qualified")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Quotation")}
                     className="cursor-pointer bg-amber-50 text-amber-700 hover:bg-amber-100 font-medium py-2 rounded-md"
                   >
-                    {t?.leads?.statuses?.quotation || "Quotation"}
+                    {t("leads.statuses.quotation")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Converted")}
                     disabled={isConverted}
                     className="cursor-pointer bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium py-2 rounded-md disabled:opacity-50"
                   >
-                    {isConverted ? "Converted" : (t?.leads?.statuses?.converted || "Converted")}
+                    {isConverted ? t("leads.statuses.converted") : t("leads.convertToCustomerAction")}
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => handleLeadStatusChange("Lost")}
                     className="cursor-pointer bg-red-50 text-red-700 hover:bg-red-100 font-medium py-2 rounded-md"
                   >
-                    {t?.leads?.statuses?.lost || "Lost"}
+                    {t("leads.statuses.lost")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
 
               <Button variant="outline" className="gap-2" onClick={() => navigate(`/dashboard/crm/leads/edit/${id}`)}>
                 <Edit className="w-4 h-4" />
-                Edit Profile
+                {t("leads.editProfile")}
               </Button>
             </div>
           </div>
@@ -431,40 +437,40 @@ export default function LeadDetails() {
           <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
               <div>
-                <h4 className="text-sm font-semibold text-foreground">Company</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("leads.company")}</h4>
                 <p className="text-sm text-muted-foreground mt-1">{lead.company || "-"}</p>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-foreground">E-mail</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("leads.email")}</h4>
                 <p className="text-sm text-muted-foreground mt-1">{lead.email || "-"}</p>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-foreground">Phone</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("leads.phone")}</h4>
                 <p className="text-sm text-muted-foreground mt-1">{lead.phone || lead.phoneNumber || "-"}</p>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-foreground">Responsible</h4>
-                <p className="text-sm text-muted-foreground mt-1">{lead.responsibleName || lead.responsible || "None"}</p>
+                <h4 className="text-sm font-semibold text-foreground">{t("leads.responsible")}</h4>
+                <p className="text-sm text-muted-foreground mt-1">{lead.responsibleName || lead.responsible || t("leads.none")}</p>
               </div>
               <div>
-                <h4 className="text-sm font-semibold text-foreground">Created At</h4>
+                <h4 className="text-sm font-semibold text-foreground">{t("leads.createdAt")}</h4>
                 <p className="text-sm text-muted-foreground mt-1">
                   {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : "-"}
                 </p>
               </div>
               <div>
                 <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-semibold text-foreground">Expected Value</h4>
-                  <span className="text-[11px] text-muted-foreground">Opportunity estimate</span>
+                  <h4 className="text-sm font-semibold text-foreground">{t("leads.value")}</h4>
+                  <span className="text-[11px] text-muted-foreground">{t("leads.opportunityEstimate")}</span>
                 </div>
                 <p className="text-sm text-blue-600 font-bold mt-1">${lead.expectedValue || 0}</p>
               </div>
             </div>
 
             <div className="mt-6 pt-4 border-t border-border">
-              <h4 className="text-sm font-semibold text-foreground">Notes</h4>
+              <h4 className="text-sm font-semibold text-foreground">{t("leads.notes")}</h4>
               <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                {lead.notes || lead.note || "No notes recorded."}
+                {lead.notes || lead.note || t("leads.noNotes")}
               </p>
             </div>
           </div>
@@ -475,15 +481,17 @@ export default function LeadDetails() {
               <div>
                 <div className="flex items-center gap-2">
                   <Paperclip className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-bold">Attached Documents (LeadDocument)</h3>
+                  <h3 className="text-lg font-bold">
+                    {t("leads.attachedDocuments")}
+                  </h3>
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Attach documents such as customer request or requirement file.
+                  {t("leads.attachDocHelp")}
                 </p>
               </div>
               <Button onClick={() => setIsDocModalOpen(true)} className="gap-2 shrink-0">
                 <Plus className="w-4 h-4" />
-                Attach Document
+                {t("leads.attachDocument")}
               </Button>
             </div>
 
@@ -494,9 +502,11 @@ export default function LeadDetails() {
             ) : documents.length === 0 ? (
               <div className="text-center py-8 border-2 border-dashed border-border rounded-xl">
                 <Paperclip className="w-8 h-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-                <h4 className="text-sm font-semibold text-foreground">No documents attached yet</h4>
+                <h4 className="text-sm font-semibold text-foreground">
+                  {t("leads.noDocuments")}
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Attach requirements files, requests, or briefs to this opportunity.
+                  {t("leads.attachDocEmptyHelp")}
                 </p>
               </div>
             ) : (
@@ -519,7 +529,7 @@ export default function LeadDetails() {
                           {doc.fileName}
                         </h4>
                         <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {doc.formattedFileSize || "File"} •{" "}
+                          {doc.formattedFileSize || t("leads.file")} •{" "}
                           {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString() : ""}
                         </p>
                       </div>
@@ -531,7 +541,7 @@ export default function LeadDetails() {
                           target="_blank"
                           rel="noreferrer"
                           className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition-colors"
-                          title="Download"
+                          title={t("leads.download")}
                         >
                           <Download className="w-4 h-4" />
                         </a>
@@ -540,7 +550,7 @@ export default function LeadDetails() {
                         onClick={() => deleteDocMutation.mutate(doc.id)}
                         disabled={deleteDocMutation.isPending}
                         className="p-1.5 hover:bg-rose-50 text-rose-600 rounded-lg transition-colors disabled:opacity-50"
-                        title="Delete document"
+                        title={t("leads.deleteDocument")}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -555,9 +565,9 @@ export default function LeadDetails() {
           <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
               <div>
-                <h3 className="text-lg font-bold">Follow-Up Log</h3>
+                <h3 className="text-lg font-bold">{t("leads.followUpLog")}</h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  FollowUp tracking (Call, Meeting, Email, Task). Result is recorded in ExecutionNote upon completion.
+                  {t("leads.followUpHelp")}
                 </p>
               </div>
               <Button
@@ -568,7 +578,7 @@ export default function LeadDetails() {
                 }}
               >
                 <Plus className="w-4 h-4" />
-                Add Follow-Up
+                {t("leads.addFollowUp")}
               </Button>
             </div>
 
@@ -585,7 +595,7 @@ export default function LeadDetails() {
                       </div>
                       <div className="space-y-1 flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="font-semibold text-foreground">{followUp.topic || "Follow-up"}</h4>
+                          <h4 className="font-semibold text-foreground">{followUp.topic || t("leads.followUp")}</h4>
                           <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
                             {followUp.type}
                           </span>
@@ -597,7 +607,7 @@ export default function LeadDetails() {
                         {followUp.executionNote && (
                           <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
                             <span className="text-[11px] font-bold text-slate-700 block">
-                              Execution Result (ExecutionNote):
+                              {t("leads.executionResult")}
                             </span>
                             <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
                               {followUp.executionNote}
@@ -617,7 +627,7 @@ export default function LeadDetails() {
                             className="h-8 px-2.5 gap-1 bg-green-50 text-green-700 border-green-200 hover:bg-green-100 text-xs"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            Complete
+                            {t("leads.complete")}
                           </Button>
                           <Button
                             size="sm"
@@ -626,7 +636,7 @@ export default function LeadDetails() {
                             className="h-8 px-2.5 gap-1 bg-red-50 text-red-700 border-red-200 hover:bg-red-100 text-xs"
                           >
                             <X className="w-3.5 h-3.5" />
-                            Cancel
+                            {t("leads.cancel")}
                           </Button>
                         </div>
                       )}
@@ -636,7 +646,7 @@ export default function LeadDetails() {
                 ))
               ) : (
                 <div className="text-center text-muted-foreground py-8 border-2 border-dashed border-border rounded-xl">
-                  No follow-ups logged yet.
+                  {t("leads.noFollowUps")}
                 </div>
               )}
             </div>
@@ -648,20 +658,20 @@ export default function LeadDetails() {
           {/* Price Quote Card */}
           <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Price Quote</h3>
+              <h3 className="text-lg font-bold">{t("leads.priceQuote")}</h3>
               {renderStatusBadge("Quotation")}
             </div>
             <div className="space-y-3">
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Title</span>
-                <span className="font-medium">{lead.quoteTitle || "Quotation Phase"}</span>
+                <span className="text-muted-foreground">{t("leads.quoteTitle")}</span>
+                <span className="font-medium">{lead.quoteTitle || t("leads.quotationPhase")}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Estimated Value</span>
+                <span className="text-muted-foreground">{t("leads.estimatedValue")}</span>
                 <span className="font-semibold text-blue-600">${lead.expectedValue || lead.quoteValue || 0}</span>
               </div>
               <div className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">Date</span>
+                <span className="text-muted-foreground">{t("leads.date")}</span>
                 <span className="font-medium">
                   {lead.quoteDate ? new Date(lead.quoteDate).toLocaleDateString() : "-"}
                 </span>
@@ -670,14 +680,14 @@ export default function LeadDetails() {
 
             {/* Rule note: Quotation status does not generate quotation document by itself */}
             <div className="mt-4 p-3 bg-amber-50/70 border border-amber-200 rounded-lg text-xs text-amber-800 leading-relaxed">
-              <p className="font-semibold mb-0.5">Note on Quotation status:</p>
-              Quotation status indicates that the opportunity is currently in the price quote phase. Having this status does not create an official quotation document by itself.
+              <p className="font-semibold mb-0.5">{t("leads.quoteStatusNote")}</p>
+              {t("leads.quotationStatusHelp")}
             </div>
           </div>
 
           {/* Quick Actions Card */}
           <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
-            <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
+            <h3 className="text-lg font-bold mb-4">{t("leads.quickActions")}</h3>
             <div className="space-y-3">
               <Button
                 variant="outline"
@@ -688,7 +698,7 @@ export default function LeadDetails() {
                 }}
               >
                 <PhoneCall className="w-4 h-4 text-muted-foreground" />
-                Schedule Call
+                {t("leads.scheduleCall")}
               </Button>
               <Button
                 variant="outline"
@@ -699,7 +709,7 @@ export default function LeadDetails() {
                 }}
               >
                 <Calendar className="w-4 h-4 text-muted-foreground" />
-                Schedule Meeting
+                {t("leads.scheduleMeeting")}
               </Button>
 
               {/* Prevent double conversion (Rule 1) */}
@@ -710,10 +720,10 @@ export default function LeadDetails() {
                     className="w-full justify-start gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-not-allowed opacity-90"
                   >
                     <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                    Already Converted to Customer
+                    {t("leads.alreadyConvertedToCustomer")}
                   </Button>
                   <p className="text-[11px] text-muted-foreground mt-1.5 px-1">
-                    This lead is already converted. Re-conversion is restricted.
+                    {t("leads.reconversionRestrictedShort")}
                   </p>
                 </div>
               ) : (
@@ -722,14 +732,14 @@ export default function LeadDetails() {
                   onClick={() => setIsConvertDialogOpen(true)}
                 >
                   <RefreshCcw className="w-4 h-4" />
-                  Convert to Customer
+                  {t("leads.convertToCustomerAction")}
                 </Button>
               )}
             </div>
 
             <div className="mt-4 pt-4 border-t border-border">
               <p className="text-[11px] text-muted-foreground leading-relaxed">
-                Follow-up appointments organize schedule timeline; recording a date does not send an automatic reminder.
+                {t("leads.followUpScheduleNote")}
               </p>
             </div>
           </div>
@@ -761,10 +771,12 @@ export default function LeadDetails() {
               </div>
               <div>
                 <DialogTitle className="text-lg">
-                  {executionDialog.action === "Completed" ? "Complete Follow-Up" : "Cancel Follow-Up"}
+                  {executionDialog.action === "Completed"
+                    ? t("leads.completeFollowUp")
+                    : t("leads.cancelFollowUp")}
                 </DialogTitle>
                 <DialogDescription className="text-xs mt-0.5">
-                  Record outcome in ExecutionNote for: {executionDialog.followUp?.topic || "Follow-up"}
+                  {t("leads.recordOutcomeInExecutionNote")} {executionDialog.followUp?.topic || t("leads.followUp")}
                 </DialogDescription>
               </div>
             </div>
@@ -772,18 +784,18 @@ export default function LeadDetails() {
 
           <form onSubmit={handleExecutionSubmit} className="space-y-4 pt-2">
             <div className="p-3 bg-slate-50 border rounded-lg text-xs space-y-1">
-              <p className="font-semibold text-slate-700">Workflow Step 3:</p>
+              <p className="font-semibold text-slate-700">{t("leads.workflowStep3")}</p>
               <p className="text-slate-600">
-                بعد التنفيذ تُسجل النتيجة في ExecutionNote وتصبح المتابعة مكتملة أو ملغاة.
+                {t("leads.workflowStep3Desc")}
               </p>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold text-foreground">
-                Execution Note / Outcome Result <span className="text-rose-500">*</span>
+                {t("leads.executionNoteLabel")} <span className="text-rose-500">*</span>
               </Label>
               <Textarea
-                placeholder="Enter call outcome, meeting discussion notes, or cancellation reason..."
+                placeholder={t("leads.executionNotePlaceholder")}
                 value={executionDialog.executionNote}
                 onChange={(e) => setExecutionDialog((prev) => ({ ...prev, executionNote: e.target.value }))}
                 className="min-h-[110px] text-xs resize-none"
@@ -797,7 +809,7 @@ export default function LeadDetails() {
                 variant="outline"
                 onClick={() => setExecutionDialog((prev) => ({ ...prev, isOpen: false, executionNote: "" }))}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
@@ -809,10 +821,10 @@ export default function LeadDetails() {
                 }
               >
                 {followUpStatusMutation.isPending
-                  ? "Saving..."
+                  ? t("common.saving")
                   : executionDialog.action === "Completed"
-                  ? "Save & Mark Completed"
-                  : "Save & Mark Canceled"}
+                  ? t("leads.saveAndComplete")
+                  : t("leads.saveAndCancel")}
               </Button>
             </DialogFooter>
           </form>
@@ -828,9 +840,11 @@ export default function LeadDetails() {
                 <CloudUpload className="w-5 h-5" />
               </div>
               <div>
-                <DialogTitle className="text-lg">Attach Lead Document</DialogTitle>
+                <DialogTitle className="text-lg">
+                  {t("leads.attachDocModalTitle")}
+                </DialogTitle>
                 <DialogDescription className="text-xs mt-0.5">
-                  Upload customer request, requirements file, or proposal brief
+                  {t("leads.attachDocModalDesc")}
                 </DialogDescription>
               </div>
             </div>
@@ -838,9 +852,11 @@ export default function LeadDetails() {
 
           <form onSubmit={handleUploadSubmit} className="space-y-4 pt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold text-foreground">Document Title / File Name</Label>
+              <Label className="text-xs font-semibold text-foreground">
+                {t("leads.docTitleLabel")}
+              </Label>
               <Input
-                placeholder="e.g. Customer Request, Needs Assessment..."
+                placeholder={t("leads.docTitlePlaceholder")}
                 value={docFileName}
                 onChange={(e) => setDocFileName(e.target.value)}
                 className="h-10 text-xs"
@@ -852,8 +868,12 @@ export default function LeadDetails() {
               onClick={() => fileInputRef.current?.click()}
             >
               <CloudUpload className="w-8 h-8 text-muted-foreground mb-2 opacity-60" />
-              <p className="text-xs font-semibold text-foreground">Click to select file</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5">PDF, Word, Excel, or Images</p>
+              <p className="text-xs font-semibold text-foreground">
+                {t("leads.clickToSelectFile")}
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                {t("leads.fileTypesSupported")}
+              </p>
               <input
                 type="file"
                 ref={fileInputRef}
@@ -888,14 +908,16 @@ export default function LeadDetails() {
                   setDocFileName("");
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 type="submit"
                 disabled={!selectedFile || uploadDocMutation.isPending}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {uploadDocMutation.isPending ? "Uploading..." : "Upload Document"}
+                {uploadDocMutation.isPending
+                  ? t("leads.uploading")
+                  : t("leads.uploadDocument")}
               </Button>
             </DialogFooter>
           </form>

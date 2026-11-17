@@ -31,8 +31,7 @@ import { CreateContractPurchaseInvoiceDialog } from "./create-contract-purchase-
 
 export function ContractsTab({ supplierId }) {
   const queryClient = useQueryClient();
-  const { locale } = useI18n();
-  const isArabic = locale === "ar";
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   
@@ -167,20 +166,20 @@ export function ContractsTab({ supplierId }) {
     },
     {
       key: "consumedAmount",
-      label: isArabic ? "المستهلك" : "Consumed",
+      label: t("crmSuppliers.contracts.consumed"),
       render: (row) => {
         const consumed = Number(row.consumedAmount || 0);
         return (
           <div>
             <span className="text-amber-600 font-semibold block">${consumed.toLocaleString()}</span>
-            <span className="text-[10px] text-muted-foreground">{isArabic ? "مشتريات مفوترة" : "Invoiced purchases"}</span>
+            <span className="text-[10px] text-muted-foreground">{t("crmSuppliers.contracts.invoicedPurchases")}</span>
           </div>
         );
       },
     },
     {
       key: "remainingAmount",
-      label: isArabic ? "المتبقي" : "Remaining",
+      label: t("crmSuppliers.contracts.remaining"),
       render: (row) => {
         const total = Number(row.totalValue || 0);
         const consumed = Number(row.consumedAmount || 0);
@@ -290,7 +289,7 @@ export function ContractsTab({ supplierId }) {
         </div>
         <div className="p-4 border rounded-xl bg-emerald-50/50 border-emerald-200">
           <span className="text-xs text-emerald-700 font-semibold block uppercase">
-            {isArabic ? "سقف العقد المتبقي" : "Remaining Ceiling"}
+            {t("crmSuppliers.contracts.remainingCeiling")}
           </span>
           <span className="text-2xl font-bold text-emerald-900 mt-1 block">
             ${items

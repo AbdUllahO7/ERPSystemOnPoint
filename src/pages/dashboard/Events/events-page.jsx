@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -349,7 +350,7 @@ export default function EventsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-normal leading-snug">
-                    {card.title}
+                    <StatTitle>{card.title}</StatTitle>
                   </p>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-xl font-bold text-slate-800">

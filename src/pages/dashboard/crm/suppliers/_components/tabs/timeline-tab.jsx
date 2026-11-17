@@ -1,10 +1,14 @@
 import { User, FileText, ClipboardList, History, Plus, PhoneCall } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export function TimelineTab({ timeline = [] }) {
+  const { t, locale } = useI18n();
+
   if (!timeline || timeline.length === 0) {
     return (
       <div className="flex items-center justify-center h-full min-h-[200px] text-muted-foreground">
-        No timeline events found.
+        {t('crmSuppliers.timeline.noEvents')}
       </div>
     );
   }
@@ -30,6 +34,8 @@ export function TimelineTab({ timeline = [] }) {
     <div className="space-y-0 px-4">
       {timeline.map((event, index) => {
         const Icon = getIcon(event.actionTitle);
+        const displayTitle = isAr && typeof event.actionTitle === "string" ? translateErp(event.actionTitle, locale) : event.actionTitle;
+        const displayDesc = isAr && typeof event.description === "string" ? translateErp(event.description, locale) : event.description;
         return (
           <div key={event.id || index} className="relative flex items-start gap-6 pb-12 last:pb-0">
             {/* Vertical Line */}
@@ -42,10 +48,10 @@ export function TimelineTab({ timeline = [] }) {
             </div>
             
             <div className="pt-2">
-              <h4 className="text-base font-semibold text-foreground">{event.actionTitle}</h4>
-              {event.description && <p className="text-sm text-foreground mt-1">{event.description}</p>}
+              <h4 className="text-base font-semibold text-foreground">{displayTitle}</h4>
+              {displayDesc && <p className="text-sm text-foreground mt-1">{displayDesc}</p>}
               <p className="text-sm text-muted-foreground mt-1">
-                {event.date ? new Date(event.date).toLocaleString("en-US", { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : "-"}
+                {event.date ? new Date(event.date).toLocaleString(isAr ? "ar-EG" : "en-US", { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : "-"}
               </p>
             </div>
           </div>

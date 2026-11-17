@@ -46,8 +46,8 @@ export default function AddEditAppointment() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { locale } = useI18n();
-  const noDataText = locale === "ar" ? "لا توجد بيانات" : "There is no data";
+  const { t } = useI18n();
+  const noDataText = t("appointmentsModule.noData");
   const isEdit = Boolean(id);
 
   const [formData, setFormData] = useState({
@@ -359,14 +359,14 @@ export default function AddEditAppointment() {
     mutationFn: (data) => createAppointment(data),
     onSuccess: () => {
       queryClient.invalidateQueries(["appointments"]);
-      toast.success("Appointment created successfully!");
+      toast.success(t("appointmentsModule.appointmentCreated"));
       navigate("/dashboard/appointments");
     },
     onError: (err) => {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        "Failed to create appointment";
+        t("appointmentsModule.appointmentCreateFailed");
       toast.error(msg);
     },
   });
@@ -376,14 +376,14 @@ export default function AddEditAppointment() {
     onSuccess: () => {
       queryClient.invalidateQueries(["appointments"]);
       queryClient.invalidateQueries(["appointmentDetail", id]);
-      toast.success("Appointment updated successfully!");
+      toast.success(t("appointmentsModule.appointmentUpdated"));
       navigate("/dashboard/appointments");
     },
     onError: (err) => {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        "Failed to update appointment";
+        t("appointmentsModule.appointmentUpdateFailed");
       toast.error(msg);
     },
   });
@@ -396,7 +396,7 @@ export default function AddEditAppointment() {
     e.preventDefault();
 
     if (!formData.productVariantId) {
-      toast.error("Please select a service (productVariantId is required)");
+      toast.error(t("appointmentsModule.selectServiceRequired"));
       return;
     }
 
@@ -427,11 +427,11 @@ export default function AddEditAppointment() {
     <form onSubmit={handleSubmit} className="space-y-6 pb-12">
       {/* Page Header */}
       <PageTitle
-        title={isEdit ? "Edit Appointment" : "Add Appointment"}
-        infoText="Book appointment with customer, service, provider, and schedule."
+        title={isEdit ? t("appointmentsModule.editAppointment") : t("appointmentsModule.addAppointment")}
+        infoText={t("appointmentsModule.appointmentTooltip")}
         breadcrumbs={[
-          { label: "Appointments", href: "/dashboard/appointments" },
-          { label: isEdit ? "Edit Appointment" : "Add Appointment" },
+          { label: t("appointmentsModule.appointments"), href: "/dashboard/appointments" },
+          { label: isEdit ? t("appointmentsModule.editAppointment") : t("appointmentsModule.addAppointment") },
         ]}
         actions={
           <div className="flex items-center gap-2.5">
@@ -440,16 +440,16 @@ export default function AddEditAppointment() {
               variant="outline"
               onClick={() => navigate("/dashboard/appointments")}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="submit"
               disabled={isSaving || isPageLoading || !formData.productVariantId || !formData.appointmentDate}
               className="gap-2"
-              title={!formData.productVariantId || !formData.appointmentDate ? "Please select service and appointment date" : ""}
+              title={!formData.productVariantId || !formData.appointmentDate ? t("appointmentsModule.selectServiceAndDateValidation") : ""}
             >
               <Save className="h-4 w-4" />
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
         }
@@ -460,21 +460,21 @@ export default function AddEditAppointment() {
           <Loader2 className="w-8 h-8 animate-spin text-primary" />
           <p className="text-sm font-medium">
             {isEdit
-              ? "Loading appointment details..."
-              : "Loading form data..."}
+              ? t("appointmentsModule.loadingAppointmentDetails")
+              : t("appointmentsModule.loadingFormData")}
           </p>
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-6">
           <h2 className="text-lg font-bold text-foreground">
-            Appointment Information
+            {t("appointmentsModule.appointmentInfo")}
           </h2>
 
           {/* Row 1: Customer, Service, Provider */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Customer
+                {t("appointmentsModule.customer")}
               </Label>
               <Select
                 key={`customer-${formData.customerId || "none"}`}
@@ -491,7 +491,7 @@ export default function AddEditAppointment() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Customer">
+                  <SelectValue placeholder={t("appointmentsModule.selectCustomer")}>
                     {formData.customerName || customerOptions.find((c) => c.value === formData.customerId)?.label}
                   </SelectValue>
                 </SelectTrigger>
@@ -513,7 +513,7 @@ export default function AddEditAppointment() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Service <span className="text-destructive">*</span>
+                {t("appointmentsModule.service")} <span className="text-destructive">*</span>
               </Label>
               <Select
                 key={`service-${formData.productVariantId || "none"}`}
@@ -532,7 +532,7 @@ export default function AddEditAppointment() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Service">
+                  <SelectValue placeholder={t("appointmentsModule.selectService")}>
                     {formData.serviceName || serviceOptions.find((s) => s.value === formData.productVariantId)?.label}
                   </SelectValue>
                 </SelectTrigger>
@@ -554,7 +554,7 @@ export default function AddEditAppointment() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Service Provider
+                {t("appointmentsModule.serviceProvider")}
               </Label>
               <Select
                 key={`provider-${formData.serviceProviderId || "none"}`}
@@ -571,7 +571,7 @@ export default function AddEditAppointment() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select Provider">
+                  <SelectValue placeholder={t("appointmentsModule.selectProvider")}>
                     {providerOptions.find((p) => String(p.value).toLowerCase() === String(formData.serviceProviderId).toLowerCase() || String(p.id).toLowerCase() === String(formData.serviceProviderId).toLowerCase())?.label || (!isGenericProviderName(formData.serviceProviderName) ? formData.serviceProviderName : "")}
                   </SelectValue>
                 </SelectTrigger>
@@ -596,7 +596,7 @@ export default function AddEditAppointment() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Appointment Date <span className="text-destructive">*</span>
+                {t("appointmentsModule.appointmentDate")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="date"
@@ -609,7 +609,7 @@ export default function AddEditAppointment() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Start Time <span className="text-destructive">*</span>
+                {t("appointmentsModule.startTime")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="time"
@@ -622,7 +622,7 @@ export default function AddEditAppointment() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                End Time <span className="text-destructive">*</span>
+                {t("appointmentsModule.endTime")} <span className="text-destructive">*</span>
               </Label>
               <Input
                 type="time"
@@ -635,7 +635,7 @@ export default function AddEditAppointment() {
 
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-foreground">
-                Deposit Amount ($)
+                {t("appointmentsModule.depositAmountDollar")}
               </Label>
               <Input
                 type="number"
@@ -654,7 +654,7 @@ export default function AddEditAppointment() {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-medium text-foreground">
-                  Appointment Status
+                  {t("appointmentsModule.appointmentStatus")}
                 </Label>
                 <Select
                   key={`status-${formData.status || "none"}`}
@@ -662,7 +662,7 @@ export default function AddEditAppointment() {
                   onValueChange={(val) => handleChange("status", val)}
                 >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select Status">
+                    <SelectValue placeholder={t("appointmentsModule.selectStatus")}>
                       {formData.status}
                     </SelectValue>
                   </SelectTrigger>

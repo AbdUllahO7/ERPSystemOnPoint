@@ -21,8 +21,10 @@ import {
   deleteSupplierNote,
   getSupplierNoteById
 } from "@/lib/api";
+import { useI18n } from "@/context/translate-api";
 
 export function NotesTab({ supplierId }) {
+  const { t, locale } = useI18n();
   const queryClient = useQueryClient();
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -50,7 +52,6 @@ export function NotesTab({ supplierId }) {
   useEffect(() => {
     if (editNoteId && editNoteData?.data) {
       const note = editNoteData.data;
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormData({
         title: note.title || "",
         note: note.note || "",
@@ -63,31 +64,31 @@ export function NotesTab({ supplierId }) {
     mutationFn: (newNote) => createSupplierNote(newNote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplierNotes", supplierId] });
-      toast.success("Note added successfully");
+      toast.success(t('crmSuppliers.notes.saveSuccess'));
       closeModal();
     },
-    onError: () => toast.error("Failed to add note")
+    onError: () => toast.error(t('crmSuppliers.notes.saveError'))
   });
 
   const updateMutation = useMutation({
     mutationFn: (updatedNote) => updateSupplierNote(updatedNote),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplierNotes", supplierId] });
-      toast.success("Note updated successfully");
+      toast.success(t('crmSuppliers.notes.saveSuccess'));
       closeModal();
     },
-    onError: () => toast.error("Failed to update note")
+    onError: () => toast.error(t('crmSuppliers.notes.saveError'))
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteSupplierNote(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["supplierNotes", supplierId] });
-      toast.success("Note deleted successfully");
+      toast.success(t('crmSuppliers.notes.deleteSuccess'));
       setDeleteModalOpen(false);
       setSelectedNoteId(null);
     },
-    onError: () => toast.error("Failed to delete note")
+    onError: () => toast.error(t('crmSuppliers.notes.deleteError'))
   });
 
   const closeModal = () => {
@@ -99,7 +100,7 @@ export function NotesTab({ supplierId }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!supplierId) {
-      toast.error("Supplier ID is missing");
+      toast.error(t('crmSuppliers.notes.saveError'));
       return;
     }
     
@@ -129,7 +130,7 @@ export function NotesTab({ supplierId }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-bold text-foreground">Notes</h3>
+        <h3 className="text-lg font-bold text-foreground">{t('crmSuppliers.notes.title')}</h3>
         <Dialog open={isAddModalOpen} onOpenChange={(open) => {
           if (!open) closeModal();
           else setIsAddModalOpen(true);
@@ -137,7 +138,7 @@ export function NotesTab({ supplierId }) {
           <DialogTrigger asChild>
             <Button className="gap-2" onClick={() => setEditNoteId(null)}>
               <Plus className="w-4 h-4" />
-              Add
+              {t('common.add')}
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-[500px] p-0 border-0 rounded-2xl overflow-hidden">
@@ -147,24 +148,24 @@ export function NotesTab({ supplierId }) {
                   <FileText className="w-5 h-5 text-gray-500" />
                 </div>
                 <DialogTitle className="text-xl font-semibold">
-                  {editNoteId ? "Edit Note" : "Add Note"}
+                  {editNoteId ? t('crmSuppliers.notes.editNote') : t('crmSuppliers.notes.addNote')}
                 </DialogTitle>
               </DialogHeader>
 
               <form onSubmit={handleSubmit} className="space-y-6 pt-6">
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-foreground">Note Title</Label>
+                  <Label className="text-sm font-semibold text-foreground">{t('crmSuppliers.notes.noteTitle')}</Label>
                   <Input
-                    placeholder="note title"
+                    placeholder={t('crmSuppliers.notes.noteTitlePlaceholder')}
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-foreground">Note</Label>
+                  <Label className="text-sm font-semibold text-foreground">{t('crmSuppliers.notes.noteContent')}</Label>
                   <Textarea
-                    placeholder="Note"
+                    placeholder={t('crmSuppliers.notes.noteContentPlaceholder')}
                     value={formData.note}
                     onChange={(e) => setFormData({ ...formData, note: e.target.value })}
                     required
@@ -177,8 +178,8 @@ export function NotesTab({ supplierId }) {
                   disabled={addMutation.isPending || updateMutation.isPending || isFetchingEditNote}
                 >
                   {addMutation.isPending || updateMutation.isPending 
-                    ? "Saving..." 
-                    : isFetchingEditNote ? "Loading..." : "Add"}
+                    ? t('common.saving')
+                    : isFetchingEditNote ? t('common.loading') : (editNoteId ? t('common.save') : t('common.add'))}
                 </Button>
               </form>
             </div>
@@ -186,10 +187,10 @@ export function NotesTab({ supplierId }) {
         </Dialog>
       </div>
 
-      {isLoading && <div className="text-center py-4">Loading notes...</div>}
-      {isError && <div className="text-center py-4 text-red-500">Error loading notes</div>}
+      {isLoading && <div className="text-center py-4 text-sm text-muted-foreground">{t('common.loading')}</div>}
+      {isError && <div className="text-center py-4 text-red-500 text-sm">{t('crmSuppliers.notes.empty')}</div>}
       {!isLoading && !isError && notes.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">No notes found.</div>
+        <div className="text-center py-8 text-muted-foreground text-sm">{t('crmSuppliers.notes.empty')}</div>
       )}
 
       {notes.map((note) => (
@@ -197,7 +198,7 @@ export function NotesTab({ supplierId }) {
           <div className="absolute top-6 right-6 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
             <button 
               onClick={() => setEditNoteId(note.id)}
-              className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors"
+              className="text-blue-500 hover:bg-blue-50 p-2 rounded-lg transition-colors cursor-pointer"
             >
               <Pencil className="w-4 h-4" />
             </button>
@@ -206,7 +207,7 @@ export function NotesTab({ supplierId }) {
                 setSelectedNoteId(note.id);
                 setDeleteModalOpen(true);
               }}
-              className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors"
+              className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition-colors cursor-pointer"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -219,7 +220,7 @@ export function NotesTab({ supplierId }) {
             <div>
               <h4 className="text-lg font-bold text-foreground">{note.title}</h4>
               <span className="text-xs text-muted-foreground">
-                {new Date(note.createdAt).toLocaleDateString()}
+                {new Date(note.createdAt).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US")}
               </span>
             </div>
           </div>
@@ -233,8 +234,8 @@ export function NotesTab({ supplierId }) {
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
-        title="Delete Note"
-        description="Are you sure you want to delete this note? This action cannot be undone."
+        title={t('crmSuppliers.notes.deleteTitle')}
+        description={t('crmSuppliers.notes.deleteDesc')}
       />
     </div>
   );

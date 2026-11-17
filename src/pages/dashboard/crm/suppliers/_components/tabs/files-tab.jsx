@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Search, RefreshCw, Plus, MoreVertical, FileText, CloudUpload, Trash2, X } from "lucide-react";
+import { Search, RefreshCw, Plus, FileText, CloudUpload, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -7,8 +7,10 @@ import { getSupplierDocuments, uploadSupplierDocument, deleteSupplierDocument } 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { useI18n } from "@/context/translate-api";
 
 export function FilesTab({ supplierId }) {
+  const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -25,25 +27,25 @@ export function FilesTab({ supplierId }) {
   const uploadMutation = useMutation({
     mutationFn: uploadSupplierDocument,
     onSuccess: () => {
-      toast.success("File uploaded successfully");
+      toast.success(t('crmSuppliers.files.uploadSuccess'));
       queryClient.invalidateQueries(["supplierDocuments", supplierId]);
       setIsUploadModalOpen(false);
       setSelectedFile(null);
     },
     onError: () => {
-      toast.error("Failed to upload file");
+      toast.error(t('crmSuppliers.files.uploadError'));
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteSupplierDocument,
     onSuccess: () => {
-      toast.success("File deleted successfully");
+      toast.success(t('crmSuppliers.files.deleteSuccess'));
       queryClient.invalidateQueries(["supplierDocuments", supplierId]);
       setDeleteId(null);
     },
     onError: () => {
-      toast.error("Failed to delete file");
+      toast.error(t('crmSuppliers.files.deleteError'));
       setDeleteId(null);
     },
   });
@@ -56,7 +58,7 @@ export function FilesTab({ supplierId }) {
 
   const handleUploadSubmit = () => {
     if (!selectedFile) {
-      toast.error("Please select a file to upload");
+      toast.error(t('crmSuppliers.files.chooseFiles'));
       return;
     }
 
@@ -87,7 +89,7 @@ export function FilesTab({ supplierId }) {
           <div className="relative flex-1">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input 
-              placeholder="Search by file name..." 
+              placeholder={t('crmSuppliers.files.searchPlaceholder')} 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9 h-10 bg-transparent"
@@ -95,21 +97,23 @@ export function FilesTab({ supplierId }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-10 w-10" onClick={() => refetch()} title="Refresh">
+          <Button variant="outline" size="icon" className="h-10 w-10 cursor-pointer" onClick={() => refetch()} title={t('common.refresh', 'Refresh')}>
             <RefreshCw className={`w-4 h-4 text-muted-foreground ${isLoading ? "animate-spin" : ""}`} />
           </Button>
-          <Button className="h-10 gap-2" onClick={() => setIsUploadModalOpen(true)}>
+          <Button className="h-10 gap-2 cursor-pointer" onClick={() => setIsUploadModalOpen(true)}>
             <Plus className="w-4 h-4" />
-            Add
+            {t('common.add')}
           </Button>
         </div>
       </div>
 
       {/* Grid */}
       {isLoading ? (
-        <div className="text-center py-12 text-muted-foreground">Loading files...</div>
+        <div className="text-center py-12 text-muted-foreground text-sm">{t('common.loading')}</div>
       ) : files.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl">No files found.</div>
+        <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl text-sm">
+          {t('crmSuppliers.files.empty')}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredFiles.map((file) => (
@@ -122,12 +126,14 @@ export function FilesTab({ supplierId }) {
                   <a href={file.fullUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:underline truncate block">
                     {file.fileName}
                   </a>
-                  <p className="text-xs text-muted-foreground mt-0.5">{file.fileSizeDisplay} • Uploaded {new Date(file.uploadedAt).toLocaleDateString()}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {file.fileSizeDisplay} • {new Date(file.uploadedAt).toLocaleDateString(locale === "ar" ? "ar-EG" : "en-US")}
+                  </p>
                 </div>
               </div>
               <button 
                 onClick={() => setDeleteId(file.id)}
-                className="p-2 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-lg transition-colors shrink-0"
+                className="p-2 hover:bg-red-50 text-muted-foreground hover:text-red-500 rounded-lg transition-colors shrink-0 cursor-pointer"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
@@ -145,8 +151,10 @@ export function FilesTab({ supplierId }) {
                 <CloudUpload className="w-5 h-5 text-gray-600" />
               </div>
               <div>
-                <DialogTitle>Upload files</DialogTitle>
-                <DialogDescription className="text-xs mt-1">Select and upload the files of your choice</DialogDescription>
+                <DialogTitle>{t('crmSuppliers.files.uploadFiles')}</DialogTitle>
+                <DialogDescription className="text-xs mt-1">
+                  {t('crmSuppliers.files.supportedFormats')}
+                </DialogDescription>
               </div>
             </div>
           </DialogHeader>
@@ -158,13 +166,17 @@ export function FilesTab({ supplierId }) {
               <div className="w-12 h-12 mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                 <CloudUpload className="w-6 h-6 text-gray-600" />
               </div>
-              <h4 className="text-sm font-semibold mb-1">Choose a file or drag & drop it here</h4>
-              <p className="text-xs text-muted-foreground mb-4">JPEG, PNG, PDF, and MP4 formats, up to 50MB</p>
+              <h4 className="text-sm font-semibold mb-1">
+                {t('crmSuppliers.files.dragAndDrop')}
+              </h4>
+              <p className="text-xs text-muted-foreground mb-4">
+                {t('crmSuppliers.files.supportedFormats')}
+              </p>
               <Button variant="outline" className="bg-white" onClick={(e) => {
                 e.stopPropagation();
                 fileInputRef.current?.click();
               }}>
-                Browse File
+                {t('crmSuppliers.files.chooseFiles')}
               </Button>
               <input 
                 type="file" 
@@ -186,9 +198,11 @@ export function FilesTab({ supplierId }) {
             )}
           </div>
           <DialogFooter className="border-t pt-4">
-            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsUploadModalOpen(false)}>
+              {t('common.cancel')}
+            </Button>
             <Button onClick={handleUploadSubmit} disabled={!selectedFile || uploadMutation.isPending}>
-              {uploadMutation.isPending ? "Uploading..." : "Upload"}
+              {uploadMutation.isPending ? t('common.saving') : t('crmSuppliers.files.uploadFiles')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -198,8 +212,8 @@ export function FilesTab({ supplierId }) {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={() => deleteMutation.mutate(deleteId)}
-        title="Delete File"
-        description="Are you sure you want to delete this file? This action cannot be undone."
+        title={t('crmSuppliers.files.deleteTitle')}
+        description={t('crmSuppliers.files.deleteDesc')}
       />
     </div>
   );

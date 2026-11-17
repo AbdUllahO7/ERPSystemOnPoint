@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowUp, ArrowDown, Eye, CheckCircle2 } from "lucide-react";
@@ -175,7 +176,7 @@ export default function CommissionLedgerPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-normal leading-snug">
-                    {card.title}
+                    <StatTitle>{card.title}</StatTitle>
                   </p>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-xl font-bold text-slate-800">

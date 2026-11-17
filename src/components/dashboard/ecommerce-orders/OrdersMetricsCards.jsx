@@ -1,7 +1,12 @@
 import React from "react";
 import { Building2, Users, ArrowUp, ArrowDown } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export function OrdersMetricsCards({ metrics = [] }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
       {metrics.map((metric, idx) => {
@@ -20,6 +25,10 @@ export function OrdersMetricsCards({ metrics = [] }) {
           Icon = Users;
         }
 
+        const displayTitle = isAr && typeof metric.title === "string"
+          ? translateErp(metric.title, locale)
+          : metric.title;
+
         return (
           <div
             key={metric.id || idx}
@@ -35,7 +44,7 @@ export function OrdersMetricsCards({ metrics = [] }) {
             {/* Middle: Details */}
             <div className="flex-1 min-w-0">
               <p className="text-xs text-slate-500 font-medium truncate">
-                {metric.title}
+                {displayTitle}
               </p>
               <div className="flex items-baseline gap-2 mt-0.5">
                 <span className="text-xl sm:text-2xl font-black text-slate-900">

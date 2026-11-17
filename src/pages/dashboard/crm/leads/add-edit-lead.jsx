@@ -22,7 +22,7 @@ export default function AddEditLead() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { locale } = useI18n();
+  const { t } = useI18n();
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
@@ -119,11 +119,11 @@ export default function AddEditLead() {
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       if (newErrors.name) {
-        toast.error(locale === "ar" ? "يرجى ملء اسم الفرصة" : "Lead name is required");
+        toast.error(t("leads.nameRequired"));
       } else if (newErrors.phoneNumber) {
-        toast.error(locale === "ar" ? "يرجى إدخال رقم الهاتف" : "Phone number is required");
+        toast.error(t("leads.phoneRequired"));
       } else if (newErrors.email) {
-        toast.error(locale === "ar" ? "يرجى إدخال بريد إلكتروني صالح" : "Please enter a valid email");
+        toast.error(t("leads.invalidEmail"));
       }
       return;
     }
@@ -151,29 +151,35 @@ export default function AddEditLead() {
     mutation.mutate(payload);
   };
 
-  if (isEdit && isLoading) return <div className="p-6">Loading...</div>;
+  if (isEdit && isLoading) return <div className="p-6">{t("common.loading")}</div>;
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground">
-            {isEdit ? "Edit Lead" : "Add Lead"}
+            {isEdit ? t("leads.editLead") : t("leads.addLead")}
           </h2>
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/leads")}>Leads</span>
+            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/leads")}>
+              {t("leads.title")}
+            </span>
             <span>/</span>
-            <span>{isEdit ? "Edit Lead" : "Add Lead"}</span>
+            <span>{isEdit ? t("leads.editLead") : t("leads.addLead")}</span>
           </div>
         </div>
         <Button
           onClick={handleSubmit}
           className="gap-2"
           disabled={mutation.isPending || !isFormValid}
-          title={!isFormValid ? "Please fill in required fields (Name, Phone)" : ""}
+          title={!isFormValid ? t("leads.fillRequiredFields") : ""}
         >
           <Plus className="w-4 h-4" />
-          {mutation.isPending ? "Saving..." : isEdit ? "Save" : "Add"}
+          {mutation.isPending
+            ? t("common.saving")
+            : isEdit
+            ? t("common.save")
+            : t("common.add")}
         </Button>
       </div>
 
@@ -181,30 +187,32 @@ export default function AddEditLead() {
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name" className="text-sm font-semibold text-foreground flex items-center gap-1">
-              <span>Name</span>
+              <span>{t("leads.name")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <Input
               id="name"
               name="name"
-              placeholder="Name"
+              placeholder={t("leads.name")}
               className={cn("h-11 bg-transparent", errors.name && "border-red-500 focus-visible:ring-red-500")}
               value={formData.name}
               onChange={handleChange}
             />
             {errors.name && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "اسم الفرصة مطلوب" : "Lead name is required"}
+                {t("leads.nameRequired")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="company" className="text-sm font-semibold text-foreground">Company</Label>
+            <Label htmlFor="company" className="text-sm font-semibold text-foreground">
+              {t("leads.company")}
+            </Label>
             <Input
               id="company"
               name="company"
-              placeholder="Company"
+              placeholder={t("leads.company")}
               className="h-11 bg-transparent"
               value={formData.company}
               onChange={handleChange}
@@ -212,115 +220,110 @@ export default function AddEditLead() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-semibold text-foreground">E-mail</Label>
+            <Label htmlFor="email" className="text-sm font-semibold text-foreground">
+              {t("leads.email")}
+            </Label>
             <Input
               id="email"
               name="email"
               type="email"
-              placeholder="e-mail"
+              placeholder={t("leads.email")}
               className={cn("h-11 bg-transparent", errors.email && "border-red-500 focus-visible:ring-red-500")}
               value={formData.email}
               onChange={handleChange}
             />
             {errors.email && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "بريد إلكتروني غير صالح" : "Invalid email address"}
+                {t("leads.invalidEmail")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="phoneNumber" className="text-sm font-semibold text-foreground flex items-center gap-1">
-              <span>Phone</span>
+              <span>{t("leads.phone")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <Input
               id="phoneNumber"
               name="phoneNumber"
-              placeholder="phone"
+              placeholder={t("leads.phone")}
               className={cn("h-11 bg-transparent", errors.phoneNumber && "border-red-500 focus-visible:ring-red-500")}
               value={formData.phoneNumber}
               onChange={handleChange}
             />
             {errors.phoneNumber && (
               <p className="text-xs text-red-500 font-medium">
-                {locale === "ar" ? "رقم الهاتف مطلوب" : "Phone number is required"}
+                {t("leads.phoneRequired")}
               </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="status" className="text-sm font-semibold text-foreground">Status</Label>
+            <Label htmlFor="status" className="text-sm font-semibold text-foreground">
+              {t("leads.status")}
+            </Label>
             <Select 
               key={formData.status || "status-select"}
               value={formData.status || "New"} 
               onValueChange={(val) => handleSelectChange("status", val)}
-              disabled={!isEdit || formData.status === "Converted"} // Disable changing status when creating or if already converted
+              disabled={!isEdit || formData.status === "Converted"}
             >
               <SelectTrigger className="!h-11 w-full bg-transparent">
-                <SelectValue placeholder="Select Status" />
+                <SelectValue placeholder={t("leads.selectStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="New">New</SelectItem>
-                <SelectItem value="Contacted">Contacted</SelectItem>
-                <SelectItem value="Qualified">Qualified</SelectItem>
-                <SelectItem value="Quotation">Quotation</SelectItem>
+                <SelectItem value="New">{t("leads.statuses.new")}</SelectItem>
+                <SelectItem value="Contacted">{t("leads.statuses.contacted")}</SelectItem>
+                <SelectItem value="Qualified">{t("leads.statuses.qualified")}</SelectItem>
+                <SelectItem value="Quotation">{t("leads.statuses.quotation")}</SelectItem>
                 {formData.status === "Converted" && (
-                  <SelectItem value="Converted" disabled>Converted (Locked)</SelectItem>
+                  <SelectItem value="Converted" disabled>{t("leads.convertedLocked")}</SelectItem>
                 )}
-                <SelectItem value="Lost">Lost</SelectItem>
+                <SelectItem value="Lost">{t("leads.statuses.lost")}</SelectItem>
               </SelectContent>
             </Select>
             {formData.status === "Converted" ? (
               <p className="text-xs text-amber-600">
-                This opportunity has already been converted to a customer and cannot change status.
+                {t("leads.convertedLockedDesc")}
               </p>
             ) : isEdit ? (
               <p className="text-xs text-muted-foreground">
-                Note: Conversion to customer must be completed via the official "Convert to Customer" workflow.
+                {t("leads.conversionNote")}
               </p>
             ) : null}
           </div>
 
-
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="expectedValue" className="text-sm font-semibold text-foreground">Expected value ($)</Label>
-              <span className="text-[11px] text-muted-foreground">Opportunity estimate</span>
+              <Label htmlFor="expectedValue" className="text-sm font-semibold text-foreground">
+                {t("leads.approvedProjectValue")}
+              </Label>
+              <span className="text-[11px] text-muted-foreground">
+                {t("leads.opportunityEstimate")}
+              </span>
             </div>
             <Input
               id="expectedValue"
               name="expectedValue"
-              placeholder="Expected value"
+              placeholder={t("leads.approvedProjectValuePlaceholder")}
               className="h-11 bg-transparent"
               value={formData.expectedValue}
               onChange={handleChange}
             />
             <p className="text-[11px] text-muted-foreground">
-              Opportunity estimation; does not represent an invoice or accounting revenue.
+              {t("leads.expectedValueHint")}
             </p>
           </div>
 
-          {/* <div className="space-y-2">
-            <Label htmlFor="responsible" className="text-sm font-semibold text-foreground">Responsible</Label>
-            <Select value={formData.responsible} onValueChange={(val) => handleSelectChange("responsible", val)}>
-              <SelectTrigger className="!h-11 w-full bg-transparent">
-                <SelectValue placeholder="Select Responsible" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="John Doe">John Doe</SelectItem>
-                <SelectItem value="Jane Smith">Jane Smith</SelectItem>
-                <SelectItem value="Mike Johnson">Mike Johnson</SelectItem>
-              </SelectContent>
-            </Select>
-          </div> */}
-
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="note" className="text-sm font-semibold text-foreground">Notes</Label>
+            <Label htmlFor="note" className="text-sm font-semibold text-foreground">
+              {t("leads.notes")}
+            </Label>
             <Textarea
               id="note"
               name="note"
-              placeholder="Notes"
+              placeholder={t("leads.notes")}
               className="min-h-[120px] bg-transparent"
               value={formData.note}
               onChange={handleChange}

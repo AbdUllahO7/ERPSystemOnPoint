@@ -1,6 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { SlidersHorizontal } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export function OrdersTable({
   orders = [],
@@ -8,6 +10,8 @@ export function OrdersTable({
   onToggleOrder,
   onToggleAllOrders,
 }) {
+  const { locale, t } = useI18n();
+  const isAr = locale === "ar";
   const isAllSelected =
     orders.length > 0 && selectedOrders.length === orders.length;
 
@@ -28,40 +32,40 @@ export function OrdersTable({
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Order Number</span>
+                    <span>{t("ecommerceOrders.orderNumber")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Customer Name</span>
+                    <span>{t("ecommerceOrders.customerName")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
-                  <span>Number Of Products</span>
+                  <span>{t("ecommerceOrders.numberOfProducts")}</span>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Total</span>
-                    <span className="text-[10px] text-slate-400">⇅</span>
-                  </div>
-                </th>
-                <th className="py-3.5 px-4">
-                  <div className="inline-flex items-center gap-1">
-                    <span>Payment Method</span>
+                    <span>{t("ecommerceOrders.total")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Status</span>
+                    <span>{t("ecommerceOrders.paymentMethod")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Order Date</span>
+                    <span>{t("ecommerceOrders.status")}</span>
+                    <span className="text-[10px] text-slate-400">⇅</span>
+                  </div>
+                </th>
+                <th className="py-3.5 px-4">
+                  <div className="inline-flex items-center gap-1">
+                    <span>{t("ecommerceOrders.orderDate")}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
@@ -105,11 +109,11 @@ export function OrdersTable({
                       {order.total}
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">
-                      {order.paymentMethod}
+                      {isAr ? translateErp(order.paymentMethod, locale) : order.paymentMethod}
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">
-                        {order.status || "New"}
+                        {isAr ? translateErp(order.status || "New", locale) : (order.status || "New")}
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-slate-600">
@@ -129,7 +133,7 @@ export function OrdersTable({
       {/* Pagination */}
       <div className="flex items-center justify-end gap-2 pt-2 text-xs font-semibold text-slate-600">
         <button type="button" className="px-2 py-1 hover:text-slate-900 cursor-pointer">
-          Pre
+          {t("common.prev")}
         </button>
         <button
           type="button"
@@ -154,7 +158,7 @@ export function OrdersTable({
           type="button"
           className="px-2 py-1 text-[#0066d1] font-bold hover:underline cursor-pointer"
         >
-          Next
+          {t("common.next")}
         </button>
       </div>
     </div>
