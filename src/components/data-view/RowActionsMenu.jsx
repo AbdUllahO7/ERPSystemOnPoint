@@ -9,6 +9,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 /**
  * @param {{
@@ -29,6 +31,9 @@ import { cn } from "@/lib/utils";
  * }} props
  */
 export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
+  const { locale, t } = useI18n();
+  const isAr = locale === "ar";
+
   const [expandedGroups, setExpandedGroups] = useState(() => {
     const initial = {};
     groups.forEach((g, i) => {
@@ -61,13 +66,16 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
         <button
           type="button"
           className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Actions"
+          aria-label={t("common.actions")}
         >
           <MoreVertical className="size-4" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={align} className="w-52 max-h-[350px] overflow-y-auto rounded-xl p-1">
-        {visibleGroups.map((group, gi) => (
+        {visibleGroups.map((group, gi) => {
+          const displayGroupLabel = isAr && group.label ? translateErp(group.label, locale) : group.label;
+
+          return (
           <Fragment key={group.label ?? gi}>
             {gi > 0 && <DropdownMenuSeparator />}
             {group.label && (
@@ -78,7 +86,7 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
                 )}
                 onClick={(e) => toggleGroup(e, group.label || gi)}
               >
-                <span>{group.label}</span>
+                <span>{displayGroupLabel}</span>
                 {expandedGroups[group.label || gi] ? (
                   <ArrowUpCircle className="size-4 opacity-70" />
                 ) : (
@@ -101,10 +109,11 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
                   }
                 }
                 const isPrimaryGroup = group.label === "View";
-                const label =
+                const rawLabel =
                   typeof item.label === "function"
                     ? item.label(row, rowIndex)
                     : item.label;
+                const label = isAr && typeof rawLabel === "string" ? translateErp(rawLabel, locale) : rawLabel;
                 const isDisabled =
                   typeof item.disabled === "function"
                     ? item.disabled(row, rowIndex)
@@ -141,7 +150,8 @@ export function RowActionsMenu({ row, rowIndex, groups = [], align = "end" }) {
                 );
               })}
           </Fragment>
-        ))}
+        );
+        })}
       </DropdownMenuContent>
     </DropdownMenu>
   );
