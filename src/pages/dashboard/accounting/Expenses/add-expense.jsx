@@ -21,8 +21,11 @@ import {
   getCardLookUp,
 } from "../../../../lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 export default function AddExpense() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const navigate = useNavigate();
   const [paymentType, setPaymentType] = useState("Cash");
 
@@ -118,26 +121,32 @@ export default function AddExpense() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-foreground">Add Expense</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              {isAr ? "إضافة مصروف" : "Add Expense"}
+            </h2>
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Expenses</span>
+            <span>{isAr ? "المصروفات" : "Expenses"}</span>
             <span>/</span>
-            <span className="font-medium text-foreground">Add Expense</span>
+            <span className="font-medium text-foreground">
+              {isAr ? "إضافة مصروف" : "Add Expense"}
+            </span>
           </div>
         </div>
         
         <div className="flex items-center gap-3">
           <Button variant="outline" onClick={() => navigate(-1)} className="px-6">
-            Cancel
+            {isAr ? "إلغاء" : "Cancel"}
           </Button>
           <Button 
             onClick={handleSubmit(onSubmit)} 
             disabled={mutation.isPending}
             className="px-8"
           >
-            {mutation.isPending ? "Saving..." : "Save"}
+            {mutation.isPending
+              ? (isAr ? "جاري الحفظ..." : "Saving...")
+              : (isAr ? "حفظ" : "Save")}
           </Button>
         </div>
       </div>
@@ -146,17 +155,21 @@ export default function AddExpense() {
         <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           
           <div className="space-y-2 lg:col-span-3">
-            <label className="text-sm font-semibold text-foreground">Expense Number <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "رقم المصروف" : "Expense Number"} <span className="text-red-500">*</span>
+            </label>
             <Input
               placeholder="e.g. EXP-1002"
               className="h-11 bg-transparent max-w-sm"
               {...register("expense_No", { required: true })}
             />
-            {errors.expense_No && <span className="text-red-500 text-xs">Required</span>}
+            {errors.expense_No && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Expense Account <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "حساب المصروف" : "Expense Account"} <span className="text-red-500">*</span>
+            </label>
             <Controller
               name="expense_Account_Id"
               control={control}
@@ -168,7 +181,7 @@ export default function AddExpense() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Account" />
+                    <SelectValue placeholder={isAr ? "اختر الحساب" : "Select Account"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {accounts.map((a) => (
@@ -180,11 +193,13 @@ export default function AddExpense() {
                 </Select>
               )}
             />
-            {errors.expense_Account_Id && <span className="text-red-500 text-xs">Required</span>}
+            {errors.expense_Account_Id && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Paid To Account <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "مدفوع إلى الحساب" : "Paid To Account"} <span className="text-red-500">*</span>
+            </label>
             <Controller
               name="paid_To_Account_Id"
               control={control}
@@ -196,7 +211,7 @@ export default function AddExpense() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Paid To Account" />
+                    <SelectValue placeholder={isAr ? "اختر الحساب المدفوع له" : "Select Paid To Account"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {accounts.map((a) => (
@@ -208,11 +223,13 @@ export default function AddExpense() {
                 </Select>
               )}
             />
-            {errors.paid_To_Account_Id && <span className="text-red-500 text-xs">Required</span>}
+            {errors.paid_To_Account_Id && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Cost Center</label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "مركز التكلفة" : "Cost Center"}
+            </label>
             <Controller
               name="costCenter_Id"
               control={control}
@@ -224,10 +241,10 @@ export default function AddExpense() {
                   onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Cost Center (Optional)" />
+                    <SelectValue placeholder={isAr ? "اختر مركز التكلفة (اختياري)" : "Select Cost Center (Optional)"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="none">None</SelectItem>
+                    <SelectItem value="none">{isAr ? "لا يوجد" : "None"}</SelectItem>
                     {costCenters.map((cc) => (
                       <SelectItem key={cc.id} value={String(cc.id)}>
                         {cc.cost_Center_Name || cc.name}
@@ -240,7 +257,9 @@ export default function AddExpense() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Amount <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "المبلغ" : "Amount"} <span className="text-red-500">*</span>
+            </label>
             <Input
               type="number"
               step="0.01"
@@ -249,11 +268,13 @@ export default function AddExpense() {
               className="h-9 bg-transparent"
               {...register("amount", { required: true })}
             />
-            {errors.amount && <span className="text-red-500 text-xs">Required</span>}
+            {errors.amount && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Tax Amount <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "مبلغ الضريبة" : "Tax Amount"} <span className="text-red-500">*</span>
+            </label>
             <Input
               type="number"
               step="0.01"
@@ -262,11 +283,13 @@ export default function AddExpense() {
               className="h-9 bg-transparent"
               {...register("tax_Amount", { required: true })}
             />
-            {errors.tax_Amount && <span className="text-red-500 text-xs">Required</span>}
+            {errors.tax_Amount && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Currency <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "العملة" : "Currency"} <span className="text-red-500">*</span>
+            </label>
             <Controller
               name="currency_Id"
               control={control}
@@ -278,7 +301,7 @@ export default function AddExpense() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Currency" />
+                    <SelectValue placeholder={isAr ? "اختر العملة" : "Select Currency"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {currencies.map((c) => (
@@ -290,15 +313,17 @@ export default function AddExpense() {
                 </Select>
               )}
             />
-            {errors.currency_Id && <span className="text-red-500 text-xs">Required</span>}
+            {errors.currency_Id && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2 lg:col-span-3 border-t pt-4 mt-2">
-            <label className="text-sm font-semibold text-foreground mb-4 block">Payment Method</label>
+            <label className="text-sm font-semibold text-foreground mb-4 block">
+              {isAr ? "طريقة الدفع" : "Payment Method"}
+            </label>
             <div className="flex flex-col md:flex-row gap-6">
               
               <div className="flex items-center gap-6">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <input
                     type="radio"
                     id="cash"
@@ -309,10 +334,10 @@ export default function AddExpense() {
                     className="h-4 w-4 text-primary focus:ring-primary border-input bg-transparent"
                   />
                   <label htmlFor="cash" className="text-sm font-medium leading-none cursor-pointer">
-                    Cash
+                    {isAr ? "نقدي" : "Cash"}
                   </label>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 rtl:space-x-reverse">
                   <input
                     type="radio"
                     id="card"
@@ -323,7 +348,7 @@ export default function AddExpense() {
                     className="h-4 w-4 text-primary focus:ring-primary border-input bg-transparent"
                   />
                   <label htmlFor="card" className="text-sm font-medium leading-none cursor-pointer">
-                    Card
+                    {isAr ? "بطاقة / بنك" : "Card"}
                   </label>
                 </div>
               </div>
@@ -340,7 +365,7 @@ export default function AddExpense() {
                       onValueChange={field.onChange}
                     >
                       <SelectTrigger className="w-full h-9 bg-transparent">
-                        <SelectValue placeholder={`Select ${paymentType} Account`} />
+                        <SelectValue placeholder={isAr ? `اختر حساب ${paymentType === "Cash" ? "النقدية" : "البنك"}` : `Select ${paymentType} Account`} />
                       </SelectTrigger>
                       <SelectContent position="popper">
                         {paymentAccounts.map((pa) => (
@@ -352,23 +377,27 @@ export default function AddExpense() {
                     </Select>
                   )}
                 />
-                {errors.payment_Account_Id && <span className="text-red-500 text-xs mt-1 block">Payment Account is required</span>}
+                {errors.payment_Account_Id && <span className="text-red-500 text-xs mt-1 block">{isAr ? "حساب الدفع مطلوب" : "Payment Account is required"}</span>}
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Date <span className="text-red-500">*</span></label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "التاريخ" : "Date"} <span className="text-red-500">*</span>
+            </label>
             <Input
               type="datetime-local"
               className="h-9 bg-transparent"
               {...register("expense_Date", { required: true })}
             />
-            {errors.expense_Date && <span className="text-red-500 text-xs">Required</span>}
+            {errors.expense_Date && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground">Status</label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "الحالة" : "Status"}
+            </label>
             <Controller
               name="status"
               control={control}
@@ -379,11 +408,11 @@ export default function AddExpense() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Status" />
+                    <SelectValue placeholder={isAr ? "اختر الحالة" : "Select Status"} />
                   </SelectTrigger>
                   <SelectContent position="popper">
-                    <SelectItem value="Draft">Draft</SelectItem>
-                    <SelectItem value="Posted">Posted</SelectItem>
+                    <SelectItem value="Draft">{isAr ? "مسودة" : "Draft"}</SelectItem>
+                    <SelectItem value="Posted">{isAr ? "مرحل" : "Posted"}</SelectItem>
                   </SelectContent>
                 </Select>
               )}
@@ -391,9 +420,11 @@ export default function AddExpense() {
           </div>
 
           <div className="space-y-2 lg:col-span-3">
-            <label className="text-sm font-semibold text-foreground">Note</label>
+            <label className="text-sm font-semibold text-foreground">
+              {isAr ? "الملاحظات" : "Note"}
+            </label>
             <textarea
-              placeholder="Note..."
+              placeholder={isAr ? "ملاحظات..." : "Note..."}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               {...register("note")}
             />

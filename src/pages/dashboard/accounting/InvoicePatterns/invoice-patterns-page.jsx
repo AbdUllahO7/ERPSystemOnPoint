@@ -16,8 +16,10 @@ import {
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 export default function InvoicePatternsPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -30,14 +32,14 @@ export default function InvoicePatternsPage() {
   const filterConfigs = [
     {
       key: "Type",
-      label: "Filter by Invoice Type",
-      placeholder: "All Types",
+      label: t("invoicePatterns.filterByType"),
+      placeholder: t("invoicePatterns.allTypes"),
       options: [
-        { value: "Sales", label: "Sales" },
-        { value: "Purchases", label: "Purchases" },
-        { value: "Sales_Returns", label: "Sales Returns" },
-        { value: "Purchases_Returns", label: "Purchases Returns" },
-        { value: "Opening_Balance", label: "Opening Balance" },
+        { value: "Sales", label: t("invoicePatterns.types.sales") },
+        { value: "Purchases", label: t("invoicePatterns.types.purchases") },
+        { value: "Sales_Returns", label: t("invoicePatterns.types.salesReturns") },
+        { value: "Purchases_Returns", label: t("invoicePatterns.types.purchasesReturns") },
+        { value: "Opening_Balance", label: t("invoicePatterns.types.openingBalance") },
       ],
     },
   ];
@@ -46,12 +48,12 @@ export default function InvoicePatternsPage() {
     mutationFn: (id) => deleteInvoicePattern(id),
     onSuccess: () => {
       queryClient.invalidateQueries(["getAllInvoicePatterns"]);
-      toast.success("Invoice pattern deleted successfully!");
+      toast.success(t("invoicePatterns.deleteSuccess"));
       setDeleteRowId(null);
     },
     onError: (error) => {
       console.error("Failed to delete invoice pattern", error);
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to delete invoice pattern!");
+      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : t("invoicePatterns.deleteError"));
     },
   });
 
@@ -86,7 +88,7 @@ export default function InvoicePatternsPage() {
         items: [
           {
             key: "details",
-            label: "Details",
+            label: t("common.viewDetails"),
             icon: Eye,
             onClick: (row) =>
               navigate(`/dashboard/accounting/invoice-patterns/${row.id}`),
@@ -97,7 +99,7 @@ export default function InvoicePatternsPage() {
         items: [
           {
             key: "edit",
-            label: "Edit",
+            label: t("common.edit"),
             icon: Pencil,
             onClick: (row) =>
               navigate(`/dashboard/accounting/invoice-patterns/edit/${row.id}`),
@@ -108,7 +110,7 @@ export default function InvoicePatternsPage() {
         items: [
           {
             key: "delete",
-            label: "Delete",
+            label: t("common.delete"),
             icon: Trash2,
             destructive: true,
             onClick: (row) => setDeleteRowId(row.id),
@@ -116,35 +118,35 @@ export default function InvoicePatternsPage() {
         ],
       },
     ],
-    [navigate],
+    [navigate, t],
   );
 
   const columns = [
     {
       key: "pattern_Name",
-      label: "Name",
+      label: t("invoicePatterns.name"),
       sortable: true,
     },
     {
       key: "invoiceType",
-      label: "Type",
+      label: t("invoicePatterns.type"),
       sortable: true,
     },
     {
       key: "material_Account_Name",
-      label: "Material Account",
+      label: t("invoicePatterns.materialAccount"),
     },
     {
       key: "cash_Account_Name",
-      label: "Cash Account",
+      label: t("invoicePatterns.cashAccount"),
     },
     {
       key: "discount_Account_Name",
-      label: "Discount Account",
+      label: t("invoicePatterns.discountAccount"),
     },
     {
       key: "warehouse_Name",
-      label: "Warehouse",
+      label: t("invoicePatterns.warehouse"),
     },
   ];
 
@@ -152,7 +154,7 @@ export default function InvoicePatternsPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
         <h2 className="text-xl font-semibold text-foreground">
-          Invoice Patterns
+          {t("invoicePatterns.title")}
         </h2>
         <Info className="w-4 h-4 text-muted-foreground" />
       </div>
@@ -177,17 +179,17 @@ export default function InvoicePatternsPage() {
         getRowId={(row) => row.id}
         selectable
         search={{
-          placeholder: "Search invoice patterns...",
+          placeholder: t("invoicePatterns.searchPlaceholder"),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllInvoicePatterns"])}
         addButton={{
-          label: "Add",
+          label: t("common.add"),
           onClick: () => navigate("/dashboard/accounting/invoice-patterns/add"),
         }}
         columns={columns}
@@ -195,16 +197,16 @@ export default function InvoicePatternsPage() {
         card={{
           icon: FileText,
           title: (row) => row.pattern_Name,
-          subtitle: (row) => `Type: ${row.invoiceType}`,
+          subtitle: (row) => `${t("invoicePatterns.type")}: ${row.invoiceType}`,
           fields: [
             {
               icon: Info,
-              label: "Material Account:",
+              label: `${t("invoicePatterns.materialAccount")}:`,
               value: (row) => row.material_Account_Name || "-",
             },
             {
               icon: Info,
-              label: "Warehouse:",
+              label: `${t("invoicePatterns.warehouse")}:`,
               value: (row) => row.warehouse_Name || "-",
             },
           ],
@@ -213,10 +215,10 @@ export default function InvoicePatternsPage() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t("common.prev"),
+          nextLabel: t("common.next"),
         }}
-        emptyMessage="No invoice patterns found"
+        emptyMessage={t("invoicePatterns.notFound")}
       />
 
       <DeleteConfirmDialog
@@ -225,8 +227,8 @@ export default function InvoicePatternsPage() {
         onConfirm={() => {
           deleteMutation.mutate(deleteRowId);
         }}
-        title="Delete Invoice Pattern"
-        description="Are you sure you want to delete this pattern? This action cannot be undone."
+        title={t("invoicePatterns.deleteTitle")}
+        description={t("invoicePatterns.deleteDesc")}
       />
     </div>
   );

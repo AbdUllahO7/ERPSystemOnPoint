@@ -20,7 +20,8 @@ export default function InvoicesPage() {
   const [filterPaymentMethod, setFilterPaymentMethod] = useState("all");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
 
   const invT = t?.invoices || {};
   const instT = t?.installments || {};
@@ -74,7 +75,7 @@ export default function InvoicesPage() {
         items: [
           {
             key: "details",
-            label: "Details",
+            label: isAr ? "التفاصيل" : "Details",
             icon: Eye,
             onClick: (row) =>
               navigate(`/dashboard/accounting/invoices/${row.id}`),
@@ -82,26 +83,26 @@ export default function InvoicesPage() {
         ],
       },
     ],
-    [navigate],
+    [navigate, isAr],
   );
 
   const columns = [
     {
       key: "invoice_Number",
-      label: invT.invoiceNumber || "Invoice Number",
+      label: invT.invoiceNumber || (isAr ? "رقم الفاتورة" : "Invoice Number"),
     },
     {
       key: "invoice_Date",
-      label: invT.date || "Date",
+      label: invT.date || (isAr ? "التاريخ" : "Date"),
       render: (row) => new Date(row.invoice_Date).toLocaleString(),
     },
     {
       key: "payment_Method",
-      label: invT.paymentMethod || "Payment Method",
+      label: invT.paymentMethod || (isAr ? "طريقة الدفع" : "Payment Method"),
     },
     {
       key: "net_Amount",
-      label: invT.netAmount || "Net Amount",
+      label: invT.netAmount || (isAr ? "صافي المبلغ" : "Net Amount"),
       render: (row) => `${Number(row?.net_Amount || 0).toFixed(2)}`,
     },
   ];
@@ -113,12 +114,15 @@ export default function InvoicesPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
-              {invT.title || "Invoices"}
+              {invT.title || (isAr ? "الفواتير" : "Invoices")}
             </h1>
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {invT.description || "Manage sales and purchase invoices, payment terms, and transactions."}
+            {invT.description ||
+              (isAr
+                ? "إدارة فواتير المبيعات والمشتريات وشروط الدفع والمعاملات."
+                : "Manage sales and purchase invoices, payment terms, and transactions.")}
           </p>
         </div>
 
@@ -126,14 +130,14 @@ export default function InvoicesPage() {
         <div className="inline-flex items-center p-1 rounded-xl bg-muted/60 border border-border">
           <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-background text-foreground shadow-xs border border-border">
             <FileText className="w-3.5 h-3.5 text-primary" />
-            {invT.allInvoices || "All Invoices"}
+            {invT.allInvoices || (isAr ? "جميع الفواتير" : "All Invoices")}
           </div>
           <Link
             to="/dashboard/accounting/invoices/installments"
             className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-muted-foreground hover:text-foreground transition-all"
           >
             <Layers className="w-3.5 h-3.5" />
-            {instT.allInstallments || "Installments"}
+            {instT.allInstallments || (isAr ? "الأقساط" : "Installments")}
           </Link>
         </div>
       </div>
@@ -144,22 +148,22 @@ export default function InvoicesPage() {
         configs={[
           {
             key: "paymentMethod",
-            label: invT.paymentMethod || "Payment Method",
-            placeholder: "All Methods",
+            label: invT.paymentMethod || (isAr ? "طريقة الدفع" : "Payment Method"),
+            placeholder: isAr ? "جميع الطرق" : "All Methods",
             options: [
-              { value: "Cash", label: "Cash" },
-              { value: "Credit", label: "Credit" },
-              { value: "Bank", label: "Bank" },
+              { value: "Cash", label: isAr ? "نقدي (Cash)" : "Cash" },
+              { value: "Credit", label: isAr ? "آجل (Credit)" : "Credit" },
+              { value: "Bank", label: isAr ? "بنك (Bank)" : "Bank" },
             ],
           },
           {
             key: "fromDate",
-            label: "From Date",
+            label: isAr ? "من تاريخ" : "From Date",
             type: "date",
           },
           {
             key: "toDate",
-            label: "To Date",
+            label: isAr ? "إلى تاريخ" : "To Date",
             type: "date",
           },
         ]}
@@ -188,33 +192,33 @@ export default function InvoicesPage() {
         getRowId={(row) => row.id}
         // selectable
         filter={{
-          label: "Filter",
+          label: isAr ? "تصفية" : "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         search={{
-          placeholder: invT.searchPlaceholder || "Search invoices...",
+          placeholder: invT.searchPlaceholder || (isAr ? "البحث في الفواتير..." : "Search invoices..."),
           value: search,
           onChange: handleSearch,
         }}
         addButton={{
-          label: invT.addInvoice || "Add Invoice",
+          label: invT.addInvoice || (isAr ? "إضافة فاتورة" : "Add Invoice"),
           onClick: () => navigate("/dashboard/accounting/invoices/add"),
         }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
         card={{
           icon: FileText,
-          title: (row) => `${invT.invoiceNumber || "Inv"}: ${row.invoice_Number}`,
+          title: (row) => `${invT.invoiceNumber || (isAr ? "فاتورة" : "Inv")}: ${row.invoice_Number}`,
           subtitle: (row) => new Date(row.invoice_Date).toLocaleDateString(),
           fields: [
             {
               icon: Info,
-              label: `${invT.netAmount || "Net Amount"}:`,
+              label: `${invT.netAmount || (isAr ? "صافي المبلغ" : "Net Amount")}:`,
               value: (row) => `$${Number(row.net_Amount || 0).toFixed(2)}`,
             },
             {
               icon: Info,
-              label: `${invT.paymentMethod || "Payment Method"}:`,
+              label: `${invT.paymentMethod || (isAr ? "طريقة الدفع" : "Payment Method")}:`,
               value: (row) => row.payment_Method || "-",
             },
           ],
@@ -223,10 +227,10 @@ export default function InvoicesPage() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: t?.previous || "Prev",
-          nextLabel: t?.next || "Next",
+          prevLabel: isAr ? "السابق" : (t?.previous || "Prev"),
+          nextLabel: isAr ? "التالي" : (t?.next || "Next"),
         }}
-        emptyMessage={invT.noInvoicesFound || "No invoices found"}
+        emptyMessage={invT.noInvoicesFound || (isAr ? "لا توجد فواتير" : "No invoices found")}
       />
     </div>
   );

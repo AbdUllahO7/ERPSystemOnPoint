@@ -16,6 +16,8 @@ import {
 } from "../../../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 import toast from "react-hot-toast";
 
 const stats = [
@@ -54,6 +56,9 @@ const stats = [
 ];
 
 export default function CostCenters() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -157,7 +162,7 @@ export default function CostCenters() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-xl font-semibold text-foreground">
-          Cost Centers
+          {isAr ? "مراكز التكلفة" : "Cost Centers"}
         </h2>
         <Info className="w-4 h-4 text-muted-foreground" />
       </div>
@@ -175,7 +180,7 @@ export default function CostCenters() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground">{isAr ? translateErp(stat.title, locale) : stat.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}
@@ -197,13 +202,13 @@ export default function CostCenters() {
         getRowId={(row) => row.id}
       
         search={{
-          placeholder: "Search cost centers...",
+          placeholder: isAr ? "البحث في مراكز التكلفة..." : "Search cost centers...",
           value: search,
           onChange: handleSearch,
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllCostCenters"])}
         addButton={{
-          label: "Add",
+          label: isAr ? "إضافة" : "Add",
           onClick: () => navigate("/dashboard/accounting/cost-centers/add"),
         }}
         columns={columns}

@@ -21,8 +21,10 @@ import {
   getAllCostCenters,
 } from "../../../../lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 export default function AddEditInvoicePattern() {
+  const { t } = useI18n();
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -111,8 +113,8 @@ export default function AddEditInvoicePattern() {
       queryClient.invalidateQueries(["getAllInvoicePatterns"]);
       toast.success(
         isEdit
-          ? "Invoice pattern updated successfully!"
-          : "Invoice pattern added successfully!",
+          ? t("invoicePatterns.updateSuccess")
+          : t("invoicePatterns.addSuccess"),
       );
       navigate("/dashboard/accounting/basics/invoicing-patterns");
     },
@@ -121,7 +123,7 @@ export default function AddEditInvoicePattern() {
       toast.error(
         error?.message && error.message !== "An unexpected error occurred"
           ? error.message
-          : "Failed to save invoice pattern!",
+          : t("invoicePatterns.saveError"),
       );
     },
   });
@@ -150,7 +152,9 @@ export default function AddEditInvoicePattern() {
   const accounts = accountsData?.data?.items || [];
   const warehouses = warehousesData?.data?.items || [];
   const costCenters = costCentersData?.data?.items || [];
-  const pageTitle = isEdit ? "Edit Invoice Pattern" : "Add Invoice Pattern";
+  const pageTitle = isEdit
+    ? t("invoicePatterns.editPattern")
+    : t("invoicePatterns.addPattern");
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
@@ -162,9 +166,9 @@ export default function AddEditInvoicePattern() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Accounting</span>
+            <span>{t("invoicePatterns.accounting")}</span>
             <span>/</span>
-            <span>Basics</span>
+            <span>{t("invoicePatterns.basics")}</span>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -175,7 +179,7 @@ export default function AddEditInvoicePattern() {
           disabled={mutation.isLoading || isPageLoading}
           className="px-8"
         >
-          {mutation.isLoading ? "Saving..." : "Save"}
+          {mutation.isLoading ? t("common.saving") : t("common.save")}
         </Button>
       </div>
 
@@ -185,28 +189,30 @@ export default function AddEditInvoicePattern() {
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm font-medium">
-              {isEdit ? "Loading pattern details & data..." : "Loading form data..."}
+              {isEdit
+                ? t("invoicePatterns.loadingDetails")
+                : t("invoicePatterns.loadingForm")}
             </p>
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Pattern Name <span className="text-red-500">*</span>
+                {t("invoicePatterns.patternName")} <span className="text-red-500">*</span>
               </label>
               <Input
-                placeholder="Name"
+                placeholder={t("invoicePatterns.patternName")}
                 className="h-9 bg-transparent"
                 {...register("pattern_Name", { required: true })}
               />
               {errors.pattern_Name && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Invoice Type <span className="text-red-500">*</span>
+                {t("invoicePatterns.invoiceType")} <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="invoiceType"
@@ -219,26 +225,26 @@ export default function AddEditInvoicePattern() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Invoice Type" />
+                      <SelectValue placeholder={t("invoicePatterns.selectInvoiceType")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                      <SelectItem value="Sales">Sales</SelectItem>
-                      <SelectItem value="Purchases">Purchases</SelectItem>
-                      <SelectItem value="Sales_Returns">Sales_Returns</SelectItem>
-                      <SelectItem value="Purchases_Returns">Purchases_Returns</SelectItem>
-                      <SelectItem value="Opening_Balance">Opening_Balance</SelectItem>
+                      <SelectItem value="Sales">{t("invoicePatterns.types.sales")}</SelectItem>
+                      <SelectItem value="Purchases">{t("invoicePatterns.types.purchases")}</SelectItem>
+                      <SelectItem value="Sales_Returns">{t("invoicePatterns.types.salesReturns")}</SelectItem>
+                      <SelectItem value="Purchases_Returns">{t("invoicePatterns.types.purchasesReturns")}</SelectItem>
+                      <SelectItem value="Opening_Balance">{t("invoicePatterns.types.openingBalance")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
               {errors.invoiceType && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Material Account <span className="text-red-500">*</span>
+                {t("invoicePatterns.materialAccount")} <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="material_Account_Id"
@@ -251,12 +257,12 @@ export default function AddEditInvoicePattern() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Account" />
+                      <SelectValue placeholder={t("invoicePatterns.selectAccount")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
                         <SelectItem value={String(field.value)}>
-                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                          {`${t("invoicePatterns.account")} (${String(field.value).slice(0, 8)}...)`}
                         </SelectItem>
                       )}
                       {accounts.map((acc) => (
@@ -269,13 +275,13 @@ export default function AddEditInvoicePattern() {
                 )}
               />
               {errors.material_Account_Id && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Cash Account <span className="text-red-500">*</span>
+                {t("invoicePatterns.cashAccount")} <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="cash_Account_Id"
@@ -288,12 +294,12 @@ export default function AddEditInvoicePattern() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Account" />
+                      <SelectValue placeholder={t("invoicePatterns.selectAccount")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
                         <SelectItem value={String(field.value)}>
-                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                          {`${t("invoicePatterns.account")} (${String(field.value).slice(0, 8)}...)`}
                         </SelectItem>
                       )}
                       {accounts.map((acc) => (
@@ -306,13 +312,13 @@ export default function AddEditInvoicePattern() {
                 )}
               />
               {errors.cash_Account_Id && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Discount Account <span className="text-red-500">*</span>
+                {t("invoicePatterns.discountAccount")} <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="discount_Account_Id"
@@ -325,12 +331,12 @@ export default function AddEditInvoicePattern() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Account" />
+                      <SelectValue placeholder={t("invoicePatterns.selectAccount")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
                         <SelectItem value={String(field.value)}>
-                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                          {`${t("invoicePatterns.account")} (${String(field.value).slice(0, 8)}...)`}
                         </SelectItem>
                       )}
                       {accounts.map((acc) => (
@@ -343,13 +349,13 @@ export default function AddEditInvoicePattern() {
                 )}
               />
               {errors.discount_Account_Id && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Warehouse
+                {t("invoicePatterns.warehouse")}
               </label>
               <Controller
                 name="wareHouse_Id"
@@ -362,18 +368,18 @@ export default function AddEditInvoicePattern() {
                     onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Warehouse (Optional)" />
+                      <SelectValue placeholder={t("invoicePatterns.optionalWarehouse")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="none">{t("invoicePatterns.none")}</SelectItem>
                       {field.value && !warehouses.some((w) => String(w.id) === String(field.value)) && (
                         <SelectItem value={String(field.value)}>
-                          {`Warehouse (${String(field.value).slice(0, 8)}...)`}
+                          {`${t("invoicePatterns.warehouseFallback")} (${String(field.value).slice(0, 8)}...)`}
                         </SelectItem>
                       )}
                       {warehouses.map((w) => (
                         <SelectItem key={w.id} value={String(w.id)}>
-                          {w?.name_Warehouse || w?.name || "Warehouse"}
+                          {w?.name_Warehouse || w?.name || t("invoicePatterns.warehouseFallback")}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -384,7 +390,7 @@ export default function AddEditInvoicePattern() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Cost Center
+                {t("invoicePatterns.costCenter")}
               </label>
               <Controller
                 name="costCenter_id"
@@ -397,13 +403,13 @@ export default function AddEditInvoicePattern() {
                     onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Cost Center (Optional)" />
+                      <SelectValue placeholder={t("invoicePatterns.optionalCostCenter")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                      <SelectItem value="none">None</SelectItem>
+                      <SelectItem value="none">{t("invoicePatterns.none")}</SelectItem>
                       {field.value && !costCenters.some((cc) => String(cc.id) === String(field.value)) && (
                         <SelectItem value={String(field.value)}>
-                          {`Cost Center (${String(field.value).slice(0, 8)}...)`}
+                          {`${t("invoicePatterns.costCenterFallback")} (${String(field.value).slice(0, 8)}...)`}
                         </SelectItem>
                       )}
                       {costCenters.map((cc) => (
@@ -419,7 +425,7 @@ export default function AddEditInvoicePattern() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Payment Method <span className="text-red-500">*</span>
+                {t("invoicePatterns.paymentMethod")} <span className="text-red-500">*</span>
               </label>
               <Controller
                 name="paymentPay"
@@ -432,23 +438,23 @@ export default function AddEditInvoicePattern() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Payment Method" />
+                      <SelectValue placeholder={t("invoicePatterns.selectPaymentMethod")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Credit">Credit</SelectItem>
+                      <SelectItem value="Cash">{t("invoicePatterns.payments.cash")}</SelectItem>
+                      <SelectItem value="Credit">{t("invoicePatterns.payments.credit")}</SelectItem>
                     </SelectContent>
                   </Select>
                 )}
               />
               {errors.paymentPay && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Service Account
+                {t("invoicePatterns.serviceAccount")}
               </label>
               <Controller
                 name="service_Account_Id"
@@ -460,12 +466,12 @@ export default function AddEditInvoicePattern() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Service Account" />
+                      <SelectValue placeholder={t("invoicePatterns.selectServiceAccount")} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {field.value && !accounts.some((acc) => String(acc.id) === String(field.value)) && (
                         <SelectItem value={String(field.value)}>
-                          {`Account (${String(field.value).slice(0, 8)}...)`}
+                          {`${t("invoicePatterns.account")} (${String(field.value).slice(0, 8)}...)`}
                         </SelectItem>
                       )}
                       {accounts.map((acc) => (
@@ -481,7 +487,7 @@ export default function AddEditInvoicePattern() {
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Tax Percentage <span className="text-red-500">*</span>
+                {t("invoicePatterns.taxPercentage")} <span className="text-red-500">*</span>
               </label>
               <Input
                 type="number"
@@ -490,21 +496,21 @@ export default function AddEditInvoicePattern() {
                 {...register("tax_Percentage", { required: true })}
               />
               {errors.tax_Percentage && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
 
             <div className="space-y-2 md:col-span-2">
               <label className="text-sm font-semibold text-foreground leading-none">
-                Note <span className="text-red-500">*</span>
+                {t("invoicePatterns.note")} <span className="text-red-500">*</span>
               </label>
               <Input
-                placeholder="Notes..."
+                placeholder={t("invoicePatterns.notesPlaceholder")}
                 className="h-9 bg-transparent"
                 {...register("note", { required: true })}
               />
               {errors.note && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{t("invoicePatterns.required")}</span>
               )}
             </div>
           </form>
