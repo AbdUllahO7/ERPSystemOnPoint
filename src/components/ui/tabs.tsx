@@ -3,6 +3,8 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
+import { useI18n } from "@/context/translate-api"
+import { translateErp } from "@/lib/erp-i18n"
 
 function Tabs({
   className,
@@ -56,8 +58,14 @@ function TabsList({
 
 function TabsTrigger({
   className,
+  children,
   ...props
 }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
+  const { locale } = useI18n();
+  const displayChildren = locale === "ar" && typeof children === "string"
+    ? translateErp(children, locale)
+    : children;
+
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
@@ -69,7 +77,9 @@ function TabsTrigger({
         className
       )}
       {...props}
-    />
+    >
+      {displayChildren}
+    </TabsPrimitive.Trigger>
   )
 }
 
