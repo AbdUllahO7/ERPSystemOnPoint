@@ -7,6 +7,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 /**
  * Reusable PageTitle component matching ERP system design.
@@ -35,7 +37,14 @@ export function PageTitle({
   actions,
   className = "",
 }) {
-  const tooltipText = infoTooltip || infoText || "";
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
+  const displayTitle = isAr && typeof title === "string" ? translateErp(title, locale) : title;
+  const rawTooltip = infoTooltip || infoText || "";
+  const tooltipText = isAr && typeof rawTooltip === "string" ? translateErp(rawTooltip, locale) : rawTooltip;
+  const displaySubtitle = isAr && typeof subtitle === "string" ? translateErp(subtitle, locale) : subtitle;
+
   const crumbs = breadcrumbLinks || breadcrumbs || (Array.isArray(breadcrumb) ? breadcrumb : null);
 
   return (
@@ -48,7 +57,7 @@ export function PageTitle({
       <div className="space-y-1">
         <div className="flex items-center gap-2">
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[#1e293b]">
-            {title}
+            {displayTitle}
           </h1>
           {showInfo && (
             <TooltipProvider delayDuration={150}>
@@ -73,18 +82,21 @@ export function PageTitle({
 
         {crumbs && Array.isArray(crumbs) && crumbs.length > 0 ? (
           <div className="flex items-center gap-1.5 text-xs text-slate-500 font-normal">
-            {crumbs.map((b, i) => (
+            {crumbs.map((b, i) => {
+              const crumbLabel = isAr && typeof b.label === "string" ? translateErp(b.label, locale) : b.label;
+              return (
               <React.Fragment key={i}>
                 {i > 0 && <span className="text-slate-400">/</span>}
                 {b.href ? (
                   <Link to={b.href} className="text-slate-500 hover:text-[#0066d1] transition-colors">
-                    {b.label}
+                    {crumbLabel}
                   </Link>
                 ) : (
-                  <span className="text-slate-700 font-medium">{b.label}</span>
+                  <span className="text-slate-700 font-medium">{crumbLabel}</span>
                 )}
               </React.Fragment>
-            ))}
+              );
+            })}
           </div>
         ) : breadcrumb && typeof breadcrumb !== "string" ? (
           <div className="flex items-center gap-2 text-xs text-slate-500">
@@ -92,8 +104,8 @@ export function PageTitle({
           </div>
         ) : null}
 
-        {subtitle && (
-          <p className="text-xs text-slate-500">{subtitle}</p>
+        {displaySubtitle && (
+          <p className="text-xs text-slate-500">{displaySubtitle}</p>
         )}
       </div>
 

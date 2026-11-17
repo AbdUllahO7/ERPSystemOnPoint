@@ -65,7 +65,7 @@ export default function AddEditServiceProvider() {
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { locale } = useI18n();
+  const { t } = useI18n();
 
   const [copiedId, setCopiedId] = useState(false);
   const [employeeError, setEmployeeError] = useState(false);
@@ -129,8 +129,8 @@ export default function AddEditServiceProvider() {
       queryClient.invalidateQueries(["serviceProvider", id]);
       toast.success(
         isEdit
-          ? "Service provider updated successfully!"
-          : "Service provider created successfully!"
+          ? t("appointmentsModule.providerUpdated")
+          : t("appointmentsModule.providerCreated")
       );
       navigate("/dashboard/appointments/service-providers");
     },
@@ -144,8 +144,8 @@ export default function AddEditServiceProvider() {
         errMsg && errMsg !== "An unexpected error occurred"
           ? errMsg
           : isEdit
-          ? "Failed to update service provider!"
-          : "Failed to create service provider!"
+          ? t("appointmentsModule.providerUpdateFailed")
+          : t("appointmentsModule.providerCreateFailed")
       );
     },
   });
@@ -172,7 +172,7 @@ export default function AddEditServiceProvider() {
     if (!id) return;
     navigator.clipboard.writeText(id);
     setCopiedId(true);
-    toast.success("Provider ID copied!");
+    toast.success(t("appointmentsModule.providerIdCopied"));
     setTimeout(() => setCopiedId(false), 2000);
   };
 
@@ -180,11 +180,7 @@ export default function AddEditServiceProvider() {
     e?.preventDefault();
     if (!formData.employeeId) {
       setEmployeeError(true);
-      toast.error(
-        locale === "ar"
-          ? "يرجى اختيار موظف من الموارد البشرية"
-          : "Please select an HR employee"
-      );
+      toast.error(t("appointmentsModule.selectHrEmployee"));
       return;
     }
     if (isEdit) {
@@ -237,17 +233,17 @@ export default function AddEditServiceProvider() {
     return (
       <div className="space-y-6">
         <PageTitle
-          title="Edit Service Provider"
+          title={t("appointmentsModule.editProvider")}
           breadcrumbs={[
-            { label: "Service Provider", href: "/dashboard/appointments/service-providers" },
-            { label: "Edit Service Provider" },
+            { label: t("appointmentsModule.serviceProviders"), href: "/dashboard/appointments/service-providers" },
+            { label: t("appointmentsModule.editProvider") },
           ]}
         />
         <div className="bg-white rounded-2xl border border-slate-100 p-12 text-center shadow-sm">
           <div className="inline-block animate-spin text-primary mb-3">
             <RefreshCw className="w-8 h-8" />
           </div>
-          <p className="text-slate-500 text-sm">Loading provider details...</p>
+          <p className="text-slate-500 text-sm">{t("appointmentsModule.loadingProviderDetails")}</p>
         </div>
       </div>
     );
@@ -257,12 +253,12 @@ export default function AddEditServiceProvider() {
     <div className="space-y-6">
       {/* Page Title with Breadcrumbs & Top Action Buttons */}
       <PageTitle
-        title={isEdit ? "Edit Service Provider" : "Add Service Provider"}
+        title={isEdit ? t("appointmentsModule.editProvider") : t("appointmentsModule.addProvider")}
         breadcrumbs={[
-          { label: "Service Provider", href: "/dashboard/appointments/service-providers" },
-          { label: isEdit ? "Edit Service Provider" : "Add Service Provider" },
+          { label: t("appointmentsModule.serviceProviders"), href: "/dashboard/appointments/service-providers" },
+          { label: isEdit ? t("appointmentsModule.editProvider") : t("appointmentsModule.addProvider") },
         ]}
-        infoTooltip="Configure service provider assignment and weekly operational schedule matching backend schema."
+        infoTooltip={t("appointmentsModule.providerTooltip")}
         actions={
           <div className="flex items-center gap-2">
             <Button
@@ -273,7 +269,7 @@ export default function AddEditServiceProvider() {
               className="border-slate-200 hover:bg-slate-50 text-slate-700"
             >
               <ArrowLeft className="w-4 h-4 mr-1.5" />
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
@@ -281,7 +277,7 @@ export default function AddEditServiceProvider() {
               disabled={saveMutation.isPending || isLoadingProvider}
               className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-7 py-2 rounded-lg font-medium shadow-sm transition-all"
             >
-              {saveMutation.isPending ? "Saving..." : "Save"}
+              {saveMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </div>
         }
@@ -297,7 +293,7 @@ export default function AddEditServiceProvider() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h3 className="text-lg font-bold text-slate-800">
-                  {selectedEmployee?.fullName || selectedEmployee?.label || "Service Provider"}
+                  {selectedEmployee?.fullName || selectedEmployee?.label || t("appointmentsModule.serviceProvider")}
                 </h3>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -311,11 +307,11 @@ export default function AddEditServiceProvider() {
                       provider.isActive ? "bg-emerald-500" : "bg-gray-400"
                     }`}
                   />
-                  {provider.isActive ? "Active" : "Inactive"}
+                  {provider.isActive ? t("appointmentsModule.active") : t("appointmentsModule.inactive")}
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-1">
-                Edit service provider HR employee assignment and review weekly schedule.
+                {t("appointmentsModule.providerHeaderDesc")}
               </p>
             </div>
           </div>
@@ -324,7 +320,7 @@ export default function AddEditServiceProvider() {
           <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 px-3.5 py-2 rounded-xl">
             <div className="text-left">
               <span className="text-[11px] font-medium text-slate-400 block leading-tight">
-                Provider ID (UUID)
+                {t("appointmentsModule.providerIdUUID")}
               </span>
               <span className="font-mono text-xs font-semibold text-slate-800">
                 {id}
@@ -334,7 +330,7 @@ export default function AddEditServiceProvider() {
               type="button"
               onClick={handleCopyId}
               className="text-primary hover:text-blue-700 p-1.5 rounded hover:bg-slate-200/50 transition-colors"
-              title="Copy Provider UUID"
+              title={t("appointmentsModule.copyProviderUUID")}
             >
               {copiedId ? (
                 <Check className="w-4 h-4 text-emerald-600" />
@@ -352,13 +348,11 @@ export default function AddEditServiceProvider() {
         <div className="space-y-4">
           <div>
             <Label className="text-sm font-semibold text-slate-800 flex items-center gap-1">
-              <span>{locale === "ar" ? "اختيار موظف الموارد البشرية" : "Select HR Employee"}</span>
+              <span>{t("appointmentsModule.selectHrEmployee")}</span>
               <span className="text-red-500">*</span>
             </Label>
             <p className="text-xs text-slate-500 mt-0.5">
-              {locale === "ar"
-                ? "تعيين موظف من نظام الموارد البشرية لمقدم الخدمة هذا (مطلوب)."
-                : "Assign an employee from the HR system to this service provider (Required)."}
+              {t("appointmentsModule.selectHrEmployeeDesc")}
             </p>
           </div>
 
@@ -374,7 +368,7 @@ export default function AddEditServiceProvider() {
                   employeeError && "border-red-500 focus-visible:ring-red-500"
                 )}
               >
-                <SelectValue placeholder={isLoadingEmployees ? "Loading employees..." : "Choose employee..."} />
+                <SelectValue placeholder={isLoadingEmployees ? t("appointmentsModule.loadingEmployees") : t("appointmentsModule.chooseEmployee")} />
               </SelectTrigger>
               <SelectContent>
                 {employees.map((emp) => (
@@ -386,9 +380,7 @@ export default function AddEditServiceProvider() {
             </Select>
             {employeeError && (
               <p className="text-xs text-red-500 font-medium mt-1.5">
-                {locale === "ar"
-                  ? "موظف الموارد البشرية مطلوب"
-                  : "HR Employee is required"}
+                {t("appointmentsModule.hrEmployeeRequired")}
               </p>
             )}
           </div>
@@ -398,19 +390,19 @@ export default function AddEditServiceProvider() {
             <div className="max-w-xl p-4 rounded-xl bg-slate-50/80 border border-slate-200/80 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-                  Assigned Employee Details
+                  {t("appointmentsModule.assignedEmployeeDetails")}
                 </span>
                 {selectedEmployee.code && (
                   <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-white px-2 py-0.5 rounded border border-slate-200">
                     <Hash className="w-3 h-3 text-slate-400" />
-                    Job #{selectedEmployee.code}
+                    {t("appointmentsModule.jobNumber")}{selectedEmployee.code}
                   </span>
                 )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
-                  <span className="text-slate-400 block font-normal">Full Name:</span>
+                  <span className="text-slate-400 block font-normal">{t("appointmentsModule.fullName")}</span>
                   <span className="text-slate-800 font-semibold mt-0.5 block">
                     {selectedEmployee.fullName || selectedEmployee.label}
                   </span>
@@ -418,7 +410,7 @@ export default function AddEditServiceProvider() {
 
                 {selectedEmployee.phone && (
                   <div>
-                    <span className="text-slate-400 block font-normal">Phone Number:</span>
+                    <span className="text-slate-400 block font-normal">{t("appointmentsModule.phoneNumber")}</span>
                     <span className="text-slate-800 font-semibold mt-0.5 flex items-center gap-1">
                       <Phone className="w-3.5 h-3.5 text-slate-400" />
                       {selectedEmployee.phone}
@@ -428,7 +420,7 @@ export default function AddEditServiceProvider() {
 
                 {selectedEmployee.email && (
                   <div className="sm:col-span-2">
-                    <span className="text-slate-400 block font-normal">Email:</span>
+                    <span className="text-slate-400 block font-normal">{t("appointmentsModule.email")}</span>
                     <span className="text-slate-800 font-medium mt-0.5 flex items-center gap-1">
                       <Mail className="w-3.5 h-3.5 text-slate-400" />
                       {selectedEmployee.email}
@@ -445,10 +437,10 @@ export default function AddEditServiceProvider() {
           <div className="space-y-6 pt-4 border-t border-slate-100">
             <div>
               <h4 className="text-sm font-semibold text-slate-800">
-                Weekly Schedule Configuration
+                {t("appointmentsModule.weeklyScheduleConfig")}
               </h4>
               <p className="text-xs text-slate-500 mt-0.5">
-                Define the default operational hours and active working days for this provider.
+                {t("appointmentsModule.weeklyScheduleDesc")}
               </p>
             </div>
 
@@ -456,7 +448,7 @@ export default function AddEditServiceProvider() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-slate-800">
-                  Work Start Time
+                  {t("appointmentsModule.workStartTime")}
                 </Label>
                 <Input
                   type="time"
@@ -470,7 +462,7 @@ export default function AddEditServiceProvider() {
 
               <div className="space-y-2">
                 <Label className="text-sm font-semibold text-slate-800">
-                  Work End Time
+                  {t("appointmentsModule.workEndTime")}
                 </Label>
                 <Input
                   type="time"
@@ -491,7 +483,7 @@ export default function AddEditServiceProvider() {
                       : "border-slate-200/80 bg-white"
                   )}
                 >
-                  <span className="text-sm font-medium text-slate-700">Active</span>
+                  <span className="text-sm font-medium text-slate-700">{t("appointmentsModule.active")}</span>
                   <Switch
                     checked={formData.active}
                     onCheckedChange={(checked) =>
@@ -505,7 +497,7 @@ export default function AddEditServiceProvider() {
             {/* Working Days Selector */}
             <div className="space-y-3 pt-2">
               <Label className="text-sm font-semibold text-slate-800">
-                {locale === "ar" ? "أيام العمل" : "Working Days"}
+                {t("appointmentsModule.activeWorkingDays")}
               </Label>
               <div className="flex flex-wrap gap-2.5">
                 {DAYS_OF_WEEK.map((day) => {
@@ -521,7 +513,7 @@ export default function AddEditServiceProvider() {
                           : "border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50/50"
                       }`}
                     >
-                      {locale === "ar" ? (day.labelAr || day.label) : (day.label || day.id)}
+                      {t(`appointmentsModule.days.${day.full}`) || day.label}
                     </button>
                   );
                 })}
@@ -535,14 +527,14 @@ export default function AddEditServiceProvider() {
               <div>
                 <h4 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                   <CalendarClock className="w-4 h-4 text-primary" />
-                  {locale === "ar" ? "الجدول الأسبوعي الحالي" : "Active Weekly Schedule"}
+                  {t("appointmentsModule.activeWeeklySchedule")}
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Operating schedule loaded from the service provider's backend record.
+                  {t("appointmentsModule.activeWeeklyScheduleDesc")}
                 </p>
               </div>
               <span className="text-xs font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
-                7 Days Schedule
+                {t("appointmentsModule.sevenDaysSchedule")}
               </span>
             </div>
 
@@ -551,17 +543,17 @@ export default function AddEditServiceProvider() {
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-50 text-slate-600 font-semibold uppercase border-b border-slate-200">
                   <tr>
-                    <th className="py-2.5 px-4">Day</th>
-                    <th className="py-2.5 px-4">Status</th>
-                    <th className="py-2.5 px-4">Start Time</th>
-                    <th className="py-2.5 px-4">End Time</th>
-                    <th className="py-2.5 px-4 text-right">Window</th>
+                    <th className="py-2.5 px-4">{t("appointmentsModule.day")}</th>
+                    <th className="py-2.5 px-4">{t("appointmentsModule.status")}</th>
+                    <th className="py-2.5 px-4">{t("appointmentsModule.startTime")}</th>
+                    <th className="py-2.5 px-4">{t("appointmentsModule.endTime")}</th>
+                    <th className="py-2.5 px-4 text-right">{t("appointmentsModule.window")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {weeklyScheduleList.map((day, idx) => {
                     const isOff = day.isDayOff;
-                    const dayLabel = locale === "ar" ? (DAY_TRANSLATIONS[day.dayOfWeek] || day.dayOfWeek) : day.dayOfWeek;
+                    const dayLabel = t(`appointmentsModule.days.${day.dayOfWeek}`) || day.dayOfWeek;
                     return (
                       <tr
                         key={idx}
@@ -585,7 +577,7 @@ export default function AddEditServiceProvider() {
                                 : "bg-emerald-50 text-emerald-600 border border-emerald-200"
                             }`}
                           >
-                            {isOff ? (locale === "ar" ? "عطلة" : "Day Off") : (locale === "ar" ? "يوم عمل" : "Working Day")}
+                            {isOff ? t("appointmentsModule.dayOff") : t("appointmentsModule.workingDay")}
                           </span>
                         </td>
                         <td className="py-2.5 px-4 font-mono text-slate-600">
@@ -596,7 +588,7 @@ export default function AddEditServiceProvider() {
                         </td>
                         <td className="py-2.5 px-4 text-right">
                           {isOff ? (
-                            <span className="text-slate-400 italic">Off</span>
+                            <span className="text-slate-400 italic">{t("appointmentsModule.off")}</span>
                           ) : (
                             <span className="inline-flex items-center gap-1 font-medium text-primary">
                               <Clock className="w-3 h-3" />

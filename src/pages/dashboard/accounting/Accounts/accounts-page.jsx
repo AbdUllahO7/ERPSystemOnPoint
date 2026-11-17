@@ -18,6 +18,8 @@ import {
 import { useNavigate } from "react-router-dom";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 import toast from "react-hot-toast";
 
 const stats = [
@@ -40,6 +42,9 @@ const stats = [
 ];
 
 export default function AccountsPage() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -167,7 +172,7 @@ export default function AccountsPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-xl font-semibold text-foreground">
-          Accounts
+          {isAr ? "الحسابات" : "Accounts"}
         </h2>
         <Info className="w-4 h-4 text-muted-foreground" />
       </div>
@@ -185,7 +190,7 @@ export default function AccountsPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground">{isAr ? translateErp(stat.title, locale) : stat.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}
@@ -207,22 +212,22 @@ export default function AccountsPage() {
         configs={[
           {
             key: "nature",
-            label: "Account Nature",
-            placeholder: "All Natures",
+            label: isAr ? "طبيعة الحساب" : "Account Nature",
+            placeholder: isAr ? "جميع الطبائع" : "All Natures",
             options: [
-              { value: "Debit", label: "Debit" },
-              { value: "Credit", label: "Credit" },
+              { value: "Debit", label: isAr ? "مدين" : "Debit" },
+              { value: "Credit", label: isAr ? "دائن" : "Credit" },
             ],
           },
           {
             key: "finalAccount",
-            label: "Final Account",
-            placeholder: "All Final Accounts",
+            label: isAr ? "الحساب الختامي" : "Final Account",
+            placeholder: isAr ? "جميع الحسابات الختامية" : "All Final Accounts",
             options: [
-              { value: "BalanceSheet", label: "Balance Sheet" },
-              { value: "IncomeStatement", label: "Income Statement" },
-              { value: "Trading", label: "Trading Account" },
-              { value: "ProfitAndLoss", label: "Profit & Loss" },
+              { value: "BalanceSheet", label: isAr ? "الميزانية العمومية" : "Balance Sheet" },
+              { value: "IncomeStatement", label: isAr ? "قائمة الدخل" : "Income Statement" },
+              { value: "Trading", label: isAr ? "حساب المتاجرة" : "Trading Account" },
+              { value: "ProfitAndLoss", label: isAr ? "الأرباح والخسائر" : "Profit & Loss" },
             ],
           },
         ]}
@@ -247,17 +252,17 @@ export default function AccountsPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         filter={{
-          label: "Filter",
+          label: isAr ? "فلترة" : "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         search={{
-          placeholder: "Search accounts...",
+          placeholder: isAr ? "البحث في الحسابات..." : "Search accounts...",
           value: search,
           onChange: handleSearch,
         }}
         onRefresh={() => queryClient.invalidateQueries(["getAllAccountsFlat"])}
         addButton={{
-          label: "Add",
+          label: isAr ? "إضافة" : "Add",
           onClick: () => navigate("/dashboard/accounting/accounts/add"),
         }}
         columns={columns}

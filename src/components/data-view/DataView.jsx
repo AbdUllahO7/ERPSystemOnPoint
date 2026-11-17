@@ -16,6 +16,8 @@ import { StatsCards } from "./StatsCards";
 import { RowActionsMenu } from "./RowActionsMenu";
 import iconTable from "@/assets/show-tabel.svg";
 import iconCards from "@/assets/cards-sho.svg";
+import { useI18n } from "@/context/translate-api";
+import { translateErp, translateColumnHeader, translateTabLabel } from "@/lib/erp-i18n";
 
 function ViewToggleIcon({ src, active, alt }) {
   return (
@@ -29,9 +31,10 @@ function ViewToggleIcon({ src, active, alt }) {
 }
 
 function ViewToggle({ view, onChange, allowedViews }) {
+  const { t } = useI18n();
   const options = [
-    { id: "table", icon: iconTable, label: "Table view" },
-    { id: "cards", icon: iconCards, label: "Card view" },
+    { id: "table", icon: iconTable, label: t("dataView.tableView") },
+    { id: "cards", icon: iconCards, label: t("dataView.cardView") },
   ].filter((opt) => allowedViews.includes(opt.id));
 
   if (options.length < 2) return null;
@@ -167,10 +170,19 @@ export function DataView({
 
   tabs,
 
-  emptyMessage = "No data available",
+  emptyMessage,
   className,
   toolbarExtra,
 }) {
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
+  const dvT = t?.dataView || {};
+
+  const effectiveEmptyMessage = isAr
+    ? translateErp(emptyMessage || dvT.empty || "No data available", locale)
+    : (emptyMessage || dvT.empty || "No data available");
+  const effectiveActionsLabel = actionsColumnLabel || dvT.actions || t("dataView.actions");
+
   const [internalView, setInternalView] = useState(defaultView);
   const [internalSelected, setInternalSelected] = useState([]);
 
@@ -178,18 +190,19 @@ export function DataView({
   const setView = onViewChange ?? setInternalView;
 
   // Normalized toolbar & pagination props
+  const defaultPlaceholder = dvT.searchPlaceholder || t("dataView.searchPlaceholder");
   const activeSearch =
     search ||
     (searchValue !== undefined || onSearchChange
       ? {
           value: searchValue ?? "",
           onChange: (val) => onSearchChange?.(val),
-          placeholder: searchPlaceholder ?? "Search by id or employee name...",
+          placeholder: searchPlaceholder ?? defaultPlaceholder,
         }
       : {
           value: "",
           onChange: () => {},
-          placeholder: "Search by id or employee name...",
+          placeholder: defaultPlaceholder,
         });
 
   const activeFilter =
@@ -197,7 +210,7 @@ export function DataView({
     (onFilter
       ? {
           onClick: onFilter,
-          label: "Filter",
+          label: dvT.filter || t("dataView.filter"),
         }
       : null);
 
@@ -206,7 +219,7 @@ export function DataView({
     (onAdd
       ? {
           onClick: onAdd,
-          label: "Add",
+          label: dvT.add || t("dataView.add"),
         }
       : null);
 
@@ -217,6 +230,8 @@ export function DataView({
           page: page || 1,
           totalPages: totalPages || 1,
           onPageChange: onPageChange || (() => {}),
+          prevLabel: dvT.prev || t("dataView.prev"),
+          nextLabel: dvT.next || t("dataView.next"),
         }
       : null);
 
@@ -317,7 +332,10 @@ export function DataView({
                       <FieldIcon className="size-3.5 shrink-0 text-slate-400" />
                     )}
                     {field.label && (
-                      <span className="text-slate-500">{field.label}:</span>
+                      <span className="text-slate-500">
+                        {isAr ? translateErp(field.label, locale) : field.label}
+                        {!field.label.endsWith(":") && ":"}
+                      </span>
                     )}
                     <span className="truncate font-medium text-slate-800">{value}</span>
                   </div>
@@ -352,10 +370,13 @@ export function DataView({
                 col.accessorKey ??
                 (typeof col.header === "string" ? col.header : col.label) ??
                 idx;
-              const colLabel =
+              const rawColLabel =
                 typeof col.header === "function"
                   ? col.header()
                   : col.header ?? col.label ?? "";
+              const colLabel = isAr && typeof rawColLabel === "string"
+                ? translateErp(rawColLabel, locale)
+                : rawColLabel;
               const sortAccessor = col.key ?? col.accessorKey;
 
               return (
@@ -469,7 +490,8 @@ export function DataView({
           <div className="flex items-center gap-4 sm:gap-6 px-1 border-b border-slate-100 overflow-x-auto scrollbar-none -mt-0.5 sm:-mt-1 mb-2">
             {(Array.isArray(tabs) ? tabs : tabs.items).map((tab) => {
               const tabId = typeof tab === "string" ? tab : tab.id;
-              const tabLabel = typeof tab === "string" ? tab : tab.label;
+              const rawTabLabel = typeof tab === "string" ? tab : tab.label;
+              const tabLabel = isAr && typeof rawTabLabel === "string" ? translateTabLabel(rawTabLabel, locale) : rawTabLabel;
               const activeId = tabs.activeTab ?? tabs.value ?? tabs.selectedTab;
               const isActive = activeId === tabId || (activeId?.toLowerCase() === tabId?.toLowerCase());
               return (
@@ -508,7 +530,9 @@ export function DataView({
                     activeSearch.onChange?.(value, data);
                   }}
                   placeholder={
-                    activeSearch.placeholder ?? "Search by id or employee name..."
+                    isAr
+                      ? translateErp(activeSearch.placeholder ?? "Search by id or employee name...", locale)
+                      : (activeSearch.placeholder ?? "Search by id or employee name...")
                   }
                   className="h-9 sm:h-10 w-full rounded-xl border-slate-200/90 bg-white ps-9 pe-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
                 />
@@ -522,7 +546,7 @@ export function DataView({
                 className="h-9 sm:h-10 shrink-0 gap-1.5 rounded-xl bg-[#eaf4ff] text-[#0066d1] hover:bg-[#d8ecff] hover:text-[#0052a8] text-xs font-semibold px-3 sm:px-4 cursor-pointer"
               >
                 <Filter className="size-3.5" />
-                <span>{activeFilter.label ?? "Filter"}</span>
+                <span>{isAr ? translateErp(activeFilter.label ?? "Filter", locale) : (activeFilter.label ?? "Filter")}</span>
               </Button>
             )}
           </div>
@@ -539,7 +563,7 @@ export function DataView({
               )}
               <ToolbarIconButton
                 onClick={onRefresh || (() => window.location.reload())}
-                aria-label="Refresh"
+                aria-label={t("dataView.refresh")}
               >
                 <RefreshCw className="size-3.5 sm:size-4 text-slate-600" />
               </ToolbarIconButton>
@@ -552,7 +576,7 @@ export function DataView({
                 className="h-9 sm:h-10 gap-1.5 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white px-3.5 sm:px-5 text-xs font-semibold shadow-xs cursor-pointer shrink-0 ms-auto sm:ms-0"
               >
                 <Plus className="size-3.5 stroke-[2.5]" />
-                <span>{activeAddButton.label ?? "Add"}</span>
+                <span>{isAr ? translateErp(activeAddButton.label ?? "Add", locale) : (activeAddButton.label ?? "Add")}</span>
               </Button>
             )}
           </div>
@@ -574,7 +598,7 @@ export function DataView({
           </div>
         ) : data.length === 0 ? (
           <p className="px-6 py-12 text-center text-sm text-slate-500">
-            {emptyMessage}
+            {effectiveEmptyMessage}
           </p>
         ) : useViewTransition ? (
           <div className="data-view-panels">
@@ -604,68 +628,93 @@ export function DataView({
         )}
 
         {/* Bottom Pagination matching Figma */}
-        {activePagination && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
-            <div className="text-xs text-slate-500 order-2 sm:order-1 text-center sm:text-start">
-              <span>
-                Page <strong className="font-semibold text-slate-800">{activePagination.page}</strong> of{" "}
-                <strong className="font-semibold text-slate-800">{Math.max(1, activePagination.totalPages)}</strong>
-              </span>
-            </div>
+        {activePagination && (() => {
+          const rawPrev = activePagination.prevLabel;
+          const prevBtnLabel = isAr
+            ? (!rawPrev || rawPrev === "Pre" || rawPrev === "Prev" || rawPrev === "Previous"
+                ? "السابق"
+                : translateErp(rawPrev, locale))
+            : (rawPrev || "Pre");
 
-            <div className="flex items-center gap-1 sm:gap-1.5 order-1 sm:order-2 flex-wrap justify-center">
-              <button
-                type="button"
-                disabled={activePagination.page <= 1}
-                onClick={() =>
-                  activePagination.onPageChange?.(activePagination.page - 1)
-                }
-                className="px-2.5 py-1 text-xs font-semibold text-slate-600 disabled:opacity-40 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
-              >
-                {activePagination.prevLabel ?? "Pre"}
-              </button>
-              <div className="flex items-center gap-1">
-                {buildPageItems(
-                  activePagination.page,
-                  activePagination.totalPages,
-                ).map((item, i) =>
-                  item === "..." ? (
-                    <span
-                      key={`ellipsis-${i}`}
-                      className="px-1 text-xs text-slate-400 select-none"
-                    >
-                      ...
-                    </span>
+          const rawNext = activePagination.nextLabel;
+          const nextBtnLabel = isAr
+            ? (!rawNext || rawNext === "Next"
+                ? "التالي"
+                : translateErp(rawNext, locale))
+            : (rawNext || "Next");
+
+          return (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
+              <div className="text-xs text-slate-500 order-2 sm:order-1 text-center sm:text-start">
+                <span>
+                  {isAr ? (
+                    <>
+                      صفحة <strong className="font-semibold text-slate-800">{activePagination.page}</strong> من{" "}
+                      <strong className="font-semibold text-slate-800">{Math.max(1, activePagination.totalPages)}</strong>
+                    </>
                   ) : (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => activePagination.onPageChange?.(item)}
-                      className={cn(
-                        "flex h-7 min-w-7 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors cursor-pointer",
-                        item === activePagination.page
-                          ? "bg-[#0066d1] text-white font-semibold shadow-xs"
-                          : "text-slate-600 hover:bg-slate-100",
-                      )}
-                    >
-                      {item}
-                    </button>
-                  ),
-                )}
+                    <>
+                      Page <strong className="font-semibold text-slate-800">{activePagination.page}</strong> of{" "}
+                      <strong className="font-semibold text-slate-800">{Math.max(1, activePagination.totalPages)}</strong>
+                    </>
+                  )}
+                </span>
               </div>
-              <button
-                type="button"
-                disabled={activePagination.page >= activePagination.totalPages}
-                onClick={() =>
-                  activePagination.onPageChange?.(activePagination.page + 1)
-                }
-                className="px-2.5 py-1 text-xs font-semibold text-[#0066d1] disabled:opacity-40 hover:text-[#0052a8] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
-              >
-                {activePagination.nextLabel ?? "Next"}
-              </button>
+
+              <div className="flex items-center gap-1 sm:gap-1.5 order-1 sm:order-2 flex-wrap justify-center">
+                <button
+                  type="button"
+                  disabled={activePagination.page <= 1}
+                  onClick={() =>
+                    activePagination.onPageChange?.(activePagination.page - 1)
+                  }
+                  className="px-2.5 py-1 text-xs font-semibold text-slate-600 disabled:opacity-40 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  {prevBtnLabel}
+                </button>
+                <div className="flex items-center gap-1">
+                  {buildPageItems(
+                    activePagination.page,
+                    activePagination.totalPages,
+                  ).map((item, i) =>
+                    item === "..." ? (
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="px-1 text-xs text-slate-400 select-none"
+                      >
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => activePagination.onPageChange?.(item)}
+                        className={cn(
+                          "flex h-7 min-w-7 sm:h-8 sm:min-w-8 items-center justify-center rounded-lg text-xs font-medium transition-colors cursor-pointer",
+                          item === activePagination.page
+                            ? "bg-[#0066d1] text-white font-semibold shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100",
+                        )}
+                      >
+                        {item}
+                      </button>
+                    ),
+                  )}
+                </div>
+                <button
+                  type="button"
+                  disabled={activePagination.page >= activePagination.totalPages}
+                  onClick={() =>
+                    activePagination.onPageChange?.(activePagination.page + 1)
+                  }
+                  className="px-2.5 py-1 text-xs font-semibold text-[#0066d1] disabled:opacity-40 hover:text-[#0052a8] hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                >
+                  {nextBtnLabel}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Filter Drawer / Dialog */}
@@ -673,7 +722,7 @@ export function DataView({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-3 sm:p-4">
           <div className="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 shrink-0">
-              <h3 className="text-base font-bold text-slate-800">Filters</h3>
+              <h3 className="text-base font-bold text-slate-800">{t("dataView.filters")}</h3>
               <button
                 type="button"
                 onClick={onCloseFilter}

@@ -14,11 +14,15 @@ import { Plus, Info } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getSupplierById, createSupplier, updateSupplier } from "@/lib/api";
 import { toast } from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function AddEditSupplier() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
   const isEdit = !!id;
 
   const [formData, setFormData] = useState({
@@ -72,11 +76,11 @@ export default function AddEditSupplier() {
     mutationFn: (data) => isEdit ? updateSupplier({ id, ...data }) : createSupplier(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["suppliers"] });
-      toast.success(`Supplier ${isEdit ? "updated" : "added"} successfully`);
+      toast.success(isAr ? (isEdit ? "تم تحديث المورد بنجاح" : "تمت إضافة المورد بنجاح") : `Supplier ${isEdit ? "updated" : "added"} successfully`);
       navigate("/dashboard/crm/suppliers");
     },
     onError: () => {
-      toast.error(`Failed to ${isEdit ? "update" : "add"} supplier`);
+      toast.error(isAr ? (isEdit ? "فشل في تحديث المورد" : "فشل في إضافة المورد") : `Failed to ${isEdit ? "update" : "add"} supplier`);
     }
   });
 
@@ -85,36 +89,40 @@ export default function AddEditSupplier() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.supplier_Name?.trim()) {
-      toast.error("Please enter supplier name");
+      toast.error(isAr ? "يرجى إدخال اسم المورد" : "Please enter supplier name");
       return;
     }
     mutation.mutate(formData);
   };
 
-  if (isEdit && isLoadingSupplier) return <div className="p-6">Loading...</div>;
+  if (isEdit && isLoadingSupplier) return <div className="p-6">{t("common.loading", "Loading...")}</div>;
+
+  const pageTitle = isEdit ? (isAr ? "تعديل المورد" : "Edit Supplier") : (isAr ? "إضافة مورد" : "Add Supplier");
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
-            {isEdit ? "Edit Supplier" : "Add Supplier"}
+            {pageTitle}
             <Info className="w-4 h-4 text-muted-foreground" />
           </h2>
           <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/suppliers")}>Suppliers</span>
+            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/suppliers")}>
+              {isAr ? translateErp("Suppliers", locale) : "Suppliers"}
+            </span>
             <span>/</span>
-            <span>{isEdit ? "Edit Supplier" : "Add Supplier"}</span>
+            <span>{pageTitle}</span>
           </div>
         </div>
         <Button
           onClick={handleSubmit}
           disabled={mutation.isPending || !isFormValid}
           className="gap-2"
-          title={!isFormValid ? "Please enter supplier name" : ""}
+          title={!isFormValid ? (isAr ? "يرجى إدخال اسم المورد" : "Please enter supplier name") : ""}
         >
           <Plus className="w-4 h-4" />
-          {isEdit ? "Save" : "Add"}
+          {isEdit ? (isAr ? "حفظ" : "Save") : (isAr ? "إضافة" : "Add")}
         </Button>
       </div>
 

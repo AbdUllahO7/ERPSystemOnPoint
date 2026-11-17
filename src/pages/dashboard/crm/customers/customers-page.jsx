@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState } from "react";
 import {
   Users as UsersIcon,
@@ -13,6 +14,7 @@ import { getAllCustomers, deleteCustomer } from "@/lib/api";
 import toast from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
+import { useI18n } from "@/context/translate-api";
 
 const stats = [
   {
@@ -50,6 +52,8 @@ const stats = [
 ];
 
 export default function CustomersPage() {
+  const { t } = useI18n();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
@@ -61,6 +65,22 @@ export default function CustomersPage() {
   const queryClient = useQueryClient();
 
   const tabs = ["All", "Active", "Distinct", "Old", "Unacceptable", "Unreliable"];
+  const tabLabels = {
+    All: t("crmCustomers.all"),
+    Active: t("crmCustomers.active"),
+    Distinct: t("crmCustomers.distinct"),
+    Old: t("crmCustomers.old"),
+    Unacceptable: t("crmCustomers.unacceptable"),
+    Unreliable: t("crmCustomers.unreliable"),
+  };
+
+  const statusLabels = {
+    Active: t("crmCustomers.active"),
+    Distinct: t("crmCustomers.distinct"),
+    Old: t("crmCustomers.old"),
+    Unacceptable: t("crmCustomers.unacceptable"),
+    Unreliable: t("crmCustomers.unreliable"),
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["customers", { page, search, activeTab }],
@@ -70,12 +90,12 @@ export default function CustomersPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteCustomer,
     onSuccess: () => {
-      toast.success("Customer deleted successfully!");
+      toast.success(t("crmCustomers.deleteSuccess"));
       queryClient.invalidateQueries(["customers"]);
       setDeleteRowId(null);
     },
     onError: (error) => {
-      toast.error(error?.message || "Failed to delete customer!");
+      toast.error(error?.message || t("crmCustomers.deleteError"));
       setDeleteRowId(null);
     },
   });
@@ -94,10 +114,10 @@ export default function CustomersPage() {
   const totalPages = data?.data?.totalPages || 1;
 
   const columns = [
-    { key: "idx", label: "ID", render: (row) => <span className="text-blue-500 font-medium">{row.idx}</span> },
+    { key: "idx", label: t("crmCustomers.id"), render: (row) => <span className="text-blue-500 font-medium">{row.idx}</span> },
     { 
       key: "name", 
-      label: "Name",
+      label: t("crmCustomers.name"),
       render: (row) => (
         <div>
           <div className="font-medium">{row.name}</div>
@@ -105,13 +125,13 @@ export default function CustomersPage() {
         </div>
       )
     },
-    { key: "type", label: "Type" },
-    { key: "sector", label: "Sector" },
-    { key: "contactsCount", label: "Contacts", render: (row) => row.contactsCount || 0 },
-    { key: "phone", label: "Phone" },
+    { key: "type", label: t("crmCustomers.type") },
+    { key: "sector", label: t("crmCustomers.sector") },
+    { key: "contactsCount", label: t("crmCustomers.contacts"), render: (row) => row.contactsCount || 0 },
+    { key: "phone", label: t("crmCustomers.phone") },
     { 
       key: "status", 
-      label: "Status",
+      label: t("crmCustomers.status"),
       render: (row) => {
         let colorClass = "bg-gray-100 text-gray-600";
         switch(row.status) {
@@ -121,10 +141,10 @@ export default function CustomersPage() {
           case "Unacceptable": colorClass = "bg-yellow-100 text-yellow-600"; break;
           case "Unreliable": colorClass = "bg-red-100 text-red-600"; break;
         }
-        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{row.status || "N/A"}</span>;
+        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{statusLabels[row.status] || row.status || t("crmCustomers.notSpecified")}</span>;
       }
     },
-    { key: "createdAt", label: "Created At", render: (row) => new Date(row.createdAt).toLocaleDateString() },
+    { key: "createdAt", label: t("crmCustomers.createdAt"), render: (row) => new Date(row.createdAt).toLocaleDateString() },
   ];
 
   const rowActionsMenu = [
@@ -132,13 +152,13 @@ export default function CustomersPage() {
       items: [
         {
           key: "view",
-          label: "View",
+          label: t("crmCustomers.view"),
           icon: Eye,
           onClick: (row) => navigate(`/dashboard/crm/customers/${row.id}`),
         },
         {
           key: "edit",
-          label: "Edit",
+          label: t("crmCustomers.edit"),
           icon: Pencil,
           onClick: (row) => navigate(`/dashboard/crm/customers/edit/${row.id}`),
         },
@@ -148,7 +168,7 @@ export default function CustomersPage() {
       items: [
         {
           key: "delete",
-          label: "Delete",
+          label: t("crmCustomers.delete"),
           icon: Trash2,
           destructive: true,
           onClick: (row) => setDeleteRowId(row.id),
@@ -159,8 +179,8 @@ export default function CustomersPage() {
 
   return (
     <div className="space-y-4 ">
-      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
-        <span>Customers</span>
+      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm font-semibold">
+        <span>{t("crmCustomers.title")}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -170,7 +190,7 @@ export default function CustomersPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? "text-green-500" : "text-red-500"}`}>
@@ -196,7 +216,7 @@ export default function CustomersPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab}
+            {tabLabels[tab] || tab}
             {activeTab === tab && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
             )}
@@ -210,22 +230,22 @@ export default function CustomersPage() {
         configs={[
           {
             key: "type",
-            label: "Customer Type",
-            placeholder: "All Types",
+            label: t("crmCustomers.customerType"),
+            placeholder: t("crmCustomers.allTypes"),
             options: [
-              { value: "Company", label: "Company" },
-              { value: "Individual", label: "Individual" },
+              { value: "Company", label: t("crmCustomers.company") },
+              { value: "Individual", label: t("crmCustomers.individual") },
             ],
           },
           {
             key: "sector",
-            label: "Sector",
-            placeholder: "All Sectors",
+            label: t("crmCustomers.sector"),
+            placeholder: t("crmCustomers.allSectors"),
             options: [
-              { value: "Commercial", label: "Commercial" },
-              { value: "Industrial", label: "Industrial" },
-              { value: "Services", label: "Services" },
-              { value: "Government", label: "Government" },
+              { value: "Commercial", label: t("crmCustomers.commercial") },
+              { value: "Industrial", label: t("crmCustomers.industrial") },
+              { value: "Services", label: t("crmCustomers.services") },
+              { value: "Government", label: t("crmCustomers.government") },
             ],
           },
         ]}
@@ -250,28 +270,30 @@ export default function CustomersPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         // selectable
+        searchPlaceholder={t("crmCustomers.searchPlaceholder")}
+        emptyMessage={t("crmCustomers.empty")}
         card={{
           icon: UsersIcon,
           title: (row) => row.name,
           subtitle: (row) => row.email,
           fields: [
-            { label: "Type", value: (row) => row.type },
-            { label: "Sector", value: (row) => row.sector },
-            { label: "Phone", value: (row) => row.phone },
-            { label: "Status", value: (row) => row.status || "N/A" },
+            { label: t("crmCustomers.type"), value: (row) => row.type },
+            { label: t("crmCustomers.sector"), value: (row) => row.sector },
+            { label: t("crmCustomers.phone"), value: (row) => row.phone },
+            { label: t("crmCustomers.status"), value: (row) => statusLabels[row.status] || row.status || t("crmCustomers.notSpecified") },
           ]
         }}
         search={{
-          placeholder: "Search customers...",
+          placeholder: t("crmCustomers.searchPlaceholder"),
           value: search,
           onChange: setSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
-          label: "Add",
+          label: t("common.add"),
           onClick: () => navigate("/dashboard/crm/customers/add"),
         }}
         columns={columns}
@@ -280,8 +302,8 @@ export default function CustomersPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Pre",
-          nextLabel: "Next",
+          prevLabel: t("common.prev"),
+          nextLabel: t("common.next"),
         }}
       />
 
@@ -289,8 +311,8 @@ export default function CustomersPage() {
         isOpen={!!deleteRowId}
         onClose={() => setDeleteRowId(null)}
         onConfirm={() => deleteMutation.mutate(deleteRowId)}
-        title="Delete Customer"
-        description="Are you sure you want to delete this customer? This action cannot be undone and will permanently remove the customer from the system."
+        title={t("crmCustomers.deleteTitle")}
+        description={t("crmCustomers.deleteDesc")}
       />
     </div>
   );

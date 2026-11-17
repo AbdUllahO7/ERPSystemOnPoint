@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import { DataView } from "@/components/data-view/DataView";
 import { Clock, Calendar, Check, X } from "lucide-react";
@@ -179,7 +180,7 @@ export default function EmployeeLeavesTab() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+              <p className="text-sm font-medium text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-sm text-foreground">{stat.value}</span>
               </div>

@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import {
   Users as UsersIcon,
@@ -25,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 const stats = [
   {
@@ -62,6 +64,8 @@ const stats = [
 ];
 
 export default function LeadsPage() {
+  const { t } = useI18n();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
@@ -81,6 +85,24 @@ export default function LeadsPage() {
   const queryClient = useQueryClient();
 
   const tabs = ["All", "New", "Contacted", "Qualified", "Quotation", "Converted", "Lost"];
+  const tabLabels = {
+    All: t("leads.all"),
+    New: t("leads.statuses.new"),
+    Contacted: t("leads.statuses.contacted"),
+    Qualified: t("leads.statuses.qualified"),
+    Quotation: t("leads.statuses.quotation"),
+    Converted: t("leads.statuses.converted"),
+    Lost: t("leads.statuses.lost"),
+  };
+
+  const statusLabels = {
+    New: t("leads.statuses.new"),
+    Contacted: t("leads.statuses.contacted"),
+    Qualified: t("leads.statuses.qualified"),
+    Quotation: t("leads.statuses.quotation"),
+    Converted: t("leads.statuses.converted"),
+    Lost: t("leads.statuses.lost"),
+  };
 
   const params = useMemo(() => {
     const p = {
@@ -107,24 +129,24 @@ export default function LeadsPage() {
   const statusMutation = useMutation({
     mutationFn: (payload) => changeLeadStatus(payload),
     onSuccess: () => {
-      toast.success("Status changed successfully");
+      toast.success(t("leads.statusChangeSuccess"));
       queryClient.invalidateQueries(["leads"]);
       setIsStatusDialogOpen(false);
     },
     onError: () => {
-      toast.error("Failed to change status");
+      toast.error(t("leads.statusChangeError"));
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteLead(id),
     onSuccess: () => {
-      toast.success("Lead deleted successfully!");
+      toast.success(t("leads.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["leads"] });
       setDeleteRowId(null);
     },
     onError: (error) => {
-      toast.error(error?.message || "Failed to delete lead!");
+      toast.error(error?.message || t("leads.deleteError"));
       setDeleteRowId(null);
     },
   });
@@ -132,19 +154,19 @@ export default function LeadsPage() {
   const handleStatusSubmit = () => {
     if (statusForm.status === "Converted") {
       if (selectedLead?.status === "Converted") {
-        toast.error("This opportunity has already been converted to a customer.");
+        toast.error(t("leads.alreadyConvertedError"));
         return;
       }
       if (!statusForm.isPriceOfferAccepted) {
-        toast.error("Please confirm acceptance of the price offer by the client.");
+        toast.error(t("leads.confirmOfferError"));
         return;
       }
       if (!statusForm.projectName?.trim()) {
-        toast.error("Please provide a project name.");
+        toast.error(t("leads.projectNameRequired"));
         return;
       }
       if (!statusForm.projectValue || Number(statusForm.projectValue) <= 0) {
-        toast.error("Please provide an approved project value.");
+        toast.error(t("leads.projectValueRequired"));
         return;
       }
     }
@@ -159,17 +181,16 @@ export default function LeadsPage() {
     statusMutation.mutate(payload);
   };
 
-
   const columns = [
-    { key: "id", label: "ID", render: (row) => <span className="text-blue-500 font-medium">#{row.id.substring(0, 8)}</span> },
-    { key: "name", label: "Name" },
-    { key: "company", label: "Company" },
-    { key: "phoneNumber", label: "Phone" },
-    { key: "expectedValue", label: "Value", render: (row) => <span className="text-blue-500">${row.expectedValue}</span> },
-    { key: "responsible", label: "Responsible", render: (row) => row.responsible || "None" },
+    { key: "id", label: t("leads.id"), render: (row) => <span className="text-blue-500 font-medium">#{row.id.substring(0, 8)}</span> },
+    { key: "name", label: t("leads.name") },
+    { key: "company", label: t("leads.company") },
+    { key: "phoneNumber", label: t("leads.phone") },
+    { key: "expectedValue", label: t("leads.value"), render: (row) => <span className="text-blue-500">${row.expectedValue}</span> },
+    { key: "responsible", label: t("leads.responsible"), render: (row) => row.responsible || t("leads.none") },
     { 
       key: "status", 
-      label: "Status",
+      label: t("leads.status"),
       render: (row) => {
         let colorClass = "bg-gray-100 text-gray-600";
         switch(row.status) {
@@ -180,23 +201,23 @@ export default function LeadsPage() {
           case "Converted": colorClass = "bg-purple-100 text-purple-600"; break;
           case "Lost": colorClass = "bg-red-100 text-red-600"; break;
         }
-        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{row.status}</span>;
+        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{statusLabels[row.status] || row.status}</span>;
       }
     },
-    { key: "createdAt", label: "Created At", render: (row) => new Date(row.createdAt).toLocaleDateString() },
+    { key: "createdAt", label: t("leads.createdAt"), render: (row) => new Date(row.createdAt).toLocaleDateString() },
   ];
 
   const cardConfig = {
     icon: UsersIcon,
     title: (row) => row.name,
-    subtitle: (row) => row.company || "No Company",
+    subtitle: (row) => row.company || t("leads.noCompany"),
     fields: [
-      { key: "phoneNumber", label: "Phone", value: (row) => row.phone || row.phoneNumber || "-" },
-      { key: "expectedValue", label: "Value", value: (row) => <span className="text-blue-500 font-medium">${row.expectedValue || 0}</span> },
-      { key: "responsible", label: "Responsible", value: (row) => row.responsible || "None" },
+      { key: "phoneNumber", label: t("leads.phone"), value: (row) => row.phone || row.phoneNumber || "-" },
+      { key: "expectedValue", label: t("leads.value"), value: (row) => <span className="text-blue-500 font-medium">${row.expectedValue || 0}</span> },
+      { key: "responsible", label: t("leads.responsible"), value: (row) => row.responsible || t("leads.none") },
       { 
         key: "status", 
-        label: "Status",
+        label: t("leads.status"),
         value: (row) => {
           let colorClass = "bg-gray-100 text-gray-600";
           switch(row.status) {
@@ -207,7 +228,7 @@ export default function LeadsPage() {
             case "Converted": colorClass = "bg-purple-100 text-purple-600"; break;
             case "Lost": colorClass = "bg-red-100 text-red-600"; break;
           }
-          return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colorClass}`}>{row.status}</span>;
+          return <span className={`px-2 py-0.5 rounded text-xs font-medium ${colorClass}`}>{statusLabels[row.status] || row.status}</span>;
         }
       },
     ]
@@ -218,13 +239,13 @@ export default function LeadsPage() {
       items: [
         {
           key: "view",
-          label: "View",
+          label: t("leads.view"),
           icon: Eye,
           onClick: (row) => navigate(`/dashboard/crm/leads/${row.id}`),
         },
         {
           key: "changeStatus",
-          label: "Change Status",
+          label: t("leads.changeStatus"),
           icon: RefreshCcw,
           onClick: (row) => {
             setSelectedLead(row);
@@ -234,7 +255,7 @@ export default function LeadsPage() {
         },
         {
           key: "edit",
-          label: "Edit",
+          label: t("leads.edit"),
           icon: Pencil,
           onClick: (row) => navigate(`/dashboard/crm/leads/edit/${row.id}`),
         },
@@ -244,7 +265,7 @@ export default function LeadsPage() {
       items: [
         {
           key: "delete",
-          label: "Delete",
+          label: t("leads.delete"),
           icon: Trash2,
           destructive: true,
           onClick: (row) => setDeleteRowId(row.id),
@@ -255,8 +276,8 @@ export default function LeadsPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
-        <span>Leads</span>
+      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm font-semibold">
+        <span>{t("leads.title")}</span>
       </div>
 
       {/* Stats Cards */}
@@ -267,7 +288,7 @@ export default function LeadsPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? "text-green-500" : "text-red-500"}`}>
@@ -294,7 +315,7 @@ export default function LeadsPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab}
+            {tabLabels[tab] || tab}
             {activeTab === tab && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
             )}
@@ -308,15 +329,15 @@ export default function LeadsPage() {
         configs={[
           {
             key: "status",
-            label: "Lead Status",
-            placeholder: "All Statuses",
+            label: t("leads.leadStatus"),
+            placeholder: t("leads.allStatuses"),
             options: [
-              { value: "New", label: "New" },
-              { value: "Contacted", label: "Contacted" },
-              { value: "Qualified", label: "Qualified" },
-              { value: "Quotation", label: "Quotation" },
-              { value: "Converted", label: "Converted" },
-              { value: "Lost", label: "Lost" },
+              { value: "New", label: t("leads.statuses.new") },
+              { value: "Contacted", label: t("leads.statuses.contacted") },
+              { value: "Qualified", label: t("leads.statuses.qualified") },
+              { value: "Quotation", label: t("leads.statuses.quotation") },
+              { value: "Converted", label: t("leads.statuses.converted") },
+              { value: "Lost", label: t("leads.statuses.lost") },
             ],
           },
         ]}
@@ -337,17 +358,19 @@ export default function LeadsPage() {
         data={leads}
         isLoading={isLoading}
         getRowId={(row) => row.id}
+        searchPlaceholder={t("leads.searchPlaceholder")}
+        emptyMessage={t("leads.empty")}
         search={{
-          placeholder: "Search leads...",
+          placeholder: t("leads.searchPlaceholder"),
           value: search,
           onChange: setSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
-          label: "Add",
+          label: t("common.add"),
           onClick: () => navigate("/dashboard/crm/leads/add"),
         }}
         columns={columns}
@@ -357,15 +380,15 @@ export default function LeadsPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t("common.prev"),
+          nextLabel: t("common.next"),
         }}
       />
 
       <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Change Status</DialogTitle>
+            <DialogTitle>{t("leads.changeStatus")}</DialogTitle>
             <DialogDescription>
               {selectedLead?.name} - {selectedLead?.company}
             </DialogDescription>
@@ -373,7 +396,7 @@ export default function LeadsPage() {
 
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label>Status</Label>
+              <Label>{t("leads.status")}</Label>
               <Select 
                 value={statusForm.status} 
                 onValueChange={(val) => {
@@ -386,17 +409,17 @@ export default function LeadsPage() {
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select Status" />
+                  <SelectValue placeholder={t("leads.selectStatus")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="New">New</SelectItem>
-                  <SelectItem value="Contacted">Contacted</SelectItem>
-                  <SelectItem value="Qualified">Qualified</SelectItem>
-                  <SelectItem value="Quotation">Quotation</SelectItem>
+                  <SelectItem value="New">{t("leads.statuses.new")}</SelectItem>
+                  <SelectItem value="Contacted">{t("leads.statuses.contacted")}</SelectItem>
+                  <SelectItem value="Qualified">{t("leads.statuses.qualified")}</SelectItem>
+                  <SelectItem value="Quotation">{t("leads.statuses.quotation")}</SelectItem>
                   <SelectItem value="Converted" disabled={selectedLead?.status === "Converted"}>
-                    {selectedLead?.status === "Converted" ? "Converted (Already Converted)" : "Converted"}
+                    {selectedLead?.status === "Converted" ? t("leads.alreadyConverted") : t("leads.convertToCustomer")}
                   </SelectItem>
-                  <SelectItem value="Lost">Lost</SelectItem>
+                  <SelectItem value="Lost">{t("leads.statuses.lost")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -405,10 +428,10 @@ export default function LeadsPage() {
               <div className="space-y-4 p-4 border border-teal-200 bg-teal-50/50 rounded-xl">
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-teal-900">
-                    What happens upon conversion?
+                    {t("leads.whatHappensOnConversion")}
                   </p>
                   <p className="text-xs text-teal-700 leading-relaxed">
-                    In this conversion flow, an accounting account, customer, and customer project are created. The project value should reflect the approved final agreement value (not necessarily the initial expected estimate).
+                    {t("leads.conversionExplanation")}
                   </p>
                 </div>
 
@@ -421,14 +444,14 @@ export default function LeadsPage() {
                     className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
                   />
                   <Label htmlFor="accept" className="text-xs font-semibold text-teal-900 cursor-pointer">
-                    The price offer was accepted by the client <span className="text-rose-500">*</span>
+                    {t("leads.priceOfferAcceptedByClient")} <span className="text-rose-500">*</span>
                   </Label>
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-semibold text-foreground">Project Name <span className="text-rose-500">*</span></Label>
+                  <Label className="text-xs font-semibold text-foreground">{t("leads.projectName")} <span className="text-rose-500">*</span></Label>
                   <Input 
-                    placeholder="Project name"
+                    placeholder={t("leads.projectName")}
                     value={statusForm.projectName}
                     onChange={(e) => setStatusForm(prev => ({...prev, projectName: e.target.value}))}
                     className="h-9 text-xs bg-white"
@@ -437,14 +460,14 @@ export default function LeadsPage() {
 
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-foreground">Approved Project Value ($) <span className="text-rose-500">*</span></Label>
+                    <Label className="text-xs font-semibold text-foreground">{t("leads.approvedProjectValue")} <span className="text-rose-500">*</span></Label>
                     {selectedLead?.expectedValue ? (
-                      <span className="text-[11px] text-muted-foreground">Estimated: ${selectedLead.expectedValue}</span>
+                      <span className="text-[11px] text-muted-foreground">{t("leads.estimated")} ${selectedLead.expectedValue}</span>
                     ) : null}
                   </div>
                   <Input 
                     type="number"
-                    placeholder="Approved project value"
+                    placeholder={t("leads.approvedProjectValuePlaceholder")}
                     value={statusForm.projectValue}
                     onChange={(e) => setStatusForm(prev => ({...prev, projectValue: e.target.value}))}
                     className="h-9 text-xs bg-white"
@@ -457,7 +480,9 @@ export default function LeadsPage() {
           </div>
 
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
             <Button 
               onClick={handleStatusSubmit} 
               disabled={
@@ -465,7 +490,7 @@ export default function LeadsPage() {
                 (statusForm.status === "Converted" && (!statusForm.isPriceOfferAccepted || !statusForm.projectName?.trim() || !statusForm.projectValue || selectedLead?.status === "Converted"))
               }
             >
-              {statusMutation.isPending ? "Saving..." : (statusForm.status === "Converted" ? "Transform & Create Project" : "Change Status")}
+              {statusMutation.isPending ? t("common.saving") : (statusForm.status === "Converted" ? t("leads.transformAndCreateProject") : t("leads.changeStatus"))}
             </Button>
           </div>
         </DialogContent>
@@ -475,8 +500,8 @@ export default function LeadsPage() {
         isOpen={!!deleteRowId}
         onClose={() => setDeleteRowId(null)}
         onConfirm={() => deleteMutation.mutate(deleteRowId)}
-        title="Delete Lead"
-        description="Are you sure you want to delete this lead? This action cannot be undone."
+        title={t("leads.deleteTitle")}
+        description={t("leads.deleteDesc")}
         isLoading={deleteMutation.isPending}
       />
     </div>

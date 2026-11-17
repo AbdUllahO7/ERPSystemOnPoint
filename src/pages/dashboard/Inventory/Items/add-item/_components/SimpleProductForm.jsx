@@ -5,6 +5,9 @@ import { Upload, Trash2, Image as ImageIcon, Plus, X, Search, Filter, SlidersHor
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   getAllCategories,
@@ -23,6 +26,8 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, setThereAreUnits }) {
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { id } = useParams();
@@ -300,10 +305,10 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
           </div>
           <div>
             <button type="button" className="px-4 py-2 border rounded-md text-sm font-medium hover:bg-muted mb-2">
-              Upload
+              {isAr ? translateErp("Upload", locale) : "Upload"}
             </button>
             <p className="text-xs text-muted-foreground">
-              Upload image size 4MB, Format JPG, PNG, SVG
+              {isAr ? translateErp("Upload image size 4MB, Format JPG, PNG, SVG", locale) : "Upload image size 4MB, Format JPG, PNG, SVG"}
             </p>
           </div>
         </div>
@@ -312,19 +317,19 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       <div className="bg-card p-6 rounded-xl border shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-            <span className="text-sm font-medium text-muted-foreground">Requires Shipping</span>
+            <span className="text-sm font-medium text-muted-foreground">{isAr ? translateErp("Requires Shipping", locale) : "Requires Shipping"}</span>
             <Switch checked={watch("requires_Shipping")} onCheckedChange={(val) => setValue("requires_Shipping", val)} />
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-            <span className="text-sm font-medium text-muted-foreground">There Are Units</span>
+            <span className="text-sm font-medium text-muted-foreground">{isAr ? translateErp("There Are Units", locale) : "There Are Units"}</span>
             <Switch checked={watchThereAreUnits} onCheckedChange={(val) => setValue("there_Are_Units", val)} />
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-            <span className="text-sm font-medium text-muted-foreground">Has Expiry Date</span>
+            <span className="text-sm font-medium text-muted-foreground">{isAr ? translateErp("Has Expiry Date", locale) : "Has Expiry Date"}</span>
             <Switch checked={watch("has_Expiry_Date")} onCheckedChange={(val) => setValue("has_Expiry_Date", val)} />
           </div>
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
-            <span className="text-sm font-medium text-muted-foreground">Tracking Inventory</span>
+            <span className="text-sm font-medium text-muted-foreground">{isAr ? translateErp("Tracking Inventory", locale) : "Tracking Inventory"}</span>
             <Switch checked={watch("is_Tracking_Inventory")} onCheckedChange={(val) => setValue("is_Tracking_Inventory", val)} />
           </div>
         </div>
@@ -333,23 +338,23 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
       <div className="bg-card p-6 rounded-xl border shadow-sm space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Item Name <span className="text-red-500">*</span></label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Item Name <span className="text-red-500">*</span></Label>
             <Input placeholder="Item Name" className="h-11" {...register("name_Product", { required: true })} />
-            {errors.name_Product && <span className="text-red-500 text-xs">Required</span>}
+            {errors.name_Product && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Item Code</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Item Code</Label>
             <Input placeholder="Item Code" className="h-11" {...register("product_Number")} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Item Category <span className="text-red-500">*</span></label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Item Category <span className="text-red-500">*</span></Label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
               value={categoryId || ""}
               onChange={(e) => setValue("category_Id", e.target.value, { shouldValidate: true })}
               disabled={categoriesLoading}
             >
-              <option value="">{categoriesLoading ? "Loading..." : "Item Category"}</option>
+              <option value="">{categoriesLoading ? (isAr ? "جارٍ التحميل..." : "Loading...") : (isAr ? "تصنيف المادة" : "Item Category")}</option>
               {categoryId && !categories.some((cat) => String(cat.id) === String(categoryId)) && (
                 <option value={categoryId}>
                   {productCategoryName || `Category (${String(categoryId).substring(0, 8)}...)`}
@@ -359,7 +364,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
                 <option key={cat.id} value={cat.id}>{cat.name || cat.name_Category || "Category"}</option>
               ))}
             </select>
-            {errors.category_Id && <span className="text-red-500 text-xs">Required</span>}
+            {errors.category_Id && <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>}
           </div>
         </div>
 
@@ -367,31 +372,31 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
           <div className="space-y-2">
             <label className="text-sm font-semibold text-foreground leading-none">Item Origin</label>
             <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm" {...register("item_Origin")}>
-              <option value="">Item Origin</option>
-              <option value="local">Local</option>
-              <option value="imported">Imported</option>
+              <option value="">{isAr ? "مصدر المادة" : "Item Origin"}</option>
+              <option value="local">{isAr ? "محلي" : "Local"}</option>
+              <option value="imported">{isAr ? "مستورد" : "Imported"}</option>
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Minimum Stock</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Minimum Stock</Label>
             <Input type="number" placeholder="0" className="h-11" {...register("minimum_Alert_Level")} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Maximum Stock</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Maximum Stock</Label>
             <Input type="number" placeholder="0" className="h-11" {...register("maximum_Stock_Level")} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Revenue Account</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Revenue Account</Label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
               value={revenueAccountId || ""}
               onChange={(e) => setValue("revenue_Account_Id", e.target.value)}
               disabled={accountsLoading}
             >
-              <option value="">{accountsLoading ? "Loading accounts..." : "Select Revenue Account"}</option>
+              <option value="">{accountsLoading ? (isAr ? "جارٍ تحميل الحسابات..." : "Loading accounts...") : (isAr ? "اختر حساب الإيرادات" : "Select Revenue Account")}</option>
               {revenueAccountId && !accounts.some((acc) => String(acc.id) === String(revenueAccountId)) && (
                 <option value={revenueAccountId}>
                   {productRes?.data?.revenue_Account_Name || `Account (${String(revenueAccountId).substring(0, 8)}...)`}
@@ -401,14 +406,14 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Expense Account</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Expense Account</Label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
               value={expenseAccountId || ""}
               onChange={(e) => setValue("expense_Account_Id", e.target.value)}
               disabled={accountsLoading}
             >
-              <option value="">{accountsLoading ? "Loading accounts..." : "Select Expense Account"}</option>
+              <option value="">{accountsLoading ? (isAr ? "جارٍ تحميل الحسابات..." : "Loading accounts...") : (isAr ? "اختر حساب المصروفات" : "Select Expense Account")}</option>
               {expenseAccountId && !accounts.some((acc) => String(acc.id) === String(expenseAccountId)) && (
                 <option value={expenseAccountId}>
                   {productRes?.data?.expense_Account_Name || `Account (${String(expenseAccountId).substring(0, 8)}...)`}
@@ -418,14 +423,14 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Inventory Account</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Inventory Account</Label>
             <select
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm disabled:opacity-50"
               value={inventoryAccountId || ""}
               onChange={(e) => setValue("inventory_Account_Id", e.target.value)}
               disabled={accountsLoading}
             >
-              <option value="">{accountsLoading ? "Loading accounts..." : "Select Inventory Account"}</option>
+              <option value="">{accountsLoading ? (isAr ? "جارٍ تحميل الحسابات..." : "Loading accounts...") : (isAr ? "اختر حساب المخزون" : "Select Inventory Account")}</option>
               {inventoryAccountId && !accounts.some((acc) => String(acc.id) === String(inventoryAccountId)) && (
                 <option value={inventoryAccountId}>
                   {productRes?.data?.inventory_Account_Name || `Account (${String(inventoryAccountId).substring(0, 8)}...)`}
@@ -438,42 +443,42 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2 relative">
-            <label className="text-sm font-semibold text-foreground leading-none">Barcode</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Barcode</Label>
             <div className="relative">
               <Input placeholder="Barcode" className="h-11 pr-10" {...register("barcode")} />
               <ScanBarcode className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
             </div>
           </div>
           <div className="space-y-2 relative">
-            <label className="text-sm font-semibold text-foreground leading-none">QR Code</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">QR Code</Label>
             <div className="relative">
               <Input placeholder="QR Code" className="h-11 pr-10" {...register("qr_Code")} />
               <QrCode className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Cost Price</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Cost Price</Label>
             <Input type="number" placeholder="0" className="h-11" {...register("cost_Price")} />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Last Purchase</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Last Purchase</Label>
             <Input type="number" placeholder="Last Purchase" className="h-11" {...register("last_Purchase_Price")} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Avg Purchase</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Avg Purchase</Label>
             <Input type="number" placeholder="Avg Purchase" className="h-11" {...register("average_Purchase_Price")} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Wholesale</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Wholesale</Label>
             <Input type="number" placeholder="Wholesale" className="h-11" {...register("wholesale_Price")} />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-foreground leading-none">Consumer Price</label>
+            <Label className="text-sm font-semibold text-foreground leading-none">Consumer Price</Label>
             <Input type="number" placeholder="Consumer Price" className="h-11" {...register("consumer_Price")} />
           </div>
         </div>
@@ -484,16 +489,16 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   const renderUnits = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold">Units</h3>
+        <h3 className="text-lg font-bold">{isAr ? translateErp("Units", locale) : "Units"}</h3>
         <Button type="button" onClick={() => appendUnit({ unitName: "", relative_factor: 1 })} className="bg-[#0070E0] hover:bg-[#0070E0]/90">
-          <Plus className="w-4 h-4 mr-2" /> Add
+          <Plus className="w-4 h-4 mr-2" /> {isAr ? translateErp("Add", locale) : "Add"}
         </Button>
       </div>
       <div className="space-y-4">
         {unitFields.map((field, index) => (
           <div key={field.id} className="bg-card p-6 rounded-xl border shadow-sm flex items-end gap-6 relative">
             <div className="flex-1 space-y-2">
-              <label className="text-sm font-semibold">Unit Name</label>
+              <Label className="text-sm font-semibold">Unit Name</Label>
               {index === 0 ? (
                 <Input readOnly className="h-11 bg-muted/50" {...register(`product_Units.${index}.unitName`)} />
               ) : (
@@ -508,7 +513,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
                   }}
                   disabled={unitsLoading}
                 >
-                  <option value="">Select Unit</option>
+                  <option value="">{isAr ? "اختر الوحدة" : "Select Unit"}</option>
                   {measurements
                     .filter((m) => !isPieceUnit(m))
                     .map(m => (
@@ -518,7 +523,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
               )}
             </div>
             <div className="flex-1 space-y-2">
-              <label className="text-sm font-semibold">Qty per Unit</label>
+              <Label className="text-sm font-semibold">Qty per Unit</Label>
               <div className="flex items-center gap-2">
                 {index === 0 ? (
                   <Input type="number" readOnly value={1} className="h-11 bg-muted/50" />
@@ -529,7 +534,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
                       className="h-11 rounded-md border border-input bg-transparent px-3 text-sm"
                       {...register(`product_Units.${index}.secondunit_Of_Measurement_Id`)}
                     >
-                      <option value="">Select unit</option>
+                      <option value="">{isAr ? "اختر الوحدة" : "Select unit"}</option>
                       {productUnitsWatch.slice(0, index).map((pUnit, pIdx) => {
                         const uId = pUnit.unit_Of_Measurement_Id || (pIdx === 0 ? DEFAULT_PIECE_UNIT_ID : "");
                         if (!uId) return null;
@@ -546,7 +551,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
             </div>
             {index > 0 && (
               <button type="button" onClick={() => removeUnit(index)} className="flex items-center gap-2 text-red-500 hover:text-red-600 h-11 px-4 font-medium">
-                <Trash2 className="w-4 h-4" /> Delete
+                <Trash2 className="w-4 h-4" /> {isAr ? translateErp("Delete", locale) : "Delete"}
               </button>
             )}
           </div>
@@ -558,7 +563,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
   const renderVariantProperties = () => (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="bg-card p-6 rounded-xl border shadow-sm">
-        <h3 className="text-lg font-bold mb-6">Variant Properties</h3>
+        <h3 className="text-lg font-bold mb-6">{isAr ? translateErp("Variant Properties", locale) : "Variant Properties"}</h3>
         <div className="space-y-6">
           {unitFields.map((field, index) => (
             <div key={field.id} className="border rounded-xl p-6 space-y-6 bg-card relative">
@@ -569,7 +574,7 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2 md:col-span-1">
-                  <label className="text-sm font-semibold text-foreground">Unit Name</label>
+                  <Label className="text-sm font-semibold text-foreground">Unit Name</Label>
                   <select className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-muted/50 px-3 text-sm disabled:opacity-100" disabled>
                     <option>{watch(`product_Units.${index}.unitName`) || `Unit ${index + 1}`}</option>
                   </select>
@@ -577,39 +582,39 @@ export default function SimpleProductForm({ currentStep, onNext, thereAreUnits, 
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2 relative">
-                  <label className="text-sm font-semibold text-foreground">Barcode</label>
+                  <Label className="text-sm font-semibold text-foreground">Barcode</Label>
                   <div className="relative">
                     <Input placeholder="Barcode" className="h-11 pr-10" {...register(`product_Units.${index}.barcode`)} />
                     <ScanBarcode className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                   </div>
                 </div>
                 <div className="space-y-2 relative">
-                  <label className="text-sm font-semibold text-foreground">QR Code</label>
+                  <Label className="text-sm font-semibold text-foreground">QR Code</Label>
                   <div className="relative">
                     <Input placeholder="QR Code" className="h-11 pr-10" {...register(`product_Units.${index}.qr_Code`)} />
                     <QrCode className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-primary" />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Cost Price</label>
+                  <Label className="text-sm font-semibold text-foreground">Cost Price</Label>
                   <Input type="number" placeholder="Cost Price" className="h-11" {...register(`product_Units.${index}.cost_Price`)} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Last Purchase</label>
+                  <Label className="text-sm font-semibold text-foreground">Last Purchase</Label>
                   <Input type="number" placeholder="Last Purchase" className="h-11" {...register(`product_Units.${index}.last_Purchase_Price`)} />
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Avg Purchase</label>
+                  <Label className="text-sm font-semibold text-foreground">Avg Purchase</Label>
                   <Input type="number" placeholder="Avg Purchase" className="h-11" {...register(`product_Units.${index}.average_Purchase_Price`)} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Wholesale</label>
+                  <Label className="text-sm font-semibold text-foreground">Wholesale</Label>
                   <Input type="number" placeholder="Wholesale" className="h-11" {...register(`product_Units.${index}.wholesale_Price`)} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-foreground">Consumer Price</label>
+                  <Label className="text-sm font-semibold text-foreground">Consumer Price</Label>
                   <Input type="number" placeholder="Consumer Price" className="h-11" {...register(`product_Units.${index}.consumer_Price`)} />
                 </div>
               </div>

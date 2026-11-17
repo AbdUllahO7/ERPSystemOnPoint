@@ -12,6 +12,9 @@ import {
 import { Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 import {
   createEmployee,
@@ -30,6 +33,8 @@ export default function AddEditEmployee() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const isEdit = !!id;
 
   const {
@@ -161,7 +166,9 @@ export default function AddEditEmployee() {
   const statuses = statusData?.data?.items || [];
   console.log(offices);
 
-  const pageTitle = isEdit ? "Edit Employee" : "Add Employee";
+  const pageTitle = isEdit
+    ? (isAr ? "تعديل الموظف" : "Edit Employee")
+    : (isAr ? "إضافة موظف" : "Add Employee");
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
@@ -173,7 +180,12 @@ export default function AddEditEmployee() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Employees</span>
+            <span
+              className="cursor-pointer hover:text-primary"
+              onClick={() => navigate("/dashboard/hr/employees")}
+            >
+              {isAr ? translateErp("Employees", locale) : "Employees"}
+            </span>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -182,9 +194,13 @@ export default function AddEditEmployee() {
         <Button
           onClick={handleSubmit(onSubmit)}
           disabled={mutation.isLoading || isLoadingEmployee}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {mutation.isLoading ? "Saving..." : isEdit ? "Update" : "+ Add"}
+          {mutation.isLoading
+            ? (isAr ? "جارٍ الحفظ..." : "Saving...")
+            : isEdit
+            ? (isAr ? "تحديث" : "Update")
+            : (isAr ? "+ إضافة" : "+ Add")}
         </Button>
       </div>
 
@@ -192,56 +208,56 @@ export default function AddEditEmployee() {
       <div className="bg-card text-card-foreground p-6 rounded-xl border shadow-sm">
         {(isLoadingEmployee && isEdit) || !sectionsData || !positionsData || !shiftRulesData || !officesData || !managersData || !statusData ? (
           <div className="text-sm text-muted-foreground">
-            Loading details...
+            {isAr ? "جارٍ تحميل التفاصيل..." : "Loading details..."}
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 First Name
-              </label>
+              </Label>
               <Input
                 placeholder="First Name"
                 className="h-9 bg-transparent"
                 {...register("firstName", { required: true })}
               />
               {errors.firstName && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Last name
-              </label>
+              </Label>
               <Input
                 placeholder="Last name"
                 className="h-9 bg-transparent"
                 {...register("lastName", { required: true })}
               />
               {errors.lastName && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Father name
-              </label>
+              </Label>
               <Input
                 placeholder="Father name"
                 className="h-9 bg-transparent"
                 {...register("fatherName", { required: true })}
               />
               {errors.fatherName && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Mother name
-              </label>
+              </Label>
               <Input
                 placeholder="Mother name"
                 className="h-9 bg-transparent"
@@ -250,9 +266,9 @@ export default function AddEditEmployee() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Birth date
-              </label>
+              </Label>
               <Input
                 type="date"
                 className="h-9 bg-transparent"
@@ -261,9 +277,9 @@ export default function AddEditEmployee() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Sector / Department
-              </label>
+              </Label>
               <Controller
                 name="sectionId"
                 control={control}
@@ -275,7 +291,7 @@ export default function AddEditEmployee() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Sector" />
+                      <SelectValue placeholder={isAr ? translateErp("Select Sector", locale) : "Select Sector"} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {sections.map((sec) => (
@@ -288,14 +304,14 @@ export default function AddEditEmployee() {
                 )}
               />
               {errors.sectionId && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Office
-              </label>
+              </Label>
               <Controller
                 name="officeId"
                 control={control}
@@ -307,7 +323,7 @@ export default function AddEditEmployee() {
                     onValueChange={field.onChange}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Office" />
+                      <SelectValue placeholder={isAr ? translateErp("Select Office", locale) : "Select Office"} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {offices?.map((office) => (
@@ -320,14 +336,14 @@ export default function AddEditEmployee() {
                 )}
               />
               {errors.officeId && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Position
-              </label>
+              </Label>
               <Controller
                 name="positionId"
                 control={control}
@@ -342,7 +358,7 @@ export default function AddEditEmployee() {
                     }}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Position" />
+                      <SelectValue placeholder={isAr ? translateErp("Select Position", locale) : "Select Position"} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       {positions.map((pos) => (
@@ -355,14 +371,14 @@ export default function AddEditEmployee() {
                 )}
               />
               {errors.positionId && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Email
-              </label>
+              </Label>
               <Input
                 type="email"
                 placeholder="Email"
@@ -370,28 +386,28 @@ export default function AddEditEmployee() {
                 {...register("email", { required: true })}
               />
               {errors.email && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Phone Number
-              </label>
+              </Label>
               <Input
                 placeholder="+965"
                 className="h-9 bg-transparent"
                 {...register("phone", { required: true })}
               />
               {errors.phone && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Location
-              </label>
+              </Label>
               <Input
                 placeholder="Location"
                 className="h-9 bg-transparent"
@@ -400,24 +416,24 @@ export default function AddEditEmployee() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Job Number
-              </label>
+              </Label>
               <Input
                 placeholder="Job Number"
                 className="h-9 bg-transparent"
                 {...register("jobNumber", { required: true })}
               />
               {errors.jobNumber && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             {/* Manager (Optional) */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Manager
-              </label>
+              </Label>
               <Controller
                 name="managerId"
                 control={control}
@@ -429,7 +445,7 @@ export default function AddEditEmployee() {
                     onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Manager (Optional)" />
+                      <SelectValue placeholder={isAr ? translateErp("Select Manager (Optional)", locale) : "Select Manager (Optional)"} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       <SelectItem value="none">None</SelectItem>
@@ -455,9 +471,9 @@ export default function AddEditEmployee() {
 
             {/* Shift Rule (Optional) */}
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-foreground leading-none">
+              <Label className="text-sm font-semibold text-foreground leading-none">
                 Shift Rule
-              </label>
+              </Label>
               <Controller
                 name="shiftRules"
                 control={control}
@@ -469,7 +485,7 @@ export default function AddEditEmployee() {
                     onValueChange={(val) => field.onChange(val === "none" ? "" : val)}
                   >
                     <SelectTrigger className="w-full h-9 bg-transparent">
-                      <SelectValue placeholder="Select Shift Rule (Optional)" />
+                      <SelectValue placeholder={isAr ? translateErp("Select Shift Rule (Optional)", locale) : "Select Shift Rule (Optional)"} />
                     </SelectTrigger>
                     <SelectContent position="popper">
                       <SelectItem value="none">None</SelectItem>

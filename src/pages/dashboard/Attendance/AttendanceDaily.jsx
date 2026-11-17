@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { CheckCircle, XCircle, Info, Eye, UsersIcon, Building, CalendarDays, AlertTriangle } from "lucide-react";
@@ -189,7 +190,7 @@ export default function AttendanceDaily() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}

@@ -45,6 +45,7 @@ import iconDashboard from "../assets/icon-dashbord.svg";
 import { ModeToggle } from "../components/common/mode-toggel";
 import { logout } from "@/services/auth";
 import toast from "react-hot-toast";
+import { translateErp } from "@/lib/erp-i18n";
 
 // ===== Nav Data (matches sidebar design) =====
 const sidebarLinks = [
@@ -359,6 +360,10 @@ function HeaderActionButton({ children, className = "", ...props }) {
 
 // ===== Nav Item =====
 function NavItem({ item, collapsed, onMobileClose }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+  const displayTitle = isAr ? translateErp(item.title, locale) : item.title;
+
   const location = useLocation();
   const childActive = item.submenu?.some((s) => location.pathname === s.href);
   const [open, setOpen] = useState(childActive);
@@ -377,7 +382,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
         <button
           type="button"
           onClick={() => setOpen((prev) => !prev)}
-          title={collapsed ? item.title : undefined}
+          title={collapsed ? displayTitle : undefined}
           className={`sidebar-route group ${
             isActive ? "sidebar-route-active" : "sidebar-route-inactive"
           } ${collapsed ? "justify-center px-2" : ""}`}
@@ -385,7 +390,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
           <NavIconBox icon={item.icon} active={isActive} />
           {!collapsed && (
             <>
-              <span className="flex-1 truncate text-start">{item.title}</span>
+              <span className="flex-1 truncate text-start">{displayTitle}</span>
               <ChevronRight
                 size={16}
                 strokeWidth={2}
@@ -401,6 +406,8 @@ function NavItem({ item, collapsed, onMobileClose }) {
           <SubNavPanel open={open}>
             {item.submenu.map((sub, subIndex) => {
               const subActive = location.pathname === sub.href;
+              const displaySubTitle = isAr ? translateErp(sub.title, locale) : sub.title;
+
               return (
                 <Link
                   key={sub.href}
@@ -417,7 +424,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
                     className={`sidebar-sub-dot ${subActive ? "sidebar-sub-dot-active" : ""}`}
                     aria-hidden
                   />
-                  <span className="truncate">{sub.title}</span>
+                  <span className="truncate">{displaySubTitle}</span>
                 </Link>
               );
             })}
@@ -432,13 +439,13 @@ function NavItem({ item, collapsed, onMobileClose }) {
       <Link
         to={item.href}
         onClick={onMobileClose}
-        title={collapsed ? item.title : undefined}
+        title={collapsed ? displayTitle : undefined}
         className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white font-bold text-xs sm:text-sm shadow-md transition-all active:scale-95 my-1.5 cursor-pointer ${
           collapsed ? "px-2" : ""
         }`}
       >
         <Plus size={16} strokeWidth={3} className="shrink-0" />
-        {!collapsed && <span className="truncate">{item.title}</span>}
+        {!collapsed && <span className="truncate">{displayTitle}</span>}
       </Link>
     );
   }
@@ -447,7 +454,7 @@ function NavItem({ item, collapsed, onMobileClose }) {
     <Link
       to={item.href}
       onClick={onMobileClose}
-      title={collapsed ? item.title : undefined}
+      title={collapsed ? displayTitle : undefined}
       className={`sidebar-route group ${
         item.danger
           ? "text-red-500 hover:bg-red-500/10"
@@ -457,13 +464,15 @@ function NavItem({ item, collapsed, onMobileClose }) {
       } ${collapsed ? "justify-center px-2" : ""}`}
     >
       <NavIconBox icon={item.icon} active={isActive} danger={item.danger} />
-      {!collapsed && <span className="truncate">{item.title}</span>}
+      {!collapsed && <span className="truncate">{displayTitle}</span>}
     </Link>
   );
 }
 
 // ===== Sidebar =====
 function AppSidebar({ collapsed, onMobileClose, isMobile, onToggle }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const showLabels = !collapsed || isMobile;
 
   return (
@@ -487,7 +496,7 @@ function AppSidebar({ collapsed, onMobileClose, isMobile, onToggle }) {
           </div>
           {showLabels && (
             <span className="truncate text-sm font-semibold text-sidebar-foreground">
-              Platform
+              {isAr ? "منصة أون بوينت" : "Platform"}
             </span>
           )}
         </div>
@@ -504,10 +513,13 @@ function AppSidebar({ collapsed, onMobileClose, isMobile, onToggle }) {
       </div>
 
       <div className="sidebar-nav-scroll flex-1 space-y-5 overflow-y-auto overflow-x-hidden px-2 py-4">
-        {sidebarLinks.map((group) => (
+        {sidebarLinks.map((group) => {
+          const displayGroupLabel = isAr ? translateErp(group.label, locale) : group.label;
+
+          return (
           <div key={group.label}>
             {showLabels && (
-              <p className="sidebar-section-label">{group.label}</p>
+              <p className="sidebar-section-label">{displayGroupLabel}</p>
             )}
             <div className="space-y-1">
               {group.items.map((item) => (
@@ -520,7 +532,8 @@ function AppSidebar({ collapsed, onMobileClose, isMobile, onToggle }) {
               ))}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </aside>
   );
@@ -528,6 +541,8 @@ function AppSidebar({ collapsed, onMobileClose, isMobile, onToggle }) {
 
 // ===== Logout Button =====
 function LogoutButton() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -535,7 +550,7 @@ function LogoutButton() {
     setLoading(true);
     try {
       await logout();
-      toast.success("تم تسجيل الخروج بنجاح");
+      toast.success(isAr ? "تم تسجيل الخروج بنجاح" : "Logged out successfully");
       navigate("/login", { replace: true });
     } catch (err) {
       // logout() يتجاهل الأخطاء داخلياً ويمسح التوكن دائماً
@@ -549,8 +564,8 @@ function LogoutButton() {
     <button
       onClick={handleLogout}
       disabled={loading}
-      title="تسجيل الخروج"
-      aria-label="Logout"
+      title={isAr ? "تسجيل الخروج" : "Logout"}
+      aria-label={isAr ? "تسجيل الخروج" : "Logout"}
       className="flex h-9 w-9 cursor-pointer items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50"
     >
       {loading ? (
@@ -564,6 +579,9 @@ function LogoutButton() {
 
 // ===== Header =====
 function AppHeader({ onMobileMenuOpen }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   return (
     <header className="flex h-[68px] w-full shrink-0 items-center justify-between gap-4 border-b border-sidebar-border bg-sidebar px-4 sm:px-6">
       <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -572,7 +590,7 @@ function AppHeader({ onMobileMenuOpen }) {
             type="button"
             onClick={onMobileMenuOpen}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted lg:hidden"
-            aria-label="Open menu"
+            aria-label={isAr ? "فتح القائمة" : "Open menu"}
           >
             <Menu size={18} />
           </button>
@@ -585,7 +603,7 @@ function AppHeader({ onMobileMenuOpen }) {
           />
           <input
             type="search"
-            placeholder="Search..."
+            placeholder={isAr ? "بحث..." : "Search..."}
             className="h-10 w-full rounded-lg border border-border bg-input ps-10 pe-14 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:bg-card focus:outline-none focus:ring-1 focus:ring-ring"
           />
           <kbd className="pointer-events-none absolute end-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline">
@@ -596,20 +614,20 @@ function AppHeader({ onMobileMenuOpen }) {
 
       <div className="flex shrink-0 items-center gap-2">
         <LanguageSwitcher />
-        <HeaderActionButton aria-label="Focus mode">
+        <HeaderActionButton aria-label={isAr ? "وضع التركيز" : "Focus mode"}>
           <Crosshair size={18} />
         </HeaderActionButton>
         <ModeToggle />
-        <HeaderActionButton className="relative" aria-label="Notifications">
+        <HeaderActionButton className="relative" aria-label={isAr ? "الإشعارات" : "Notifications"}>
           <Bell size={18} />
           <span className="absolute end-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-sidebar" />
         </HeaderActionButton>
-        <HeaderActionButton aria-label="Messages">
+        <HeaderActionButton aria-label={isAr ? "الرسائل" : "Messages"}>
           <MessageSquare size={18} />
         </HeaderActionButton>
         <div
           className="flex h-10 w-10 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-border bg-linear-to-br from-violet-500 to-indigo-600 text-xs font-bold text-white"
-          title="Admin User"
+          title={isAr ? "المسؤول" : "Admin User"}
         >
           A
         </div>

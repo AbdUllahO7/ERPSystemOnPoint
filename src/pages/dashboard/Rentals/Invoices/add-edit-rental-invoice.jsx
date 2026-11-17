@@ -30,10 +30,13 @@ import {
   createRentalInvoice,
   getRentalInvoiceLookups,
 } from "@/services/rentals";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function AddEditRentalInvoicePage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useI18n();
 
   const [dynamicFields, setDynamicFields] = useState([]);
   const [isFieldModalOpen, setIsFieldModalOpen] = useState(false);
@@ -81,11 +84,11 @@ export default function AddEditRentalInvoicePage() {
     mutationFn: (data) => createRentalInvoice(data),
     onSuccess: (res) => {
       queryClient.invalidateQueries(["rentalInvoices"]);
-      toast.success(res?.message || "Rental invoice created!");
+      toast.success(res?.message || t("rentalsModule.invoiceCreated"));
       navigate("/dashboard/rentals/invoices");
     },
     onError: () => {
-      toast.error("Failed to create rental invoice");
+      toast.error(t("rentalsModule.invoiceCreateFailed"));
     },
   });
 
@@ -95,7 +98,7 @@ export default function AddEditRentalInvoicePage() {
 
   const handleAddDynamicField = () => {
     if (!newFieldName.trim()) {
-      toast.error("Please enter variable name");
+      toast.error(t("rentalsModule.pleaseEnterVariableName"));
       return;
     }
     setDynamicFields((prev) => [
@@ -120,7 +123,7 @@ export default function AddEditRentalInvoicePage() {
   const handleSubmit = (e) => {
     e?.preventDefault();
     if (!formData.rentalContract) {
-      toast.error("Please select a rental contract");
+      toast.error(t("rentalsModule.pleaseSelectContract"));
       return;
     }
 
@@ -132,7 +135,7 @@ export default function AddEditRentalInvoicePage() {
       calculations.invoiceTotal > 0
     ) {
       toast.error(
-        `الدفع النقدي أو البنكي يتطلب سداد كامل الفاتورة ($${calculations.invoiceTotal.toFixed(2)}). للتحصيل الجزئي ($${paid.toFixed(2)}) يرجى التبديل لنمط دفع آجل (Credit).`
+        `${t("rentalsModule.paymentCompatibilityAlert")} ($${calculations.invoiceTotal.toFixed(2)}).`
       );
       return;
     }
@@ -153,24 +156,24 @@ export default function AddEditRentalInvoicePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageTitle
-          title="Add New Rental Invoice"
+          title={t("rentalsModule.addRentalInvoice")}
           breadcrumbLinks={[
-            { label: "Rental Invoices", href: "/dashboard/rentals/invoices" },
-            { label: "Add New Rental Invoice" },
+            { label: t("rentalsModule.rentalInvoices"), href: "/dashboard/rentals/invoices" },
+            { label: t("rentalsModule.addRentalInvoice") },
           ]}
-          infoTooltip="Create a closing return invoice for an active rental contract and record damages."
+          infoTooltip={t("rentalsModule.createInvoiceTooltip")}
         />
 
         <Button
           type="submit"
           disabled={saveMutation.isPending || !formData.rentalContract}
           className="bg-[#0066d1] hover:bg-[#0052a8] text-white px-8 h-10 rounded-xl font-semibold text-xs shadow-xs cursor-pointer"
-          title={!formData.rentalContract ? "Please select a rental contract" : ""}
+          title={!formData.rentalContract ? t("rentalsModule.selectRentalContractPrompt") : ""}
         >
           {saveMutation.isPending && (
             <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
           )}
-          Save
+          {t("common.save")}
         </Button>
       </div>
 
@@ -179,14 +182,14 @@ export default function AddEditRentalInvoicePage() {
         <div className="flex items-center justify-between">
           <p className="font-bold text-blue-950 flex items-center gap-1.5 text-sm">
             <Receipt className="w-4 h-4 text-blue-600" />
-            إصدار الفاتورة من العقد وتوافق الدفع (Invoicing & Payment Compatibility - وسام):
+            {t("rentalsModule.invoicingPaymentCompatibilityHeader")}
           </p>
           <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
             ContractItemsDtoInvoices & Collections
           </span>
         </div>
         <p className="text-blue-900 leading-relaxed">
-          الفاتورة النقدية أو البنكية تجعل الفاتورة مدفوعة بالكامل. للتحصيل الجزئي يجب استخدام نمط آجل (Credit) لمنع تعارض مالية العقد مع الفاتورة. حالة القسط «مفوتر» لا تعني «مدفوع»، ويسجل المبلغ المستلم فقط في Paid Amount.
+          {t("rentalsModule.invoicingPaymentCompatibilityDesc")}
         </p>
       </div>
 
@@ -197,20 +200,20 @@ export default function AddEditRentalInvoicePage() {
           {/* Card 1: Invoice Details matching Image 2 */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-5">
             <h2 className="text-base font-bold text-slate-800">
-              Invoice Details
+              {t("rentalsModule.invoiceDetails")}
             </h2>
 
             {/* Row 1: Rental Contract */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Rental Contract
+                {t("rentalsModule.rentalContract")}
               </Label>
               <Select
                 value={formData.rentalContract}
                 onValueChange={(val) => handleInputChange("rentalContract", val)}
               >
                 <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                  <SelectValue placeholder="Rental Contract" />
+                  <SelectValue placeholder={t("rentalsModule.selectRentalContract")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(lookups.contracts || []).map((c) => (
@@ -226,14 +229,14 @@ export default function AddEditRentalInvoicePage() {
                   <div className="flex items-center justify-between text-slate-700 font-semibold">
                     <span className="flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      مرجع العقد المنظم: {selectedContract.contractNumber}
+                      {t("rentalsModule.contractNumberRef")} {selectedContract.contractNumber}
                     </span>
                     <span className="text-blue-700">
-                      القيمة: ${Number(selectedContract.totalAmount || 0).toLocaleString()}
+                      {t("rentalsModule.amountRef")} ${Number(selectedContract.totalAmount || 0).toLocaleString()}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    الأقساط المجدولة: {selectedContract.installments?.length || 0} قسط متاح للربط
+                    {`${selectedContract.installments?.length || 0} ${t("rentalsModule.scheduledInstallmentsAvailable")}`}
                   </p>
                 </div>
               )}
@@ -243,7 +246,7 @@ export default function AddEditRentalInvoicePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Return Date
+                  {t("rentalsModule.returnDate")}
                 </Label>
                 <div className="relative">
                   <Input
@@ -258,10 +261,10 @@ export default function AddEditRentalInvoicePage() {
 
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Invoice Mode
+                  {t("rentalsModule.invoiceMode")}
                 </Label>
                 <Input
-                  placeholder="Contract Number"
+                  placeholder={t("rentalsModule.contractNumberPlaceholder")}
                   value={formData.invoiceMode}
                   onChange={(e) => handleInputChange("invoiceMode", e.target.value)}
                   className="h-11 rounded-xl border-slate-200 bg-white placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -273,7 +276,7 @@ export default function AddEditRentalInvoicePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center">
               <div className="space-y-2">
                 <Label className="text-xs font-semibold text-slate-700">
-                  Damage Amount
+                  {t("rentalsModule.damageAmount")}
                 </Label>
                 <Input
                   type="number"
@@ -298,7 +301,7 @@ export default function AddEditRentalInvoicePage() {
                   htmlFor="closeContract"
                   className="text-xs font-medium text-slate-600 cursor-pointer"
                 >
-                  Close contract after invoicing
+                  {t("rentalsModule.closeContractAfterInvoicing")}
                 </label>
               </div>
             </div>
@@ -306,11 +309,11 @@ export default function AddEditRentalInvoicePage() {
             {/* Row 4: Damage Note */}
             <div className="space-y-2">
               <Label className="text-xs font-semibold text-slate-700">
-                Damage Note
+                {t("rentalsModule.damageNote")}
               </Label>
               <Textarea
                 rows={4}
-                placeholder="Notes"
+                placeholder={t("rentalsModule.notesPlaceholder")}
                 value={formData.damageNote}
                 onChange={(e) => handleInputChange("damageNote", e.target.value)}
                 className="rounded-xl border-slate-200 bg-white p-3 text-xs placeholder:text-slate-400 focus-visible:ring-[#0066d1]"
@@ -322,28 +325,28 @@ export default function AddEditRentalInvoicePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 items-center">
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-700">
-                    طريقة الدفع (Payment Method)
+                    {t("rentalsModule.paymentMethod")}
                   </Label>
                   <Select
                     value={formData.paymentMethod}
                     onValueChange={(val) => handleInputChange("paymentMethod", val)}
                   >
                     <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-[#0066d1]">
-                      <SelectValue placeholder="Payment Method" />
+                      <SelectValue placeholder={t("rentalsModule.paymentMethod")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Credit">Credit</SelectItem>
-                      <SelectItem value="Cash">Cash</SelectItem>
-                      <SelectItem value="Bank">Bank Transfer</SelectItem>
+                      <SelectItem value="Credit">{t("invoicePatterns.payments.credit")}</SelectItem>
+                      <SelectItem value="Cash">{t("invoicePatterns.payments.cash")}</SelectItem>
+                      <SelectItem value="Bank">{t("rentalsModule.bankTransfer")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-xs font-semibold text-slate-700 flex items-center justify-between">
-                    <span>مبلغ التحصيل الفعلي (Paid Amount)</span>
+                    <span>{t("rentalsModule.paidAmount")}</span>
                     <span className="text-[11px] text-slate-400 font-normal">
-                      المتبقي ديناً: ${(Math.max(0, calculations.invoiceTotal - (Number(formData.paidAmount) || 0))).toFixed(2)}
+                      {`${t("rentalsModule.debtBalance")} $${(Math.max(0, calculations.invoiceTotal - (Number(formData.paidAmount) || 0))).toFixed(2)}`}
                     </span>
                   </Label>
                   <Input
@@ -363,10 +366,10 @@ export default function AddEditRentalInvoicePage() {
                 <div className="p-3 bg-amber-50 border-r-4 border-amber-600 rounded-lg text-amber-900 text-xs space-y-1">
                   <p className="font-bold flex items-center gap-1.5">
                     <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                    توافق طريقة الدفع (Payment Compatibility):
+                    {t("rentalsModule.paymentCompatibility")}
                   </p>
                   <p className="text-[11px] leading-relaxed">
-                    خدمة المبيعات تجعل الفاتورة النقدية أو البنكية مدفوعة بالكامل (${calculations.invoiceTotal.toFixed(2)}). للتحصيل الجزئي (${Number(formData.paidAmount || 0).toFixed(2)}) يرجى التبديل لنمط دفع آجل (Credit).
+                    {`${t("rentalsModule.paymentCompatibilityAlert")} ($${calculations.invoiceTotal.toFixed(2)}).`}
                   </p>
                 </div>
               )}
@@ -378,12 +381,12 @@ export default function AddEditRentalInvoicePage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-800">
-                  Additional Data (dynamicDetails)
+                  {t("rentalsModule.additionalData")}
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
                   {dynamicFields.length === 0
-                    ? "No extra fields. Add custom variables like DriverLicenseNumber, FuelLevel..."
-                    : `${dynamicFields.length} custom field(s) defined.`}
+                    ? t("rentalsModule.noExtraFields")
+                    : `${dynamicFields.length} ${t("rentalsModule.customFieldsDefined")}`}
                 </p>
               </div>
 
@@ -393,7 +396,7 @@ export default function AddEditRentalInvoicePage() {
                 className="bg-[#0066d1] hover:bg-[#0052a8] text-white h-10 px-4 rounded-xl text-xs font-semibold gap-1.5 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                Add
+                {t("common.add")}
               </Button>
             </div>
 
@@ -427,19 +430,19 @@ export default function AddEditRentalInvoicePage() {
         {/* Right Summary Card (4 cols) matching Image 2 */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5 sticky top-6">
           <h2 className="text-base font-bold text-slate-800">
-            Summary
+            {t("common.all") || "Summary"}
           </h2>
 
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between text-slate-500">
-              <span>Summary</span>
+              <span>{t("rentalsModule.contractTotal")}</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.summary.toFixed(2)}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-slate-500">
-              <span>Damage Fees</span>
+              <span>{t("rentalsModule.damagePenaltyCharges")}</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.damageFees.toFixed(2)}
               </span>
@@ -451,14 +454,14 @@ export default function AddEditRentalInvoicePage() {
           <div className="space-y-2">
             <div className="flex items-baseline justify-between">
               <span className="text-sm font-bold text-[#0066d1]">
-                Invoice Total
+                {t("rentalsModule.total")}
               </span>
               <span className="text-base font-bold text-[#0066d1]">
                 ${calculations.invoiceTotal.toFixed(2)}
               </span>
             </div>
             <p className="text-[11px] text-slate-400 leading-relaxed">
-              Issued as a credit invoice — payments are recorded afterwards on the invoice page
+              {t("rentalsModule.creditInvoiceNote")}
             </p>
           </div>
         </div>
@@ -468,7 +471,7 @@ export default function AddEditRentalInvoicePage() {
       <DynamicModal
         open={isFieldModalOpen}
         onOpenChange={setIsFieldModalOpen}
-        title="Add Dynamic Field"
+        title={t("rentalsModule.addDynamicField")}
         icon={Plus}
         showDefaultFooter={false}
         size="md"
@@ -477,10 +480,10 @@ export default function AddEditRentalInvoicePage() {
         <div className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Field Name / Key
+              {t("rentalsModule.fieldNameKey")}
             </Label>
             <Input
-              placeholder="e.g. ReturnedBy, InspectionReportId"
+              placeholder={t("rentalsModule.fieldNamePlaceholder")}
               value={newFieldName}
               onChange={(e) => setNewFieldName(e.target.value)}
               className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
@@ -489,10 +492,10 @@ export default function AddEditRentalInvoicePage() {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Field Value
+              {t("rentalsModule.fieldValue")}
             </Label>
             <Input
-              placeholder="e.g. Ahmed Ali, PASS"
+              placeholder={t("rentalsModule.fieldValuePlaceholder")}
               value={newFieldValue}
               onChange={(e) => setNewFieldValue(e.target.value)}
               className="h-11 rounded-xl border-slate-200 bg-white focus-visible:ring-[#0066d1]"
@@ -506,14 +509,14 @@ export default function AddEditRentalInvoicePage() {
               onClick={() => setIsFieldModalOpen(false)}
               className="h-11 px-5 rounded-xl border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-medium cursor-pointer"
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               type="button"
               onClick={handleAddDynamicField}
               className="h-11 px-6 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-semibold cursor-pointer"
             >
-              Add Field
+              {t("rentalsModule.addField")}
             </Button>
           </div>
         </div>

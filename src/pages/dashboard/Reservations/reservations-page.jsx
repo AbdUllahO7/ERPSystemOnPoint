@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -375,7 +376,7 @@ export default function ReservationsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-normal leading-snug">
-                    {card.title}
+                    <StatTitle>{card.title}</StatTitle>
                   </p>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-xl font-bold text-slate-800">

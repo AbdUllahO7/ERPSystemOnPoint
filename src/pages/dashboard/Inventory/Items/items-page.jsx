@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState, useMemo } from "react";
 import {
   Package,
@@ -22,6 +23,8 @@ import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { PageTitle } from "@/components/common/page-title";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/translate-api";
+import { translateErp, translateTabLabel } from "@/lib/erp-i18n";
 
 const TYPE_STYLES = {
   Inventory: "bg-blue-50 text-blue-700 border-blue-200",
@@ -34,6 +37,7 @@ const TYPE_STYLES = {
 };
 
 export default function ItemsPage() {
+  const { locale, t } = useI18n();
   const navigate = useNavigate();
   const { id: categoryId } = useParams();
   const queryClient = useQueryClient();
@@ -77,7 +81,7 @@ export default function ItemsPage() {
   const toggleStatusMutation = useMutation({
     mutationFn: (id) => toggleProductStatus(id),
     onSuccess: () => {
-      toast.success("Item status updated successfully.");
+      toast.success(t('inventory.items.statusUpdated'));
       queryClient.invalidateQueries({ queryKey: ["products"] });
       setDeleteRowId(null);
     },
@@ -85,7 +89,7 @@ export default function ItemsPage() {
       toast.error(
         error?.response?.data?.message ||
           error?.message ||
-          "Failed to update item status."
+          t('inventory.items.statusUpdated')
       );
     },
   });
@@ -175,33 +179,33 @@ export default function ItemsPage() {
 
   const stats = [
     {
-      title: "Total Items",
+      title: t('inventory.items.totalItems'),
       value: String(totalCount),
-      trend: `${totalPages} Pages`,
+      trend: `${totalPages} ${t('pages', 'Pages')}`,
       isUp: true,
       color: "bg-[#0066d1]",
       icon: Package,
     },
     {
-      title: "Active on Page",
+      title: t('inventory.items.activeOnPage'),
       value: String(activeCount),
-      trend: `${productsData.length} Loaded`,
+      trend: `${productsData.length} ${t('loaded', 'Loaded')}`,
       isUp: true,
       color: "bg-[#5ebc93]",
       icon: CheckCircle2,
     },
     {
-      title: "Current Section",
-      value: activeTab === "All Items" ? "All Types" : activeTab,
-      trend: `${productsData.length} items`,
+      title: t('inventory.items.currentSection'),
+      value: activeTab === "All Items" ? t('inventory.items.allItems') : (locale === "ar" ? translateErp(activeTab, locale) : activeTab),
+      trend: `${productsData.length} ${t('items', 'items')}`,
       isUp: true,
       color: "bg-[#0d3963]",
       icon: Layers,
     },
     {
-      title: "Categories in View",
+      title: t('inventory.items.categoriesInView'),
       value: String(categoriesCount),
-      trend: "Categories",
+      trend: t('inventory.categories.title'),
       isUp: true,
       color: "bg-[#f39223]",
       icon: Tag,
@@ -216,7 +220,7 @@ export default function ItemsPage() {
   const columns = [
     {
       key: "product_Number",
-      label: "Code",
+      label: t('inventory.items.cols.itemCode'),
       sortable: true,
       render: (row) => (
         <span className="font-semibold text-slate-800">
@@ -226,7 +230,7 @@ export default function ItemsPage() {
     },
     {
       key: "name_Product",
-      label: "Item Name",
+      label: t('inventory.items.cols.itemName'),
       sortable: true,
       render: (row) => (
         <span
@@ -243,7 +247,7 @@ export default function ItemsPage() {
     },
     {
       key: "category_name",
-      label: "Category",
+      label: t('inventory.items.cols.category'),
       render: (row) => (
         <span className="text-slate-700">
           {row.category_name && row.category_name !== "N/A"
@@ -254,7 +258,7 @@ export default function ItemsPage() {
     },
     {
       key: "product_Type",
-      label: "Type",
+      label: t('type', 'Type'),
       render: (row) => (
         <span
           className={cn(
@@ -263,13 +267,13 @@ export default function ItemsPage() {
               "bg-slate-50 text-slate-700 border-slate-200"
           )}
         >
-          {row.product_Type || "-"}
+          {locale === "ar" ? translateErp(row.product_Type, locale) : (row.product_Type || "-")}
         </span>
       ),
     },
     {
       key: "units",
-      label: "Unit",
+      label: t('inventory.items.cols.unit'),
       render: (row) => (
         <span className="text-slate-700">
           {Array.isArray(row.units) && row.units.length > 0
@@ -280,7 +284,7 @@ export default function ItemsPage() {
     },
     {
       key: "prices",
-      label: "Sales Price",
+      label: t('salesPrice', 'Sales Price'),
       render: (row) => (
         <span className="font-semibold text-[#0066d1]">
           {Array.isArray(row.prices) && row.prices.length > 0
@@ -295,7 +299,7 @@ export default function ItemsPage() {
     },
     {
       key: "is_Active",
-      label: "Status",
+      label: t('inventory.items.cols.status'),
       sortable: true,
       render: (row) => (
         <span
@@ -306,13 +310,13 @@ export default function ItemsPage() {
               : "bg-rose-50 text-rose-700 border-rose-200"
           )}
         >
-          {row.is_Active ? "Active" : "Inactive"}
+          {row.is_Active ? t('inventory.items.statusActive') : t('inventory.items.statusInactive')}
         </span>
       ),
     },
     {
       key: "created_At",
-      label: "Created Date",
+      label: t('createdAt', 'Created Date'),
       sortable: true,
       render: (row) => (
         <span className="text-slate-600 text-xs">
@@ -328,7 +332,7 @@ export default function ItemsPage() {
         items: [
           {
             key: "view",
-            label: "View Details",
+            label: t('common.viewDetails'),
             icon: Eye,
             onClick: (row) =>
               navigate(
@@ -337,7 +341,7 @@ export default function ItemsPage() {
           },
           {
             key: "edit",
-            label: "Edit",
+            label: t('common.edit'),
             icon: Pencil,
             onClick: (row) =>
               navigate(
@@ -350,7 +354,7 @@ export default function ItemsPage() {
         items: [
           {
             key: "toggle_status",
-            label: "Toggle Status",
+            label: t('inventory.items.toggleStatus'),
             icon: Trash2,
             destructive: true,
             onClick: (row) => setDeleteRowId(row.id),
@@ -358,15 +362,15 @@ export default function ItemsPage() {
         ],
       },
     ],
-    [navigate]
+    [navigate, t]
   );
 
   return (
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Items Management"
-        infoTooltip="Manage products, materials, services, appointments, bundles, and assemblies."
+        title={t('inventory.items.title')}
+        infoTooltip={t('inventory.items.tooltip')}
       />
 
       {/* Dynamic Inventory Stats Cards */}
@@ -382,7 +386,7 @@ export default function ItemsPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}
@@ -411,7 +415,7 @@ export default function ItemsPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab}
+            {locale === "ar" ? translateTabLabel(tab, locale) : tab}
             {activeTab === tab && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
             )}
@@ -425,38 +429,38 @@ export default function ItemsPage() {
         configs={[
           {
             key: "category",
-            label: "Filter by Category",
-            placeholder: "All Categories",
+            label: t('inventory.items.filterCategory'),
+            placeholder: t('inventory.items.allCategories'),
             options: (categoriesList || []).map((cat) => ({
               value: cat.id,
-              label: cat.name || cat.name_Category || "Category",
+              label: cat.name || cat.name_Category || t('category', 'Category'),
             })),
           },
           {
             key: "status",
-            label: "Filter by Status",
-            placeholder: "All Statuses",
+            label: t('inventory.items.filterStatus'),
+            placeholder: t('inventory.items.allStatuses'),
             options: [
-              { value: "active", label: "Active Only" },
-              { value: "inactive", label: "Inactive Only" },
+              { value: "active", label: t('inventory.items.activeOnly') },
+              { value: "inactive", label: t('inventory.items.inactiveOnly') },
             ],
           },
           {
             key: "tracking",
-            label: "Inventory Tracking",
-            placeholder: "All",
+            label: t('inventory.items.tracking'),
+            placeholder: t('common.all'),
             options: [
-              { value: "tracked", label: "Tracked Inventory" },
-              { value: "untracked", label: "Not Tracked" },
+              { value: "tracked", label: t('inventory.items.tracked') },
+              { value: "untracked", label: t('inventory.items.untracked') },
             ],
           },
           {
             key: "specs",
-            label: "Has Specifications",
-            placeholder: "All",
+            label: t('inventory.items.specifications'),
+            placeholder: t('common.all'),
             options: [
-              { value: "yes", label: "With Specifications" },
-              { value: "no", label: "Without Specifications" },
+              { value: "yes", label: t('inventory.items.withSpecs') },
+              { value: "no", label: t('inventory.items.withoutSpecs') },
             ],
           },
         ]}
@@ -491,20 +495,20 @@ export default function ItemsPage() {
         allowedViews={["table", "cards"]}
         defaultView="table"
         search={{
-          placeholder: "Search by item code or name...",
+          placeholder: t('inventory.items.searchPlaceholder'),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t('common.filter'),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => {
           refetch();
-          toast.success("Items refreshed!");
+          toast.success(t('inventory.items.refreshed'));
         }}
         addButton={{
-          label: "Add Item",
+          label: t('inventory.items.addItem'),
           onClick: () =>
             navigate("/dashboard/inventory/items-management/items/add"),
         }}
@@ -527,17 +531,17 @@ export default function ItemsPage() {
           fields: [
             {
               key: "product_Number",
-              label: "Code",
+              label: t('inventory.items.cols.itemCode'),
               value: (row) => row.product_Number || "-",
             },
             {
               key: "product_Type",
-              label: "Type",
-              value: (row) => row.product_Type || "-",
+              label: t('type', 'Type'),
+              value: (row) => locale === "ar" ? translateErp(row.product_Type, locale) : (row.product_Type || "-"),
             },
             {
               key: "units",
-              label: "Unit",
+              label: t('inventory.items.cols.unit'),
               value: (row) =>
                 Array.isArray(row.units) && row.units.length > 0
                   ? row.units.join(", ")
@@ -545,7 +549,7 @@ export default function ItemsPage() {
             },
             {
               key: "prices",
-              label: "Price",
+              label: t('price', 'Price'),
               value: (row) =>
                 Array.isArray(row.prices) && row.prices.length > 0
                   ? row.prices.map((p) => `$${p}`).join(", ")
@@ -553,8 +557,8 @@ export default function ItemsPage() {
             },
             {
               key: "is_Active",
-              label: "Status",
-              value: (row) => (row.is_Active ? "Active" : "Inactive"),
+              label: t('inventory.items.cols.status'),
+              value: (row) => (row.is_Active ? t('inventory.items.statusActive') : t('inventory.items.statusInactive')),
             },
           ],
         }}
@@ -562,10 +566,10 @@ export default function ItemsPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t('common.prev'),
+          nextLabel: t('common.next'),
         }}
-        emptyMessage={`No ${activeTab.toLowerCase()} found`}
+        emptyMessage={t('inventory.items.empty')}
       />
 
       {/* Toggle Status Confirmation Dialog */}
@@ -573,8 +577,8 @@ export default function ItemsPage() {
         isOpen={!!deleteRowId}
         onClose={() => setDeleteRowId(null)}
         onConfirm={() => toggleStatusMutation.mutate(deleteRowId)}
-        title="Change Item Status"
-        description="Are you sure you want to change the status of this item? This action will toggle between Active and Inactive."
+        title={t('inventory.items.toggleStatusTitle')}
+        description={t('inventory.items.toggleStatusDesc')}
       />
     </div>
   );

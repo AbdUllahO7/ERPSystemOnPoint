@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { AlertCircle } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export function DeleteConfirmDialog({
   isOpen,
@@ -16,10 +18,21 @@ export function DeleteConfirmDialog({
   onClose,
   onOpenChange,
   onConfirm,
-  title = "Confirm Delete",
-  description = "Are you sure you want to delete this item? This action cannot be undone and will permanently remove it from the system.",
+  title,
+  description,
   isLoading = false,
 }) {
+  const { locale, t } = useI18n();
+  const isAr = locale === "ar";
+
+  const effectiveTitle = title
+    ? (isAr ? translateErp(title, locale) : title)
+    : t("dataView.confirmDelete");
+
+  const effectiveDescription = description
+    ? (isAr ? translateErp(description, locale) : description)
+    : t("dataView.deleteWarning");
+
   const isModalOpen = isOpen !== undefined ? Boolean(isOpen) : Boolean(openProp);
 
   const handleClose = () => {
@@ -35,13 +48,13 @@ export function DeleteConfirmDialog({
             <div className="p-2 bg-red-100 rounded-full">
               <AlertCircle className="w-5 h-5" />
             </div>
-            <DialogTitle className="text-xl">{title}</DialogTitle>
+            <DialogTitle className="text-xl">{effectiveTitle}</DialogTitle>
           </div>
-          <DialogDescription className="pt-2">{description}</DialogDescription>
+          <DialogDescription className="pt-2">{effectiveDescription}</DialogDescription>
         </DialogHeader>
         <DialogFooter className="mt-6 space-x-1">
           <Button variant="outline" disabled={isLoading} onClick={handleClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -50,7 +63,9 @@ export function DeleteConfirmDialog({
               onConfirm?.();
             }}
           >
-            {isLoading ? "Deleting..." : "Confirm Delete"}
+            {isLoading
+              ? t("common.deleting", "جارٍ الحذف...")
+              : t("common.delete", "حذف")}
           </Button>
         </DialogFooter>
       </DialogContent>

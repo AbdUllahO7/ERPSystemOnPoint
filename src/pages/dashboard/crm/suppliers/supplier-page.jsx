@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Users as UsersIcon, Pencil, Trash2, Eye, Building } from 'lucide-react';
@@ -7,6 +8,7 @@ import { getAllSuppliers, toggleSupplierStatus } from '@/lib/api';
 import { DeleteConfirmDialog } from '@/components/common/delete-confirm-dialog';
 import { CollapsibleFilterBar } from '@/components/common/collapsible-filter-bar';
 import { toast } from "react-hot-toast";
+import { useI18n } from '@/context/translate-api';
 
 const stats = [
   { title: 'Total Suppliers', value: '32', trend: '+5%', isUp: true, color: 'bg-blue-600', icon: Building },
@@ -14,6 +16,8 @@ const stats = [
 ];
 
 export default function SupplierPage() {
+  const { t } = useI18n();
+
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState('All');
@@ -34,10 +38,10 @@ export default function SupplierPage() {
     mutationFn: (id) => toggleSupplierStatus(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-      toast.success('Supplier status toggled successfully');
+      toast.success(t('crmSuppliers.toggleStatusSuccess'));
     },
     onError: () => {
-      toast.error('Failed to toggle supplier status');
+      toast.error(t('crmSuppliers.toggleStatusError'));
     }
   });
 
@@ -48,6 +52,11 @@ export default function SupplierPage() {
   };
 
   const tabs = ['All', 'Active', 'Inactive'];
+  const tabLabels = {
+    All: t('crmSuppliers.all'),
+    Active: t('crmSuppliers.activeStatus'),
+    Inactive: t('crmSuppliers.inactiveStatus'),
+  };
 
   const items = data?.data?.items || [];
   const totalPages = data?.data?.totalPages || 1;
@@ -67,10 +76,10 @@ export default function SupplierPage() {
   }
 
   const columns = [
-    { key: 'id', label: 'ID', render: (row) => <span className="text-blue-500 font-medium">{row.id.substring(0,8)}</span> },
+    { key: 'id', label: t('crmSuppliers.id'), render: (row) => <span className="text-blue-500 font-medium">{row.id.substring(0,8)}</span> },
     { 
       key: 'name', 
-      label: 'Name',
+      label: t('crmSuppliers.name'),
       render: (row) => (
         <div>
           <div className="font-medium">{row.supplier_Name}</div>
@@ -78,19 +87,19 @@ export default function SupplierPage() {
         </div>
       )
     },
-    { key: 'supplier_Type', label: 'Type' },
-    { key: 'contact_Person', label: 'Contact Person' },
-    { key: 'phone_Number', label: 'Phone' },
+    { key: 'supplier_Type', label: t('crmSuppliers.type') },
+    { key: 'contact_Person', label: t('crmSuppliers.contactPerson') },
+    { key: 'phone_Number', label: t('crmSuppliers.phone') },
     { 
       key: 'status', 
-      label: 'Status',
+      label: t('crmSuppliers.status'),
       render: (row) => {
         const isActive = row.is_Active;
         const colorClass = isActive ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600';
-        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{isActive ? 'Active' : 'Inactive'}</span>;
+        return <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>{isActive ? t('crmSuppliers.activeStatus') : t('crmSuppliers.inactiveStatus')}</span>;
       }
     },
-    { key: 'created_At', label: 'Created At', render: (row) => new Date(row.created_At).toLocaleDateString() },
+    { key: 'created_At', label: t('crmSuppliers.createdAt'), render: (row) => new Date(row.created_At).toLocaleDateString() },
   ];
 
   const rowActionsMenu = [
@@ -98,13 +107,13 @@ export default function SupplierPage() {
       items: [
         {
           key: 'view',
-          label: 'View',
+          label: t('crmSuppliers.view'),
           icon: Eye,
           onClick: (row) => navigate(`/dashboard/crm/suppliers/${row.id}`),
         },
         {
           key: 'edit',
-          label: 'Edit',
+          label: t('crmSuppliers.edit'),
           icon: Pencil,
           onClick: (row) => navigate(`/dashboard/crm/suppliers/edit/${row.id}`),
         },
@@ -114,7 +123,7 @@ export default function SupplierPage() {
       items: [
         {
           key: 'delete',
-          label: row => row.is_Active ? 'Deactivate' : 'Activate',
+          label: row => row.is_Active ? t('crmSuppliers.deactivate') : t('crmSuppliers.activate'),
           icon: Trash2,
           destructive: true,
           onClick: (row) => {
@@ -128,8 +137,8 @@ export default function SupplierPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm">
-        <span>Suppliers</span>
+      <div className="flex items-center gap-2 mb-2 text-muted-foreground text-sm font-semibold">
+        <span>{t('crmSuppliers.title')}</span>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -139,7 +148,7 @@ export default function SupplierPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? 'text-green-500' : 'text-red-500'}`}>
@@ -165,7 +174,7 @@ export default function SupplierPage() {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            {tab}
+            {tabLabels[tab] || tab}
             {activeTab === tab && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
             )}
@@ -179,11 +188,11 @@ export default function SupplierPage() {
         configs={[
           {
             key: "type",
-            label: "Supplier Type",
-            placeholder: "All Types",
+            label: t("crmSuppliers.supplierType"),
+            placeholder: t("crmSuppliers.allTypes"),
             options: [
-              { value: "Company", label: "Company" },
-              { value: "Individual", label: "Individual" },
+              { value: "Company", label: t("crmSuppliers.company") },
+              { value: "Individual", label: t("crmSuppliers.individual") },
             ],
           },
         ]}
@@ -205,17 +214,19 @@ export default function SupplierPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         selectable
+        searchPlaceholder={t("crmSuppliers.searchPlaceholder")}
+        emptyMessage={t("crmSuppliers.empty")}
         search={{
-          placeholder: 'Search by id or supplier name...',
+          placeholder: t("crmSuppliers.searchPlaceholder"),
           value: search,
           onChange: setSearch,
         }}
         filter={{
-          label: 'Filter',
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         addButton={{
-          label: 'Add',
+          label: t("common.add"),
           onClick: () => navigate('/dashboard/crm/suppliers/add'),
         }}
         columns={columns}
@@ -224,8 +235,8 @@ export default function SupplierPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: 'Pre',
-          nextLabel: 'Next',
+          prevLabel: t("common.prev"),
+          nextLabel: t("common.next"),
         }}
       />
 
@@ -233,8 +244,8 @@ export default function SupplierPage() {
         isOpen={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
         onConfirm={handleDelete}
-        title="Confirm Status Change"
-        description="Are you sure you want to change the status of this supplier?"
+        title={t("crmSuppliers.confirmStatusTitle")}
+        description={t("crmSuppliers.confirmStatusDesc")}
       />
     </div>
   );

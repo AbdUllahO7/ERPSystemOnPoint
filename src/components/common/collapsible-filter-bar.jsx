@@ -8,6 +8,8 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export function CollapsibleFilterBar({
   isOpen,
@@ -17,6 +19,8 @@ export function CollapsibleFilterBar({
   onClear,
   children,
 }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const hasActiveFilters =
     Object.values(filters).some(
       (val) => val !== "" && val !== null && val !== undefined
@@ -32,13 +36,17 @@ export function CollapsibleFilterBar({
     >
       <div className="overflow-hidden">
         <div className="bg-card text-card-foreground p-4 rounded-xl border shadow-sm flex flex-col sm:flex-row items-end gap-4 flex-wrap">
-          {configs.map((config) => (
+          {configs.map((config) => {
+            const displayLabel = isAr && typeof config.label === "string" ? translateErp(config.label, locale) : config.label;
+            const displayPlaceholder = isAr && typeof config.placeholder === "string" ? translateErp(config.placeholder, locale) : config.placeholder;
+
+            return (
             <div
               key={config.key}
               className={`flex flex-col gap-2 w-full ${config.width || "sm:max-w-[200px]"}`}
             >
               <label className="text-sm font-medium text-foreground">
-                {config.label}
+                {displayLabel}
               </label>
               {config.type === "date" ? (
                 <Input
@@ -50,7 +58,7 @@ export function CollapsibleFilterBar({
               ) : config.type === "number" || config.type === "text" ? (
                 <Input
                   type={config.type}
-                  placeholder={config.placeholder}
+                  placeholder={displayPlaceholder}
                   value={filters[config.key] || ""}
                   onChange={(e) => onFilterChange(config.key, e.target.value)}
                   className="h-10 bg-transparent"
@@ -63,20 +71,21 @@ export function CollapsibleFilterBar({
                   }}
                 >
                   <SelectTrigger className="w-full h-10 bg-transparent">
-                    <SelectValue placeholder={config.placeholder} />
+                    <SelectValue placeholder={displayPlaceholder} />
                   </SelectTrigger>
                   <SelectContent position="popper" sideOffset={4}>
-                    <SelectItem value="all">{config.placeholder}</SelectItem>
+                    <SelectItem value="all">{displayPlaceholder}</SelectItem>
                     {config.options?.map((opt) => (
                       <SelectItem key={opt.value} value={String(opt.value)}>
-                        {opt.label}
+                        {isAr && typeof opt.label === "string" ? translateErp(opt.label, locale) : opt.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
             </div>
-          ))}
+            );
+          })}
 
           {children}
 
@@ -84,9 +93,9 @@ export function CollapsibleFilterBar({
             <Button
               variant="outline"
               onClick={onClear}
-              className="h-10"
+              className="h-10 cursor-pointer"
             >
-              Clear Filters
+              {t("common.clearFilters")}
             </Button>
           )}
         </div>

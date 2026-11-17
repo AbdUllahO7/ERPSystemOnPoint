@@ -1,6 +1,8 @@
 import { Box, Briefcase, Layers, KeyRound } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getAllProductAttributes } from "@/lib/api";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function StepItemType({ 
   itemType, 
@@ -12,6 +14,8 @@ export default function StepItemType({
   customSpecs,
   setCustomSpecs 
 }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
 
   const options = [
     {
@@ -83,10 +87,10 @@ export default function StepItemType({
               </div>
               <div>
                 <h3 className={`text-base font-bold ${isSelected ? "text-white" : "text-foreground"}`}>
-                  {opt.label}
+                  {isAr ? translateErp(opt.label, locale) : opt.label}
                 </h3>
                 <p className={`text-sm mt-1 ${isSelected ? "text-blue-100" : "text-muted-foreground"}`}>
-                  {opt.description}
+                  {isAr ? translateErp(opt.description, locale) : opt.description}
                 </p>
               </div>
             </button>
@@ -99,7 +103,7 @@ export default function StepItemType({
           {/* Product Type */}
           <div className="space-y-3">
             <label className="text-base font-semibold text-foreground">
-              Is the product simple or assembled?
+              {isAr ? translateErp("Is the product simple or assembled?", locale) : "Is the product simple or assembled?"}
             </label>
             <div className="flex items-center gap-6">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -111,7 +115,7 @@ export default function StepItemType({
                   className="w-4 h-4 text-[#0070E0] focus:ring-[#0070E0] border-gray-300"
                 />
                 <span className="text-sm font-medium text-muted-foreground">
-                  Simple Product
+                  {isAr ? translateErp("Simple Product", locale) : "Simple Product"}
                 </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
@@ -123,7 +127,7 @@ export default function StepItemType({
                   className="w-4 h-4 text-[#0070E0] focus:ring-[#0070E0] border-gray-300"
                 />
                 <span className="text-sm font-medium text-muted-foreground">
-                  Assembled Product
+                  {isAr ? translateErp("Assembled Product", locale) : "Assembled Product"}
                 </span>
               </label>
             </div>
@@ -133,7 +137,7 @@ export default function StepItemType({
           {productType === "simple" && (
             <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
               <label className="text-base font-semibold text-foreground">
-                Does it have customized specifications?
+                {isAr ? translateErp("Does it have customized specifications?", locale) : "Does it have customized specifications?"}
               </label>
               <div className="flex items-center gap-6">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -145,7 +149,7 @@ export default function StepItemType({
                     className="w-4 h-4 text-[#0070E0] focus:ring-[#0070E0] border-gray-300"
                   />
                   <span className="text-sm font-medium text-muted-foreground">
-                    Yes
+                    {isAr ? translateErp("Yes", locale) : "Yes"}
                   </span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -157,7 +161,7 @@ export default function StepItemType({
                     className="w-4 h-4 text-[#0070E0] focus:ring-[#0070E0] border-gray-300"
                   />
                   <span className="text-sm font-medium text-muted-foreground">
-                    No
+                    {isAr ? translateErp("No", locale) : "No"}
                   </span>
                 </label>
               </div>
@@ -168,7 +172,7 @@ export default function StepItemType({
           {productType === "simple" && hasCustomSpecs === "yes" && (
             <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
               <label className="text-base font-semibold text-foreground">
-                What are the customized specifications?
+                {isAr ? translateErp("What are the customized specifications?", locale) : "What are the customized specifications?"}
               </label>
               <div className="flex flex-wrap items-center gap-6">
                 {attributes.map((attr) => (

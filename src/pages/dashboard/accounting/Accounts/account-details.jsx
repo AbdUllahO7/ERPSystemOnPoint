@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Info, Edit, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getAccountById } from "../../../../lib/api";
+import { useI18n } from "@/context/translate-api";
 
 import { BasicInformationTab } from "./_components/basic-information-tab";
 import { LinkedSubAccountsTab } from "./_components/linked-sub-accounts-tab";
@@ -13,6 +14,8 @@ import { AccountMovementTab } from "./_components/account-movement-tab";
 import { AccountStatisticsTab } from "./_components/account-statistics-tab";
 
 export default function AccountDetails() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -28,7 +31,7 @@ export default function AccountDetails() {
   const [activeTab, setActiveTab] = useState("basic");
 
   if (isLoadingAccount) {
-    return <div className="p-6 text-muted-foreground">Loading account details...</div>;
+    return <div className="p-6 text-muted-foreground">{isAr ? "جاري تحميل تفاصيل الحساب..." : "Loading account details..."}</div>;
   }
 
   return (
@@ -37,24 +40,28 @@ export default function AccountDetails() {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ChevronLeft className="w-5 h-5" />
+            <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
           </Button>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-foreground">Account Details</h2>
+              <h2 className="text-2xl font-bold text-foreground">
+                {isAr ? "تفاصيل الحساب" : "Account Details"}
+              </h2>
               <Info className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <span>Chart Of Accounts</span>
+              <span>{isAr ? "شجرة الحسابات" : "Chart Of Accounts"}</span>
               <span>/</span>
-              <span className="font-medium text-foreground">Account Details</span>
+              <span className="font-medium text-foreground">
+                {isAr ? "تفاصيل الحساب" : "Account Details"}
+              </span>
             </div>
           </div>
         </div>
 
         <Button onClick={() => navigate(`/dashboard/accounting/accounts/edit/${id}`)} className="gap-2">
           <Edit className="w-4 h-4" />
-          Edit Account
+          {isAr ? "تعديل الحساب" : "Edit Account"}
         </Button>
       </div>
 
@@ -64,31 +71,31 @@ export default function AccountDetails() {
             value="basic" 
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-muted-foreground data-[state=active]:text-primary"
           >
-            Basic information
+            {isAr ? "المعلومات الأساسية" : "Basic information"}
           </TabsTrigger>
           <TabsTrigger 
             value="sub-accounts" 
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-muted-foreground data-[state=active]:text-primary"
           >
-            Linked sub-accounts
+            {isAr ? "الحسابات الفرعية المرتبطة" : "Linked sub-accounts"}
           </TabsTrigger>
           <TabsTrigger 
             value="cost-centers" 
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-muted-foreground data-[state=active]:text-primary"
           >
-            Linked cost centers
+            {isAr ? "مراكز التكلفة المرتبطة" : "Linked cost centers"}
           </TabsTrigger>
           <TabsTrigger 
             value="movement" 
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-muted-foreground data-[state=active]:text-primary"
           >
-            Account movement
+            {isAr ? "حركة الحساب" : "Account movement"}
           </TabsTrigger>
           <TabsTrigger 
             value="statistics" 
             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent px-0 py-3 text-muted-foreground data-[state=active]:text-primary"
           >
-            Statistics
+            {isAr ? "الإحصائيات" : "Statistics"}
           </TabsTrigger>
         </TabsList>
 

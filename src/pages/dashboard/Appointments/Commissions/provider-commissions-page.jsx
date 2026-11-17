@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 import {
   getProviderCommissionRules,
   createCommissionRule,
@@ -24,6 +25,8 @@ import {
 } from "@/services/appointments";
 
 export default function ProviderCommissionsPage() {
+  const { t } = useI18n();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -81,7 +84,7 @@ export default function ProviderCommissionsPage() {
     mutationFn: (data) => createCommissionRule(data),
     onSuccess: () => {
       queryClient.invalidateQueries(["providerCommissionRules"]);
-      toast.success("Commission rule added successfully!");
+      toast.success(t("appointmentsModule.ruleAdded"));
       setFormData({
         providerId: "",
         provider: "",
@@ -93,7 +96,7 @@ export default function ProviderCommissionsPage() {
       });
     },
     onError: () => {
-      toast.error("Failed to add commission rule!");
+      toast.error(t("appointmentsModule.ruleAddFailed"));
     },
   });
 
@@ -102,14 +105,14 @@ export default function ProviderCommissionsPage() {
     mutationFn: (id) => deleteCommissionRule(id),
     onSuccess: (res) => {
       queryClient.invalidateQueries(["providerCommissionRules"]);
-      toast.success(res?.message || "Commission rule deleted successfully!");
+      toast.success(res?.message || t("appointmentsModule.ruleDeleted"));
       setDeleteRowId(null);
     },
     onError: (err) => {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
-        "Failed to delete commission rule!";
+        t("appointmentsModule.ruleDeleteFailed");
       toast.error(msg);
       setDeleteRowId(null);
     },
@@ -118,11 +121,11 @@ export default function ProviderCommissionsPage() {
   const handleAddRule = (e) => {
     e?.preventDefault();
     if (!formData.providerId && !formData.provider) {
-      toast.error("Please select a provider");
+      toast.error(t("appointmentsModule.selectProviderValidation"));
       return;
     }
     if (!formData.serviceId && !formData.service) {
-      toast.error("Please select a service");
+      toast.error(t("appointmentsModule.selectServiceValidation"));
       return;
     }
     addRuleMutation.mutate(formData);
@@ -131,11 +134,11 @@ export default function ProviderCommissionsPage() {
   const rowActionsMenu = useMemo(
     () => [
       {
-        label: "Actions",
+        label: t("common.actions"),
         items: [
           {
             key: "delete",
-            label: "Delete Rule",
+            label: t("appointmentsModule.deleteRule"),
             icon: Trash2,
             destructive: true,
             onClick: (row) => {
@@ -148,14 +151,14 @@ export default function ProviderCommissionsPage() {
         ],
       },
     ],
-    []
+    [t]
   );
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "provider",
-        header: "Provider",
+        header: t("appointmentsModule.provider"),
         cell: ({ row }) => (
           <span className="text-sm font-normal text-slate-800">
             {row.original.provider}
@@ -164,7 +167,7 @@ export default function ProviderCommissionsPage() {
       },
       {
         accessorKey: "service",
-        header: "Service",
+        header: t("appointmentsModule.service"),
         cell: ({ row }) => (
           <span className="text-sm font-normal text-slate-700">
             {row.original.service}
@@ -173,16 +176,18 @@ export default function ProviderCommissionsPage() {
       },
       {
         accessorKey: "type",
-        header: "Type",
+        header: t("appointmentsModule.type"),
         cell: ({ row }) => (
           <span className="text-sm font-normal text-slate-700">
-            {row.original.type}
+            {row.original.type === "Percentage"
+              ? t("appointmentsModule.percentage")
+              : (row.original.type === "Fixed Amount" ? t("appointmentsModule.fixedAmount") : row.original.type)}
           </span>
         ),
       },
       {
         accessorKey: "value",
-        header: "Value",
+        header: t("appointmentsModule.value"),
         cell: ({ row }) => (
           <span className="text-sm font-normal text-slate-800">
             {row.original.value}
@@ -191,7 +196,7 @@ export default function ProviderCommissionsPage() {
       },
       {
         accessorKey: "startDate",
-        header: "Start Date",
+        header: t("appointmentsModule.startDate"),
         cell: ({ row }) => (
           <span className="text-sm font-normal text-slate-700">
             {row.original.startDate}
@@ -199,15 +204,15 @@ export default function ProviderCommissionsPage() {
         ),
       },
     ],
-    []
+    [t]
   );
 
   return (
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Provider Commissions"
-        infoTooltip="Configure commission rules per service provider and track rule effective dates."
+        title={t("appointmentsModule.providerCommissions")}
+        infoTooltip={t("appointmentsModule.commissionsTooltip")}
       />
 
       {/* 2-Column Grid Layout matching Image 1 */}
@@ -219,8 +224,8 @@ export default function ProviderCommissionsPage() {
             configs={[
               {
                 key: "provider",
-                label: "Filter by Provider",
-                placeholder: "All Providers",
+                label: t("appointmentsModule.filterByProvider"),
+                placeholder: t("appointmentsModule.allProviders"),
                 options: (lookups.providers || []).map((p) => ({
                   value: p.id,
                   label: p.name,
@@ -228,8 +233,8 @@ export default function ProviderCommissionsPage() {
               },
               {
                 key: "service",
-                label: "Filter by Service",
-                placeholder: "All Services",
+                label: t("appointmentsModule.filterByService"),
+                placeholder: t("appointmentsModule.allServices"),
                 options: (lookups.services || []).map((s) => ({
                   value: s.variantId || s.id,
                   label: s.name,
@@ -257,7 +262,8 @@ export default function ProviderCommissionsPage() {
             columns={columns}
             isLoading={isLoading}
             rowActionsMenu={rowActionsMenu}
-            searchPlaceholder="Search by id or employee name..."
+            searchPlaceholder={t("appointmentsModule.searchCommissions")}
+            emptyMessage={t("appointmentsModule.noCommissionRules")}
             searchValue={search}
             onSearchChange={(val) => {
               setSearch(val);
@@ -265,7 +271,7 @@ export default function ProviderCommissionsPage() {
             }}
             onRefresh={() => refetch()}
             filter={{
-              label: "Filter",
+              label: t("common.filter"),
               onClick: () => setIsFilterOpen(!isFilterOpen),
             }}
             page={page}
@@ -277,14 +283,14 @@ export default function ProviderCommissionsPage() {
         {/* Right Side: Add Commission Rule Form Card */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 shadow-sm space-y-5">
           <h2 className="text-lg font-bold text-slate-800">
-            Add Commission Rule
+            {t("appointmentsModule.addCommissionRule")}
           </h2>
 
           <div className="space-y-4">
             {/* Provider Field */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-700">
-                Provider
+                {t("appointmentsModule.provider")}
               </Label>
               <Select
                 value={formData.providerId}
@@ -298,7 +304,7 @@ export default function ProviderCommissionsPage() {
                 }}
               >
                 <SelectTrigger className="w-full h-10 border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Provider" />
+                  <SelectValue placeholder={t("appointmentsModule.selectProvider")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.providers.map((p) => (
@@ -313,7 +319,7 @@ export default function ProviderCommissionsPage() {
             {/* Service Field */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-700">
-                Service
+                {t("appointmentsModule.service")}
               </Label>
               <Select
                 key={formData.serviceId || "service-select"}
@@ -328,7 +334,7 @@ export default function ProviderCommissionsPage() {
                 }}
               >
                 <SelectTrigger className="w-full h-10 border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Service" />
+                  <SelectValue placeholder={t("appointmentsModule.selectService")} />
                 </SelectTrigger>
                 <SelectContent>
                   {lookups.services.map((s) => {
@@ -345,7 +351,7 @@ export default function ProviderCommissionsPage() {
 
             {/* Type Field */}
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium text-slate-700">Type</Label>
+              <Label className="text-xs font-medium text-slate-700">{t("appointmentsModule.type")}</Label>
               <Select
                 value={formData.type}
                 onValueChange={(val) =>
@@ -353,12 +359,12 @@ export default function ProviderCommissionsPage() {
                 }
               >
                 <SelectTrigger className="w-full h-10 border-slate-200 bg-white">
-                  <SelectValue placeholder="Select Type" />
+                  <SelectValue placeholder={t("appointmentsModule.selectType")} />
                 </SelectTrigger>
                 <SelectContent>
-                  {lookups.types.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.label}
+                  {lookups.types.map((tItem) => (
+                    <SelectItem key={tItem.id} value={tItem.id}>
+                      {tItem.id === "Percentage" ? t("appointmentsModule.percentage") : tItem.id === "Fixed Amount" ? t("appointmentsModule.fixedAmount") : tItem.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -368,10 +374,10 @@ export default function ProviderCommissionsPage() {
             {/* Percentage / Value Field */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-700">
-                {formData.type === "Fixed Amount" ? "Amount ($)" : "Percentage"}
+                {formData.type === "Fixed Amount" ? t("appointmentsModule.amountDollar") : t("appointmentsModule.percentage")}
               </Label>
               <Input
-                placeholder="0%"
+                placeholder={formData.type === "Fixed Amount" ? "0.00" : "0%"}
                 value={formData.percentage}
                 onChange={(e) =>
                   setFormData({ ...formData, percentage: e.target.value })
@@ -383,7 +389,7 @@ export default function ProviderCommissionsPage() {
             {/* Start Date Field */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium text-slate-700">
-                Start Date
+                {t("appointmentsModule.startDate")}
               </Label>
               <div className="relative">
                 <Input
@@ -406,7 +412,7 @@ export default function ProviderCommissionsPage() {
               className="w-full bg-[#0066d1] hover:bg-[#0052a8] text-white py-2.5 h-11 rounded-xl font-medium mt-2 shadow-sm"
             >
               <Plus className="w-4 h-4 mr-1.5" />
-              Add Rule
+              {t("appointmentsModule.addRuleButton")}
             </Button>
           </div>
         </div>
@@ -418,8 +424,8 @@ export default function ProviderCommissionsPage() {
         open={Boolean(deleteRowId)}
         onClose={() => setDeleteRowId(null)}
         onOpenChange={(open) => !open && setDeleteRowId(null)}
-        title="Delete Commission Rule"
-        description="Are you sure you want to delete this commission rule? This action cannot be undone."
+        title={t("appointmentsModule.deleteRuleTitle")}
+        description={t("appointmentsModule.deleteRuleDesc")}
         onConfirm={() => {
           if (deleteRowId) {
             deleteMutation.mutate(deleteRowId);

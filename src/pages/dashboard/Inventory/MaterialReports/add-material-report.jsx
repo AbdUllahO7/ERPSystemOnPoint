@@ -17,8 +17,10 @@ import {
   getWarehouses,
 } from "@/lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 export default function AddMaterialReport() {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -46,12 +48,16 @@ export default function AddMaterialReport() {
     mutationFn: (data) => createInventoryRecord(data),
     onSuccess: () => {
       queryClient.invalidateQueries(["inventory-records"]);
-      toast.success("Material report added successfully!");
+      toast.success(t('inventory.materialReports.createSuccess'));
       navigate("/dashboard/inventory/material-reports");
     },
     onError: (error) => {
       console.error("Failed to save material report", error);
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to add material report!");
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : t('inventory.materialReports.createError')
+      );
     },
   });
 
@@ -74,21 +80,23 @@ export default function AddMaterialReport() {
           <button
             type="button"
             onClick={() => navigate(-1)}
-            className="p-2 hover:bg-accent rounded-full transition-colors"
+            className="p-2 hover:bg-accent rounded-full transition-colors rtl:rotate-180 cursor-pointer"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-2xl font-bold text-foreground">Add Material Report</h2>
+              <h2 className="text-2xl font-bold text-foreground">
+                {t('inventory.materialReports.addTitle')}
+              </h2>
               <Info className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-              <span>Inventory</span>
+              <span>{t('inventory.materialReports.breadcrumbs.inventory')}</span>
               <span>/</span>
-              <span>Material Reports</span>
+              <span>{t('inventory.materialReports.breadcrumbs.materialReports')}</span>
               <span>/</span>
-              <span className="font-medium text-foreground">Add</span>
+              <span className="font-medium text-foreground">{t('inventory.materialReports.breadcrumbs.add')}</span>
             </div>
           </div>
         </div>
@@ -96,9 +104,9 @@ export default function AddMaterialReport() {
         <Button
           onClick={handleSubmit(onSubmit)}
           disabled={mutation.isLoading}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {mutation.isLoading ? "Saving..." : "Save"}
+          {mutation.isLoading ? t('common.saving') : t('common.save')}
         </Button>
       </div>
 
@@ -110,12 +118,12 @@ export default function AddMaterialReport() {
               htmlFor="warehouse_Id"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Warehouse Name
+              {t('inventory.materialReports.warehouseName')}
             </label>
             <Controller
               name="warehouse_Id"
               control={control}
-              rules={{ required: "Warehouse is required" }}
+              rules={{ required: t('inventory.materialReports.warehouseRequired') }}
               render={({ field }) => (
                 <Select
                   key={field.value}
@@ -123,7 +131,7 @@ export default function AddMaterialReport() {
                   onValueChange={field.onChange}
                 >
                   <SelectTrigger id="warehouse_Id" className="w-full h-9 bg-transparent">
-                    <SelectValue placeholder="Select Warehouse Name" />
+                    <SelectValue placeholder={t('inventory.materialReports.selectWarehouse')} />
                   </SelectTrigger>
                   <SelectContent position="popper">
                     {warehouses.map((warehouse) => (
@@ -145,13 +153,13 @@ export default function AddMaterialReport() {
               htmlFor="start_Date"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Start Date
+              {t('inventory.materialReports.startDate')}
             </label>
             <Input
               id="start_Date"
               type="date"
               className="h-9 bg-transparent"
-              {...register("start_Date", { required: "Start date is required" })}
+              {...register("start_Date", { required: t('inventory.materialReports.startDateRequired') })}
             />
             {errors.start_Date && (
               <span className="text-red-500 text-xs">{errors.start_Date.message}</span>
@@ -163,13 +171,13 @@ export default function AddMaterialReport() {
               htmlFor="end_Date"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              End Date
+              {t('inventory.materialReports.endDate')}
             </label>
             <Input
               id="end_Date"
               type="date"
               className="h-9 bg-transparent"
-              {...register("end_Date", { required: "End date is required" })}
+              {...register("end_Date", { required: t('inventory.materialReports.endDateRequired') })}
             />
             {errors.end_Date && (
               <span className="text-red-500 text-xs">{errors.end_Date.message}</span>
@@ -181,11 +189,11 @@ export default function AddMaterialReport() {
               htmlFor="notes"
               className="text-sm font-semibold text-foreground leading-none"
             >
-              Notes
+              {t('inventory.materialReports.notes')}
             </label>
             <Input
               id="notes"
-              placeholder="Enter notes"
+              placeholder={t('inventory.materialReports.notesPlaceholder')}
               className="h-9 bg-transparent"
               {...register("notes")}
             />

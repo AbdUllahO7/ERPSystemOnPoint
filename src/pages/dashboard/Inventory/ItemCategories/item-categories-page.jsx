@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import {
   Pencil,
@@ -22,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getAllCategories, deleteCategory } from "@/lib/api";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
 
 const stats = [
   {
@@ -59,6 +61,7 @@ const stats = [
 ];
 
 export default function ItemCategoriesPage() {
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -71,11 +74,11 @@ export default function ItemCategoriesPage() {
   const filterConfigs = [
     {
       key: "Type",
-      label: "Filter by Category Type",
-      placeholder: "All Types",
+      label: t('inventory.categories.filterType'),
+      placeholder: t('inventory.categories.allTypes'),
       options: [
-        { value: "main", label: "Main Category" },
-        { value: "sub", label: "Subcategory" },
+        { value: "main", label: t('inventory.categories.mainCategory') },
+        { value: "sub", label: t('inventory.categories.subcategory') },
       ],
     },
   ];
@@ -112,7 +115,7 @@ export default function ItemCategoriesPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteCategory,
     onSuccess: () => {
-      toast.success("Category deleted successfully!");
+      toast.success(t('inventory.categories.deleteSuccess'));
       queryClient.invalidateQueries({ queryKey: ["categories"] });
       queryClient.invalidateQueries({ queryKey: ["all-categories"] });
       queryClient.invalidateQueries({ queryKey: ["subcategories"] });
@@ -121,7 +124,11 @@ export default function ItemCategoriesPage() {
     },
     onError: (error) => {
       console.error("Failed to delete category:", error);
-      toast.error(error?.message && error.message !== "An unexpected error occurred" ? error.message : "Failed to delete category!");
+      toast.error(
+        error?.message && error.message !== "An unexpected error occurred"
+          ? error.message
+          : t('inventory.categories.deleteSuccess')
+      );
     }
   });
 
@@ -135,18 +142,18 @@ export default function ItemCategoriesPage() {
   const rowActionsMenu = useMemo(
     () => [
       {
-        label: "View",
+        label: t('dataView.view', 'View'),
         items: [
           {
             key: "subcategories",
-            label: "Subcategories",
+            label: t('inventory.categories.subcategoriesTitle'),
             icon: Eye,
             show: (row) => row.type === "Main Category" || row.type === "MainCategory",
             onClick: (row) => navigate(`/dashboard/inventory/items-management/categories/${row.id}/subcategories`),
           },
           {
             key: "related",
-            label: "Related Items",
+            label: t('inventory.categories.relatedItems', 'Related Items'),
             icon: Layers,
             onClick: (row) => navigate(`/dashboard/inventory/items-management/categories/${row.id}/related-items`),
           },
@@ -156,7 +163,7 @@ export default function ItemCategoriesPage() {
         items: [
           {
             key: "edit",
-            label: "Edit",
+            label: t('common.edit'),
             icon: Pencil,
             onClick: (row) => navigate(`/dashboard/inventory/items-management/categories/edit/${row.id}`),
           },
@@ -166,7 +173,7 @@ export default function ItemCategoriesPage() {
         items: [
           {
             key: "delete",
-            label: "Delete",
+            label: t('common.delete'),
             icon: Trash2,
             destructive: true,
             onClick: (row) => setDeleteRowId(row.id),
@@ -174,41 +181,46 @@ export default function ItemCategoriesPage() {
         ],
       },
     ],
-    [navigate],
+    [navigate, t],
   );
 
   const columns = [
     {
       key: "serialNumber",
-      label: "Serial Number",
+      label: t('inventory.categories.serialNumber'),
       render: (row) => <span className="text-blue-500 font-medium">{row.serialNumber}</span>,
     },
     {
       key: "categoryName",
-      label: "Category Name",
+      label: t('inventory.categories.categoryName'),
       sortable: true,
     },
     {
       key: "type",
-      label: "Main Category / Subcategory",
-      render: (row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
-            row.type === "Main Category" || row.type === "MainCategory"
-              ? "bg-blue-100 text-blue-600"
-              : "bg-green-100 text-green-600"
-          }`}
-        >
-          {row.type === "MainCategory" ? "Main Category" : row.type}
-        </span>
-      ),
+      label: t('inventory.categories.isMainOrSub'),
+      render: (row) => {
+        const isMain = row.type === "Main Category" || row.type === "MainCategory";
+        return (
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              isMain
+                ? "bg-blue-100 text-blue-600"
+                : "bg-green-100 text-green-600"
+            }`}
+          >
+            {isMain ? t('inventory.categories.mainCategory') : t('inventory.categories.subcategory')}
+          </span>
+        );
+      },
     },
   ];
 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-6">
-        <h2 className="text-xl font-semibold text-foreground">Item Categories</h2>
+        <h2 className="text-xl font-semibold text-foreground">
+          {t('inventory.categories.title')}
+        </h2>
         <Info className="w-5 h-5 text-muted-foreground" />
       </div>
 
@@ -225,7 +237,7 @@ export default function ItemCategoriesPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}
@@ -292,7 +304,7 @@ export default function ItemCategoriesPage() {
                   setPage(1);
                 }}
               >
-                Clear Filters
+                {t('common.clearFilters')}
               </Button>
             )}
           </div>
@@ -306,17 +318,17 @@ export default function ItemCategoriesPage() {
         getRowId={(row) => row.id}
         selectable
         search={{
-          placeholder: "Search by id or category name...",
+          placeholder: t('inventory.categories.searchPlaceholder'),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t('common.filter'),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => refetch()}
         addButton={{
-          label: "Add",
+          label: t('common.add'),
           onClick: () => navigate("/dashboard/inventory/items-management/categories/add"),
         }}
         columns={columns}
@@ -328,7 +340,7 @@ export default function ItemCategoriesPage() {
           fields: [
             {
               icon: Layers,
-              label: "Serial:",
+              label: t('inventory.categories.serialNumber') + ":",
               value: (row) => row.serialNumber,
             },
           ],
@@ -337,18 +349,18 @@ export default function ItemCategoriesPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t('common.prev'),
+          nextLabel: t('common.next'),
         }}
-        emptyMessage="No categories found"
+        emptyMessage={t('inventory.categories.empty')}
       />
 
       <DeleteConfirmDialog
         isOpen={!!deleteRowId}
         onClose={() => setDeleteRowId(null)}
         onConfirm={handleDelete}
-        title="Delete Category"
-        description="Are you sure you want to delete this category? This action cannot be undone."
+        title={t('inventory.categories.deleteTitle')}
+        description={t('inventory.categories.deleteDesc')}
       />
     </div>
   );

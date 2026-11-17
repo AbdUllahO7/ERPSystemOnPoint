@@ -1,13 +1,25 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useI18n } from '@/context/translate-api';
+import { translateErp } from '@/lib/erp-i18n';
 
 export default function AttendanceByDepartmentChart({ data }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   if (!data) return null;
+
+  const chartData = isAr
+    ? data.map((item) => ({
+        ...item,
+        departmentName: translateErp(item.departmentName, locale),
+      }))
+    : data;
 
   return (
     <div className="w-full h-[250px]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart
-          data={data}
+          data={chartData}
           margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
           barSize={16}
         >

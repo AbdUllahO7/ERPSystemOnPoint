@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { DataView } from "@/components/data-view/DataView";
@@ -112,7 +113,7 @@ export default function SalariesPage() {
               <stat.icon className="w-7 h-7" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? 'text-green-500' : 'text-red-500'}`}>

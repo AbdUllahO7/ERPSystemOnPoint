@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -8,6 +9,7 @@ import {
 import { DataView } from "@/components/data-view/DataView";
 import { useQuery } from "@tanstack/react-query";
 import { getAllCategories, getCategoryById } from "@/lib/api";
+import { useI18n } from "@/context/translate-api";
 
 const stats = [
   {
@@ -47,6 +49,7 @@ const stats = [
 export default function SubcategoriesPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -56,7 +59,7 @@ export default function SubcategoriesPage() {
     queryKey: ["category", id],
     queryFn: () => getCategoryById(id),
   });
-  const categoryName = categoryRes?.data?.categoryName || "Loading...";
+  const categoryName = categoryRes?.data?.categoryName || t('common.loading');
 
   // Fetch Subcategories
   const { data: subcategoriesRes, isLoading, refetch } = useQuery({
@@ -88,28 +91,31 @@ export default function SubcategoriesPage() {
   const columns = [
     {
       key: "serialNumber",
-      label: "Serial Number",
+      label: t('inventory.categories.serialNumber'),
       render: (row) => <span className="text-blue-500 font-medium">{row.serialNumber}</span>,
     },
     {
       key: "categoryName",
-      label: "Category Name",
+      label: t('inventory.categories.categoryName'),
       sortable: true,
     },
     {
       key: "type",
-      label: "Main Category / Subcategory",
-      render: (row) => (
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-medium ${
-            row.type === "Main Category" || row.type === "MainCategory"
-              ? "bg-blue-100 text-blue-600"
-              : "bg-green-100 text-green-600"
-          }`}
-        >
-          {row.type === "MainCategory" ? "Main Category" : row.type}
-        </span>
-      ),
+      label: t('inventory.categories.isMainOrSub'),
+      render: (row) => {
+        const isMain = row.type === "Main Category" || row.type === "MainCategory";
+        return (
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              isMain
+                ? "bg-blue-100 text-blue-600"
+                : "bg-green-100 text-green-600"
+            }`}
+          >
+            {isMain ? t('inventory.categories.mainCategory') : t('inventory.categories.subcategory')}
+          </span>
+        );
+      },
     },
   ];
 
@@ -119,14 +125,22 @@ export default function SubcategoriesPage() {
       <div className="mb-6">
         <div className="flex items-center gap-2">
           <h2 className="text-xl font-semibold text-foreground">
-            Subcategories of the category <span className="text-primary">({categoryName})</span>
+            {t('inventory.categories.subcategoriesOf')}{" "}
+            <span className="text-primary">({categoryName})</span>
           </h2>
           <Info className="w-5 h-5 text-muted-foreground" />
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-          <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/inventory/items-management/categories")}>Item Categories</span>
+          <span
+            className="cursor-pointer hover:text-primary"
+            onClick={() => navigate("/dashboard/inventory/items-management/categories")}
+          >
+            {t('inventory.categories.title')}
+          </span>
           <span>/</span>
-          <span className="font-medium text-foreground">Subcategories of the category ({categoryName})</span>
+          <span className="font-medium text-foreground">
+            {t('inventory.categories.subcategoriesOf')} ({categoryName})
+          </span>
         </div>
       </div>
 
@@ -143,7 +157,7 @@ export default function SubcategoriesPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}
@@ -165,17 +179,17 @@ export default function SubcategoriesPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         search={{
-          placeholder: "Search by id or category name...",
+          placeholder: t('inventory.categories.searchPlaceholder'),
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t('common.filter'),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => refetch()}
         addButton={{
-          label: "Add",
+          label: t('common.add'),
           onClick: () => navigate("/dashboard/inventory/items-management/categories/add", { state: { parentId: id } }),
         }}
         columns={columns}
@@ -188,10 +202,10 @@ export default function SubcategoriesPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: t('common.prev'),
+          nextLabel: t('common.next'),
         }}
-        emptyMessage="No subcategories found"
+        emptyMessage={t('inventory.categories.emptySubcategories')}
       />
     </div>
   );

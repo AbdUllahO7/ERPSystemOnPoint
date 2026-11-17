@@ -1,11 +1,16 @@
 import React from "react";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export function ProfileStats() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   const stats = [
-    { value: "6+", label: "Years of Experience" },
-    { value: "30%", label: "Projects Delivered" },
-    { value: "15+", label: "Digital Solutions" },
-    { value: "95%", label: "Client Satisfaction" },
+    { value: "6+", label: isAr ? "سنوات الخبرة" : "Years of Experience" },
+    { value: "30%", label: isAr ? "المشاريع المنجزة" : "Projects Delivered" },
+    { value: "15+", label: isAr ? "الحلول الرقمية" : "Digital Solutions" },
+    { value: "95%", label: isAr ? "رضا العملاء" : "Client Satisfaction" },
   ];
 
   return (

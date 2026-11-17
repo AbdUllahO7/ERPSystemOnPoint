@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Info } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useI18n } from "@/context/translate-api";
 
 import PurchaseInvoiceForm from "./_components/purchase-invoice-form";
 import SalesInvoiceForm from "./_components/sales-invoice-form";
@@ -8,6 +9,8 @@ import PurchaseReturnInvoiceForm from "./_components/purchase-return-invoice-for
 import SalesReturnInvoiceForm from "./_components/sales-return-invoice-form";
 
 export default function AddEditInvoice() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const [activeTab, setActiveTab] = useState("purchases");
 
   return (
@@ -15,13 +18,17 @@ export default function AddEditInvoice() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold text-foreground">Add Invoice</h2>
+            <h2 className="text-2xl font-bold text-foreground">
+              {isAr ? "إضافة فاتورة" : "Add Invoice"}
+            </h2>
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Invoices</span>
+            <span>{isAr ? "الفواتير" : "Invoices"}</span>
             <span>/</span>
-            <span className="font-medium text-foreground">Add Invoice</span>
+            <span className="font-medium text-foreground">
+              {isAr ? "إضافة فاتورة" : "Add Invoice"}
+            </span>
           </div>
         </div>
       </div>
@@ -32,25 +39,25 @@ export default function AddEditInvoice() {
             value="purchases"
             className="data-[state=active]:bg-blue-50 data-[state=active]:text-blue-700 data-[state=active]:border-blue-200 border py-3 rounded-lg flex items-center gap-2"
           >
-            Purchases
+            {isAr ? "مشتريات" : "Purchases"}
           </TabsTrigger>
           <TabsTrigger
             value="sales"
             className="data-[state=active]:bg-green-50 data-[state=active]:text-green-700 data-[state=active]:border-green-200 border py-3 rounded-lg flex items-center gap-2"
           >
-            Sales
+            {isAr ? "مبيعات" : "Sales"}
           </TabsTrigger>
           <TabsTrigger
             value="sales-return"
             className="data-[state=active]:bg-red-50 data-[state=active]:text-red-700 data-[state=active]:border-red-200 border py-3 rounded-lg flex items-center gap-2"
           >
-            Sales Return
+            {isAr ? "مرتجع مبيعات" : "Sales Return"}
           </TabsTrigger>
           <TabsTrigger
             value="purchase-return"
             className="data-[state=active]:bg-yellow-50 data-[state=active]:text-yellow-700 data-[state=active]:border-yellow-200 border py-3 rounded-lg flex items-center gap-2"
           >
-            Purchase Return
+            {isAr ? "مرتجع مشتريات" : "Purchase Return"}
           </TabsTrigger>
         </TabsList>
 

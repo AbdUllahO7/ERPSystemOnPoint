@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import {
   Users as UsersIcon,
@@ -234,7 +235,7 @@ export default function Depatments() {
   return (
     <div className="space-y-4 ">
       <h2 className="text-xl font-semibold text-foreground ">
-        Departments List
+        <StatTitle>Departments List</StatTitle>
       </h2>
 
       {/* Stats Cards */}
@@ -250,7 +251,7 @@ export default function Depatments() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}

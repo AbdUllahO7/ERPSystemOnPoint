@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function EcommerceCategoryProductsTableView({
   categoryName = "Category Name",
@@ -8,6 +9,8 @@ export function EcommerceCategoryProductsTableView({
   onToggleAll,
   allSelected = false,
 }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredItems = items.filter((item) =>
@@ -24,7 +27,7 @@ export function EcommerceCategoryProductsTableView({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by id or employee name..."
+            placeholder={isAr ? "البحث بالرقم أو اسم الموظف..." : "Search by id or employee name..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white text-xs sm:text-sm rounded-xl border border-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#0066d1] focus:ring-2 focus:ring-[#0066d1]/10 transition-all"
@@ -36,7 +39,7 @@ export function EcommerceCategoryProductsTableView({
           className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#0066d1] flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
         >
           <Filter className="w-3.5 h-3.5" />
-          <span>Filter</span>
+          <span>{isAr ? "فلترة" : "Filter"}</span>
         </button>
       </div>
 
@@ -56,37 +59,37 @@ export function EcommerceCategoryProductsTableView({
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Code</span>
+                    <span>{isAr ? "الكود" : "Code"}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Item Name</span>
+                    <span>{isAr ? "اسم المادة" : "Item Name"}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Category</span>
+                    <span>{isAr ? "الصنف" : "Category"}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Unit</span>
+                    <span>{isAr ? "الوحدة" : "Unit"}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Sales Price</span>
+                    <span>{isAr ? "سعر البيع" : "Sales Price"}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
                 <th className="py-3.5 px-4">
                   <div className="inline-flex items-center gap-1">
-                    <span>Status</span>
+                    <span>{isAr ? "الحالة" : "Status"}</span>
                     <span className="text-[10px] text-slate-400">⇅</span>
                   </div>
                 </th>
@@ -147,7 +150,7 @@ export function EcommerceCategoryProductsTableView({
       {/* Pagination (1:1 with Figma) */}
       <div className="flex items-center justify-end gap-2 pt-2 text-xs font-semibold text-slate-600">
         <button type="button" className="px-2 py-1 hover:text-slate-900 cursor-pointer">
-          Pre
+          {isAr ? "السابق" : "Pre"}
         </button>
         <button
           type="button"
@@ -172,7 +175,7 @@ export function EcommerceCategoryProductsTableView({
           type="button"
           className="px-2 py-1 text-[#0066d1] font-bold hover:underline cursor-pointer"
         >
-          Next
+          {isAr ? "التالي" : "Next"}
         </button>
       </div>
     </div>

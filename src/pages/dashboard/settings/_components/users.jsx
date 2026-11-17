@@ -10,8 +10,11 @@ import {
 } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function UsersTab() {
+  const { locale, t } = useI18n();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -43,14 +46,14 @@ export default function UsersTab() {
     onSuccess: () => {
       queryClient.invalidateQueries(["getAllUsersSettings"]);
       queryClient.invalidateQueries(["getAllUsers"]);
-      toast.success("User status toggled successfully!");
+      toast.success(t('settingsUsers.toggleSuccess'));
     },
     onError: (error) => {
       console.error("Failed to toggle user status:", error);
       toast.error(
         error?.message && error.message !== "An unexpected error occurred"
           ? error.message
-          : "Failed to toggle user status!"
+          : t('settingsUsers.toggleError')
       );
     },
   });
@@ -60,7 +63,7 @@ export default function UsersTab() {
     onSuccess: () => {
       queryClient.invalidateQueries(["getAllUsersSettings"]);
       queryClient.invalidateQueries(["getAllUsers"]);
-      toast.success("User deleted permanently!");
+      toast.success(t('settingsUsers.deleteSuccess'));
       setDeleteUserId(null);
     },
     onError: (error) => {
@@ -68,7 +71,7 @@ export default function UsersTab() {
       toast.error(
         error?.message && error.message !== "An unexpected error occurred"
           ? error.message
-          : "Failed to delete user permanently!"
+          : t('settingsUsers.deleteError')
       );
       setDeleteUserId(null);
     },
@@ -93,7 +96,7 @@ export default function UsersTab() {
   const columns = [
     {
       key: "name",
-      label: "Name",
+      label: t('settingsUsers.colUsername'),
       link: true,
       sortable: true,
       render: (row) => (
@@ -104,13 +107,13 @@ export default function UsersTab() {
     },
     {
       key: "email",
-      label: "E-mail",
+      label: t('settingsUsers.colEmail'),
       sortable: true,
       render: (row) => row.email || "-",
     },
     {
       key: "role",
-      label: "Role",
+      label: t('settingsUsers.colRole'),
       sortable: true,
       render: (row) => {
         const role =
@@ -120,20 +123,20 @@ export default function UsersTab() {
           (Array.isArray(row.roles) ? row.roles.join(", ") : "User");
         return (
           <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-primary/10 text-primary">
-            {role}
+            {locale === "ar" ? translateErp(role, locale) : role}
           </span>
         );
       },
     },
     {
       key: "phone",
-      label: "Phone",
+      label: t('settingsUsers.colPhone'),
       sortable: true,
       render: (row) => row.phoneNumber || row.phone || "-",
     },
     {
       key: "status",
-      label: "Status",
+      label: t('settingsUsers.colStatus'),
       sortable: true,
       render: (row) => {
         const isActive = Boolean(
@@ -156,7 +159,7 @@ export default function UsersTab() {
                   : "bg-red-50 text-red-500 dark:bg-red-900/30 dark:text-red-400"
               }`}
             >
-              {isActive ? "Active" : "Inactive"}
+              {isActive ? t('settingsUsers.statusActive') : t('settingsUsers.statusInactive')}
             </span>
           </div>
         );
@@ -170,13 +173,13 @@ export default function UsersTab() {
         items: [
           {
             key: "toggle",
-            label: "Toggle Status",
+            label: t('settingsUsers.toggleStatus'),
             icon: Power,
             onClick: (row) => toggleMutation.mutate(row.id),
           },
           {
             key: "delete",
-            label: "Delete Permanently",
+            label: t('settingsUsers.deletePermanently'),
             icon: Trash2,
             destructive: true,
             onClick: (row) => setDeleteUserId(row.id),
@@ -184,7 +187,7 @@ export default function UsersTab() {
         ],
       },
     ],
-    [toggleMutation]
+    [toggleMutation, t]
   );
 
   return (
@@ -196,9 +199,11 @@ export default function UsersTab() {
             <Users className="w-8 h-8 text-primary" strokeWidth={2} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">Users Management</h2>
+            <h2 className="text-xl font-bold text-foreground">
+              {t('settingsUsers.title')}
+            </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Adding and managing users, roles, and status
+              {t('settingsUsers.subtitle')}
             </p>
           </div>
         </div>
@@ -206,7 +211,7 @@ export default function UsersTab() {
         <div className="w-full md:w-auto md:min-w-[360px]">
           <div className="flex justify-between items-center mb-2">
             <span className="text-sm font-semibold text-muted-foreground">
-              Active Accounts
+              {t('settingsUsers.activeAccounts')}
             </span>
             <span className="text-sm font-bold text-foreground">{totalCount}</span>
           </div>
@@ -216,7 +221,7 @@ export default function UsersTab() {
               style={{ width: `${Math.min(100, Math.max(10, totalCount * 5))}%` }}
             ></div>
             <span className="absolute w-full text-center text-[10px] font-bold text-white z-10 leading-[14px]">
-              {totalCount} Users
+              {totalCount} {t('settingsUsers.usersCount')}
             </span>
           </div>
         </div>
@@ -237,14 +242,14 @@ export default function UsersTab() {
         search={{
           value: search,
           onChange: setSearch,
-          placeholder: "Search by username, email, or role...",
+          placeholder: t('settingsUsers.searchPlaceholder'),
         }}
         pagination={{
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
         }}
-        emptyMessage="No users found"
+        emptyMessage={t('settingsUsers.empty')}
         className="bg-transparent"
       />
 
@@ -258,8 +263,8 @@ export default function UsersTab() {
           }
         }}
         isLoading={deleteMutation.isPending || deleteMutation.isLoading}
-        title="Delete User Permanently"
-        description="Are you sure you want to permanently delete this user? This action cannot be undone and all data associated with this user will be removed."
+        title={t('settingsUsers.deleteTitle')}
+        description={t('settingsUsers.deleteDesc')}
       />
     </div>
   );

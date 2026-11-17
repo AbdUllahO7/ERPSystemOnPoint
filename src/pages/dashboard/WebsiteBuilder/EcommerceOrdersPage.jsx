@@ -6,8 +6,10 @@ import {
   OrdersTable,
 } from "@/components/dashboard/ecommerce-orders";
 import { useEcommerceOrders } from "@/features/ecommerce-orders";
+import { useI18n } from "@/context/translate-api";
 
 export function EcommerceOrdersPage() {
+  const { t } = useI18n();
   const [viewMode, setViewMode] = useState("list");
   const {
     metrics,
@@ -15,7 +17,6 @@ export function EcommerceOrdersPage() {
     selectedOrders,
     searchQuery,
     setSearchQuery,
-    isLoading,
     refetch,
     handleToggleOrder,
     handleToggleAllOrders,
@@ -24,15 +25,15 @@ export function EcommerceOrdersPage() {
   return (
     <div className="min-h-[calc(100vh-80px)] flex flex-col justify-between space-y-6">
       <div className="space-y-6">
-        {/* Page Header (1:1 with Figma Image 2) */}
+        {/* Page Header */}
         <div className="flex items-center gap-2">
           <h1 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
-            E-Commerce Orders
+            {t('ecommerceOrders.title')}
           </h1>
           <button
             type="button"
             className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-xs font-bold hover:bg-slate-300 transition-colors"
-            title="Order Management Information"
+            title={t('ecommerceOrders.infoTooltip')}
           >
             <Info className="w-3.5 h-3.5" />
           </button>
@@ -66,7 +67,8 @@ export function EcommerceOrdersPage() {
       <footer className="pt-8 pb-2 flex items-center justify-between text-xs text-slate-400 border-t border-slate-200/60 mt-8">
         <div>Copyright © ONPOINT</div>
         <div>
-          Designed By <span className="font-bold text-[#0066d1]">ONPOINT</span>
+          {t('ecommerceOrders.designedBy')}{" "}
+          <span className="font-bold text-[#0066d1]">ONPOINT</span>
         </div>
       </footer>
     </div>

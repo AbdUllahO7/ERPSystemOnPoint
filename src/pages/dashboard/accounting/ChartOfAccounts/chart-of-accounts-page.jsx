@@ -1,9 +1,11 @@
+import { StatTitle } from "@/components/common/stat-title";
 import React, { useMemo, useState } from "react";
 import { Info, Target, Building, UsersIcon, Banknote, FileText, Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { getChartOfAccounts } from "../../../../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/context/translate-api";
 
 const CustomChevron = ({ isOpen }) => (
   <svg 
@@ -110,6 +112,9 @@ const stats = [
 ];
 
 export default function ChartOfAccountsPage() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
 
@@ -132,7 +137,7 @@ export default function ChartOfAccountsPage() {
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <h2 className="text-xl font-semibold text-foreground">
-          Chart Of Accounts
+          {isAr ? "شجرة الحسابات" : "Chart Of Accounts"}
         </h2>
         <Info className="w-4 h-4 text-muted-foreground" />
       </div>
@@ -150,7 +155,7 @@ export default function ChartOfAccountsPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">
                   {stat.value}
@@ -173,27 +178,20 @@ export default function ChartOfAccountsPage() {
             <div className="relative min-w-[200px] flex-1 max-w-xl">
               <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input 
-                placeholder="Search by id or name..." 
+                placeholder={isAr ? "البحث بالمعرف أو الاسم..." : "Search by id or name..."} 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="h-10 w-full rounded-lg border-border bg-card ps-9 pe-3"
               />
             </div>
           </div>
-          
-          {/* <div className="flex items-center gap-2 w-full sm:w-auto">
-            <Button variant="outline" className="shrink-0">Export</Button>
-            <Button className="shrink-0" onClick={() => {}}>
-              + Add
-            </Button>
-          </div> */}
         </div>
 
         {/* Tree Container */}
         <div className="border rounded-md p-4 min-h-[400px]">
           {isLoading ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              Loading chart of accounts...
+              {isAr ? "جاري تحميل شجرة الحسابات..." : "Loading chart of accounts..."}
             </div>
           ) : chartData.length > 0 ? (
             <div className="-ml-2">
@@ -203,7 +201,7 @@ export default function ChartOfAccountsPage() {
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              No accounts found in chart.
+              {isAr ? "لم يتم العثور على حسابات في الشجرة." : "No accounts found in chart."}
             </div>
           )}
         </div>
@@ -217,10 +215,10 @@ export default function ChartOfAccountsPage() {
               onClick={() => setPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
-              Prev
+              {isAr ? "السابق" : "Prev"}
             </Button>
             <span className="text-sm font-medium">
-              {currentPage} of {totalPages}
+              {isAr ? `${currentPage} من ${totalPages}` : `${currentPage} of ${totalPages}`}
             </span>
             <Button
               variant="outline"
@@ -228,7 +226,7 @@ export default function ChartOfAccountsPage() {
               onClick={() => setPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
             >
-              Next
+              {isAr ? "التالي" : "Next"}
             </Button>
           </div>
         )}

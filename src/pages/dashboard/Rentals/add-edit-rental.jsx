@@ -21,8 +21,11 @@ import {
   getRentalById,
   getRentalLookups,
 } from "@/services/rentals";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function AddEditRentalPage() {
+  const { t, locale } = useI18n();
   const { id } = useParams();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -394,12 +397,12 @@ export default function AddEditRentalPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageTitle
-          title={isEdit ? "Edit Rental Contract" : "Add Rental Contract"}
+          title={isEdit ? t("rentalsModule.editContract") : t("rentalsModule.addContract")}
           breadcrumbLinks={[
-            { label: "Rental Contracts", href: "/dashboard/rentals" },
-            { label: isEdit ? "Edit Contract" : "Add Contract" },
+            { label: t("rentalsModule.rentals"), href: "/dashboard/rentals" },
+            { label: isEdit ? t("rentalsModule.editContractBreadcrumb") : t("rentalsModule.addContractBreadcrumb") },
           ]}
-          infoTooltip="Create or edit rental agreements, configure contract items and installment schedule matching API schema."
+          infoTooltip={t("rentalsModule.contractTooltip")}
         />
 
         <div className="flex items-center gap-2">
@@ -409,7 +412,7 @@ export default function AddEditRentalPage() {
             onClick={() => navigate("/dashboard/rentals")}
             className="h-10 px-6 rounded-xl text-xs font-semibold"
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="submit"
@@ -420,7 +423,7 @@ export default function AddEditRentalPage() {
             {saveMutation.isPending && (
               <Loader2 className="w-3.5 h-3.5 animate-spin me-1.5" />
             )}
-            Save Contract
+            {t("rentalsModule.saveContract")}
           </Button>
         </div>
       </div>
@@ -432,7 +435,7 @@ export default function AddEditRentalPage() {
           {/* Card 1: Basic Contract Information */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-8 shadow-sm space-y-6">
             <h2 className="text-base font-bold text-slate-800">
-              Contract Information
+              {t("rentalsModule.contractInfo")}
             </h2>
 
             {/* Row 1: Contract Number, Customer */}
@@ -612,10 +615,10 @@ export default function AddEditRentalPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-800">
-                  Contract Items & Services
+                  {t("rentalsModule.contractItemsAndServices")}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Itemized modules, services, or equipment included in this contract.
+                  {t("rentalsModule.contractItemsDesc")}
                 </p>
               </div>
               <Button
@@ -626,7 +629,7 @@ export default function AddEditRentalPage() {
                 className="h-9 rounded-xl text-xs font-semibold gap-1 text-[#0066d1] border-blue-200 hover:bg-blue-50"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Item
+                {t("rentalsModule.addItem")}
               </Button>
             </div>
 
@@ -634,11 +637,11 @@ export default function AddEditRentalPage() {
               <table className="w-full text-xs text-start">
                 <thead>
                   <tr className="border-b border-slate-100 text-slate-500 font-semibold">
-                    <th className="py-2.5 px-2 text-start w-[30%]">Item / Service Name</th>
-                    <th className="py-2.5 px-2 text-start w-[30%]">Description</th>
-                    <th className="py-2.5 px-2 text-start w-[12%]">Qty</th>
-                    <th className="py-2.5 px-2 text-start w-[15%]">Unit Price</th>
-                    <th className="py-2.5 px-2 text-start w-[13%]">Total</th>
+                    <th className="py-2.5 px-2 text-start w-[30%]">{t("rentalsModule.itemServiceName")}</th>
+                    <th className="py-2.5 px-2 text-start w-[30%]">{t("rentalsModule.description")}</th>
+                    <th className="py-2.5 px-2 text-start w-[12%]">{t("rentalsModule.qty")}</th>
+                    <th className="py-2.5 px-2 text-start w-[15%]">{t("rentalsModule.unitPrice")}</th>
+                    <th className="py-2.5 px-2 text-start w-[13%]">{t("rentalsModule.total")}</th>
                     <th className="py-2.5 px-2 text-center w-[50px]"></th>
                   </tr>
                 </thead>
@@ -706,10 +709,10 @@ export default function AddEditRentalPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-800">
-                  Payment Installments
+                  {t("rentalsModule.paymentInstallments")}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Milestone payments and due dates scheduled for this contract.
+                  {t("rentalsModule.paymentInstallmentsDesc")}
                 </p>
               </div>
               <Button
@@ -720,7 +723,7 @@ export default function AddEditRentalPage() {
                 className="h-9 rounded-xl text-xs font-semibold gap-1 text-[#0066d1] border-blue-200 hover:bg-blue-50"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Add Installment
+                {t("rentalsModule.addInstallment")}
               </Button>
             </div>
 
@@ -728,10 +731,10 @@ export default function AddEditRentalPage() {
               <table className="w-full text-xs text-start">
                 <thead>
                   <tr className="border-b border-slate-100 text-slate-500 font-semibold">
-                    <th className="py-2.5 px-2 text-start w-[40%]">Installment Name / Milestone</th>
-                    <th className="py-2.5 px-2 text-start w-[25%]">Amount</th>
-                    <th className="py-2.5 px-2 text-start w-[25%]">Due Date</th>
-                    <th className="py-2.5 px-2 text-center w-[10%]">Status</th>
+                    <th className="py-2.5 px-2 text-start w-[40%]">{t("rentalsModule.installmentNameMilestone")}</th>
+                    <th className="py-2.5 px-2 text-start w-[25%]">{t("rentalsModule.amount")}</th>
+                    <th className="py-2.5 px-2 text-start w-[25%]">{t("rentalsModule.dueDate")}</th>
+                    <th className="py-2.5 px-2 text-center w-[10%]">{t("rentalsModule.status")}</th>
                     <th className="py-2.5 px-2 text-center w-[50px]"></th>
                   </tr>
                 </thead>
@@ -740,7 +743,7 @@ export default function AddEditRentalPage() {
                     <tr key={ins.id} className="hover:bg-slate-50/50">
                       <td className="py-2.5 px-2">
                         <Input
-                          placeholder="e.g. Advance Payment upon signing"
+                          placeholder={t("rentalsModule.advancePaymentSigning")}
                           value={ins.installmentName}
                           onChange={(e) => handleInstallmentChange(idx, "installmentName", e.target.value)}
                           className="h-9 rounded-lg text-xs border-slate-200"
@@ -770,7 +773,7 @@ export default function AddEditRentalPage() {
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-amber-50 text-amber-700"
                         }`}>
-                          {ins.status || "Pending"}
+                          {translateErp(ins.status || "Pending", locale)}
                         </span>
                       </td>
                       <td className="py-2.5 px-2 text-center">
@@ -795,26 +798,26 @@ export default function AddEditRentalPage() {
         {/* Right Column: Calculations Summary Card (4 cols) */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5 sticky top-6">
           <h2 className="text-base font-bold text-slate-800">
-            Contract Financial Summary
+            {t("rentalsModule.contractFinancialSummary")}
           </h2>
 
           <div className="space-y-3.5 text-xs">
             <div className="flex items-center justify-between text-slate-600">
-              <span>Items Total ({items.length} items):</span>
+              <span>{`${t("rentalsModule.itemsTotalCount")} (${items.length}):`}</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.totalItemsAmount.toLocaleString()}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-slate-600">
-              <span>Scheduled Installments ({installments.length}):</span>
+              <span>{`${t("rentalsModule.scheduledInstallmentsCount")} (${installments.length}):`}</span>
               <span className="font-semibold text-slate-800">
                 ${calculations.totalInstallmentsAmount.toLocaleString()}
               </span>
             </div>
 
             <div className="border-t border-slate-100 pt-3 flex items-center justify-between text-slate-900 font-bold text-sm">
-              <span>Total Contract Amount:</span>
+              <span>{t("rentalsModule.totalContractAmount")}</span>
               <span className="text-[#0066d1] text-base">
                 ${calculations.totalItemsAmount.toLocaleString()}
               </span>
@@ -826,7 +829,9 @@ export default function AddEditRentalPage() {
                 : "bg-amber-50/70 border-amber-100 text-amber-800"
             }`}>
               <span className="font-medium">
-                {calculations.isBalanced ? "Installments fully allocated" : "Unallocated Balance:"}
+                {calculations.isBalanced
+                  ? t("rentalsModule.installmentsFullyAllocated")
+                  : t("rentalsModule.unallocatedBalance")}
               </span>
               <span className="font-bold">
                 ${Math.abs(calculations.difference).toLocaleString()}

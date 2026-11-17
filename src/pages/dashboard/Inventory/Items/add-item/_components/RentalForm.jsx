@@ -17,8 +17,12 @@ import {
 import { getDefaultRentalUnitId } from "@/services/inventory/inventory.service";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function RentalForm() {
+  const { locale, t } = useI18n();
+  const isAr = locale === "ar";
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -248,12 +252,12 @@ export default function RentalForm() {
           <div>
             <button
               type="button"
-              className="px-4 py-2 border rounded-md text-sm font-medium hover:bg-muted mb-2"
+              className="px-4 py-2 border rounded-md text-sm font-medium hover:bg-muted mb-2 cursor-pointer"
             >
-              Upload
+              {t("inventory.rentalForm.upload")}
             </button>
             <p className="text-xs text-muted-foreground">
-              Upload image size 4MB, Format JPG, PNG, SVG
+              {t("inventory.rentalForm.uploadHint")}
             </p>
           </div>
         </div>
@@ -281,10 +285,10 @@ export default function RentalForm() {
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <div>
               <span className="text-sm font-semibold text-foreground block">
-                Can Be Sold
+                {t("inventory.rentalForm.canBeSold")}
               </span>
               <span className="text-xs text-muted-foreground">
-                Item can be purchased directly as inventory
+                {t("inventory.rentalForm.canBeSoldHint")}
               </span>
             </div>
             <Switch
@@ -296,10 +300,10 @@ export default function RentalForm() {
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <div>
               <span className="text-sm font-semibold text-foreground block">
-                Requires Rental Contract
+                {t("inventory.rentalForm.requiresRentalContract")}
               </span>
               <span className="text-xs text-muted-foreground">
-                Must bind to rental agreement and terms
+                {t("inventory.rentalForm.requiresRentalContractHint")}
               </span>
             </div>
             <Switch
@@ -311,10 +315,10 @@ export default function RentalForm() {
           <div className="flex items-center justify-between p-4 border rounded-lg bg-card">
             <div>
               <span className="text-sm font-semibold text-foreground block">
-                Has Expiry Date
+                {t("inventory.rentalForm.hasExpiryDate")}
               </span>
               <span className="text-xs text-muted-foreground">
-                Track inspection or lease expiry dates
+                {t("inventory.rentalForm.hasExpiryDateHint")}
               </span>
             </div>
             <Switch
@@ -327,7 +331,7 @@ export default function RentalForm() {
 
       {/* Basic Item Info */}
       <div className="bg-card p-6 rounded-xl border shadow-sm space-y-6">
-        <h3 className="text-base font-bold text-foreground">Basic Info</h3>
+        <h3 className="text-base font-bold text-foreground">{t("inventory.rentalForm.basicInfo")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name_Product" className="text-sm font-semibold text-foreground">
@@ -335,12 +339,12 @@ export default function RentalForm() {
             </Label>
             <Input
               id="name_Product"
-              placeholder="e.g. Generator 50kVA, Excavator, Meeting Hall"
+              placeholder={t("inventory.rentalForm.namePlaceholder")}
               className="h-11 bg-transparent"
               {...register("name_Product", { required: true })}
             />
             {errors.name_Product && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{t("inventory.rentalForm.required")}</span>
             )}
           </div>
 
@@ -350,7 +354,7 @@ export default function RentalForm() {
             </Label>
             <Input
               id="product_Number"
-              placeholder="e.g. RENT-1001"
+              placeholder={t("inventory.rentalForm.skuPlaceholder")}
               className="h-11 bg-transparent"
               {...register("product_Number")}
             />
@@ -370,7 +374,9 @@ export default function RentalForm() {
               disabled={categoriesLoading}
             >
               <option value="">
-                {categoriesLoading ? "Loading categories..." : "Select Category"}
+                {categoriesLoading
+                  ? t("inventory.rentalForm.loadingCategories")
+                  : t("inventory.rentalForm.selectCategory")}
               </option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>
@@ -379,7 +385,7 @@ export default function RentalForm() {
               ))}
             </select>
             {errors.category_Id && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{t("inventory.rentalForm.required")}</span>
             )}
           </div>
         </div>
@@ -395,9 +401,9 @@ export default function RentalForm() {
               className="flex h-11 w-full items-center justify-between rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               {...register("billing_Method", { required: true })}
             >
-              <option value="Daily">Daily</option>
-              <option value="Hourly">Hourly</option>
-              <option value="Monthly">Monthly</option>
+              <option value="Daily">{t("inventory.rentalForm.daily")}</option>
+              <option value="Hourly">{t("inventory.rentalForm.hourly")}</option>
+              <option value="Monthly">{t("inventory.rentalForm.monthly")}</option>
             </select>
           </div>
 
@@ -457,7 +463,9 @@ export default function RentalForm() {
               disabled={accountsLoading}
             >
               <option value="">
-                {accountsLoading ? "Loading..." : "Select Revenue Account"}
+                {accountsLoading
+                  ? t("inventory.rentalForm.loading")
+                  : t("inventory.rentalForm.selectRevenueAccount")}
               </option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
@@ -466,7 +474,7 @@ export default function RentalForm() {
               ))}
             </select>
             {errors.revenue_Account_Id && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{t("inventory.rentalForm.required")}</span>
             )}
           </div>
 
@@ -481,7 +489,9 @@ export default function RentalForm() {
               disabled={accountsLoading}
             >
               <option value="">
-                {accountsLoading ? "Loading..." : "Select Expense Account"}
+                {accountsLoading
+                  ? t("inventory.rentalForm.loading")
+                  : t("inventory.rentalForm.selectExpenseAccount")}
               </option>
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
@@ -490,7 +500,7 @@ export default function RentalForm() {
               ))}
             </select>
             {errors.expense_Account_Id && (
-              <span className="text-red-500 text-xs">Required</span>
+              <span className="text-red-500 text-xs">{t("inventory.rentalForm.required")}</span>
             )}
           </div>
         </div>
@@ -501,10 +511,10 @@ export default function RentalForm() {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-base font-bold text-foreground">
-              Additional Rental Units & Pricing
+              {t("inventory.rentalForm.additionalUnits")}
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Specify additional rate units (e.g. Hour, Day, Month) beyond the primary billing method.
+              {t("inventory.rentalForm.additionalUnitsHint")}
             </p>
           </div>
           <Button
@@ -515,7 +525,7 @@ export default function RentalForm() {
             className="h-9 gap-1.5 text-xs text-[#0066d1] border-[#0066d1]/30 hover:bg-[#0066d1]/10"
           >
             <Plus className="w-4 h-4" />
-            Add Rental Unit
+            {t("inventory.rentalForm.addRentalUnit")}
           </Button>
         </div>
 
@@ -523,7 +533,7 @@ export default function RentalForm() {
           {units.length === 0 ? (
             <div className="text-center py-6 border border-dashed rounded-xl bg-muted/10 text-muted-foreground">
               <p className="text-xs">
-                No additional rental units configured. The default rate is defined by the billing method above.
+                {t("inventory.rentalForm.noAdditionalUnits")}
               </p>
             </div>
           ) : (
@@ -534,7 +544,7 @@ export default function RentalForm() {
               >
                 <div className="sm:col-span-5 space-y-1">
                   <Label className="text-xs text-muted-foreground">
-                    Measurement Unit <span className="text-red-500">*</span>
+                    {t("inventory.rentalForm.measurementUnit")} <span className="text-red-500">*</span>
                   </Label>
                   <select
                     value={unit.unitOfMeasurmentId}
@@ -543,7 +553,7 @@ export default function RentalForm() {
                     }
                     className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-card px-3 py-2 text-xs"
                   >
-                    <option value="">Select Unit</option>
+                    <option value="">{t("inventory.rentalForm.selectUnit")}</option>
                     {uomList
                       .filter((uom) => {
                         const uomVal = String(uom.unit_Name_Id || uom.id || "").toLowerCase();
@@ -562,7 +572,7 @@ export default function RentalForm() {
 
                 <div className="sm:col-span-3 space-y-1">
                   <Label className="text-xs text-muted-foreground">
-                    Cost Price ($)
+                    {t("inventory.rentalForm.costPrice")}
                   </Label>
                   <Input
                     type="number"
@@ -578,7 +588,7 @@ export default function RentalForm() {
 
                 <div className="sm:col-span-3 space-y-1">
                   <Label className="text-xs text-muted-foreground">
-                    Rental Price ($)
+                    {t("inventory.rentalForm.rentalPrice")}
                   </Label>
                   <Input
                     type="number"

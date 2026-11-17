@@ -6,7 +6,7 @@ import {
   Eye,
   GitBranch,
   User,
-  Archive,
+
   Building2,
 } from "lucide-react";
 import { DataView } from "@/components/data-view/DataView";
@@ -23,6 +23,8 @@ import {
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 const stats = [
   {
@@ -60,6 +62,8 @@ const stats = [
 ];
 
 export default function Offices() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [deleteRowId, setDeleteRowId] = useState(null);
@@ -187,7 +191,9 @@ export default function Offices() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold text-foreground">Offices List</h2>
+      <h2 className="text-xl font-semibold text-foreground">
+        {isAr ? "قائمة المكاتب" : "Offices List"}
+      </h2>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -197,7 +203,7 @@ export default function Offices() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground">{isAr ? translateErp(stat.title, locale) : stat.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? 'text-green-500' : 'text-red-500'}`}>
@@ -222,11 +228,11 @@ export default function Offices() {
             {[
               {
                 key: "section_id",
-                label: "Filter by Section",
-                placeholder: "All Sections",
+                label: isAr ? "فلترة حسب القطاع" : "Filter by Section",
+                placeholder: isAr ? "جميع القطاعات" : "All Sections",
                 options: sections.map((s) => ({
                   value: s.id,
-                  label: s.section_name || "Unnamed Section",
+                  label: s.section_name || (isAr ? "قطاع غير مسمى" : "Unnamed Section"),
                 })),
               },
             ].map((config) => (
@@ -270,7 +276,7 @@ export default function Offices() {
                   setPage(1);
                 }}
               >
-                Clear Filters
+                {isAr ? "مسح الفلاتر" : "Clear Filters"}
               </Button>
             )}
           </div>

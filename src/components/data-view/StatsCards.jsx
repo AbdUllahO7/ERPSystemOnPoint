@@ -1,5 +1,7 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 const iconColorMap = {
   blue: "bg-primary/10 text-primary",
@@ -21,6 +23,9 @@ const iconColorMap = {
  * }> }} props
  */
 export function StatsCards({ cards = [] }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   if (!cards.length) return null;
 
   return (
@@ -28,6 +33,7 @@ export function StatsCards({ cards = [] }) {
       {cards.map((card) => {
         const Icon = card.icon;
         const iconClass = iconColorMap[card.color ?? "blue"] ?? iconColorMap.blue;
+        const displayTitle = isAr && typeof card.title === "string" ? translateErp(card.title, locale) : card.title;
 
         return (
           <article
@@ -46,7 +52,7 @@ export function StatsCards({ cards = [] }) {
                 </div>
               )}
               <div className="min-w-0">
-                <p className="truncate text-xs sm:text-sm text-slate-500">{card.title}</p>
+                <p className="truncate text-xs sm:text-sm text-slate-500">{displayTitle}</p>
                 <p className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{card.value}</p>
               </div>
             </div>

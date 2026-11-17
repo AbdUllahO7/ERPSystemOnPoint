@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -138,7 +139,7 @@ export default function EmployeeSalaryTab() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+              <p className="text-sm font-medium text-muted-foreground"><StatTitle>{stat.title}</StatTitle></p>
               <div className="flex items-center gap-2 mt-1">
                 {isLoading ? (
                   <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />

@@ -13,11 +13,13 @@ import { FollowUpsTab } from "./_components/tabs/follow-ups-tab";
 import { FilesTab } from "./_components/tabs/files-tab";
 import { NotesTab } from "./_components/tabs/notes-tab";
 import { TimelineTab } from "./_components/tabs/timeline-tab";
+import { useI18n } from "@/context/translate-api";
 
 export default function CustomerDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { t } = useI18n();
 
   const tabs = [
     "Basic Information",
@@ -30,6 +32,18 @@ export default function CustomerDetails() {
     "Notes",
     "Timeline"
   ];
+
+  const tabLabels = {
+    "Basic Information": t("crmCustomers.tabs.basicInformation"),
+    "Contacts": t("crmCustomers.tabs.contacts"),
+    "Projects": t("crmCustomers.tabs.projects"),
+    "Contracts": t("crmCustomers.tabs.contracts"),
+    "Invoices": t("crmCustomers.tabs.invoices"),
+    "Follow-Ups": t("crmCustomers.tabs.followUps"),
+    "Files": t("crmCustomers.tabs.files"),
+    "Notes": t("crmCustomers.tabs.notes"),
+    "Timeline": t("crmCustomers.tabs.timeline"),
+  };
 
   const tabParam = searchParams.get("tab");
   const initialTab = tabParam && tabs.includes(tabParam) ? tabParam : "Basic Information";
@@ -82,7 +96,7 @@ export default function CustomerDetails() {
   if (isError) {
     return (
       <div className="flex items-center justify-center min-h-[400px] text-destructive">
-        Failed to load customer details.
+        {t("crmCustomers.errorLoadingDetails")}
       </div>
     );
   }
@@ -93,18 +107,24 @@ export default function CustomerDetails() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold text-foreground">Customer Details</h2>
+            <h2 className="text-xl font-bold text-foreground">
+              {t("crmCustomers.details")}
+            </h2>
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/customers")}>Customers</span>
+            <span className="cursor-pointer hover:text-primary" onClick={() => navigate("/dashboard/crm/customers")}>
+              {t("crmCustomers.title")}
+            </span>
             <span>/</span>
-            <span className="font-medium text-foreground">Customer Details</span>
+            <span className="font-medium text-foreground">
+              {t("crmCustomers.details")}
+            </span>
           </div>
         </div>
         <Button variant="outline" className="gap-2 bg-white" onClick={() => navigate(`/dashboard/crm/customers/edit/${id}`)}>
           <Edit className="w-4 h-4" />
-          Edit Profile
+          {t("crmCustomers.editProfile")}
         </Button>
       </div>
 
@@ -129,15 +149,15 @@ export default function CustomerDetails() {
         
         <div className="flex gap-4 overflow-x-auto">
           <div className="px-6 py-3 border border-orange-200 bg-orange-50/50 rounded-xl min-w-[120px] text-center">
-            <div className="text-orange-500 text-sm font-medium">Projects</div>
+            <div className="text-orange-500 text-sm font-medium">{t("crmCustomers.projects")}</div>
             <div className="text-orange-500 font-bold">{MOCK_CUSTOMER.projectsCount}</div>
           </div>
           <div className="px-6 py-3 border border-emerald-200 bg-emerald-50/50 rounded-xl min-w-[120px] text-center">
-            <div className="text-emerald-500 text-sm font-medium">Invoices</div>
+            <div className="text-emerald-500 text-sm font-medium">{t("crmCustomers.invoices")}</div>
             <div className="text-emerald-500 font-bold">{MOCK_CUSTOMER.invoicesCount}</div>
           </div>
           <div className="px-6 py-3 border border-blue-200 bg-blue-50/50 rounded-xl min-w-[140px] text-center">
-            <div className="text-blue-500 text-sm font-medium">Payments</div>
+            <div className="text-blue-500 text-sm font-medium">{t("crmCustomers.payments")}</div>
             <div className="text-blue-500 font-bold">$ {MOCK_CUSTOMER.paymentsCount}</div>
           </div>
         </div>
@@ -156,7 +176,7 @@ export default function CustomerDetails() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {tab}
+              {tabLabels[tab] || tab}
               {activeTab === tab && (
                 <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
               )}
@@ -188,8 +208,8 @@ export default function CustomerDetails() {
           ].includes(activeTab) && (
             <div className="flex items-center justify-center h-full min-h-[200px]">
               <div className="text-center text-muted-foreground">
-                <h3 className="text-lg font-medium mb-1">Coming Soon</h3>
-                <p className="text-sm">This section is currently under development.</p>
+                <h3 className="text-lg font-medium mb-1">{t("crmCustomers.comingSoon")}</h3>
+                <p className="text-sm">{t("crmCustomers.sectionUnderDev")}</p>
               </div>
             </div>
           )}

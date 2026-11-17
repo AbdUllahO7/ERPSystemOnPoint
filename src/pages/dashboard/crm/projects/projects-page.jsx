@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useState, useMemo } from "react";
 import {
   FolderKanban,
@@ -17,8 +18,11 @@ import { toast } from "react-hot-toast";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/context/translate-api";
 
 export default function ProjectsPage() {
+  const { t } = useI18n();
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All");
@@ -29,6 +33,24 @@ export default function ProjectsPage() {
   const queryClient = useQueryClient();
 
   const tabs = ["All", "Planning", "InProgress", "Pending", "Completed", "Cancelled"];
+
+  const tabLabels = {
+    All: t("crmProjects.all"),
+    Planning: t("crmProjects.planning"),
+    InProgress: t("crmProjects.inProgress"),
+    Pending: t("crmProjects.pending"),
+    Completed: t("crmProjects.completed"),
+    Cancelled: t("crmProjects.cancelled"),
+  };
+
+  const statusLabels = {
+    Planning: t("crmProjects.planning"),
+    InProgress: t("crmProjects.inProgress"),
+    "In Progress": t("crmProjects.inProgress"),
+    Pending: t("crmProjects.pending"),
+    Completed: t("crmProjects.completed"),
+    Cancelled: t("crmProjects.cancelled"),
+  };
 
   const { data: projectsData, isLoading } = useQuery({
     queryKey: ["allCustomerProjects", page, search],
@@ -43,7 +65,7 @@ export default function ProjectsPage() {
   const deleteMutation = useMutation({
     mutationFn: (id) => deleteCustomerProject(id),
     onSuccess: () => {
-      toast.success("Project deleted successfully");
+      toast.success(t("crmProjects.deleteSuccess"));
       queryClient.invalidateQueries({ queryKey: ["allCustomerProjects"] });
       setDeleteId(null);
     },
@@ -52,7 +74,7 @@ export default function ProjectsPage() {
         err?.response?.data?.message ||
         err?.data?.message ||
         err?.message ||
-        "Failed to delete project";
+        t("crmProjects.deleteError");
       toast.error(msg, { duration: 6000 });
       setDeleteId(null);
     },
@@ -87,7 +109,7 @@ export default function ProjectsPage() {
       );
     }
     return list;
-  }, [items, activeTab, search]);
+  }, [items, activeTab, search, filterStatus]);
 
   // Aggregate stats
   const totalValue = items.reduce((acc, p) => acc + Number(p.projectValue || p.value || 0), 0);
@@ -98,28 +120,28 @@ export default function ProjectsPage() {
     {
       title: "Total Customer Projects",
       value: items.length.toString(),
-      sub: "Active tracked projects",
+      sub: t("crmProjects.activeTrackedProjects"),
       color: "bg-blue-600",
       icon: FolderKanban,
     },
     {
       title: "In Progress",
       value: inProgressCount.toString(),
-      sub: "Currently executing",
+      sub: t("crmProjects.currentlyExecuting"),
       color: "bg-amber-500",
       icon: Clock,
     },
     {
       title: "Completed",
       value: completedCount.toString(),
-      sub: "Handed over successfully",
+      sub: t("crmProjects.handedOverSuccessfully"),
       color: "bg-emerald-500",
       icon: CheckCircle2,
     },
     {
       title: "Total Contractual Value",
       value: `$${totalValue.toLocaleString()}`,
-      sub: "Portfolio value",
+      sub: t("crmProjects.portfolioValue"),
       color: "bg-purple-600",
       icon: AlertCircle,
     },
@@ -128,26 +150,26 @@ export default function ProjectsPage() {
   const columns = [
     {
       key: "projectName",
-      label: "Project",
+      label: t("crmProjects.project"),
       render: (row) => (
         <div>
           <span className="font-semibold text-foreground block">{row.projectName}</span>
-          <span className="text-[11px] text-muted-foreground">ID: #{row.id?.substring(0, 8)}</span>
+          <span className="text-[11px] text-muted-foreground">{t("crmProjects.idPrefix")} #{row.id?.substring(0, 8)}</span>
         </div>
       ),
     },
     {
       key: "customerName",
-      label: "Customer",
+      label: t("crmProjects.customer"),
       render: (row) => (
         <span className="font-medium text-foreground">
-          {row.customerName || (row.customerId ? `Customer #${row.customerId.substring(0, 8)}` : "-")}
+          {row.customerName || (row.customerId ? `${t("crmProjects.customerPrefix")}${row.customerId.substring(0, 8)}` : "-")}
         </span>
       ),
     },
     {
       key: "status",
-      label: "Status",
+      label: t("crmProjects.status"),
       render: (row) => {
         const colorClasses = {
           Planning: "bg-blue-100 text-blue-700 border-blue-200",
@@ -160,21 +182,21 @@ export default function ProjectsPage() {
         const colorClass = colorClasses[row.status] || "bg-gray-100 text-gray-700 border-gray-200";
         return (
           <span className={`px-2.5 py-0.5 border rounded-full text-xs font-semibold ${colorClass}`}>
-            {row.status || "Planning"}
+            {statusLabels[row.status] || row.status || t("crmProjects.planning")}
           </span>
         );
       },
     },
     {
       key: "completionPercentage",
-      label: "Progress",
+      label: t("crmProjects.progress"),
       render: (row) => {
         const perc = Number(row.completionPercentage || 0);
         return (
           <div className="min-w-[130px]">
             <div className="flex items-center justify-between text-xs font-medium mb-1">
               <span className="text-foreground">{perc}%</span>
-              <span className="text-[10px] text-muted-foreground">Operational</span>
+              <span className="text-[10px] text-muted-foreground">{t("crmProjects.operational")}</span>
             </div>
             <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
               <div
@@ -190,7 +212,7 @@ export default function ProjectsPage() {
     },
     {
       key: "projectValue",
-      label: "Value",
+      label: t("crmProjects.value"),
       render: (row) => (
         <span className="font-bold text-blue-600">
           ${Number(row.projectValue || row.value || 0).toLocaleString()}
@@ -199,7 +221,7 @@ export default function ProjectsPage() {
     },
     {
       key: "dates",
-      label: "Period",
+      label: t("crmProjects.period"),
       render: (row) => {
         const start = row.startDate ? new Date(row.startDate).toLocaleDateString() : "-";
         const end = row.endDate ? new Date(row.endDate).toLocaleDateString() : "-";
@@ -217,19 +239,19 @@ export default function ProjectsPage() {
       items: [
         {
           key: "view",
-          label: "View Details",
+          label: t("crmProjects.viewDetails"),
           icon: Eye,
           onClick: (row) => navigate(`/dashboard/crm/projects/${row.id}`),
         },
         {
           key: "edit",
-          label: "Edit Project",
+          label: t("crmProjects.editProject"),
           icon: Pencil,
           onClick: (row) => navigate(`/dashboard/crm/projects/edit/${row.id}`),
         },
         {
           key: "delete",
-          label: "Delete Project",
+          label: t("crmProjects.deleteProject"),
           icon: Trash2,
           destructive: true,
           onClick: (row) => setDeleteId(row.id),
@@ -243,9 +265,11 @@ export default function ProjectsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-foreground">Customer Projects</h2>
+          <h2 className="text-xl font-bold text-foreground">
+            {t("crmProjects.title")}
+          </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Manage client scopes of work, contractual milestones, and execution progress
+            {t("crmProjects.subtitle")}
           </p>
         </div>
         <Button
@@ -253,7 +277,7 @@ export default function ProjectsPage() {
           onClick={() => navigate("/dashboard/crm/projects/add")}
         >
           <Plus className="w-4 h-4" />
-          Add Project
+          {t("crmProjects.addProject")}
         </Button>
       </div>
 
@@ -270,15 +294,13 @@ export default function ProjectsPage() {
               <stat.icon className="w-6 h-6" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs text-muted-foreground truncate">{stat.title}</p>
+              <p className="text-xs text-muted-foreground truncate"><StatTitle>{stat.title}</StatTitle></p>
               <div className="text-2xl font-bold text-foreground mt-0.5">{stat.value}</div>
               <p className="text-[11px] text-muted-foreground mt-0.5">{stat.sub}</p>
             </div>
           </div>
         ))}
       </div>
-
-     
 
       {/* Status Tabs */}
       <div className="flex items-center gap-6 border-b border-border overflow-x-auto bg-white px-2 pt-2 rounded-t-xl">
@@ -295,7 +317,7 @@ export default function ProjectsPage() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {tab}
+            {tabLabels[tab] || tab}
             {activeTab === tab && (
               <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600" />
             )}
@@ -309,14 +331,14 @@ export default function ProjectsPage() {
         configs={[
           {
             key: "status",
-            label: "Project Status",
-            placeholder: "All Statuses",
+            label: t("crmProjects.projectStatus"),
+            placeholder: t("crmProjects.allStatuses"),
             options: [
-              { value: "Planning", label: "Planning" },
-              { value: "InProgress", label: "In Progress" },
-              { value: "Pending", label: "Pending" },
-              { value: "Completed", label: "Completed" },
-              { value: "Cancelled", label: "Cancelled" },
+              { value: "Planning", label: t("crmProjects.planning") },
+              { value: "InProgress", label: t("crmProjects.inProgress") },
+              { value: "Pending", label: t("crmProjects.pending") },
+              { value: "Completed", label: t("crmProjects.completed") },
+              { value: "Cancelled", label: t("crmProjects.cancelled") },
             ],
           },
         ]}
@@ -338,13 +360,15 @@ export default function ProjectsPage() {
         data={filteredProjects}
         isLoading={isLoading}
         getRowId={(row) => row.id}
+        searchPlaceholder={t("crmProjects.searchPlaceholder")}
+        emptyMessage={t("crmProjects.empty")}
         search={{
-          placeholder: "Search projects by name, customer, or ID...",
+          placeholder: t("crmProjects.searchPlaceholder"),
           value: search,
           onChange: setSearch,
         }}
         filter={{
-          label: "Filter",
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         columns={columns}
@@ -353,8 +377,8 @@ export default function ProjectsPage() {
           page: page,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Pre",
-          nextLabel: "Next",
+          prevLabel: t("common.prev"),
+          nextLabel: t("common.next"),
         }}
       />
 
@@ -362,8 +386,8 @@ export default function ProjectsPage() {
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
         onConfirm={() => deleteMutation.mutate(deleteId)}
-        title="Delete Customer Project"
-        description="Are you sure you want to delete this project? This action cannot be undone."
+        title={t("crmProjects.deleteTitle")}
+        description={t("crmProjects.deleteDesc")}
       />
     </div>
   );

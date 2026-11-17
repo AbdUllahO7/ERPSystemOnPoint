@@ -6,6 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, } from "
 import { Info, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 import {
   createDepartment,
@@ -20,6 +23,8 @@ export default function AddEditDepartment() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t, locale } = useI18n();
+  const isAr = locale === "ar";
   const isEdit = !!id;
 
   const {
@@ -81,15 +86,15 @@ export default function AddEditDepartment() {
         : createDepartment(data),
     onSuccess: (res) => {
       if (res && (res.success === false || res.status >= 400)) {
-        toast.error(res.message || (isEdit ? "Failed to update department!" : "Failed to add department!"));
+        toast.error(res.message || (isAr ? (isEdit ? "فشل في تحديث القسم!" : "فشل في إضافة القسم!") : (isEdit ? "Failed to update department!" : "Failed to add department!")));
         return;
       }
       queryClient.invalidateQueries({ queryKey: ["getDepartments"] });
       toast.success(
         res?.message ||
-        (isEdit
-          ? "Department updated successfully!"
-          : "Department added successfully!")
+        (isAr
+          ? (isEdit ? "تم تحديث القسم بنجاح!" : "تمت إضافة القسم بنجاح!")
+          : (isEdit ? "Department updated successfully!" : "Department added successfully!"))
       );
       navigate("/dashboard/hr/departments");
     },
@@ -99,7 +104,7 @@ export default function AddEditDepartment() {
         error?.response?.data?.message ||
         error?.data?.message ||
         error?.message ||
-        (isEdit ? "Failed to update department!" : "Failed to add department!");
+        (isAr ? (isEdit ? "فشل في تحديث القسم!" : "فشل في إضافة القسم!") : (isEdit ? "Failed to update department!" : "Failed to add department!"));
       toast.error(errMsg);
     },
   });
@@ -121,7 +126,9 @@ export default function AddEditDepartment() {
 
   const managers = managersData?.data?.items || [];
   const branches = branchData?.data?.items || [];
-  const pageTitle = isEdit ? "Edit Department" : "Add Department";
+  const pageTitle = isEdit
+    ? (isAr ? "تعديل القسم" : "Edit Department")
+    : (isAr ? "إضافة قسم" : "Add Department");
 
   return (
     <div className="space-y-6 max-w-[1200px] mx-auto w-full">
@@ -133,7 +140,12 @@ export default function AddEditDepartment() {
             <Info className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground mt-1">
-            <span>Departments</span>
+            <span
+              className="cursor-pointer hover:text-primary"
+              onClick={() => navigate("/dashboard/hr/departments")}
+            >
+              {isAr ? translateErp("Departments", locale) : "Departments"}
+            </span>
             <span>/</span>
             <span className="font-medium text-foreground">{pageTitle}</span>
           </div>
@@ -142,9 +154,9 @@ export default function AddEditDepartment() {
         <Button
           onClick={handleSubmit(onSubmit)}
           disabled={mutation.isLoading || isPageLoading}
-          className="px-8"
+          className="px-8 cursor-pointer"
         >
-          {mutation.isLoading ? "Saving..." : "Save"}
+          {mutation.isLoading ? (isAr ? "جارٍ الحفظ..." : "Saving...") : (isAr ? "حفظ" : "Save")}
         </Button>
       </div>
 
@@ -154,18 +166,20 @@ export default function AddEditDepartment() {
           <div className="flex flex-col items-center justify-center py-24 gap-3 text-muted-foreground">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
             <p className="text-sm font-medium">
-              {isEdit ? "Loading department details & data..." : "Loading form data..."}
+              {isEdit
+                ? (isAr ? "جارٍ تحميل تفاصيل وبيانات القسم..." : "Loading department details & data...")
+                : (isAr ? "جارٍ تحميل بيانات النموذج..." : "Loading form data...")}
             </p>
           </div>
         ) : (
           <form className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="department_Name"
                 className="text-sm font-semibold text-foreground leading-none"
               >
                 Department Name
-              </label>
+              </Label>
               <Input
                 id="department_Name"
                 placeholder="Department Name"
@@ -173,17 +187,17 @@ export default function AddEditDepartment() {
                 {...register("department_Name", { required: true })}
               />
               {errors.department_Name && (
-                <span className="text-red-500 text-xs">Required</span>
+                <span className="text-red-500 text-xs">{isAr ? "مطلوب" : "Required"}</span>
               )}
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="manager_id"
                 className="text-sm font-semibold text-foreground leading-none"
               >
                 Manager Name
-              </label>
+              </Label>
               <Controller
                 name="manager_id"
                 control={control}
@@ -232,12 +246,12 @@ export default function AddEditDepartment() {
             </div>
 
             <div className="space-y-2">
-              <label
+              <Label
                 htmlFor="branch_Id"
                 className="text-sm font-semibold text-foreground leading-none"
               >
                 Branch Name
-              </label>
+              </Label>
               <Controller
                 name="branch_id"
                 control={control}

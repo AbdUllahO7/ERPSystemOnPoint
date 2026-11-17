@@ -15,6 +15,8 @@ import { getRewards, deleteReward, getEmployees } from "@/lib/api";
 import { DeleteConfirmDialog } from "@/components/common/delete-confirm-dialog";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 const stats = [
   { title: "Number of system Departments", value: "32", trend: "+5%", isUp: true, color: "bg-[#0066d1]", icon: Building2 },
@@ -24,6 +26,8 @@ const stats = [
 ];
 
 export default function BonusesPage() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
@@ -112,7 +116,7 @@ export default function BonusesPage() {
               <stat.icon className="w-7 h-7" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">{stat.title}</p>
+              <p className="text-sm text-muted-foreground">{isAr ? translateErp(stat.title, locale) : stat.title}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-2xl font-bold text-foreground">{stat.value}</span>
                 <span className={`text-xs font-semibold ${stat.isUp ? 'text-green-500' : 'text-red-500'}`}>
@@ -135,7 +139,7 @@ export default function BonusesPage() {
         <div className="overflow-hidden">
           <div className="bg-card text-card-foreground p-4 rounded-xl border shadow-sm flex flex-col sm:flex-row items-end gap-4 flex-wrap">
             <div className="flex flex-col gap-2 w-full sm:max-w-[200px]">
-              <label className="text-sm font-medium text-foreground">Employee</label>
+              <label className="text-sm font-medium text-foreground">{isAr ? "الموظف" : "Employee"}</label>
               <Select
                 value={filters.EmployeeId || "all"}
                 onValueChange={(val) => {
@@ -144,10 +148,10 @@ export default function BonusesPage() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Employees" />
+                  <SelectValue placeholder={isAr ? "جميع الموظفين" : "All Employees"} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Employees</SelectItem>
+                  <SelectItem value="all">{isAr ? "جميع الموظفين" : "All Employees"}</SelectItem>
                   {employeeOptions.map((opt) => (
                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                   ))}
@@ -156,7 +160,7 @@ export default function BonusesPage() {
             </div>
 
             <div className="flex flex-col gap-2 w-full sm:max-w-[150px]">
-              <label className="text-sm font-medium text-foreground">Reward Category</label>
+              <label className="text-sm font-medium text-foreground">{isAr ? "فئة المكافأة" : "Reward Category"}</label>
               <Select
                 value={filters.RewardCategory || "all"}
                 onValueChange={(val) => {
@@ -165,24 +169,24 @@ export default function BonusesPage() {
                 }}
               >
                 <SelectTrigger className="w-full">
-                  <SelectValue placeholder="All Categories" />
+                  <SelectValue placeholder={isAr ? "جميع الأصناف" : "All Categories"} />
                 </SelectTrigger>
                 <SelectContent position="popper" sideOffset={4}>
-                  <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Bonus">Bonus</SelectItem>
-                  <SelectItem value="Commission">Commission</SelectItem>
-                  <SelectItem value="Overtime">Overtime</SelectItem>
-                  <SelectItem value="Exceptional">Exceptional</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
+                  <SelectItem value="all">{isAr ? "جميع الأصناف" : "All Categories"}</SelectItem>
+                  <SelectItem value="Bonus">{isAr ? "مكافأة" : "Bonus"}</SelectItem>
+                  <SelectItem value="Commission">{isAr ? "عمولة" : "Commission"}</SelectItem>
+                  <SelectItem value="Overtime">{isAr ? "عمل إضافي" : "Overtime"}</SelectItem>
+                  <SelectItem value="Exceptional">{isAr ? "استثنائي" : "Exceptional"}</SelectItem>
+                  <SelectItem value="Other">{isAr ? "أخرى" : "Other"}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="flex flex-col gap-2 w-full sm:max-w-[120px]">
-              <label className="text-sm font-medium text-foreground">Min Amount</label>
+              <label className="text-sm font-medium text-foreground">{isAr ? "الحد الأدنى" : "Min Amount"}</label>
               <Input
                 type="number"
-                placeholder="Min"
+                placeholder={isAr ? "الأدنى" : "Min"}
                 value={filters.MinAmount || ""}
                 onChange={(e) => {
                   setFilters((prev) => ({ ...prev, MinAmount: e.target.value }));
@@ -192,10 +196,10 @@ export default function BonusesPage() {
             </div>
             
             <div className="flex flex-col gap-2 w-full sm:max-w-[120px]">
-              <label className="text-sm font-medium text-foreground">Max Amount</label>
+              <label className="text-sm font-medium text-foreground">{isAr ? "الحد الأقصى" : "Max Amount"}</label>
               <Input
                 type="number"
-                placeholder="Max"
+                placeholder={isAr ? "الأقصى" : "Max"}
                 value={filters.MaxAmount || ""}
                 onChange={(e) => {
                   setFilters((prev) => ({ ...prev, MaxAmount: e.target.value }));
@@ -205,7 +209,7 @@ export default function BonusesPage() {
             </div>
 
             <div className="flex flex-col gap-2 w-full sm:max-w-[150px]">
-              <label className="text-sm font-medium text-foreground">Date From</label>
+              <label className="text-sm font-medium text-foreground">{isAr ? "من تاريخ" : "Date From"}</label>
               <Input
                 type="date"
                 value={filters.DateFrom || ""}
@@ -217,7 +221,7 @@ export default function BonusesPage() {
             </div>
 
             <div className="flex flex-col gap-2 w-full sm:max-w-[150px]">
-              <label className="text-sm font-medium text-foreground">Date To</label>
+              <label className="text-sm font-medium text-foreground">{isAr ? "إلى تاريخ" : "Date To"}</label>
               <Input
                 type="date"
                 value={filters.DateTo || ""}
@@ -230,7 +234,7 @@ export default function BonusesPage() {
 
             {Object.values(filters).some((val) => val !== "") && (
               <Button variant="outline" onClick={() => { setFilters({ EmployeeId: "", RewardCategory: "", MinAmount: "", MaxAmount: "", DateFrom: "", DateTo: "" }); setPage(1); }}>
-                Clear Filters
+                {isAr ? "مسح الفلاتر" : "Clear Filters"}
               </Button>
             )}
           </div>

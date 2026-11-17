@@ -1,60 +1,65 @@
 import { Users, UserCheck, UserX, Clock, CalendarX, FileText, DollarSign } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function GeneralStats({ data }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   if (!data) return null;
 
   const stats = [
     {
-      label: "Total Employees",
-      value: data.totalEmployees,
+      label: isAr ? "إجمالي الموظفين" : "Total Employees",
+      value: data.totalEmployees ?? 0,
       icon: <Users className="w-5 h-5 text-blue-500" />,
       bg: "bg-blue-50",
       color: "text-blue-500",
       borderColor: "border-blue-500"
     },
     {
-      label: "Active Employees",
-      value: data.activeEmployees,
+      label: isAr ? "الموظفون النشطون" : "Active Employees",
+      value: data.activeEmployees ?? 0,
       icon: <UserCheck className="w-5 h-5 text-green-500" />,
       bg: "bg-green-50",
       color: "text-green-500",
       borderColor: "border-green-500"
     },
     {
-      label: "On Leave Today",
-      value: data.onLeaveEmployees,
+      label: isAr ? "في إجازة اليوم" : "On Leave Today",
+      value: data.onLeaveEmployees ?? 0,
       icon: <UserX className="w-5 h-5 text-orange-500" />,
       bg: "bg-orange-50",
       color: "text-orange-500",
       borderColor: "border-orange-500"
     },
     {
-      label: "Late Today",
-      value: data.onLateToday,
+      label: isAr ? "المتأخرون اليوم" : "Late Today",
+      value: data.onLateToday ?? 0,
       icon: <Clock className="w-5 h-5 text-red-400" />,
       bg: "bg-red-50",
       color: "text-red-400",
       borderColor: "border-red-400"
     },
     {
-      label: "Absent Today",
-      value: data.absentToday,
+      label: isAr ? "الغائبون اليوم" : "Absent Today",
+      value: data.absentToday ?? 0,
       icon: <CalendarX className="w-5 h-5 text-red-500" />,
       bg: "bg-red-50",
       color: "text-red-500",
       borderColor: "border-red-500"
     },
     {
-      label: "Expiring Contracts",
-      value: data.expiringContract,
+      label: isAr ? "عقود تنتهي قريباً" : "Expiring Contracts",
+      value: data.expiringContract ?? 0,
       icon: <FileText className="w-5 h-5 text-green-600" />,
       bg: "bg-green-50",
       color: "text-green-600",
       borderColor: "border-green-600"
     },
     {
-      label: "Monthly Payroll",
-      value: data.monthlyPayroll.toLocaleString(),
+      label: isAr ? "مسير الرواتب الشهري" : "Monthly Payroll",
+      value: (data.monthlyPayroll ?? 0).toLocaleString(),
       icon: <DollarSign className="w-5 h-5 text-blue-600" />,
       bg: "bg-blue-50",
       color: "text-blue-600",
@@ -64,7 +69,9 @@ export default function GeneralStats({ data }) {
 
   return (
     <div>
-      <h2 className="text-lg font-semibold mb-4 text-[#1B2559]">General statistics</h2>
+      <h2 className="text-lg font-semibold mb-4 text-[#1B2559]">
+        {isAr ? "الإحصائيات العامة" : "General statistics"}
+      </h2>
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
         {stats.map((stat, idx) => (
           <div key={idx} className={`bg-white rounded-xl shadow-sm p-4 border-b-2 ${stat.borderColor} flex flex-col justify-between`}>

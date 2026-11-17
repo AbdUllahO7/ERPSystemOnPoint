@@ -9,8 +9,13 @@ import { useQuery } from "@tanstack/react-query";
 import { getAllExpenses } from "../../../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { CollapsibleFilterBar } from "@/components/common/collapsible-filter-bar";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function ExpensesPage() {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [selectedStatus, setSelectedStatus] = useState("");
@@ -116,7 +121,9 @@ export default function ExpensesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-foreground">General Expenses</h2>
+        <h2 className="text-2xl font-bold text-foreground">
+          {isAr ? "المصروفات العامة" : "General Expenses"}
+        </h2>
       </div>
 
       {/* Filter Menu */}
@@ -125,11 +132,11 @@ export default function ExpensesPage() {
         configs={[
           {
             key: "status",
-            label: "Filter by Status",
-            placeholder: "All Statuses",
+            label: isAr ? "فلترة حسب الحالة" : "Filter by Status",
+            placeholder: isAr ? "جميع الحالات" : "All Statuses",
             options: [
-              { value: "Draft", label: "Draft" },
-              { value: "Posted", label: "Posted" },
+              { value: "Draft", label: isAr ? "مسودة" : "Draft" },
+              { value: "Posted", label: isAr ? "مرحل" : "Posted" },
             ],
           },
         ]}
@@ -151,19 +158,19 @@ export default function ExpensesPage() {
         isLoading={isLoading}
         getRowId={(row) => row.id}
         search={{
-          placeholder: "Search expenses...",
+          placeholder: isAr ? "البحث في المصروفات..." : "Search expenses...",
           value: search,
           onChange: handleSearch,
         }}
         filter={{
-          label: "Filter",
+          label: isAr ? "فلترة" : "Filter",
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
         onRefresh={() => {}}
         addButton={{
-          label: "Add Expense",
+          label: isAr ? "إضافة مصروف" : "Add Expense",
           onClick: () => navigate("/dashboard/accounting/expenses/add"),
-          icon: <Plus className="w-4 h-4 mr-1" />
+          icon: <Plus className={`w-4 h-4 ${isAr ? 'ml-1' : 'mr-1'}`} />
         }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
@@ -173,14 +180,14 @@ export default function ExpensesPage() {
           subtitle: (row) => row.expense_Account_Name,
           fields: [
             {
-              label: "Amount:",
-              value: (row) => `$${row.total_Amount?.toLocaleString()}`,
+              label: isAr ? "المبلغ:" : "Amount:",
+              value: (row) => `${row.total_Amount?.toLocaleString()} ${isAr ? "ر.س" : "$"}`,
             },
             {
-              label: "Status:",
+              label: isAr ? "الحالة:" : "Status:",
               value: (row) => (
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(row.status_Name)}`}>
-                  {row.status_Name || "Unknown"}
+                  {isAr ? translateErp(row.status_Name, locale) : (row.status_Name || "Unknown")}
                 </span>
               ),
             },
@@ -190,10 +197,10 @@ export default function ExpensesPage() {
           page: currentPage,
           totalPages: totalPages,
           onPageChange: setPage,
-          prevLabel: "Prev",
-          nextLabel: "Next",
+          prevLabel: isAr ? "السابق" : "Prev",
+          nextLabel: isAr ? "التالي" : "Next",
         }}
-        emptyMessage="No expenses found"
+        emptyMessage={isAr ? "لا توجد مصروفات" : "No expenses found"}
       />
     </div>
   );

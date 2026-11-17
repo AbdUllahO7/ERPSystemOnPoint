@@ -24,9 +24,10 @@ import {
 import { IssueContractInvoiceDialog } from "@/pages/dashboard/crm/customers/_components/tabs/issue-contract-invoice-dialog";
 import SettleRentalContractDialog from "./_components/settle-rental-contract-dialog";
 import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function RentalDetailsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { id } = useParams();
   const queryClient = useQueryClient();
 
@@ -61,18 +62,18 @@ export default function RentalDetailsPage() {
     onSuccess: (res) => {
       queryClient.invalidateQueries(["rental", id]);
       queryClient.invalidateQueries(["rentals"]);
-      toast.success(res?.message || "Contract canceled successfully!");
+      toast.success(res?.message || t("rentalsModule.contractCanceledSuccess"));
       setIsCancelModalOpen(false);
     },
     onError: () => {
-      toast.error("Failed to cancel contract");
+      toast.error(t("rentalsModule.contractCancelFailed"));
     },
   });
 
   const handleCancelSubmit = (e) => {
     e?.preventDefault();
     if (!cancelForm.cancellationReason.trim()) {
-      toast.error("Please enter cancellation reason");
+      toast.error(t("rentalsModule.enterCancellationReason"));
       return;
     }
     cancelMutation.mutate(cancelForm);
@@ -94,10 +95,10 @@ export default function RentalDetailsPage() {
       {/* Header with Breadcrumb and Red Cancel Contract Button */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <PageTitle
-          title="Contract Details"
+          title={t("rentalsModule.contractDetails")}
           breadcrumbLinks={[
-            { label: "Rental Contracts", href: "/dashboard/rentals" },
-            { label: "Contract Details" },
+            { label: t("rentalsModule.rentals"), href: "/dashboard/rentals" },
+            { label: t("rentalsModule.contractDetails") },
           ]}
         />
 
@@ -109,7 +110,7 @@ export default function RentalDetailsPage() {
               className="h-10 gap-2 rounded-xl bg-[#0066d1] hover:bg-[#0052a8] text-white text-xs font-semibold px-5 shadow-xs cursor-pointer transition-colors"
             >
               <ShieldCheck className="w-4 h-4" />
-              Settle Contract
+              {t("rentalsModule.settleContract")}
             </Button>
           )}
 
@@ -120,7 +121,7 @@ export default function RentalDetailsPage() {
               className="h-10 gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-semibold px-5 shadow-xs cursor-pointer transition-colors"
             >
               <Receipt className="w-4 h-4" />
-              إصدار فاتورة من العقد
+              {t("rentalsModule.issueInvoiceFromContract")}
             </Button>
           )}
 
@@ -131,7 +132,7 @@ export default function RentalDetailsPage() {
               className="h-10 gap-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white text-xs font-semibold px-5 shadow-xs cursor-pointer transition-colors"
             >
               <XCircle className="w-4 h-4" />
-              Cancel Contract
+              {t("rentalsModule.cancelContract")}
             </Button>
           )}
         </div>
@@ -145,42 +146,42 @@ export default function RentalDetailsPage() {
           {/* Card 1: Contract Information */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
             <h2 className="text-base font-bold text-slate-800">
-              Contract Information
+              {t("rentalsModule.contractInfo")}
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-6">
               <div>
-                <p className="text-xs font-semibold text-slate-800">Customer</p>
+                <p className="text-xs font-semibold text-slate-800">{t("rentalsModule.customer")}</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.customer || contract.customerName || "Customer"}
+                  {contract.customer || contract.customerName || "-"}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-slate-800">Resource</p>
+                <p className="text-xs font-semibold text-slate-800">{t("rentalsModule.resource")}</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.resource || contract.resourceName || "Resource"}
+                  {contract.resource || contract.resourceName || "-"}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-slate-800">Service</p>
+                <p className="text-xs font-semibold text-slate-800">{t("rentalsModule.service")}</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.service || contract.serviceName || "Service"}
+                  {contract.service || contract.serviceName || "-"}
                 </p>
               </div>
 
               <div>
-                <p className="text-xs font-semibold text-slate-800">Cost Center</p>
+                <p className="text-xs font-semibold text-slate-800">{t("rentalsModule.costCenter")}</p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.costCenter || "Cost Center"}
+                  {contract.costCenter || "-"}
                 </p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 pt-2">
               <div>
-                <p className="text-xs font-semibold text-slate-800">Currency</p>
+                <p className="text-xs font-semibold text-slate-800">{t("rentalsModule.currency")}</p>
                 <p className="text-xs text-slate-500 mt-1">
                   {contract.currency || "USD"}
                 </p>
@@ -188,28 +189,28 @@ export default function RentalDetailsPage() {
 
               <div>
                 <p className="text-xs font-semibold text-slate-800">
-                  Payment Method
+                  {t("rentalsModule.paymentMethod")}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.paymentMethod || "Payment Method"}
+                  {translateErp(contract.paymentMethod || "Credit", locale)}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs font-semibold text-slate-800">
-                  Contract Start
+                  {t("rentalsModule.contractStart")}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.contractStart || contract.startDate || "23/7/2025"}
+                  {contract.contractStart || contract.startDate || "-"}
                 </p>
               </div>
 
               <div>
                 <p className="text-xs font-semibold text-slate-800">
-                  Contract End
+                  {t("rentalsModule.contractEnd")}
                 </p>
                 <p className="text-xs text-slate-500 mt-1">
-                  {contract.contractEnd || contract.endDate || "23/7/2026"}
+                  {contract.contractEnd || contract.endDate || "-"}
                 </p>
               </div>
             </div>
@@ -218,18 +219,18 @@ export default function RentalDetailsPage() {
           {/* Card 2: Items & Quantities Breakdown */}
           <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-4">
             <h2 className="text-base font-bold text-slate-800">
-              {t?.rentalDetails?.itemsBreakdown || "Contract Items & Quantities"}
+              {t("rentalsModule.itemsBreakdown")}
             </h2>
 
             <div className="overflow-x-auto border rounded-xl">
               <table className="min-w-full text-xs">
                 <thead className="bg-slate-50 border-b text-slate-700 font-semibold">
                   <tr>
-                    <th className="py-2.5 px-3 text-start">Item / Service</th>
-                    <th className="py-2.5 px-3 text-start">Contracted Qty</th>
-                    <th className="py-2.5 px-3 text-start">Invoiced Qty</th>
-                    <th className="py-2.5 px-3 text-start">Available to Invoice</th>
-                    <th className="py-2.5 px-3 text-end">Rate / Price</th>
+                    <th className="py-2.5 px-3 text-start">{t("rentalsModule.itemService")}</th>
+                    <th className="py-2.5 px-3 text-start">{t("rentalsModule.contractedQty")}</th>
+                    <th className="py-2.5 px-3 text-start">{t("rentalsModule.invoicedQty")}</th>
+                    <th className="py-2.5 px-3 text-start">{t("rentalsModule.availableToInvoice")}</th>
+                    <th className="py-2.5 px-3 text-end">{t("rentalsModule.ratePrice")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -267,26 +268,26 @@ export default function RentalDetailsPage() {
         {/* Right Financials Card (4 cols) with Collections breakdown */}
         <div className="lg:col-span-4 bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5 sticky top-6">
           <h2 className="text-base font-bold text-slate-800">
-            {t?.rentalDetails?.financials || "Financials & Collections"}
+            {t("rentalsModule.financials")}
           </h2>
 
           <div className="space-y-3 text-xs">
             <div className="flex items-center justify-between text-slate-500">
-              <span>Rental Rate</span>
+              <span>{t("rentalsModule.rentalRate")}</span>
               <span className="font-semibold text-slate-800">
                 {contract.rate ? contract.rate.split("×")[0].trim() : "USD 45/day"}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-slate-500">
-              <span>Contract Total</span>
+              <span>{t("rentalsModule.contractTotal")}</span>
               <span className="font-bold text-slate-900 text-sm">
                 {contract.total || "$0.00"}
               </span>
             </div>
 
             <div className="flex items-center justify-between text-slate-500">
-              <span>{t?.customerContracts?.advancePayment || "Advance Payment"}</span>
+              <span>{t("rentalsModule.advancePayment")}</span>
               <span className="font-semibold text-emerald-600">
                 {contract.deposit || "$0.00"}
               </span>
@@ -296,7 +297,7 @@ export default function RentalDetailsPage() {
 
             <div className="flex items-center justify-between font-bold text-xs pt-1">
               <span className="text-slate-800">
-                {t?.rentalDetails?.remainingToCollect || "Remaining to Collect"}
+                {t("rentalsModule.remainingToCollect")}
               </span>
               <span className="text-purple-700 font-bold text-sm">
                 ${Math.max(
@@ -307,7 +308,7 @@ export default function RentalDetailsPage() {
               </span>
             </div>
             <p className="text-[10px] text-muted-foreground pt-0.5">
-              قيمة الالتزام المستحق ناقص المبالغ المحصلة فعلياً
+              {t("rentalsModule.financialsObligationNote")}
             </p>
           </div>
         </div>
@@ -316,26 +317,26 @@ export default function RentalDetailsPage() {
       {/* Bottom Card: Rental Invoices matching Image 3 */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6 md:p-7 shadow-sm space-y-5">
         <h2 className="text-base font-bold text-slate-800">
-          Rental Invoices
+          {t("rentalsModule.rentalInvoices")}
         </h2>
 
         <div className="overflow-x-auto">
           <table className="min-w-full text-xs">
             <thead>
               <tr className="border-b border-slate-100 text-slate-700 font-semibold text-start">
-                <th className="py-3 px-4 text-start font-semibold">ID</th>
-                <th className="py-3 px-4 text-start font-semibold">Return Date</th>
-                <th className="py-3 px-4 text-start font-semibold">Damage</th>
-                <th className="py-3 px-4 text-start font-semibold">Total</th>
-                <th className="py-3 px-4 text-start font-semibold">Paid</th>
-                <th className="py-3 px-4 text-start font-semibold">Status</th>
+                <th className="py-3 px-4 text-start font-semibold">{t("rentalsModule.id")}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t("rentalsModule.returnDate")}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t("rentalsModule.damage")}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t("rentalsModule.total")}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t("rentalsModule.paid")}</th>
+                <th className="py-3 px-4 text-start font-semibold">{t("rentalsModule.status")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {invoicesList.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-slate-400">
-                    No rental invoices generated yet.
+                    {t("rentalsModule.noInvoicesYet")}
                   </td>
                 </tr>
               ) : (
@@ -361,7 +362,7 @@ export default function RentalDetailsPage() {
                     </td>
                     <td className="py-4 px-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-600">
-                        {inv.status || "Paid"}
+                        {translateErp(inv.status || "Paid", locale)}
                       </span>
                     </td>
                   </tr>
@@ -379,7 +380,7 @@ export default function RentalDetailsPage() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             className="px-2.5 py-1 text-slate-600 hover:text-slate-900 disabled:opacity-40 cursor-pointer"
           >
-            Pre
+            {t("common.prev")}
           </button>
           <button
             type="button"
@@ -418,9 +419,9 @@ export default function RentalDetailsPage() {
           <button
             type="button"
             onClick={() => setPage((p) => p + 1)}
-            className="px-2.5 py-1 text-slate-600 hover:text-slate-900 cursor-pointer"
+            className="px-2.5 py-1 text-[#0066d1] font-semibold hover:underline cursor-pointer"
           >
-            Next
+            {t("common.next")}
           </button>
         </div>
       </div>
@@ -429,7 +430,7 @@ export default function RentalDetailsPage() {
       <DynamicModal
         open={isCancelModalOpen}
         onOpenChange={setIsCancelModalOpen}
-        title="Cancel Contract"
+        title={t("rentalsModule.cancelContract")}
         icon={XCircle}
         showDefaultFooter={false}
         size="md"
@@ -438,11 +439,11 @@ export default function RentalDetailsPage() {
         <form onSubmit={handleCancelSubmit} className="space-y-4 pt-1">
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Cancellation Reason
+              {t("rentalsModule.cancellationReason")}
             </Label>
             <Textarea
               rows={3}
-              placeholder="Cancellation Reason"
+              placeholder={t("rentalsModule.cancellationReasonPlaceholder")}
               value={cancelForm.cancellationReason}
               onChange={(e) =>
                 setCancelForm({ ...cancelForm, cancellationReason: e.target.value })
@@ -453,7 +454,7 @@ export default function RentalDetailsPage() {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Refund Account (Bank / Cash Box)
+              {t("rentalsModule.refundAccount")}
             </Label>
             <Select
               value={cancelForm.refundAccount}
@@ -462,7 +463,7 @@ export default function RentalDetailsPage() {
               }
             >
               <SelectTrigger className="h-11 w-full rounded-xl border-slate-200 bg-white focus:ring-red-500">
-                <SelectValue placeholder="Refund Account (Bank / Cash Box)" />
+                <SelectValue placeholder={t("rentalsModule.refundAccountPlaceholder")} />
               </SelectTrigger>
               <SelectContent>
                 {(lookups.refundAccounts || []).map((acc) => (
@@ -476,7 +477,7 @@ export default function RentalDetailsPage() {
 
           <div className="space-y-1.5">
             <Label className="text-xs font-semibold text-slate-700">
-              Refund Amount (USD)
+              {t("rentalsModule.refundAmount")}
             </Label>
             <Input
               type="number"
@@ -498,7 +499,7 @@ export default function RentalDetailsPage() {
               {cancelMutation.isPending && (
                 <Loader2 className="w-4 h-4 animate-spin me-1.5" />
               )}
-              Confirm and Cancellation
+              {t("rentalsModule.confirmCancellation")}
             </Button>
           </div>
         </form>

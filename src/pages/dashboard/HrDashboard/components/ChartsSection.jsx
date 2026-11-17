@@ -1,14 +1,27 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useI18n } from '@/context/translate-api';
+import { translateErp } from '@/lib/erp-i18n';
 
 export default function ChartsSection({ chartsData }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
+
   if (!chartsData || !chartsData.averageDelayChart) return null;
 
   // Ensure data has all months for display or use provided
-  const data = chartsData.averageDelayChart;
+  const rawData = chartsData.averageDelayChart;
+  const data = isAr
+    ? rawData.map((item) => ({
+        ...item,
+        monthName: translateErp(item.monthName, locale),
+      }))
+    : rawData;
 
   return (
     <div className="w-full h-full min-h-[300px] flex flex-col">
-      <h2 className="text-lg font-semibold mb-6 text-[#1B2559]">Average delay</h2>
+      <h2 className="text-lg font-semibold mb-6 text-[#1B2559]">
+        {isAr ? "متوسط التأخير" : "Average delay"}
+      </h2>
       <div className="flex-1 w-full h-full min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart

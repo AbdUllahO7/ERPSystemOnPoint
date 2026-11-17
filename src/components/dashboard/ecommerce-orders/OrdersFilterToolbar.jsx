@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   RefreshCw,
 } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function OrdersFilterToolbar({
   searchQuery,
@@ -14,6 +15,8 @@ export function OrdersFilterToolbar({
   viewMode = "list",
   onViewModeChange,
 }) {
+  const { t } = useI18n();
+
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
       {/* Left: Search & Filter */}
@@ -22,7 +25,7 @@ export function OrdersFilterToolbar({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by id or employee name..."
+            placeholder={t("ecommerceOrders.searchPlaceholder")}
             value={searchQuery || ""}
             onChange={(e) => onSearchChange && onSearchChange(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white text-xs sm:text-sm rounded-xl border border-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#0066d1] focus:ring-2 focus:ring-[#0066d1]/10 transition-all"
@@ -34,7 +37,7 @@ export function OrdersFilterToolbar({
           className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#0066d1] flex items-center gap-2 transition-colors cursor-pointer shadow-2xs shrink-0"
         >
           <Filter className="w-3.5 h-3.5" />
-          <span>Filter</span>
+          <span>{t("common.filter")}</span>
         </button>
       </div>
 
@@ -49,7 +52,7 @@ export function OrdersFilterToolbar({
                 ? "bg-[#0066d1] text-white"
                 : "text-slate-400 hover:text-slate-700"
             }`}
-            title="List View"
+            title={t("common.listView")}
           >
             <List className="w-4 h-4" />
           </button>
@@ -61,7 +64,7 @@ export function OrdersFilterToolbar({
                 ? "bg-[#0066d1] text-white"
                 : "text-slate-400 hover:text-slate-700"
             }`}
-            title="Grid View"
+            title={t("common.gridView")}
           >
             <LayoutGrid className="w-4 h-4" />
           </button>
@@ -71,7 +74,7 @@ export function OrdersFilterToolbar({
           type="button"
           onClick={onRefresh}
           className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 shadow-2xs transition-colors cursor-pointer"
-          title="Refresh"
+          title={t("common.refresh")}
         >
           <RefreshCw className="w-4 h-4" />
         </button>

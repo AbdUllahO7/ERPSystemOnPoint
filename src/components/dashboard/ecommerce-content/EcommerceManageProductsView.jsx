@@ -1,11 +1,14 @@
 import React, { useState } from "react";
 import { Search, Filter, Eye } from "lucide-react";
+import { useI18n } from "@/context/translate-api";
 
 export function EcommerceManageProductsView({
   categories = [],
   onToggleAddAllForCategory,
   onViewCategoryProducts,
 }) {
+  const { locale } = useI18n();
+  const isAr = locale === "ar";
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredCategories = categories.filter((cat) =>
@@ -20,7 +23,7 @@ export function EcommerceManageProductsView({
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
           <input
             type="text"
-            placeholder="Search by id or employee name..."
+            placeholder={isAr ? "البحث بالرقم أو اسم الموظف..." : "Search by id or employee name..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white text-xs sm:text-sm rounded-xl border border-slate-200 placeholder-slate-400 focus:outline-none focus:border-[#0066d1] focus:ring-2 focus:ring-[#0066d1]/10 transition-all"
@@ -32,7 +35,7 @@ export function EcommerceManageProductsView({
           className="px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-bold text-[#0066d1] flex items-center gap-2 transition-colors cursor-pointer shadow-2xs"
         >
           <Filter className="w-3.5 h-3.5" />
-          <span>Filter</span>
+          <span>{isAr ? "فلترة" : "Filter"}</span>
         </button>
       </div>
 
@@ -59,7 +62,7 @@ export function EcommerceManageProductsView({
                   }
                   className="w-4 h-4 rounded border-slate-300 text-[#0066d1] focus:ring-[#0066d1]"
                 />
-                <span>Add All Product To E-Commerce</span>
+                <span>{isAr ? "إضافة جميع المنتجات إلى المتجر" : "Add All Product To E-Commerce"}</span>
               </label>
 
               <button
@@ -68,7 +71,7 @@ export function EcommerceManageProductsView({
                 className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-[#0066d1] hover:text-[#0052a8] transition-colors cursor-pointer"
               >
                 <Eye className="w-4 h-4" />
-                <span>View Products</span>
+                <span>{isAr ? "عرض المنتجات" : "View Products"}</span>
               </button>
             </div>
           </div>
@@ -78,7 +81,7 @@ export function EcommerceManageProductsView({
       {/* Pagination */}
       <div className="flex items-center justify-end gap-2 pt-2 text-xs font-semibold text-slate-600">
         <button type="button" className="px-2 py-1 hover:text-slate-900 cursor-pointer">
-          Pre
+          {isAr ? "السابق" : "Pre"}
         </button>
         <button
           type="button"
@@ -103,7 +106,7 @@ export function EcommerceManageProductsView({
           type="button"
           className="px-2 py-1 text-[#0066d1] font-bold hover:underline cursor-pointer"
         >
-          Next
+          {isAr ? "التالي" : "Next"}
         </button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { StatTitle } from "@/components/common/stat-title";
 import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,8 +16,11 @@ import {
   useRentalStats,
   useRentalMutations,
 } from "@/features/rentals";
+import { useI18n } from "@/context/translate-api";
+import { translateErp } from "@/lib/erp-i18n";
 
 export default function RentalsPage() {
+  const { t, locale } = useI18n();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [activeTab, setActiveTab] = useState("all");
@@ -122,32 +126,44 @@ export default function RentalsPage() {
     }
   };
 
+  const statusTabs = useMemo(
+    () => [
+      { id: "all", label: t("rentalsModule.statuses.all") },
+      { id: "active", label: t("rentalsModule.statuses.active") },
+      { id: "Paid", label: t("rentalsModule.statuses.paid") },
+      { id: "PartiallyPaid", label: t("rentalsModule.statuses.partiallyPaid") },
+      { id: "Unpaid", label: t("rentalsModule.statuses.unpaid") },
+      { id: "closed", label: t("rentalsModule.statuses.closed") },
+    ],
+    [t]
+  );
+
   const rowActionsMenu = useMemo(
     () => [
       {
-        label: "Actions",
+        label: t("common.actions"),
         items: [
           {
             key: "view",
-            label: "View Details",
+            label: t("common.viewDetails"),
             icon: Eye,
             onClick: (row) => navigate(`/dashboard/rentals/${row.id}`),
           },
           {
             key: "settle",
-            label: "Settle Contract",
+            label: t("rentalsModule.settleContract"),
             icon: ShieldCheck,
             onClick: (row) => setSettleContractRow(row),
           },
           {
             key: "edit",
-            label: "Edit Contract",
+            label: t("rentalsModule.editContract"),
             icon: Pencil,
             onClick: (row) => navigate(`/dashboard/rentals/edit/${row.id}`),
           },
           {
             key: "delete",
-            label: "Delete",
+            label: t("common.delete"),
             icon: Trash2,
             variant: "destructive",
             onClick: (row) => setDeleteRowId(row.id),
@@ -155,14 +171,14 @@ export default function RentalsPage() {
         ],
       },
     ],
-    [navigate]
+    [navigate, t]
   );
 
   const columns = useMemo(
     () => [
       {
         accessorKey: "id",
-        header: "ID",
+        header: t("rentalsModule.id"),
         cell: ({ row }) => (
           <Link
             to={`/dashboard/rentals/${row.original.id}`}
@@ -174,7 +190,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "customer",
-        header: "Customer",
+        header: t("rentalsModule.customer"),
         cell: ({ row }) => (
           <span className="text-xs font-normal text-slate-700">
             {row.original.customer}
@@ -183,7 +199,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "resourceService",
-        header: "Resource / Ser..",
+        header: `${t("rentalsModule.resource")} / ${t("rentalsModule.service")}`,
         cell: ({ row }) => (
           <div className="space-y-0.5">
             <p className="text-xs font-normal text-slate-800">
@@ -197,7 +213,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "period",
-        header: "Period",
+        header: `${t("rentalsModule.contractStart")} - ${t("rentalsModule.contractEnd")}`,
         cell: ({ row }) => (
           <div className="space-y-0.5">
             <p className="text-xs font-normal text-slate-800">
@@ -211,7 +227,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "rate",
-        header: "Rate",
+        header: t("rentalsModule.rentalRate"),
         cell: ({ row }) => (
           <span className="text-xs font-normal text-slate-700">
             {row.original.rate}
@@ -220,7 +236,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "deposit",
-        header: "Deposit",
+        header: t("rentalsModule.depositHeld"),
         cell: ({ row }) => (
           <span className="text-xs font-semibold text-[#0066d1]">
             {row.original.deposit}
@@ -229,7 +245,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "total",
-        header: "Total",
+        header: t("rentalsModule.total"),
         cell: ({ row }) => (
           <span className="text-xs font-semibold text-[#0066d1]">
             {row.original.total}
@@ -238,7 +254,7 @@ export default function RentalsPage() {
       },
       {
         accessorKey: "status",
-        header: "Status",
+        header: t("rentalsModule.status"),
         cell: ({ row }) => {
           const status = row.original.status || "Active";
           return (
@@ -247,21 +263,21 @@ export default function RentalsPage() {
                 status
               )}`}
             >
-              {status}
+              {translateErp(status, locale)}
             </span>
           );
         },
       },
     ],
-    []
+    [t, locale]
   );
 
   return (
     <div className="space-y-6">
       {/* Page Title with Info Badge */}
       <PageTitle
-        title="Rental Contracts"
-        infoTooltip="Manage all equipment and vehicle rental agreements, lease terms, and security deposits."
+        title={t("rentalsModule.rentals")}
+        infoTooltip={t("rentalsModule.contractTooltip")}
       />
 
       {/* Top 4 Stats Cards matching mockup */}
@@ -281,7 +297,7 @@ export default function RentalsPage() {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500 font-normal leading-snug">
-                    {card.title}
+                    <StatTitle>{card.title}</StatTitle>
                   </p>
                   <div className="flex items-baseline gap-1.5 mt-0.5">
                     <span className="text-xl font-bold text-slate-800">
@@ -368,7 +384,7 @@ export default function RentalsPage() {
       {/* Main Table with DataView & Tabs inside table container */}
       <DataView
         tabs={{
-          items: RENTAL_STATUS_TABS,
+          items: statusTabs,
           activeTab: activeTab,
           onChange: (tabId) => {
             setActiveTab(tabId);
@@ -379,7 +395,7 @@ export default function RentalsPage() {
         columns={columns}
         isLoading={isLoading}
         rowActionsMenu={rowActionsMenu}
-        searchPlaceholder="Search by id or employee name..."
+        searchPlaceholder={t("rentalsModule.searchPlaceholder")}
         searchValue={search}
         onSearchChange={(val) => {
           setSearch(val);
@@ -388,9 +404,10 @@ export default function RentalsPage() {
         onAdd={() => navigate("/dashboard/rentals/add")}
         onRefresh={() => refetch()}
         filter={{
-          label: "Filter",
+          label: t("common.filter"),
           onClick: () => setIsFilterOpen(!isFilterOpen),
         }}
+        emptyMessage={t("rentalsModule.noContractsFound")}
         page={page}
         totalPages={totalPages}
         onPageChange={setPage}
@@ -400,8 +417,8 @@ export default function RentalsPage() {
       <DeleteConfirmDialog
         open={!!deleteRowId}
         onOpenChange={(open) => !open && setDeleteRowId(null)}
-        title="Delete Rental Contract"
-        description="Are you sure you want to delete this rental contract? This action cannot be undone."
+        title={t("rentalsModule.deleteContractTitle")}
+        description={t("rentalsModule.deleteContractDesc")}
         onConfirm={() => deleteMutation.mutate(deleteRowId)}
         isLoading={deleteMutation.isPending}
       />
