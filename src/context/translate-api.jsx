@@ -5,22 +5,45 @@ import { createContext, useContext, useMemo, useCallback, useState, useEffect } 
 import en from "../../public/locales/en";
 import ar from "../../public/locales/ar";
 import Cookies from "js-cookie";
+import { translateErp } from "@/lib/erp-i18n";
 
-const makeCallableDict = (dict) => {
+const makeCallableDict = (dict, locale = "ar") => {
     const fn = (path, fallback) => {
         if (!path || typeof path !== "string") return fallback || "";
         const keys = path.split(".");
         let cur = dict;
         for (const k of keys) {
-            if (cur === undefined || cur === null) return fallback !== undefined ? fallback : path;
+            if (cur === undefined || cur === null) {
+                cur = undefined;
+                break;
+            }
             cur = cur[k];
         }
-        return (cur !== undefined && cur !== null) ? cur : (fallback !== undefined ? fallback : path);
+        if (cur !== undefined && cur !== null) return cur;
+
+        if (locale === "ar") {
+            if (fallback !== undefined && typeof fallback === "string") {
+                const trFallback = translateErp(fallback, "ar");
+                if (trFallback !== fallback || /[\u0600-\u06FF]/.test(fallback)) {
+                    return trFallback;
+                }
+            }
+            const trPath = translateErp(path, "ar");
+            if (trPath !== path) return trPath;
+
+            if (keys.length > 1) {
+                const lastKey = keys[keys.length - 1];
+                const trLast = translateErp(lastKey, "ar");
+                if (trLast !== lastKey) return trLast;
+            }
+        }
+
+        return fallback !== undefined ? fallback : path;
     };
     return Object.assign(fn, dict);
 };
 
-const defaultDict = makeCallableDict(ar);
+const defaultDict = makeCallableDict(ar, "ar");
 
 const context = {
     locale: "ar",
@@ -58,7 +81,7 @@ export const I18nProvider = ({ initialLocal = "ar", children }) => {
 
     const t = useMemo(() => {
         const dict = locale === "ar" ? ar : en;
-        return makeCallableDict(dict);
+        return makeCallableDict(dict, locale);
     }, [locale]);
 
     return (
