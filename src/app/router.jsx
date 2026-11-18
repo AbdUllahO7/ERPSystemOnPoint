@@ -47,6 +47,10 @@ const AddLeavePage = lazy(() => import("../pages/dashboard/Employees/add-leave-p
 const AddEditEmployee = lazy(() => import("../pages/dashboard/Employees/add-edit-employee"))
 const LeavesPage = lazy(() => import("../pages/dashboard/Leaves/leaves-page"))
 const AddGlobalLeavePage = lazy(() => import("../pages/dashboard/Leaves/add-leave-page"))
+const LeaveTypesPage = lazy(() => import("../pages/dashboard/LeaveTypes/leave-types-page"))
+const AddEditLeaveTypePage = lazy(() => import("../pages/dashboard/LeaveTypes/add-edit-leave-type-page"))
+const ShiftRulesPage = lazy(() => import("../pages/dashboard/ShiftRules/shift-rules-page"))
+const AddEditShiftRulePage = lazy(() => import("../pages/dashboard/ShiftRules/add-edit-shift-rule-page"))
 const BonusesPage = lazy(() => import("../pages/dashboard/Bonuses/bonuses-page"))
 const AddBonusPage = lazy(() => import("../pages/dashboard/Bonuses/add-bonus-page"))
 const DeductionsPage = lazy(() => import("../pages/dashboard/Deductions/deductions-page"))
@@ -263,6 +267,12 @@ export const router = createBrowserRouter([
       { path: "/dashboard/hr/employees/:id/performance/:performanceId", element: lazyLoad(() => import("../pages/dashboard/Employees/performance-detail-page")) },
       { path: "/dashboard/hr/leaves", element: lazyLoad(() => import("../pages/dashboard/Leaves/leaves-page")) },
       { path: "/dashboard/hr/leaves/add", element: lazyLoad(() => import("../pages/dashboard/Leaves/add-leave-page")) },
+      { path: "/dashboard/hr/leave-types", element: lazyLoad(() => import("../pages/dashboard/LeaveTypes/leave-types-page")) },
+      { path: "/dashboard/hr/leave-types/add", element: lazyLoad(() => import("../pages/dashboard/LeaveTypes/add-edit-leave-type-page")) },
+      { path: "/dashboard/hr/leave-types/edit/:id", element: lazyLoad(() => import("../pages/dashboard/LeaveTypes/add-edit-leave-type-page")) },
+      { path: "/dashboard/hr/shift-rules", element: lazyLoad(() => import("../pages/dashboard/ShiftRules/shift-rules-page")) },
+      { path: "/dashboard/hr/shift-rules/add", element: lazyLoad(() => import("../pages/dashboard/ShiftRules/add-edit-shift-rule-page")) },
+      { path: "/dashboard/hr/shift-rules/edit/:id", element: lazyLoad(() => import("../pages/dashboard/ShiftRules/add-edit-shift-rule-page")) },
       { path: "/dashboard/hr/bounces", element: lazyLoad(() => import("../pages/dashboard/Bonuses/bonuses-page")) },
       { path: "/dashboard/hr/bounces/add", element: lazyLoad(() => import("../pages/dashboard/Bonuses/add-bonus-page")) },
       { path: "/dashboard/hr/deductions", element: lazyLoad(() => import("../pages/dashboard/Deductions/deductions-page")) },
