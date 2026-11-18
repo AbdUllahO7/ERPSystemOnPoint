@@ -63,7 +63,7 @@ export default function LeavesPage() {
     StartDateTo: filters.StartDateTo || undefined,
   }), [search, page, filters]);
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, refetch } = useQuery({
     queryKey: ["getAllLeaveRequests", params],
     queryFn: () => getAllLeaveRequests(params),
   });
@@ -75,7 +75,7 @@ export default function LeavesPage() {
   const approveMutation = useMutation({
     mutationFn: (id) => approveLeave(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(["getAllLeaveRequests"]);
+      queryClient.invalidateQueries({ queryKey: ["getAllLeaveRequests"] });
       toast.success("Leave approved successfully!");
     },
     onError: (error) => {
@@ -87,7 +87,7 @@ export default function LeavesPage() {
   const rejectMutation = useMutation({
     mutationFn: (id) => rejectLeave(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(["getAllLeaveRequests"]);
+      queryClient.invalidateQueries({ queryKey: ["getAllLeaveRequests"] });
       toast.success("Leave rejected successfully!");
     },
     onError: (error) => {
@@ -286,7 +286,7 @@ export default function LeavesPage() {
             { label: "Duration:", value: (row) => `${new Date(row.start_Date).toLocaleDateString()} to ${new Date(row.end_Date).toLocaleDateString()}` },
           ],
         }}
-        onRefresh={() => queryClient.invalidateQueries(["getAllLeaveRequests"])}
+        onRefresh={() => refetch()}
         addButton={{ label: "Add", onClick: () => navigate("/dashboard/hr/leaves/add") }}
         columns={columns}
         rowActionsMenu={rowActionsMenu}
