@@ -364,6 +364,77 @@ export async function getLeaveTypes(data) {
   });
 }
 
+export async function getLeaveTypeById(id) {
+  return apiHandler({
+    endPoint: `LeaveTypes/${id}`,
+    method: "GET",
+  });
+}
+
+export async function createLeaveType(data) {
+  return apiHandler({
+    endPoint: "LeaveTypes/create",
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function updateLeaveType(data) {
+  return apiHandler({
+    endPoint: "LeaveTypes/Update",
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function toggleLeaveTypeStatus(id) {
+  return apiHandler({
+    endPoint: `LeaveTypes/${id}`,
+    method: "POST",
+  });
+}
+
+export async function deleteLeaveType(id) {
+  return apiHandler({
+    endPoint: `LeaveTypes/${id}`,
+    method: "POST",
+  });
+}
+
+// ==========================================
+// SHIFT RULES
+// ==========================================
+
+export async function getShiftRuleById(id) {
+  return apiHandler({
+    endPoint: `HR/ShiftRule/GetById/${id}`,
+    method: "GET",
+  });
+}
+
+export async function createShiftRule(data) {
+  return apiHandler({
+    endPoint: "HR/ShiftRule/Create",
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function updateShiftRule(data) {
+  return apiHandler({
+    endPoint: "HR/ShiftRule/Update",
+    method: "POST",
+    body: data,
+  });
+}
+
+export async function deleteShiftRule(id) {
+  return apiHandler({
+    endPoint: `HR/ShiftRule/Delete/${id}`,
+    method: "POST",
+  });
+}
+
 // ==========================================
 // CONTRACTS
 // ==========================================

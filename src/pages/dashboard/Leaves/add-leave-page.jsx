@@ -10,12 +10,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { applyForLeave, getLeaveTypes, getEmployees } from "../../../lib/api";
 import toast from "react-hot-toast";
 
 export default function AddLeavePage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [form, setForm] = useState({
     employee_Id: "",
@@ -41,7 +42,13 @@ export default function AddLeavePage() {
 
   const applyMutation = useMutation({
     mutationFn: (payload) => applyForLeave(payload),
-    onSuccess: () => {
+    onSuccess: async (res) => {
+      if (res && (res.success === false || res.status >= 400)) {
+        toast.error(res.message || "Failed to apply for leave!");
+        return;
+      }
+      await queryClient.invalidateQueries({ queryKey: ["getAllLeaveRequests"] });
+      await queryClient.invalidateQueries({ queryKey: ["hr", "leaves"] });
       toast.success("Leave applied successfully!");
       navigate(`/dashboard/hr/leaves`);
     },

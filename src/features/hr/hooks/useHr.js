@@ -24,3 +24,19 @@ export function useLeaves(params = {}) {
     placeholderData: (prev) => prev,
   });
 }
+
+export function useLeaveTypes(params = {}) {
+  return useQuery({
+    queryKey: ['hr', 'leave-types', params],
+    queryFn: () => hrApi.leaveTypes.getAll(params),
+    placeholderData: (prev) => prev,
+  });
+}
+
+export function useShiftRules(params = {}) {
+  return useQuery({
+    queryKey: ['hr', 'shift-rules', params],
+    queryFn: () => hrApi.shiftRules.getAll(params),
+    placeholderData: (prev) => prev,
+  });
+}
