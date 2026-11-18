@@ -21,6 +21,21 @@ export const hrApi = {
     getAll: hrService.getAllLeaveRequests,
     create: hrService.applyForLeave,
   },
+  leaveTypes: {
+    getAll: hrService.getLeaveTypes,
+    getById: hrService.getLeaveTypeById,
+    create: hrService.createLeaveType,
+    update: hrService.updateLeaveType,
+    toggleStatus: hrService.toggleLeaveTypeStatus,
+    delete: hrService.deleteLeaveType,
+  },
+  shiftRules: {
+    getAll: hrService.getShiftRules,
+    getById: hrService.getShiftRuleById,
+    create: hrService.createShiftRule,
+    update: hrService.updateShiftRule,
+    delete: hrService.deleteShiftRule,
+  },
   salaries: {
     getAll: hrService.getSalaries,
   },
