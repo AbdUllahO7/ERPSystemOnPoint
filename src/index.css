@@ -314,3 +314,33 @@
 button {
   cursor: pointer;
 }
+
+/* Marketing Background Rotating Circles Keyframes (Direct Figma Match) */
+@keyframes spin-clockwise {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin-counter {
+  from {
+    transform: rotate(360deg);
+  }
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+.animate-spin-circle-1 {
+  animation: spin-clockwise 28s linear infinite;
+}
+
+.animate-spin-circle-2 {
+  animation: spin-counter 36s linear infinite;
+}
+
+
+

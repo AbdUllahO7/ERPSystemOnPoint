@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react"
 import { createBrowserRouter } from "react-router-dom"
 import DashboardLayout from "@/layouts/DashboardLayout"
 import WebsiteLayout from "@/layouts/WebsiteLayout"
+import MarketingLayout from "@/layouts/MarketingLayout"
 import AuthLayout from "@/layouts/AuthLayout"
 import ProtectedRoute from "@/components/common/ProtectedRoute"
 import PageSkeleton from "@/components/feedback/PageSkeleton"
@@ -185,12 +186,21 @@ export const router = createBrowserRouter([
     element: lazyLoad(() => import("@/pages/website/profile/CompanyProfile")),
   },
 
+  // 🚀 صفحات النظام التعريفية والتسويقية ما قبل تسجيل الدخول (SaaS Landing & Marketing Pages)
+  {
+    element: <MarketingLayout />,
+    children: [
+      { path: "/", element: lazyLoad(() => import("@/pages/marketing/HomePage")) },
+      { path: "/home", element: lazyLoad(() => import("@/pages/marketing/HomePage")) },
+    ],
+  },
+
   // 🛒 المتجر الإلكتروني (Storefront with Store Header & Footer)
   {
     path: "/",
     element: <WebsiteLayout />,
     children: [
-      { index: true, element: lazyLoad(() => import("@/pages/website/store/Home")) },
+      { path: "store", element: lazyLoad(() => import("@/pages/website/store/Home")) },
       { path: "shop", element: lazyLoad(() => import("@/pages/website/store/Shop")) },
       { path: "search", element: lazyLoad(() => import("@/pages/website/store/Shop")) },
       { path: "product/:id", element: lazyLoad(() => import("@/pages/website/store/ProductDetails")) },
